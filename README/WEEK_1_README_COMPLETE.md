@@ -2,7 +2,7 @@
 
 **Goal**: Set up development environment and initialize project structure  
 **Estimated Effort**: 8-12 hours  
-**Status**: [ ] Not Started | [x] In Progress | [ ] Complete
+**Status**: [ ] Not Started | [ ] In Progress | [x] Complete
 
 ---
 
@@ -109,7 +109,7 @@ pnpm start
 **Checklist**:
 - [x] Project created
 - [x] Dependencies installed
-- [ ] `pnpm start` runs without errors
+- [x] `pnpm start` runs without errors
 
 ---
 
@@ -215,9 +215,9 @@ pnpm add -D @typescript-eslint/parser @typescript-eslint/eslint-plugin
    - Plan: **Free**
 
 **Checklist**:
-- [ ] Supabase account created
-- [ ] Project created
-- [ ] Password saved securely
+- [x] Supabase account created
+- [x] Project created
+- [x] Password saved securely
 
 ---
 
@@ -241,8 +241,8 @@ echo ".env" >> .gitignore
 ```
 
 **Checklist**:
-- [ ] `.env` file created with credentials
-- [ ] `.env` added to `.gitignore`
+- [x] `.env` file created with credentials
+- [x] `.env` added to `.gitignore`
 
 ---
 
@@ -419,9 +419,9 @@ CREATE INDEX IF NOT EXISTS idx_purchases_product_id ON purchases(product_id);
 5. Verify success: Go to **Table Editor** → You should see 5 tables
 
 **Checklist**:
-- [ ] SQL executed successfully
-- [ ] 5 tables visible in Table Editor
-- [ ] RLS enabled on all tables
+- [x] SQL executed successfully
+- [x] 5 tables visible in Table Editor
+- [x] RLS enabled on all tables
 
 ---
 
@@ -1127,9 +1127,9 @@ pnpm start
 - No errors in terminal
 
 **Checklist**:
-- [ ] App runs on iOS
-- [ ] Success message displays
-- [ ] No errors
+- [x] App runs on iOS
+- [x] Success message displays
+- [x] No errors
 
 ---
 
@@ -1155,10 +1155,9 @@ pnpm start
 - Shows "TransFitness - Week 1 Setup Complete! 🎉"
 - No errors in terminal
 
-**Checklist**:
-- [ ] App runs on Android
-- [ ] Success message displays
-- [ ] No errors
+- [x] App runs on Android
+- [x] Success message displays
+- [x] No errors
 
 ---
 
@@ -1190,7 +1189,7 @@ git push origin develop
 - [x] Node.js v20.x installed
 - [x] pnpm installed
 - [x] Expo CLI + EAS CLI installed
-- [ ] VS Code with extensions installed
+- [x] VS Code with extensions installed
 
 ### Project Setup
 - [x] Expo project created with TypeScript
@@ -1199,11 +1198,11 @@ git push origin develop
 - [x] No errors when running `pnpm install`
 
 ### Supabase Backend
-- [ ] Supabase account created
-- [ ] Project created
-- [ ] Database schema initialized (5 tables)
-- [ ] RLS policies enabled
-- [ ] Credentials in `.env` file
+- [x] Supabase account created
+- [x] Project created
+- [x] Database schema initialized (5 tables)
+- [x] RLS policies enabled
+- [x] Credentials in `.env` file
 
 ### GitHub
 - [x] Repository created
@@ -1225,11 +1224,11 @@ git push origin develop
 - [x] `config/required-flags.json` created
 
 ### Testing
-- [ ] App runs on iOS simulator (or device)
-- [ ] App runs on Android emulator (or device)
-- [ ] "Week 1 Complete! 🎉" message displays
-- [ ] No errors in console
-- [ ] Database initializes successfully
+- [x] App runs on iOS simulator (or device)
+- [x] App runs on Android emulator (or device)
+- [x] "Week 1 Complete! 🎉" message displays
+- [x] No errors in console
+- [x] Database initializes successfully
 
 ### Git
 - [x] All changes committed
