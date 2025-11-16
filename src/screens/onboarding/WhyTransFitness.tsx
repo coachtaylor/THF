@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import { View, Text, StyleSheet, Image, useWindowDimensions, LayoutChangeEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -15,24 +16,47 @@ const CONTENT: WhyTransFitnessContent = {
     'Privacy-first: your data stays on your device',
   ],
   ctaText: 'Get Started',
-  skipText: "I already know, let's go",
 };
 
 export default function WhyTransFitness({ navigation }: OnboardingScreenProps) {
   const { profile } = useProfile();
   const lowSensoryMode = profile?.low_sensory_mode ?? false;
+  const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  const [contentHeight, setContentHeight] = useState(0);
+  const onContentLayout = useCallback((e: LayoutChangeEvent) => {
+    setContentHeight(e.nativeEvent.layout.height);
+  }, []);
+
+  // Compute responsive dimensions so the screen fits without scrolling
+  const layout = useMemo(() => {
+    const paddingTop = Math.max(insets.top, spacing.m);
+    const paddingBottom = Math.max(insets.bottom + spacing.s, spacing.l); // extra comfort above home indicator
+    const isSmallScreen = windowHeight < 720;
+    const headlineSize = isSmallScreen ? 24 : 28;
+
+    // Reserve space for CTA cluster (button + skip)
+    const reservedCta = (isSmallScreen ? 48 : 56) + spacing.m /* gap */ + 22 + spacing.s /* extra buffer */;
+    const reserved = paddingTop + paddingBottom + contentHeight + reservedCta + spacing.m;
+    const heroAvailable = windowHeight - reserved;
+    // Clamp hero height to keep composition while ensuring everything fits
+    const hero = Math.max(140, Math.min(320, Math.round(heroAvailable)));
+
+    return { hero, isSmallScreen, headlineSize, paddingTop, paddingBottom };
+  }, [windowHeight, insets.top, insets.bottom, contentHeight]);
 
   const handleContinue = () => {
     navigation.navigate('Disclaimer');
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: layout.paddingTop, paddingBottom: layout.paddingBottom }]}>
       {!lowSensoryMode && (
         <View style={styles.heroContainer}>
           <Image
             source={require('../../../assets/onboarding-hero.png')}
-            style={styles.heroImage}
+            style={[styles.heroImage, { height: layout.hero }]}
             resizeMode="cover"
           />
           <LinearGradient
@@ -42,27 +66,33 @@ export default function WhyTransFitness({ navigation }: OnboardingScreenProps) {
         </View>
       )}
       <View style={styles.content}>
-        <Text style={styles.headline}>{CONTENT.headline}</Text>
+        <View onLayout={onContentLayout}>
+          <Text style={[styles.headline, { fontSize: layout.headlineSize }]}>{CONTENT.headline}</Text>
 
-        <View style={styles.bulletsContainer}>
-          {CONTENT.bullets.map((bullet, index) => (
-            <View
-              key={bullet}
-              style={[styles.bulletRow, index !== CONTENT.bullets.length - 1 && styles.bulletRowSpacing]}
-            >
-              <View style={styles.bulletIcon}>
-                <Text style={styles.bulletIconText}>✓</Text>
+          <View style={styles.bulletsContainer}>
+            {CONTENT.bullets.map((bullet, index) => (
+              <View
+                key={bullet}
+                style={[
+                  styles.bulletRow,
+                  layout.isSmallScreen && styles.bulletRowSmall,
+                  index !== CONTENT.bullets.length - 1 && styles.bulletRowSpacing,
+                ]}
+              >
+                <View style={styles.bulletIcon}>
+                  <Text style={styles.bulletIconText}>✓</Text>
+                </View>
+                <Text style={[styles.bulletText, layout.isSmallScreen && styles.bulletTextSmall]}>{bullet}</Text>
               </View>
-              <Text style={styles.bulletText}>{bullet}</Text>
-            </View>
-          ))}
+            ))}
+          </View>
         </View>
 
         <Button
           mode="contained"
           onPress={handleContinue}
           style={styles.ctaButton}
-          contentStyle={styles.ctaContent}
+          contentStyle={[styles.ctaContent, layout.isSmallScreen && styles.ctaContentSmall]}
           labelStyle={styles.ctaLabel}
         >
           {CONTENT.ctaText}
@@ -81,21 +111,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.deepBlack,
     paddingHorizontal: spacing.l,
-    paddingVertical: spacing.xxl,
+    paddingTop: spacing.m,
+    paddingBottom: spacing.l,
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
   heroContainer: {
     marginHorizontal: -spacing.l, // Break out of container padding for full width
-    marginTop: -spacing.xxl, // Align with top edge
+    marginTop: 0,
     position: 'relative',
   },
   heroImage: {
     width: '100%',
-    height: 400,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.l,
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
   },
@@ -112,11 +142,11 @@ const styles = StyleSheet.create({
     ...typography.h1,
     textAlign: 'center',
     lineHeight: typography.h1.fontSize * 1.2,
-    marginBottom: spacing.l,
+    marginBottom: spacing.m,
     color: palette.white,
   },
   bulletsContainer: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.m,
   },
   bulletRow: {
     flexDirection: 'row',
@@ -134,6 +164,10 @@ const styles = StyleSheet.create({
   },
   bulletRowSpacing: {
     marginBottom: spacing.s,
+  },
+  bulletRowSmall: {
+    paddingVertical: spacing.s,
+    paddingHorizontal: spacing.m,
   },
   bulletIcon: {
     width: 32,
@@ -160,9 +194,13 @@ const styles = StyleSheet.create({
     color: typography.bodyLarge.color,
     lineHeight: typography.bodyLarge.fontSize * 1.5,
   },
+  bulletTextSmall: {
+    fontSize: 15,
+    lineHeight: 15 * 1.5,
+  },
   ctaButton: {
     borderRadius: 16,
-    marginBottom: spacing.s,
+    marginBottom: spacing.m,
     shadowColor: palette.tealPrimary,
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -172,6 +210,9 @@ const styles = StyleSheet.create({
   ctaContent: {
     paddingVertical: spacing.m,
     backgroundColor: palette.tealPrimary,
+  },
+  ctaContentSmall: {
+    paddingVertical: spacing.s,
   },
   ctaLabel: {
     ...typography.button,

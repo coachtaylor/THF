@@ -5,6 +5,8 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 export type OnboardingStackParamList = {
   WhyTransFitness: undefined;
   Disclaimer: undefined;
+  Goals: undefined;
+  QuickStart: undefined;
 };
 
 export interface OnboardingScreenProps<RouteName extends keyof OnboardingStackParamList = 'WhyTransFitness'> {

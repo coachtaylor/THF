@@ -138,9 +138,9 @@ Create a TypeScript interface file at src/types/onboarding.ts with:
 ```
 
 **Checklist**:
-- [ ] File created: `src/types/onboarding.ts`
-- [ ] Interfaces exported correctly
-- [ ] No TypeScript errors
+- [x] File created: `src/types/onboarding.ts`
+- [x] Interfaces exported correctly
+- [x] No TypeScript errors
 
 ---
 
@@ -284,14 +284,14 @@ Create a React Native screen component at src/screens/onboarding/WhyTransFitness
 ```
 
 **Checklist**:
-- [ ] File created: `src/screens/onboarding/WhyTransFitness.tsx`
-- [ ] Component renders without errors
-- [ ] Headline displays correctly
-- [ ] 3 bullets display with checkmark icons
-- [ ] "Get Started" button navigates to Disclaimer
-- [ ] "Skip" link navigates to Disclaimer
-- [ ] Styling looks clean and modern
-- [ ] Hero image placeholder shows (create dummy asset if needed)
+- [x] File created: `src/screens/onboarding/WhyTransFitness.tsx`
+- [x] Component renders without errors
+- [x] Headline displays correctly
+- [x] 3 bullets display with checkmark icons
+- [x] "Get Started" button navigates to Disclaimer
+- [x] "Skip" link navigates to Disclaimer
+- [x] Styling looks clean and modern
+- [x] Hero image placeholder shows (create dummy asset if needed)
 
 ---
 
@@ -335,10 +335,10 @@ Update src/screens/onboarding/WhyTransFitness.tsx to:
 ```
 
 **Checklist**:
-- [ ] useProfile hook imported
-- [ ] low_sensory_mode value retrieved
-- [ ] Hero image hidden when low_sensory_mode = true
-- [ ] Component still renders correctly in both modes
+- [x] useProfile hook imported
+- [x] low_sensory_mode value retrieved
+- [x] Hero image hidden when low_sensory_mode = true
+- [x] Component still renders correctly in both modes
 
 ---
 
@@ -380,11 +380,11 @@ Create or update src/navigation/OnboardingNavigator.tsx with:
 ```
 
 **Checklist**:
-- [ ] File created: `src/navigation/OnboardingNavigator.tsx`
-- [ ] Stack navigator configured
-- [ ] WhyTransFitness screen added
-- [ ] Disclaimer screen added (placeholder OK for now)
-- [ ] Navigation works (can navigate from WhyTransFitness to Disclaimer)
+- [x] File created: `src/navigation/OnboardingNavigator.tsx`
+- [x] Stack navigator configured
+- [x] WhyTransFitness screen added
+- [x] Disclaimer screen added (placeholder OK for now)
+- [x] Navigation works (can navigate from WhyTransFitness to Disclaimer)
 
 ---
 
@@ -429,13 +429,13 @@ describe('WhyTransFitness', () => {
 
 ### US-2.1 Completion Checklist
 
-- [ ] TypeScript interfaces created
-- [ ] WhyTransFitness component created
-- [ ] Low-sensory mode support added
-- [ ] Navigation configured
+- [x] TypeScript interfaces created
+- [x] WhyTransFitness component created
+- [x] Low-sensory mode support added
+- [x] Navigation configured
 - [ ] Manual testing passed
 - [ ] (Optional) Automated tests written and passing
-- [ ] Code committed to Git
+- [x] Code committed to Git
 - [ ] Ready to move to US-2.2
 
 ---
@@ -452,126 +452,7 @@ describe('WhyTransFitness', () => {
 **File**: `src/screens/onboarding/Disclaimer.tsx`
 
 ```typescript
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Button, Checkbox } from 'react-native-paper';
-import { OnboardingScreenProps } from '../../types/onboarding';
-import { updateProfile } from '../../services/storage/profile';
-
-const DISCLAIMER_TEXT = `TransFitness provides general fitness information and is not a substitute for professional medical advice, diagnosis, or treatment.
-
-Always consult your doctor or surgeon before starting any exercise program, especially if you have had surgery or are on HRT.
-
-By using this app, you acknowledge that:
-• This is not medical advice
-• You should consult healthcare professionals before starting
-• You use this app at your own risk`;
-
-export default function Disclaimer({ navigation }: OnboardingScreenProps) {
-  const [acknowledged, setAcknowledged] = useState(false);
-
-  const handleContinue = async () => {
-    // Save disclaimer acknowledgment
-    await updateProfile({
-      disclaimer_acknowledged_at: new Date().toISOString()
-    });
-
-    // Navigate to Goals screen
-    navigation.navigate('Goals');
-  };
-
-  const handleQuickStart = () => {
-    // Navigate to Quick Start flow (US-2.3)
-    navigation.navigate('QuickStart');
-  };
-
-  return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        {/* Headline */}
-        <Text style={styles.headline}>Important: This is not medical advice</Text>
-
-        {/* Disclaimer text */}
-        <Text style={styles.disclaimerText}>{DISCLAIMER_TEXT}</Text>
-
-        {/* Checkbox */}
-        <View style={styles.checkboxContainer}>
-          <Checkbox
-            status={acknowledged ? 'checked' : 'unchecked'}
-            onPress={() => setAcknowledged(!acknowledged)}
-          />
-          <Text style={styles.checkboxLabel}>I understand and agree</Text>
-        </View>
-      </ScrollView>
-
-      {/* CTA */}
-      <View style={styles.footer}>
-        <Button
-          mode="contained"
-          onPress={handleContinue}
-          disabled={!acknowledged}
-          style={styles.continueButton}
-        >
-          Continue
-        </Button>
-
-        <Button
-          mode="text"
-          onPress={handleQuickStart}
-          style={styles.quickStartButton}
-        >
-          Quick Start (Try a 5-min workout)
-        </Button>
-      </View>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  scrollView: {
-    flex: 1,
-    padding: 24,
-  },
-  headline: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#1a1a1a',
-  },
-  disclaimerText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-    marginBottom: 24,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    color: '#333',
-    marginLeft: 8,
-  },
-  footer: {
-    padding: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  continueButton: {
-    marginBottom: 12,
-  },
-  quickStartButton: {
-    // Styles for Quick Start button
-  },
-});
-```
-
+q a
 **AI Prompt for Claude/Cursor**:
 ```
 Create src/screens/onboarding/Disclaimer.tsx with:

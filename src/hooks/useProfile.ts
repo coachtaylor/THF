@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 interface ProfileLike {
   low_sensory_mode?: boolean;
+  disclaimer_acknowledged_at?: string;
 }
 
 export function useProfile() {
