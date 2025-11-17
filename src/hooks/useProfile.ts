@@ -1,21 +1,49 @@
-import { useMemo } from 'react';
-
-interface ProfileLike {
-  low_sensory_mode?: boolean;
-  disclaimer_acknowledged_at?: string;
-}
+import { useState, useEffect } from 'react';
+import { getProfile, updateProfile as updateProfileService, Profile } from '../services/storage/profile';
 
 export function useProfile() {
-  return useMemo(
-    () => ({
-      profile: null as ProfileLike | null,
-      loading: false,
-      error: null as Error | null,
-      // Placeholder methods to be implemented with storage integration in US-2.2
-      updateProfile: async (_updates: Partial<ProfileLike>) => {},
-      refreshProfile: async () => {},
-    }),
-    []
-  );
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  async function loadProfile() {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getProfile();
+      setProfile(data);
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      console.error('Error loading profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function updateProfile(updates: Partial<Profile>) {
+    try {
+      setError(null);
+      await updateProfileService(updates);
+      await loadProfile(); // Reload profile after update
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  }
+
+  return {
+    profile,
+    loading,
+    error,
+    updateProfile,
+    refreshProfile: loadProfile,
+  };
 }
 

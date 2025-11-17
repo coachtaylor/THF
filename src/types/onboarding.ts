@@ -6,6 +6,9 @@ export type OnboardingStackParamList = {
   WhyTransFitness: undefined;
   Disclaimer: undefined;
   Goals: undefined;
+  Constraints: undefined;
+  Preferences: undefined;
+  Review: undefined;
   QuickStart: undefined;
 };
 

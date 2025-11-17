@@ -3,6 +3,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './src/navigation/AppNavigator';
 import { initDatabase } from './src/utils/database';
+import { initProfileStorage } from './src/services/storage/profile';
 import { theme } from './src/theme';
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
     async function setup() {
       try {
         await initDatabase();
+        await initProfileStorage();
         console.log('✅ App setup complete');
         setDbInitialized(true);
       } catch (error) {

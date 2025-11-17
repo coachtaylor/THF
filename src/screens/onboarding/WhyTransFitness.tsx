@@ -16,6 +16,7 @@ const CONTENT: WhyTransFitnessContent = {
     'Privacy-first: your data stays on your device',
   ],
   ctaText: 'Get Started',
+  skipText: 'Skip',
 };
 
 export default function WhyTransFitness({ navigation }: OnboardingScreenProps) {

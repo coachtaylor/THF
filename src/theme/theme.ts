@@ -79,17 +79,17 @@ export const darkTheme = {
     backdrop: 'rgba(10, 14, 14, 0.8)',
   },
   roundness: 16,
-  fonts: {
-    ...MD3DarkTheme.fonts,
-    displayLarge: { fontFamily: 'System', fontSize: 34, fontWeight: '700', letterSpacing: 0 },
-    displayMedium: { fontFamily: 'System', fontSize: 28, fontWeight: '700', letterSpacing: 0 },
-    displaySmall: { fontFamily: 'System', fontSize: 24, fontWeight: '600', letterSpacing: 0 },
-    headlineLarge: { fontFamily: 'System', fontSize: 20, fontWeight: '600', letterSpacing: 0 },
-    bodyLarge: { fontFamily: 'System', fontSize: 17, fontWeight: '400', letterSpacing: 0 },
-    bodyMedium: { fontFamily: 'System', fontSize: 15, fontWeight: '400', letterSpacing: 0 },
-    bodySmall: { fontFamily: 'System', fontSize: 13, fontWeight: '400', letterSpacing: 0 },
-    labelLarge: { fontFamily: 'System', fontSize: 16, fontWeight: '600', letterSpacing: 0 },
-  },
+      fonts: {
+        ...MD3DarkTheme.fonts,
+        displayLarge: { fontFamily: 'System', fontSize: 34, fontWeight: '700' as const, letterSpacing: 0 },
+        displayMedium: { fontFamily: 'System', fontSize: 28, fontWeight: '700' as const, letterSpacing: 0 },
+        displaySmall: { fontFamily: 'System', fontSize: 24, fontWeight: '600' as const, letterSpacing: 0 },
+        headlineLarge: { fontFamily: 'System', fontSize: 20, fontWeight: '600' as const, letterSpacing: 0 },
+        bodyLarge: { fontFamily: 'System', fontSize: 17, fontWeight: '400' as const, letterSpacing: 0 },
+        bodyMedium: { fontFamily: 'System', fontSize: 15, fontWeight: '400' as const, letterSpacing: 0 },
+        bodySmall: { fontFamily: 'System', fontSize: 13, fontWeight: '400' as const, letterSpacing: 0 },
+        labelLarge: { fontFamily: 'System', fontSize: 16, fontWeight: '600' as const, letterSpacing: 0 },
+      },
 };
 
 // Default theme (dark)
