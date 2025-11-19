@@ -1,29 +1,8 @@
+// Use manual mock from __mocks__ directory (avoids JSON import issues)
+jest.mock('../../data/exercises');
+
 import { generateQuickStartPlan, generatePlan } from '../../services/planGenerator';
 import { mockProfile } from '../mocks';
-
-// Mock exercise library
-jest.mock('../../data/exercises', () => ({
-  exerciseLibrary: [
-    {
-      id: '1',
-      name: 'Bodyweight Squat',
-      category: 'lower_body',
-      equipment: ['bodyweight'],
-      binder_aware: true,
-      heavy_binding_safe: true,
-      tags: ['lower_body'],
-    },
-    {
-      id: '2',
-      name: 'Plank',
-      category: 'core',
-      equipment: ['bodyweight'],
-      binder_aware: true,
-      heavy_binding_safe: true,
-      tags: ['core'],
-    },
-  ],
-}));
 
 describe('planGenerator', () => {
   describe('generateQuickStartPlan', () => {
@@ -106,6 +85,38 @@ describe('planGenerator', () => {
       });
 
       expect(plan.goalWeighting).toEqual(mockProfile.goal_weighting);
+    });
+
+    it('generates each day with 4 time variants (5, 15, 30, 45)', async () => {
+      const plan = await generatePlan({
+        profile: mockProfile,
+        blockLength: 1,
+        startDate: new Date(),
+      });
+
+      plan.days.forEach(day => {
+        expect(day.variants).toHaveProperty('5');
+        expect(day.variants).toHaveProperty('15');
+        expect(day.variants).toHaveProperty('30');
+        expect(day.variants).toHaveProperty('45');
+      });
+    });
+
+    it('categorizes exercises by goal', async () => {
+      const profileWithGoals = {
+        ...mockProfile,
+        goals: ['strength'],
+      };
+
+      const plan = await generatePlan({
+        profile: profileWithGoals,
+        blockLength: 1,
+        startDate: new Date(),
+      });
+
+      // Plan should be generated successfully
+      expect(plan).toBeTruthy();
+      expect(plan.goals).toEqual(['strength']);
     });
   });
 });

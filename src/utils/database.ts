@@ -16,8 +16,11 @@ const tableStatements = [
     user_id TEXT,
     block_length INTEGER,
     start_date TEXT,
+    goals TEXT,
+    goal_weighting TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     plan_data TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    synced_at TEXT
   );`,
   `CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,

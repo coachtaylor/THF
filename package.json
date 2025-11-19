@@ -11,7 +11,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:quick": "node scripts/quick-test.js",
-    "test:types": "npx tsc --noEmit"
+    "test:types": "npx tsc --noEmit",
+    "debug:constraints": "npx tsx scripts/debug_constraints_filter.ts",
+    "check:exercises": "npx tsx scripts/check_exercises.ts"
   },
   "dependencies": {
     "@react-navigation/native": "^6.1.9",

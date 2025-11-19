@@ -9,6 +9,7 @@ import Constraints from '../screens/onboarding/intake/Constraints';
 import Preferences from '../screens/onboarding/intake/Preferences';
 import Review from '../screens/onboarding/intake/Review';
 import QuickStart from '../screens/onboarding/QuickStart';
+import PlanView from '../screens/plan/PlanView';
 
 const Stack = createStackNavigator<OnboardingStackParamList>();
 
@@ -26,6 +27,7 @@ export default function OnboardingNavigator() {
       <Stack.Screen name="Preferences" component={Preferences} />
       <Stack.Screen name="Review" component={Review} />
       <Stack.Screen name="QuickStart" component={QuickStart} />
+      <Stack.Screen name="PlanView" component={PlanView} />
     </Stack.Navigator>
   );
 }

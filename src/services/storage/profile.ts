@@ -8,9 +8,11 @@ const profileDb = SQLite.openDatabaseSync('transfitness.db');
 export interface Profile {
   id: string;
   email?: string;
+  fitness_level?: 'beginner' | 'intermediate' | 'advanced';
   goals?: string[];
   goal_weighting?: { primary: number; secondary: number };
-  equipment?: string[];
+  equipment?: string[]; // Canonical equipment categories (bodyweight, dumbbells, bands, kettlebell)
+  equipment_raw?: string[]; // Raw equipment labels from database (e.g. "BODY WEIGHT", "DUMBBELL", "CABLE MACHINE")
   constraints?: string[];
   surgery_flags?: string[];
   surgeon_cleared?: boolean;
@@ -22,6 +24,10 @@ export interface Profile {
   disclaimer_acknowledged_at?: string;
   synced_at?: string;
   created_at?: string;
+  // Onboarding fields for workout generation and trans-specific tips
+  why_flags?: string[]; // Examples: 'support_transition', 'reduce_dysphoria', 'build_strength', 'move_more'
+  body_focus_prefer?: string[]; // Allowed: 'legs', 'glutes', 'back', 'core', 'shoulders', 'arms', 'chest'
+  body_focus_soft_avoid?: string[]; // Allowed: 'chest', 'hips', 'glutes', 'abdomen', 'shoulders'
 }
 
 // Ensure profiles table exists with correct schema (stores full profile as JSON)
@@ -182,4 +188,3 @@ export async function syncProfileToCloud(profile: Profile): Promise<void> {
     throw error;
   }
 }
-

@@ -5,6 +5,7 @@ import { Button } from 'react-native-paper';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
 import { generatePlan } from '../../../services/planGenerator';
+import { savePlan } from '../../../services/storage/plan';
 import { Plan } from '../../../types';
 import { palette, spacing, typography } from '../../../theme';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
@@ -43,6 +44,18 @@ const HRT_LABELS: Record<string, string> = {
   estrogen: 'Estrogen',
 };
 
+const BODY_REGION_LABELS: Record<string, string> = {
+  legs: 'Legs',
+  glutes: 'Glutes',
+  back: 'Back',
+  core: 'Core',
+  shoulders: 'Shoulders',
+  arms: 'Arms',
+  chest: 'Chest',
+  hips: 'Hips',
+  abdomen: 'Abdomen',
+};
+
 export default function Review({ navigation }: OnboardingScreenProps<'Review'>) {
   const { profile } = useProfile();
   const insets = useSafeAreaInsets();
@@ -78,15 +91,12 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
 
       console.log('✅ Plan generated:', plan);
 
-      // TODO: Navigate to PlanView when it's implemented (Week 3)
-      // For now, show success message
-      // navigation.navigate('PlanView', { plan });
-      
-      // Temporary success state
-      setTimeout(() => {
-        setGenerating(false);
-        // In Week 3, this will navigate to PlanView
-      }, 2000);
+      // Save plan to storage
+      await savePlan(plan);
+
+      // Navigate to PlanView
+      setGenerating(false);
+      navigation.navigate('PlanView');
     } catch (err) {
       console.error('❌ Failed to generate plan:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate workout plan');
@@ -99,9 +109,98 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
   const constraints = profile.constraints || [];
   const surgeryFlags = profile.surgery_flags || [];
   const hrtFlags = profile.hrt_flags || [];
-  const preferredMinutes = profile.preferred_minutes || [];
+  const fitnessLevel = profile.fitness_level;
   const blockLength = profile.block_length || 1;
   const equipment = profile.equipment || [];
+  const bodyFocusPrefer = profile.body_focus_prefer || [];
+  const bodyFocusSoftAvoid = profile.body_focus_soft_avoid || [];
+  const surgeonCleared = profile.surgeon_cleared;
+  const lowSensoryMode = profile.low_sensory_mode || false;
+
+  const FITNESS_LEVEL_LABELS: Record<string, string> = {
+    beginner: 'Beginner',
+    intermediate: 'Intermediate',
+    advanced: 'Advanced',
+  };
+
+  // Helper function to format body regions
+  const formatBodyRegions = (regions: string[]): string => {
+    return regions.map((region) => BODY_REGION_LABELS[region] || region).join(', ');
+  };
+
+  // Helper function to format equipment
+  const formatEquipment = (equipment: string[]): string => {
+    return equipment.map((e) => EQUIPMENT_LABELS[e] || e).join(', ');
+  };
+
+  // Build summary items for each section
+  const goalsItems: string[] = [];
+  if (goals.length > 0) {
+    const primaryGoal = GOAL_LABELS[goals[0]] || goals[0];
+    if (goals.length > 1 && goalWeighting.secondary > 0) {
+      const secondaryGoal = GOAL_LABELS[goals[1]] || goals[1];
+      goalsItems.push(`Primary goal: ${primaryGoal} (${goalWeighting.primary}%)`);
+      goalsItems.push(`Secondary goal: ${secondaryGoal} (${goalWeighting.secondary}%)`);
+    } else {
+      goalsItems.push(`Primary goal: ${primaryGoal} (100%)`);
+    }
+  }
+
+  const bodyFocusItems: string[] = [];
+  if (bodyFocusPrefer.length > 0) {
+    bodyFocusItems.push(`We'll put extra emphasis on: ${formatBodyRegions(bodyFocusPrefer)}`);
+  }
+  if (bodyFocusSoftAvoid.length > 0) {
+    bodyFocusItems.push(`We'll go more gently with: ${formatBodyRegions(bodyFocusSoftAvoid)}`);
+  }
+  if (bodyFocusItems.length === 0) {
+    bodyFocusItems.push('No specific body focus selected.');
+  }
+
+  const safetyItems: string[] = [];
+  if (constraints.includes('binder_aware')) {
+    safetyItems.push("We'll prioritize binder-aware exercise options.");
+  }
+  if (constraints.includes('heavy_binding')) {
+    safetyItems.push("We'll be extra careful about breath and chest pressure when binding feels tight.");
+  }
+  if (constraints.includes('post_op')) {
+    safetyItems.push("We'll treat you as post-op and avoid aggressive positions until you're cleared.");
+  }
+  if (constraints.includes('no_jumping')) {
+    safetyItems.push("We'll avoid jumping and high-impact movements.");
+  }
+  if (constraints.includes('no_floor')) {
+    safetyItems.push("We'll avoid exercises that require getting onto the floor.");
+  }
+  if (surgeryFlags.includes('top_surgery')) {
+    safetyItems.push("We'll layer in tips specific to top surgery recovery where relevant.");
+  }
+  if (surgeryFlags.includes('bottom_surgery')) {
+    safetyItems.push("We'll layer in tips specific to bottom surgery and pelvic floor where relevant.");
+  }
+  if (hrtFlags.length > 0) {
+    safetyItems.push("We'll add context around training while on HRT.");
+  }
+  if (constraints.includes('post_op')) {
+    if (surgeonCleared === false) {
+      safetyItems.push("You marked that you're not cleared yet — we'll keep intensity and positions conservative.");
+    } else if (surgeonCleared === true) {
+      safetyItems.push("You marked that you've been cleared by your surgeon — we'll still avoid anything that feels sketchy, but open up more options.");
+    }
+  }
+
+  const programItems: string[] = [];
+  if (fitnessLevel) {
+    programItems.push(`Starting level: ${FITNESS_LEVEL_LABELS[fitnessLevel]}`);
+  }
+  programItems.push(`Program length: ${blockLength} week${blockLength !== 1 ? 's' : ''}`);
+  if (equipment.length > 0) {
+    programItems.push(`We'll use: ${formatEquipment(equipment)}`);
+  }
+  if (lowSensoryMode) {
+    programItems.push('Low sensory mode: ON (simpler flows and less chaos).');
+  }
 
   return (
     <View
@@ -138,96 +237,70 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
             </TouchableOpacity>
           </View>
           <View style={styles.summaryCard}>
-            {goals.length > 0 ? (
-              <>
-                <Text style={styles.summaryLabel}>Primary Goal:</Text>
-                <Text style={styles.summaryValue}>{GOAL_LABELS[goals[0]] || goals[0]}</Text>
-                {goals.length > 1 && (
-                  <>
-                    <Text style={styles.summaryLabel}>Secondary Goal:</Text>
-                    <Text style={styles.summaryValue}>{GOAL_LABELS[goals[1]] || goals[1]}</Text>
-                  </>
-                )}
-                <Text style={styles.summaryLabel}>Weighting:</Text>
-                <Text style={styles.summaryValue}>
-                  {goalWeighting.primary}% primary, {goalWeighting.secondary}% secondary
+            {goalsItems.length > 0 ? (
+              goalsItems.map((item, index) => (
+                <Text key={index} style={styles.summaryBullet}>
+                  {item}
                 </Text>
-              </>
+              ))
             ) : (
               <Text style={styles.emptyText}>No goals selected</Text>
             )}
           </View>
         </View>
 
-        {/* Constraints Section */}
+        {/* Body Focus Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Constraints</Text>
+            <Text style={styles.sectionTitle}>Body Focus</Text>
+            <TouchableOpacity onPress={() => handleEdit('Goals')} style={styles.editButton}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.summaryCard}>
+            {bodyFocusItems.map((item, index) => (
+              <Text key={index} style={styles.summaryBullet}>
+                {item}
+              </Text>
+            ))}
+          </View>
+        </View>
+
+        {/* Safety & Constraints Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Safety & Constraints</Text>
             <TouchableOpacity onPress={() => handleEdit('Constraints')} style={styles.editButton}>
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.summaryCard}>
-            {constraints.length > 0 && (
-              <>
-                <Text style={styles.summaryLabel}>General Constraints:</Text>
-                <Text style={styles.summaryValue}>
-                  {constraints.map((c) => CONSTRAINT_LABELS[c] || c).join(', ')}
+            {safetyItems.length > 0 ? (
+              safetyItems.map((item, index) => (
+                <Text key={index} style={styles.summaryBullet}>
+                  {item}
                 </Text>
-              </>
-            )}
-            {surgeryFlags.length > 0 && (
-              <>
-                <Text style={styles.summaryLabel}>Surgery History:</Text>
-                <Text style={styles.summaryValue}>
-                  {surgeryFlags.map((s) => SURGERY_LABELS[s] || s).join(', ')}
-                </Text>
-                {profile.surgeon_cleared && (
-                  <Text style={styles.summaryValue}>✓ Surgeon cleared</Text>
-                )}
-              </>
-            )}
-            {hrtFlags.length > 0 && (
-              <>
-                <Text style={styles.summaryLabel}>HRT:</Text>
-                <Text style={styles.summaryValue}>
-                  {hrtFlags.map((h) => HRT_LABELS[h] || h).join(', ')}
-                </Text>
-              </>
-            )}
-            {constraints.length === 0 && surgeryFlags.length === 0 && hrtFlags.length === 0 && (
+              ))
+            ) : (
               <Text style={styles.emptyText}>No constraints selected</Text>
             )}
           </View>
         </View>
 
-        {/* Preferences Section */}
+        {/* Program Setup Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Preferences</Text>
+            <Text style={styles.sectionTitle}>Program Setup</Text>
             <TouchableOpacity onPress={() => handleEdit('Preferences')} style={styles.editButton}>
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Workout Durations:</Text>
-            <Text style={styles.summaryValue}>
-              {preferredMinutes.length > 0 ? preferredMinutes.join(', ') + ' minutes' : 'Not selected'}
-            </Text>
-            <Text style={styles.summaryLabel}>Program Length:</Text>
-            <Text style={styles.summaryValue}>{blockLength === 1 ? '1 Week' : '4 Weeks'}</Text>
-            <Text style={styles.summaryLabel}>Available Equipment:</Text>
-            <Text style={styles.summaryValue}>
-              {equipment.length > 0
-                ? equipment.map((e) => EQUIPMENT_LABELS[e] || e).join(', ')
-                : 'Not selected'}
-            </Text>
-            {profile.low_sensory_mode && (
-              <>
-                <Text style={styles.summaryLabel}>Accessibility:</Text>
-                <Text style={styles.summaryValue}>Low Sensory Mode enabled</Text>
-              </>
-            )}
+            {programItems.map((item, index) => (
+              <Text key={index} style={styles.summaryBullet}>
+                {item}
+              </Text>
+            ))}
           </View>
         </View>
       </ScrollView>
@@ -325,6 +398,12 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: palette.lightGray,
     marginBottom: spacing.xs,
+  },
+  summaryBullet: {
+    ...typography.body,
+    color: palette.lightGray,
+    marginBottom: spacing.s,
+    lineHeight: 22,
   },
   emptyText: {
     ...typography.body,

@@ -10,6 +10,7 @@ export type OnboardingStackParamList = {
   Preferences: undefined;
   Review: undefined;
   QuickStart: undefined;
+  PlanView: undefined;
 };
 
 export interface OnboardingScreenProps<RouteName extends keyof OnboardingStackParamList = 'WhyTransFitness'> {

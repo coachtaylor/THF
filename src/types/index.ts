@@ -2,6 +2,7 @@
 
 export interface Profile {
   id: string;
+  fitnessLevel?: 'beginner' | 'intermediate' | 'advanced';
   goals: Goal[];
   goalWeighting: { primary: number; secondary: number };
   constraints: Constraint[];
