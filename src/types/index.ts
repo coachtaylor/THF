@@ -1,15 +1,15 @@
 // TransFitness - TypeScript Type Definitions
+// UPDATED: Equipment type now accepts any string from database
 
 export interface Profile {
   id: string;
-  fitnessLevel?: 'beginner' | 'intermediate' | 'advanced';
   goals: Goal[];
   goalWeighting: { primary: number; secondary: number };
   constraints: Constraint[];
   preferences: Preferences;
 }
 
-export type Goal = 'strength' | 'cardio' | 'flexibility' | 'custom';
+export type Goal = 'strength' | 'cardio' | 'flexibility' | 'mobility';
 export type Constraint = 'binder_aware' | 'heavy_binding' | 'post_op' | 'hrt';
 
 export interface Preferences {
@@ -19,7 +19,19 @@ export interface Preferences {
   lowSensoryMode: boolean;
 }
 
-export type Equipment = 'bodyweight' | 'dumbbells' | 'bands' | 'kettlebell';
+// UPDATED: Equipment type now flexible to accept any string from database
+// Includes common types for autocomplete, but accepts any string
+export type Equipment = 
+  | 'bodyweight'
+  | 'dumbbells' 
+  | 'bands'
+  | 'kettlebell'
+  | 'barbell'
+  | 'step'
+  | 'wall'
+  | 'chair'
+  | 'mat'
+  | string; // Allows any other equipment type from database
 
 export interface Exercise {
   id: string;
@@ -127,4 +139,11 @@ export interface Streak {
   lastWorkoutDate: Date | null;
   graceDaysUsedThisWeek: number;
   weekStartDate: Date;
+}
+
+// NEW: Equipment option interface for UI
+export interface EquipmentOption {
+  value: Equipment;
+  label: string;
+  count: number;
 }

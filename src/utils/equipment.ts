@@ -1,295 +1,311 @@
-/**
- * Equipment utilities for fetching and mapping equipment from Supabase
- */
+// src/utils/equipment.ts
+// CORRECTED VERSION: Shows ALL equipment including dumbbells, with exercise counts
 
 import { supabase } from './supabase';
 
-/**
- * Canonical equipment categories used by the plan generator
- */
-export type CanonicalEquipment = 'bodyweight' | 'dumbbells' | 'bands' | 'kettlebell' | 'barbell' | 'machine' | 'cable' | 'other';
+export interface EquipmentOption {
+  value: string;
+  label: string;
+  description: string;
+  canonical: string;
+  count?: number; // Added: exercise count
+}
+
+// Canonical equipment categories
+export type CanonicalEquipment =
+  | 'bodyweight'
+  | 'dumbbells'
+  | 'bands'
+  | 'kettlebell'
+  | 'barbell'
+  | 'cable'
+  | 'machine'
+  | 'step'
+  | 'other';
 
 /**
- * Map raw equipment string to canonical equipment category
- * 
- * @param rawEquipment - Raw equipment label from database (e.g. "BODY WEIGHT", "DUMBBELL", "CABLE MACHINE")
- * @returns Canonical equipment category or null if no mapping exists
+ * Maps raw equipment strings to canonical categories
+ * This determines which equipment gets shown and how they're grouped
  */
-export function mapRawEquipmentToCanonical(rawEquipment: string): CanonicalEquipment | null {
-  const normalized = rawEquipment.toLowerCase().trim();
-  
-  // Bodyweight variations
+function mapRawEquipmentToCanonical(raw: string): CanonicalEquipment | null {
+  const normalized = raw.toUpperCase().trim();
+
+  // Bodyweight
   if (
-    normalized === 'body weight' ||
-    normalized === 'bodyweight' ||
-    normalized === 'none' ||
-    normalized === 'no equipment' ||
-    normalized === ''
+    normalized.includes('BODY') ||
+    normalized.includes('BODYWEIGHT') ||
+    normalized === 'NONE'
   ) {
     return 'bodyweight';
   }
-  
-  // Dumbbell variations
+
+  // Dumbbells - FIXED: No longer filtered out!
   if (
-    normalized.includes('dumbbell') ||
-    normalized === 'db' ||
-    normalized.includes('free weight')
+    normalized.includes('DUMBBELL') ||
+    normalized.includes('DUMBELL') ||
+    normalized.includes('DB')
   ) {
     return 'dumbbells';
   }
-  
-  // Resistance band variations
+
+  // Resistance Bands
   if (
-    normalized.includes('band') ||
-    normalized.includes('resistance band') ||
-    normalized === 'resistance'
+    normalized.includes('BAND') ||
+    normalized.includes('RESISTANCE BAND')
   ) {
     return 'bands';
   }
-  
-  // Kettlebell variations
+
+  // Kettlebell
   if (
-    normalized.includes('kettlebell') ||
-    normalized === 'kb'
+    normalized.includes('KETTLEBELL') ||
+    normalized.includes('KB')
   ) {
     return 'kettlebell';
   }
-  
-  // Barbell variations
+
+  // Barbell
   if (
-    normalized.includes('barbell') ||
-    normalized === 'bb' ||
-    normalized.includes('smith') ||
-    normalized.includes('trap bar') ||
-    normalized.includes('ez bar')
+    normalized.includes('BARBELL') ||
+    normalized.includes('BB') ||
+    normalized.includes('EZ BAR') ||
+    normalized.includes('TRAP BAR')
   ) {
     return 'barbell';
   }
-  
-  // Cable machine variations
-  if (normalized.includes('cable')) {
+
+  // Cable Machine
+  if (
+    normalized.includes('CABLE') ||
+    normalized.includes('PULLEY')
+  ) {
     return 'cable';
   }
-  
-  // Machine variations
+
+  // Machines
   if (
-    normalized.includes('machine') ||
-    normalized.includes('lever') ||
-    normalized.includes('leverage')
+    normalized.includes('MACHINE') ||
+    normalized.includes('LEVER') ||
+    normalized.includes('SMITH') ||
+    normalized.includes('SLED')
   ) {
     return 'machine';
   }
-  
-  // For truly unmapped equipment, return null (will be filtered out)
-  // This prevents 'other' from matching exercises that don't have 'other' in their equipment array
-  return null;
-}
 
-/**
- * Map multiple raw equipment strings to canonical categories
- * 
- * @param rawEquipmentArray - Array of raw equipment labels
- * @returns Array of unique canonical equipment categories
- */
-export function mapRawEquipmentArrayToCanonical(rawEquipmentArray: string[]): CanonicalEquipment[] {
-  const canonicalSet = new Set<CanonicalEquipment>();
-  
-  for (const raw of rawEquipmentArray) {
-    const canonical = mapRawEquipmentToCanonical(raw);
-    if (canonical) {
-      canonicalSet.add(canonical);
-    }
-  }
-  
-  return Array.from(canonicalSet);
-}
-
-/**
- * Equipment option for UI display
- */
-export interface EquipmentOption {
-  raw: string; // Raw equipment label from database
-  canonical: CanonicalEquipment | null; // Mapped canonical category (null if no mapping)
-  label: string; // Display label (formatted from raw)
-  description: string; // Description for all equipment types
-}
-
-/**
- * Fetch all distinct raw equipment values from Supabase that have exercises in the database
- * 
- * Only returns equipment that exists in the public.exercises table with actual exercises.
- * This ensures users only see equipment options that have workouts available.
- * 
- * @returns Array of unique raw equipment strings that have exercises
- */
-export async function fetchRawEquipmentFromSupabase(): Promise<string[]> {
-  if (!supabase) {
-    console.warn('⚠️ Supabase not configured - returning default equipment');
-    return ['BODY WEIGHT'];
+  // Step/Box
+  if (
+    normalized.includes('STEP') ||
+    normalized.includes('BOX') ||
+    normalized.includes('BENCH')
+  ) {
+    return 'step';
   }
 
-  const rawEquipmentSet = new Set<string>();
+  // Other equipment (wall, chair, etc.)
+  if (
+    normalized.includes('WALL') ||
+    normalized.includes('CHAIR') ||
+    normalized.includes('MAT') ||
+    normalized.includes('FOAM') ||
+    normalized.includes('YOGA')
+  ) {
+    return 'other';
+  }
 
+  return null; // Unknown equipment
+}
+
+/**
+ * Get friendly labels for canonical equipment
+ */
+function getEquipmentLabel(canonical: CanonicalEquipment): string {
+  const labels: Record<CanonicalEquipment, string> = {
+    bodyweight: 'Bodyweight',
+    dumbbells: 'Dumbbells',
+    bands: 'Resistance Bands',
+    kettlebell: 'Kettlebell',
+    barbell: 'Barbell',
+    cable: 'Cable Machine',
+    machine: 'Weight Machines',
+    step: 'Step / Box',
+    other: 'Other Equipment',
+  };
+  return labels[canonical];
+}
+
+/**
+ * Get descriptions for equipment
+ */
+function getEquipmentDescription(canonical: CanonicalEquipment): string {
+  const descriptions: Record<CanonicalEquipment, string> = {
+    bodyweight: 'No equipment needed',
+    dumbbells: 'Free weights you hold in each hand',
+    bands: 'Elastic resistance bands',
+    kettlebell: 'Cast iron weight with handle',
+    barbell: 'Long bar with weights',
+    cable: 'Cable machine or pulley system',
+    machine: 'Weight machines at gym',
+    step: 'Step platform or box',
+    other: 'Miscellaneous equipment',
+  };
+  return descriptions[canonical];
+}
+
+/**
+ * Fetch raw equipment from Supabase and count exercises
+ */
+async function fetchRawEquipmentFromSupabase(): Promise<Map<string, number>> {
   try {
-    // Primary source: exercises table - only get equipment that has exercises
-    // Check both raw_equipment (array) and equipment (canonical array) fields
-    const { data: exercisesData, error: exercisesError } = await supabase
+    console.log('🔍 Fetching equipment from Supabase...');
+
+    const { data: exercises, error } = await supabase
       .from('exercises')
       .select('raw_equipment, equipment');
 
-    if (exercisesError) {
-      console.error('❌ Error fetching exercises for equipment:', exercisesError);
-      // Fallback to default equipment on error
-      return ['BODY WEIGHT'];
+    if (error) {
+      console.error('❌ Supabase error:', error);
+      return new Map([['BODY WEIGHT', 1]]);
     }
 
-    if (exercisesData && exercisesData.length > 0) {
-      exercisesData.forEach((row: any) => {
-        // Add raw_equipment values (array or single value)
-        if (row.raw_equipment) {
-          if (Array.isArray(row.raw_equipment)) {
-            row.raw_equipment.forEach((eq: string) => {
-              if (eq && eq.trim()) {
-                rawEquipmentSet.add(String(eq).trim().toUpperCase());
-              }
-            });
-          } else if (typeof row.raw_equipment === 'string') {
-            // Handle comma-separated string
-            const eqs = row.raw_equipment.split(',').map((e: string) => e.trim()).filter(Boolean);
-            eqs.forEach((eq: string) => {
-              rawEquipmentSet.add(eq.toUpperCase());
-            });
+    if (!exercises || exercises.length === 0) {
+      console.warn('⚠️ No exercises found in database');
+      return new Map([['BODY WEIGHT', 1]]);
+    }
+
+    console.log(`✅ Fetched ${exercises.length} exercises`);
+
+    // Count equipment occurrences
+    const equipmentCounts = new Map<string, number>();
+
+    exercises.forEach((exercise) => {
+      let equipmentList: string[] = [];
+
+      // Try raw_equipment first (preferred)
+      if (exercise.raw_equipment) {
+        if (Array.isArray(exercise.raw_equipment)) {
+          equipmentList = exercise.raw_equipment;
+        } else if (typeof exercise.raw_equipment === 'string') {
+          // Handle comma-separated or JSON string
+          try {
+            equipmentList = JSON.parse(exercise.raw_equipment);
+          } catch {
+            equipmentList = exercise.raw_equipment.split(',').map(s => s.trim());
           }
         }
-        
-        // Also check canonical equipment field as fallback for exercises without raw_equipment
-        // Map canonical back to common raw equipment labels
-        if (row.equipment && Array.isArray(row.equipment)) {
-          row.equipment.forEach((eq: string) => {
-            if (eq && eq.trim() && eq !== 'none') {
-              // Map canonical to raw if no raw_equipment exists
-              const normalized = eq.toLowerCase().trim();
-              if (normalized === 'bodyweight' || normalized === 'body weight') {
-                rawEquipmentSet.add('BODY WEIGHT');
-              } else if (normalized.includes('dumbbell')) {
-                rawEquipmentSet.add('DUMBBELL');
-              } else if (normalized.includes('band') || normalized.includes('resistance')) {
-                rawEquipmentSet.add('RESISTANCE BAND');
-              } else if (normalized.includes('kettlebell')) {
-                rawEquipmentSet.add('KETTLEBELL');
-              } else {
-                // Use canonical as-is, capitalized
-                rawEquipmentSet.add(eq.trim().toUpperCase());
-              }
-            }
-          });
+      }
+
+      // Fallback to equipment field
+      if (equipmentList.length === 0 && exercise.equipment) {
+        if (Array.isArray(exercise.equipment)) {
+          equipmentList = exercise.equipment;
+        } else if (typeof exercise.equipment === 'string') {
+          try {
+            equipmentList = JSON.parse(exercise.equipment);
+          } catch {
+            equipmentList = [exercise.equipment];
+          }
+        }
+      }
+
+      // Count each equipment type
+      equipmentList.forEach(eq => {
+        const normalized = eq.toUpperCase().trim();
+        if (normalized) {
+          const current = equipmentCounts.get(normalized) || 0;
+          equipmentCounts.set(normalized, current + 1);
         }
       });
-    }
+    });
 
-    // If we got any equipment, return it sorted
-    if (rawEquipmentSet.size > 0) {
-      const sorted = Array.from(rawEquipmentSet).sort();
-      console.log(`✅ Found ${sorted.length} equipment types with exercises: ${sorted.join(', ')}`);
-      return sorted;
-    }
+    console.log('📊 Equipment counts:', Object.fromEntries(equipmentCounts));
 
-    // Fallback to default equipment if nothing found
-    console.warn('⚠️ No equipment found in exercises table, using defaults');
-    return ['BODY WEIGHT'];
+    return equipmentCounts;
   } catch (error) {
-    console.error('❌ Error fetching raw equipment:', error);
-    // Return default equipment on error
-    return ['BODY WEIGHT'];
+    console.error('❌ Error fetching equipment:', error);
+    return new Map([['BODY WEIGHT', 1]]);
   }
 }
 
 /**
- * Get formatted equipment options for UI display
- * 
- * Only returns equipment that:
- * 1. Exists in the database (already filtered by fetchRawEquipmentFromSupabase)
- * 2. Maps to a canonical category (has workouts available)
- * 
- * @returns Array of equipment options with raw, canonical, and display labels
+ * Get equipment options for display in UI
+ * FIXED: No longer filters out dumbbells!
  */
 export async function getEquipmentOptions(): Promise<EquipmentOption[]> {
-  const rawEquipment = await fetchRawEquipmentFromSupabase();
-  
-  // Filter to only include equipment that maps to a canonical category
-  // This ensures we only show equipment that has workouts in the database
-  return rawEquipment
-    .map((raw) => {
-      const canonical = mapRawEquipmentToCanonical(raw);
-      const label = formatEquipmentLabel(raw);
-      const description = getEquipmentDescription(canonical);
+  try {
+    // Fetch raw equipment with counts
+    const rawEquipmentCounts = await fetchRawEquipmentFromSupabase();
+
+    // Group by canonical equipment and sum counts
+    const canonicalCounts = new Map<CanonicalEquipment, number>();
+
+    rawEquipmentCounts.forEach((count, rawEquipment) => {
+      const canonical = mapRawEquipmentToCanonical(rawEquipment);
       
-      return {
-        raw,
-        canonical,
-        label,
-        description, // Always included now
-      };
-    })
-    .filter((option) => {
-      // Exclude dumbbells and only include mapped equipment
-      return option.canonical !== null && option.canonical !== 'dumbbells';
+      if (canonical) {
+        const current = canonicalCounts.get(canonical) || 0;
+        canonicalCounts.set(canonical, current + count);
+      }
     });
-}
 
-/**
- * Format raw equipment label for display
- * 
- * Converts raw equipment strings like "BODY WEIGHT" or "LEVERAGE MACHINE" 
- * to formatted labels like "Bodyweight" or "Leverage Machine".
- * Special handling for "BODY WEIGHT" -> "Bodyweight" (one word).
- * 
- * @param raw - Raw equipment label (e.g. "BODY WEIGHT")
- * @returns Formatted label (e.g. "Bodyweight")
- */
-export function formatEquipmentLabel(raw: string): string {
-  const normalized = raw.trim().toUpperCase();
-  
-  // Special case: "BODY WEIGHT" -> "Bodyweight" (one word)
-  if (normalized === 'BODY WEIGHT' || normalized === 'BODYWEIGHT') {
-    return 'Bodyweight';
-  }
-  
-  // For all other equipment, capitalize each word
-  return raw
-    .toLowerCase()
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
+    console.log('📈 Canonical equipment counts:', Object.fromEntries(canonicalCounts));
 
-/**
- * Get description for canonical equipment category
- * 
- * @param canonical - Canonical equipment category
- * @returns Description string (always returns a description)
- */
-function getEquipmentDescription(canonical: CanonicalEquipment | null): string {
-  switch (canonical) {
-    case 'bodyweight':
-      return 'No equipment needed';
-    case 'dumbbells':
-      return 'Free weights';
-    case 'bands':
-      return 'Elastic bands';
-    case 'kettlebell':
-      return 'Kettlebell exercises';
-    case 'barbell':
-      return 'Barbell and bar exercises';
-    case 'machine':
-      return 'Weight machines and leverage equipment';
-    case 'cable':
-      return 'Cable machine exercises';
-    case 'other':
-      return 'Other equipment types';
-    default:
-      // For unmapped equipment, provide a generic description
-      return 'Available equipment option';
+    // Convert to options array
+    const options: EquipmentOption[] = Array.from(canonicalCounts.entries())
+      .map(([canonical, count]) => ({
+        value: canonical,
+        label: getEquipmentLabel(canonical),
+        description: getEquipmentDescription(canonical),
+        canonical,
+        count, // Include count for display
+      }))
+      .sort((a, b) => {
+        // Sort by priority
+        const priority: CanonicalEquipment[] = [
+          'bodyweight',
+          'dumbbells',
+          'bands',
+          'kettlebell',
+          'barbell',
+          'cable',
+          'machine',
+          'step',
+          'other',
+        ];
+        return priority.indexOf(a.canonical as CanonicalEquipment) - 
+               priority.indexOf(b.canonical as CanonicalEquipment);
+      });
+
+    console.log('✅ Final equipment options:', options);
+    return options;
+
+  } catch (error) {
+    console.error('❌ Error in getEquipmentOptions:', error);
+    
+    // Fallback: return bodyweight only
+    return [{
+      value: 'bodyweight',
+      label: 'Bodyweight',
+      description: 'No equipment needed',
+      canonical: 'bodyweight',
+      count: 0,
+    }];
   }
 }
 
+/**
+ * Check if equipment has exercises available
+ */
+export async function hasExercisesForEquipment(equipment: string): Promise<boolean> {
+  const options = await getEquipmentOptions();
+  const option = options.find(opt => opt.value === equipment);
+  return (option?.count ?? 0) > 0;
+}
+
+/**
+ * Get exercise count for specific equipment
+ */
+export async function getExerciseCountForEquipment(equipment: string): Promise<number> {
+  const options = await getEquipmentOptions();
+  const option = options.find(opt => opt.value === equipment);
+  return option?.count ?? 0;
+}

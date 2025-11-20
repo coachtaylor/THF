@@ -1,468 +1,316 @@
-import { Plan, Day, Workout, ExerciseInstance, Exercise } from '../types/plan';
-import { getExerciseLibrary } from '../data/exercises';
-import { Profile } from './storage/profile';
-import { filterExercisesByConstraints } from './data/exerciseFilters';
+// src/services/planGenerator.ts
+// Orchestrates generation of multi-day workout plans
+// Uses workoutGenerator.ts for individual workout generation
 
-// Generate Quick Start plan (5-min bodyweight workout)
-// Uses safe defaults for a random trans user and reuses the same filtering logic as full onboarding
-export async function generateQuickStartPlan(): Promise<Plan> {
-  // Create synthetic profile with safest assumptions for a random trans user
-  const quickStartProfile: Profile = {
-    id: 'quickstart',
-    disclaimer_acknowledged_at: new Date().toISOString(),
-    goals: ['strength'],
-    goal_weighting: { primary: 100, secondary: 0 },
-    constraints: ['binder_aware'], // default to binder safe
-    surgery_flags: [],
-    surgeon_cleared: false,
-    hrt_flags: [], // unknown
-    fitness_level: 'beginner',
-    block_length: 1,
-    equipment_raw: ['BODY WEIGHT'],
-    equipment: ['bodyweight'],
-    low_sensory_mode: true,
-  };
+import { Profile, Plan, Day, Workout } from '../types';
+import { generateWorkout, printWorkoutSummary } from './workoutGenerator';
+import { fetchAllExercises } from './exerciseService';
 
-  // Fetch exercises from Supabase
-  const exerciseLibrary = await getExerciseLibrary();
-  console.log(`📥 Loaded ${exerciseLibrary.length} exercises from library`);
+/**
+ * Generate a complete workout plan for a user
+ * Creates 7 days (1 week) or 28 days (4 weeks) based on profile.preferences.blockLength
+ * Each day has 4 workout variants (5, 15, 30, 45 minutes)
+ */
+export async function generatePlan(profile: Profile): Promise<Plan> {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🏋️ GENERATING WORKOUT PLAN');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`User ID: ${profile.id}`);
+  console.log(`Block length: ${profile.preferences.blockLength} weeks`);
+  console.log(`Goals: ${profile.goals.join(', ')}`);
+  console.log(`Equipment: ${profile.preferences.equipment.join(', ')}`);
+  console.log(`Constraints: ${profile.constraints.join(', ') || 'none'}`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  // Fetch all exercises from Supabase
+  const exercises = await fetchAllExercises();
+  console.log(`📚 Loaded ${exercises.length} exercises from database\n`);
+
+  if (exercises.length === 0) {
+    throw new Error('No exercises available. Please check your database.');
+  }
+
+  // Calculate number of days
+  const daysCount = profile.preferences.blockLength === 1 ? 7 : 28;
+  const startDate = new Date();
+
+  // Generate workouts for each day
+  const days: Day[] = [];
   
-  // Use the same filtering logic as full onboarding
-  const safeExercises = filterExercisesByConstraints(exerciseLibrary, quickStartProfile);
-  console.log(`✅ After filtering: ${safeExercises.length} safe exercises`);
-  console.log(`   Profile equipment_raw: ${quickStartProfile.equipment_raw?.join(', ') || 'none'}`);
-  console.log(`   Profile equipment: ${quickStartProfile.equipment?.join(', ') || 'none'}`);
-  
-  // Debug: Check first few exercises
-  if (exerciseLibrary.length > 0) {
-    const sample = exerciseLibrary.slice(0, 3);
-    sample.forEach(ex => {
-      console.log(`   Sample exercise: ${ex.name}`);
-      console.log(`     - rawEquipment: ${ex.rawEquipment?.join(', ') || '[]'}`);
-      console.log(`     - equipment: ${ex.equipment?.join(', ') || '[]'}`);
-      console.log(`     - binder_aware: ${ex.binder_aware}`);
-      console.log(`     - difficulty: ${ex.difficulty}`);
+  for (let i = 0; i < daysCount; i++) {
+    const dayNumber = i + 1;
+    const dayDate = new Date(startDate);
+    dayDate.setDate(startDate.getDate() + i);
+
+    console.log(`\n📅 Generating Day ${dayNumber} (${dayDate.toLocaleDateString()})`);
+    console.log('─────────────────────────────────────────');
+
+    // Generate all 4 workout variants for this day
+    const variants: Day['variants'] = {
+      5: null,   // Will be set if user has 5-min in their preferences
+      15: generateWorkout(profile, 15, exercises),
+      30: generateWorkout(profile, 30, exercises),
+      45: generateWorkout(profile, 45, exercises),
+    };
+
+    // Only generate 5-minute workout if user wants it
+    if (profile.preferences.workoutDurations.includes(5)) {
+      variants[5] = generateWorkout(profile, 5, exercises);
+    }
+
+    // Validate all workouts generated
+    const variantResults = [
+      variants[5] ? '✅ 5min' : '⏭️  5min (skipped)',
+      variants[15] ? '✅ 15min' : '❌ 15min (failed)',
+      variants[30] ? '✅ 30min' : '❌ 30min (failed)',
+      variants[45] ? '✅ 45min' : '❌ 45min (failed)',
+    ];
+    console.log(`Variants: ${variantResults.join(', ')}`);
+
+    days.push({
+      dayNumber,
+      date: dayDate,
+      variants,
     });
   }
 
-  // Safety check: If filtering removed all exercises, use all exercises as fallback
-  const exercisesToUse = safeExercises.length > 0 ? safeExercises : exerciseLibrary;
-  if (safeExercises.length === 0) {
-    console.warn('⚠️ No exercises passed filtering! Using all exercises as fallback.');
-    console.warn('   This suggests the filtering criteria may be too strict or exercises don\'t match the profile.');
-  }
-
-  // Select exercises (variety: lower body, core, upper body, cardio)
-  const selectedExercises = selectQuickStartExercises(exercisesToUse);
-  
-  if (selectedExercises.length === 0) {
-    throw new Error('No exercises available. Please check database connection and exercise data.');
-  }
-
-  // Convert to ExerciseInstances for 5-minute workout
-  const exerciseInstances: ExerciseInstance[] = selectedExercises.map((ex) => ({
-    exerciseId: ex.id,
-    sets: 1,
-    reps: 10,
-    format: 'straight_sets',
-    restSeconds: 30,
-  }));
-
-  // Create single day with 5-min variant only
-  const day: Day = {
-    dayNumber: 0,
-    date: new Date(),
-        variants: {
-          5: {
-            duration: 5,
-            exercises: exerciseInstances,
-            totalMinutes: 5,
-          },
-          15: null as any, // Not used in Quick Start
-          30: null as any,
-          45: null as any,
-        },
+  const plan: Plan = {
+    id: generatePlanId(),
+    blockLength: profile.preferences.blockLength,
+    startDate,
+    goals: profile.goals,
+    goalWeighting: profile.goalWeighting,
+    days,
   };
 
-  return {
-    id: 'quick-start',
-    blockLength: 1,
-    startDate: new Date(),
-    goals: ['strength'], // Default goal for Quick Start
-    goalWeighting: { primary: 100, secondary: 0 },
-    days: [day],
-  };
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('✅ PLAN GENERATION COMPLETE');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`Plan ID: ${plan.id}`);
+  console.log(`Total days: ${days.length}`);
+  console.log(`Total workouts: ${days.length * 4} (4 variants per day)`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  return plan;
 }
 
-// Select exercises for Quick Start (aim for 10, but work with what's available)
-function selectQuickStartExercises(exercises: Exercise[]): Exercise[] {
-  const selected: Exercise[] = [];
-
-  // Get exercises by tags (compatible with plan.ts Exercise interface)
-  const lowerBody = exercises.filter((ex) => ex.tags.includes('lower_body'));
-  const core = exercises.filter((ex) => ex.tags.includes('core'));
-  const upperBody = exercises.filter((ex) => 
-    ex.tags.includes('upper_body') || ex.tags.includes('upper_push') || ex.tags.includes('upper_pull')
-  );
-  const cardio = exercises.filter((ex) => ex.tags.includes('cardio'));
-
-  // Select up to 3 lower body exercises
-  selected.push(...lowerBody.slice(0, 3));
-
-  // Select up to 3 core exercises
-  selected.push(...core.slice(0, 3));
-
-  // Select up to 2 upper body exercises
-  selected.push(...upperBody.slice(0, 2));
-
-  // Select up to 2 cardio exercises
-  selected.push(...cardio.slice(0, 2));
-
-  // If we don't have enough exercises, fill with any available safe exercises
-  if (selected.length < 5) {
-    const remaining = exercises.filter((ex) => !selected.find((s) => s.id === ex.id));
-    selected.push(...remaining.slice(0, 5 - selected.length));
-  }
-
-  // Ensure we have at least 3 exercises (minimum for a 5-min workout)
-  if (selected.length === 0) {
-    // Fallback: use any available exercises
-    selected.push(...exercises.slice(0, Math.min(5, exercises.length)));
-  }
-
-  return selected;
-}
-
-// Generate personalized plan based on user profile
-export interface PlanGeneratorInput {
-  profile: Profile;
-  blockLength: 1 | 4;
-  startDate: Date;
-}
-
-export async function generatePlan(input: PlanGeneratorInput): Promise<Plan> {
-  const { profile, blockLength, startDate } = input;
-
-  console.log('🚀 generatePlan: Starting plan generation');
-  console.log(`   Profile goals: ${(profile.goals || []).join(', ') || 'none'}`);
-  console.log(`   Profile equipment: ${(profile.equipment || []).join(', ') || 'none'}`);
-  console.log(`   Profile equipment_raw: ${(profile.equipment_raw || []).join(', ') || 'none'}`);
-  console.log(`   Profile constraints: ${(profile.constraints || []).join(', ') || 'none'}`);
-  console.log(`   Profile fitness_level: ${profile.fitness_level || 'not set'}`);
-
-  // 1. Fetch exercises from Supabase
-  const exerciseLibrary = await getExerciseLibrary();
-  console.log(`📦 Loaded exercises from library: ${exerciseLibrary.length}`);
-
-  if (exerciseLibrary.length === 0) {
-    console.error('❌ CRITICAL: Exercise library is empty! Cannot generate plan.');
-    throw new Error('No exercises available in library. Please check database connection and exercise data.');
-  }
-
-  // 2. Calculate weekly minutes target
-  const weeklyMinutesTarget = calculateWeeklyMinutesTarget(profile);
-
-  // 3. Filter exercise library by constraints
-  console.log('🔍 Filtering exercises by constraints...');
-  let availableExercises = filterExercisesByConstraints(
-    exerciseLibrary,
-    profile
-  );
-  console.log(`✅ Exercises after filtering: ${availableExercises.length} (from ${exerciseLibrary.length} total)`);
-
-  if (availableExercises.length === 0) {
-    console.warn('⚠️ WARNING: All exercises filtered out! Using all exercises as fallback.');
-    // Use all exercises as fallback if filtering removed everything
-    availableExercises = exerciseLibrary;
-    console.log(`   Using ${availableExercises.length} exercises as fallback`);
-  }
-
-  // 4. Categorize exercises by goal
-  console.log('📋 Categorizing exercises by goals...');
-  const exercisesByGoal = categorizeExercisesByGoal(
-    availableExercises,
-    profile.goals || []
-  );
+/**
+ * Generate a plan with variety across days
+ * This is an enhanced version that ensures exercise variety across the week/month
+ */
+export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
+  const exercises = await fetchAllExercises();
   
-  // Check if we have exercises for the goals
-  const totalExercisesByGoal = Object.values(exercisesByGoal).reduce((sum, arr) => sum + arr.length, 0);
-  console.log(`📊 Total exercises categorized by goals: ${totalExercisesByGoal}`);
-  
-  // Log breakdown per goal
-  Object.entries(exercisesByGoal).forEach(([goal, exercises]) => {
-    console.log(`   Goal "${goal}": ${exercises.length} exercises`);
-  });
+  if (exercises.length === 0) {
+    throw new Error('No exercises available');
+  }
 
-  // 5. Generate days
-  const numDays = blockLength === 1 ? 7 : 28;
+  const daysCount = profile.preferences.blockLength === 1 ? 7 : 28;
+  const startDate = new Date();
   const days: Day[] = [];
 
-  for (let i = 0; i < numDays; i++) {
-    const day = generateDay(
-      i,
-      addDays(startDate, i),
-      exercisesByGoal,
-      profile,
-      weeklyMinutesTarget,
-      availableExercises // Pass as fallback
-    );
-    
-    // Debug: Check if workouts have exercises
-    const workout15 = day.variants[15];
-    if (workout15) {
-      console.log(`   Day ${i}: 15min workout has ${workout15.exercises.length} exercises`);
+  // Track which exercises have been used to ensure variety
+  const usedExerciseIds = new Set<string>();
+
+  for (let i = 0; i < daysCount; i++) {
+    const dayNumber = i + 1;
+    const dayDate = new Date(startDate);
+    dayDate.setDate(startDate.getDate() + i);
+
+    // Filter out exercises that were used in the last 2 days
+    const availableExercises = exercises.filter(ex => !usedExerciseIds.has(ex.id));
+
+    // If we've used too many exercises, reset the pool
+    if (availableExercises.length < 10) {
+      usedExerciseIds.clear();
     }
-    
-    days.push(day);
+
+    const variants: Day['variants'] = {
+      5: profile.preferences.workoutDurations.includes(5)
+        ? generateWorkout(profile, 5, availableExercises.length > 0 ? availableExercises : exercises)
+        : null,
+      15: generateWorkout(profile, 15, availableExercises.length > 0 ? availableExercises : exercises),
+      30: generateWorkout(profile, 30, availableExercises.length > 0 ? availableExercises : exercises),
+      45: generateWorkout(profile, 45, availableExercises.length > 0 ? availableExercises : exercises),
+    };
+
+    // Mark exercises as used
+    [variants[5], variants[15], variants[30], variants[45]].forEach(workout => {
+      if (workout) {
+        workout.exercises.forEach(ex => {
+          usedExerciseIds.add(ex.exerciseId);
+        });
+      }
+    });
+
+    days.push({
+      dayNumber,
+      date: dayDate,
+      variants,
+    });
   }
 
-  // 6. Balance weekly minutes (within 10% of target)
-  balanceWeeklyMinutes(days, weeklyMinutesTarget, blockLength);
-
   return {
-    id: generateId(),
-    blockLength,
+    id: generatePlanId(),
+    blockLength: profile.preferences.blockLength,
     startDate,
-    goals: profile.goals || [],
-    goalWeighting: profile.goal_weighting || { primary: 70, secondary: 30 },
-    days
+    goals: profile.goals,
+    goalWeighting: profile.goalWeighting,
+    days,
   };
 }
 
-// Calculate weekly minutes target based on user preferences
-function calculateWeeklyMinutesTarget(profile: Profile): number {
-  // Use default average of 20 minutes per workout
-  // Users can select any duration when starting a workout
-  const avgMinutes = 20;
+/**
+ * Regenerate a single day within an existing plan
+ * Useful when user wants to refresh a specific day's workouts
+ */
+export async function regenerateDay(
+  plan: Plan,
+  dayNumber: number,
+  profile: Profile
+): Promise<Day> {
+  const exercises = await fetchAllExercises();
   
-  // Assume 4 workouts per week
-  return avgMinutes * 4;
+  const existingDay = plan.days.find(d => d.dayNumber === dayNumber);
+  if (!existingDay) {
+    throw new Error(`Day ${dayNumber} not found in plan`);
+  }
+
+  console.log(`\n🔄 Regenerating Day ${dayNumber}`);
+
+  const variants: Day['variants'] = {
+    5: profile.preferences.workoutDurations.includes(5)
+      ? generateWorkout(profile, 5, exercises)
+      : null,
+    15: generateWorkout(profile, 15, exercises),
+    30: generateWorkout(profile, 30, exercises),
+    45: generateWorkout(profile, 45, exercises),
+  };
+
+  return {
+    ...existingDay,
+    variants,
+  };
 }
 
+/**
+ * Get a specific workout from a plan
+ */
+export function getWorkoutFromPlan(
+  plan: Plan,
+  dayNumber: number,
+  duration: 5 | 15 | 30 | 45
+): Workout | null {
+  const day = plan.days.find(d => d.dayNumber === dayNumber);
+  if (!day) {
+    console.error(`Day ${dayNumber} not found in plan`);
+    return null;
+  }
 
-// Categorize exercises by goal
-// Now uses the 'goal' field directly from the database instead of tag matching
-function categorizeExercisesByGoal(
-  exercises: Exercise[],
-  goals: string[]
-): Record<string, Exercise[]> {
-  const categorized: Record<string, Exercise[]> = {};
+  const workout = day.variants[duration];
+  if (!workout) {
+    console.error(`${duration}-minute workout not available for day ${dayNumber}`);
+    return null;
+  }
 
-  goals.forEach(goal => {
-    // Match exercises by their goal field from the database
-    // The goal field should match the user's selected goal value
-    const goalLower = goal.toLowerCase();
-    
-    // Filter exercises where the goal field matches (case-insensitive)
-    // Also check tags as a fallback for exercises that might not have goal set
-    categorized[goal] = exercises.filter(ex => {
-      // Primary: Check if exercise goal matches
-      const exerciseGoal = ex.tags.find(tag => tag.toLowerCase() === goalLower);
-      if (exerciseGoal) return true;
-      
-      // Fallback: Check if any tag contains the goal (for flexibility)
-      return ex.tags.some(tag => tag.toLowerCase().includes(goalLower));
-    });
-    
-    // If we have very few exercises after filtering, it means the goal matching is too restrictive
-    // Use all exercises as fallback to ensure we have enough exercises
-    if (categorized[goal].length < exercises.length * 0.1 && exercises.length > 0) {
-      console.warn(`   ⚠️ Goal "${goal}": Only ${categorized[goal].length} exercises matched (out of ${exercises.length}), using all exercises as fallback`);
-      categorized[goal] = exercises;
-    } else if (categorized[goal].length === 0 && exercises.length > 0) {
-      // If no exercises match at all, use all exercises
-      console.warn(`   ⚠️ Goal "${goal}": No exercises matched, using all exercises as fallback`);
-      categorized[goal] = exercises;
+  return workout;
+}
+
+/**
+ * Validate that a plan has all required workouts
+ */
+export function validatePlan(plan: Plan): {
+  valid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  // Check plan structure
+  if (!plan.id || !plan.startDate || !plan.days) {
+    errors.push('Plan is missing required fields');
+    return { valid: false, errors };
+  }
+
+  // Check day count
+  const expectedDays = plan.blockLength === 1 ? 7 : 28;
+  if (plan.days.length !== expectedDays) {
+    errors.push(`Expected ${expectedDays} days, found ${plan.days.length}`);
+  }
+
+  // Check each day has required workouts
+  plan.days.forEach((day, index) => {
+    if (!day.variants[15]) {
+      errors.push(`Day ${index + 1} missing 15-minute workout`);
     }
-    
-    console.log(`   Goal "${goal}": ${categorized[goal]?.length || 0} exercises`);
+    if (!day.variants[30]) {
+      errors.push(`Day ${index + 1} missing 30-minute workout`);
+    }
+    if (!day.variants[45]) {
+      errors.push(`Day ${index + 1} missing 45-minute workout`);
+    }
+
+    // Validate each workout has exercises
+    Object.entries(day.variants).forEach(([duration, workout]) => {
+      if (workout && workout.exercises.length === 0) {
+        errors.push(`Day ${index + 1}, ${duration}min workout has no exercises`);
+      }
+    });
   });
 
-  return categorized;
-}
-
-// Generate single day with 4 time variants
-function generateDay(
-  dayNumber: number,
-  date: Date,
-  exercisesByGoal: Record<string, Exercise[]>,
-  profile: Profile,
-  weeklyMinutesTarget: number,
-  allAvailableExercises?: Exercise[]
-): Day {
   return {
-    dayNumber,
-    date,
-    variants: {
-      5: generateWorkout(5, exercisesByGoal, profile, allAvailableExercises),
-      15: generateWorkout(15, exercisesByGoal, profile, allAvailableExercises),
-      30: generateWorkout(30, exercisesByGoal, profile, allAvailableExercises),
-      45: generateWorkout(45, exercisesByGoal, profile, allAvailableExercises)
-    }
+    valid: errors.length === 0,
+    errors,
   };
 }
 
-// Generate single workout for given duration
-function generateWorkout(
-  duration: 5 | 15 | 30 | 45,
-  exercisesByGoal: Record<string, Exercise[]>,
-  profile: Profile,
-  allAvailableExercises?: Exercise[]
-): Workout {
-  const goalWeighting = profile.goal_weighting || { primary: 70, secondary: 30 };
-  const goals = profile.goals || [];
+/**
+ * Print a summary of the entire plan
+ */
+export function printPlanSummary(plan: Plan): void {
+  console.log('\n╔═══════════════════════════════════════════╗');
+  console.log('║           PLAN SUMMARY                    ║');
+  console.log('╚═══════════════════════════════════════════╝');
+  console.log(`Plan ID: ${plan.id}`);
+  console.log(`Duration: ${plan.blockLength} week(s) (${plan.days.length} days)`);
+  console.log(`Start Date: ${plan.startDate.toLocaleDateString()}`);
+  console.log(`Goals: ${plan.goals.join(', ')}`);
+  console.log('');
+  console.log('Workouts per day:');
+  
+  plan.days.slice(0, 3).forEach(day => {
+    console.log(`\n  Day ${day.dayNumber} (${day.date.toLocaleDateString()}):`);
+    console.log(`    5min:  ${day.variants[5] ? `${day.variants[5].exercises.length} exercises` : 'N/A'}`);
+    console.log(`    15min: ${day.variants[15] ? `${day.variants[15].exercises.length} exercises` : 'N/A'}`);
+    console.log(`    30min: ${day.variants[30] ? `${day.variants[30].exercises.length} exercises` : 'N/A'}`);
+    console.log(`    45min: ${day.variants[45] ? `${day.variants[45].exercises.length} exercises` : 'N/A'}`);
+  });
 
-  // Calculate number of exercises based on duration
-  const numExercises = duration === 5 ? 5 : duration === 15 ? 8 : duration === 30 ? 12 : 15;
-
-  // SAFE FALLBACK: If exercisesByGoal is empty but we have filtered exercises, use those
-  const totalExercisesByGoal = Object.values(exercisesByGoal).reduce((sum, arr) => sum + arr.length, 0);
-  if (totalExercisesByGoal === 0 && allAvailableExercises && allAvailableExercises.length > 0) {
-    console.warn(`⚠️ generateWorkout (${duration}min): exercisesByGoal is empty, using ${allAvailableExercises.length} filtered exercises as fallback`);
-    const uniqueAvailable = allAvailableExercises.filter((ex, index, self) =>
-      index === self.findIndex(e => e.id === ex.id)
-    );
-    const selectedExercises = uniqueAvailable.slice(0, Math.min(numExercises, uniqueAvailable.length));
-    
-    const exerciseInstances: ExerciseInstance[] = selectedExercises.map(ex => ({
-      exerciseId: ex.id,
-      sets: duration === 5 ? 1 : duration === 15 ? 2 : 3,
-      reps: 10,
-      format: 'straight_sets',
-      restSeconds: 30
-    }));
-
-    console.log(`   ✅ ${duration}min workout (fallback): ${selectedExercises.length} exercises`);
-    
-    return {
-      duration,
-      exercises: exerciseInstances,
-      totalMinutes: duration
-    };
-  }
-
-  // Select exercises based on goal weighting
-  const primaryGoal = goals[0];
-  const secondaryGoal = goals[1];
-
-  const primaryCount = Math.round(numExercises * (goalWeighting.primary / 100));
-  const secondaryCount = numExercises - primaryCount;
-
-  const selectedExercises: Exercise[] = [];
-
-  // Select primary goal exercises
-  const primaryExercises = exercisesByGoal[primaryGoal] || [];
-  if (primaryExercises.length > 0) {
-    selectedExercises.push(...selectRandomExercises(primaryExercises, primaryCount));
-  }
-
-  // Select secondary goal exercises
-  if (secondaryGoal) {
-    const secondaryExercises = exercisesByGoal[secondaryGoal] || [];
-    if (secondaryExercises.length > 0) {
-      selectedExercises.push(...selectRandomExercises(secondaryExercises, secondaryCount));
-    }
-  }
-
-  // If we don't have enough exercises, fill with any available exercises from all goals
-  if (selectedExercises.length < numExercises) {
-    const allGoalExercises: Exercise[] = [];
-    Object.values(exercisesByGoal).forEach(exList => {
-      allGoalExercises.push(...exList);
-    });
-    // Remove duplicates
-    const uniqueExercises = allGoalExercises.filter((ex, index, self) =>
-      index === self.findIndex(e => e.id === ex.id)
-    );
-    const remaining = uniqueExercises.filter(ex => !selectedExercises.find(s => s.id === ex.id));
-    if (remaining.length > 0) {
-      selectedExercises.push(...selectRandomExercises(remaining, numExercises - selectedExercises.length));
-    }
-  }
-
-  // Last resort: If still no exercises, use all exercises from all goals OR fallback to allAvailableExercises
-  if (selectedExercises.length === 0) {
-    const allGoalExercises: Exercise[] = [];
-    Object.values(exercisesByGoal).forEach(exList => {
-      allGoalExercises.push(...exList);
-    });
-    // Remove duplicates
-    const uniqueAll = allGoalExercises.filter((ex, index, self) =>
-      index === self.findIndex(e => e.id === ex.id)
-    );
-    if (uniqueAll.length > 0) {
-      selectedExercises.push(...uniqueAll.slice(0, Math.min(numExercises, uniqueAll.length)));
-    } else if (allAvailableExercises && allAvailableExercises.length > 0) {
-      // Ultimate fallback: use all available exercises if exercisesByGoal is empty
-      console.warn(`⚠️ generateWorkout (${duration}min): exercisesByGoal is empty, using ${allAvailableExercises.length} filtered exercises as fallback`);
-      const uniqueAvailable = allAvailableExercises.filter((ex, index, self) =>
-        index === self.findIndex(e => e.id === ex.id)
-      );
-      selectedExercises.push(...uniqueAvailable.slice(0, Math.min(numExercises, uniqueAvailable.length)));
-    } else {
-      console.error(`❌ generateWorkout (${duration}min): No exercises available. exercisesByGoal is empty and no fallback available.`);
-    }
+  if (plan.days.length > 3) {
+    console.log(`\n  ... and ${plan.days.length - 3} more days`);
   }
   
-  // Log final result
-  if (selectedExercises.length === 0) {
-    console.error(`❌ generateWorkout: Generated workout with 0 exercises for ${duration}min`);
-  } else {
-    console.log(`   ✅ ${duration}min workout: ${selectedExercises.length} exercises`);
-  }
-
-  // Remove duplicates before converting to ExerciseInstances
-  const uniqueSelectedExercises = selectedExercises.filter((ex, index, self) =>
-    index === self.findIndex(e => e.id === ex.id)
-  );
-
-  // Convert to ExerciseInstances
-  const exerciseInstances: ExerciseInstance[] = uniqueSelectedExercises.map(ex => ({
-    exerciseId: ex.id,
-    sets: duration === 5 ? 1 : duration === 15 ? 2 : 3,
-    reps: 10,
-    format: 'straight_sets',
-    restSeconds: 30
-  }));
-
-  // Final duplicate check on exerciseId
-  const uniqueInstances = exerciseInstances.filter((inst, index, self) =>
-    index === self.findIndex(i => i.exerciseId === inst.exerciseId)
-  );
-
-  return {
-    duration,
-    exercises: uniqueInstances,
-    totalMinutes: duration
-  };
+  console.log('\n╚═══════════════════════════════════════════╝\n');
 }
 
-// Select random exercises (no duplicates)
-function selectRandomExercises(exercises: Exercise[], count: number): Exercise[] {
-  const shuffled = [...exercises].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+/**
+ * Generate a unique plan ID
+ */
+function generatePlanId(): string {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 9);
+  return `plan-${timestamp}-${random}`;
 }
 
-// Balance weekly minutes to be within 10% of target
-function balanceWeeklyMinutes(
-  days: Day[],
-  weeklyMinutesTarget: number,
-  blockLength: 1 | 4
-) {
-  // TODO: Implement balancing logic
-  // For now, just ensure total minutes is within 10% of target
-  // This is a placeholder - full implementation would adjust workout durations
-  // to balance weekly totals across weeks
+/**
+ * Calculate total workout minutes in a plan
+ */
+export function calculatePlanTotalMinutes(plan: Plan, duration: 5 | 15 | 30 | 45): number {
+  let total = 0;
+  plan.days.forEach(day => {
+    const workout = day.variants[duration];
+    if (workout) {
+      total += workout.totalMinutes;
+    }
+  });
+  return total;
 }
-
-// Helper functions
-function generateId(): string {
-  return `plan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-

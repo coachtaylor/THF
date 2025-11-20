@@ -398,6 +398,7 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
                 />
               ))}
               <BodyRegionChip
+                key="no-preference"
                 label="No preference"
                 selected={bodyFocusSoftAvoid.length === 0}
                 onPress={handleNoPreference}
