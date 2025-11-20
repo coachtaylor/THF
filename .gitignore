@@ -13,3 +13,15 @@ web-build/
 .env
 .env.local
 .DS_Store
+.env
+node_modules/
+.expo/
+.expo-shared/
+dist/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.env
+.env.local

@@ -1,0 +1,3423 @@
+[
+  {
+    "slug": "bodyweight-squat",
+    "name": "Bodyweight Squat",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      2,
+      3
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "bodyweight-squat-0c41c0a9"
+  },
+  {
+    "slug": "box-squat",
+    "name": "Box Squat",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "step"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      1,
+      3
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "box-squat-59b4a95d"
+  },
+  {
+    "slug": "wall-sit",
+    "name": "Wall Sit",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "wall"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      1,
+      2
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "wall-sit-b414c8d4"
+  },
+  {
+    "slug": "glute-bridge",
+    "name": "Glute Bridge",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      5,
+      6
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "glute-bridge-e5d3dc6e"
+  },
+  {
+    "slug": "single-leg-glute-bridge",
+    "name": "Single-Leg Glute Bridge",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      4,
+      6
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "single-leg-glute-bridge-2e6aa8f8"
+  },
+  {
+    "slug": "clamshell",
+    "name": "Clamshell",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      4,
+      5
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "clamshell-60f18148"
+  },
+  {
+    "slug": "reverse-lunge",
+    "name": "Reverse Lunge",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      8,
+      9
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "reverse-lunge-3147857a"
+  },
+  {
+    "slug": "split-squat",
+    "name": "Split Squat",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      7,
+      9
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "split-squat-2b663f45"
+  },
+  {
+    "slug": "step-up",
+    "name": "Step-Up",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "step"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      7,
+      8
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "step-up-71b470ff"
+  },
+  {
+    "slug": "calf-raise",
+    "name": "Calf Raise",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      11,
+      12
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "calf-raise-fd3cdfe8"
+  },
+  {
+    "slug": "single-leg-calf-raise",
+    "name": "Single-Leg Calf Raise",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      10,
+      12
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "single-leg-calf-raise-8e83f3cf"
+  },
+  {
+    "slug": "lateral-walk-with-band",
+    "name": "Lateral Walk with Band",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "band"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      6,
+      4
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "lateral-walk-with-band-58b2fd50"
+  },
+  {
+    "slug": "plank",
+    "name": "Plank",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      14,
+      15
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "plank-7ee85206"
+  },
+  {
+    "slug": "modified-plank-knees",
+    "name": "Modified Plank (Knees)",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      13,
+      15
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "modified-plank-knees-3ae8fde8"
+  },
+  {
+    "slug": "dead-bug",
+    "name": "Dead Bug",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      13,
+      14
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "dead-bug-6a2a653b"
+  },
+  {
+    "slug": "bird-dog",
+    "name": "Bird Dog",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      15,
+      17
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "bird-dog-b4b6b1b6"
+  },
+  {
+    "slug": "side-plank",
+    "name": "Side Plank",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      18,
+      16
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "side-plank-5352b9f8"
+  },
+  {
+    "slug": "modified-side-plank-knees",
+    "name": "Modified Side Plank (Knees)",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      17,
+      16
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "modified-side-plank-knees-f58303bf"
+  },
+  {
+    "slug": "pallof-press",
+    "name": "Pallof Press",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "band"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      16,
+      15
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "pallof-press-5b3b6bb3"
+  },
+  {
+    "slug": "hollow-body-hold",
+    "name": "Hollow Body Hold",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      15,
+      21
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "hollow-body-hold-bf992fc5"
+  },
+  {
+    "slug": "bicycle-crunch",
+    "name": "Bicycle Crunch",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      20,
+      15
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "bicycle-crunch-3f67fd62"
+  },
+  {
+    "slug": "push-up",
+    "name": "Push-Up",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      23,
+      24
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "push-up-8773bc29"
+  },
+  {
+    "slug": "modified-push-up-knees",
+    "name": "Modified Push-Up (Knees)",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      22,
+      24
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "modified-push-up-knees-c8706891"
+  },
+  {
+    "slug": "wall-push-up",
+    "name": "Wall Push-Up",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "wall"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      22,
+      23
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "wall-push-up-f30f033f"
+  },
+  {
+    "slug": "incline-push-up",
+    "name": "Incline Push-Up",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bench"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      23,
+      24
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "incline-push-up-695f710d"
+  },
+  {
+    "slug": "dumbbell-row",
+    "name": "Dumbbell Row",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      27,
+      28
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "dumbbell-row-94576964"
+  },
+  {
+    "slug": "inverted-row",
+    "name": "Inverted Row",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      26,
+      28
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "inverted-row-6e4655f7"
+  },
+  {
+    "slug": "bent-over-row",
+    "name": "Bent-Over Row",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      26,
+      27
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "bent-over-row-91692d1d"
+  },
+  {
+    "slug": "lat-pulldown",
+    "name": "Lat Pulldown",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "band"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      27,
+      26
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "lat-pulldown-0586bf56"
+  },
+  {
+    "slug": "shoulder-press",
+    "name": "Shoulder Press",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      31,
+      32
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "shoulder-press-acc6aefa"
+  },
+  {
+    "slug": "lateral-raise",
+    "name": "Lateral Raise",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      30,
+      32
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "lateral-raise-7cd0e9e3"
+  },
+  {
+    "slug": "front-raise",
+    "name": "Front Raise",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      30,
+      31
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "front-raise-be7e25f4"
+  },
+  {
+    "slug": "bicep-curl",
+    "name": "Bicep Curl",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      34,
+      35
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "bicep-curl-89ce2724"
+  },
+  {
+    "slug": "hammer-curl",
+    "name": "Hammer Curl",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      33,
+      35
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "hammer-curl-1696346f"
+  },
+  {
+    "slug": "resistance-band-curl",
+    "name": "Resistance Band Curl",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "band"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      33,
+      34
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "resistance-band-curl-b2638fc9"
+  },
+  {
+    "slug": "tricep-dip",
+    "name": "Tricep Dip",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bench"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      37,
+      38
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "tricep-dip-40591478"
+  },
+  {
+    "slug": "overhead-tricep-extension",
+    "name": "Overhead Tricep Extension",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      36,
+      38
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "overhead-tricep-extension-de5b8520"
+  },
+  {
+    "slug": "tricep-kickback",
+    "name": "Tricep Kickback",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      36,
+      37
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "tricep-kickback-a03e8647"
+  },
+  {
+    "slug": "chest-fly-dumbbell",
+    "name": "Chest Fly (Dumbbell)",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db",
+      "bench"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      40,
+      24
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "chest-fly-dumbbell-1b5e300f"
+  },
+  {
+    "slug": "standing-chest-fly-band",
+    "name": "Standing Chest Fly (Band)",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "band"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      39,
+      24
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "standing-chest-fly-band-cae5b567"
+  },
+  {
+    "slug": "face-pull",
+    "name": "Face Pull",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "band"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      26,
+      28
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "face-pull-ef59f388"
+  },
+  {
+    "slug": "reverse-fly",
+    "name": "Reverse Fly",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      41,
+      26
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "reverse-fly-62240fb8"
+  },
+  {
+    "slug": "superman-hold",
+    "name": "Superman Hold",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      16,
+      44
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "superman-hold-969bac72"
+  },
+  {
+    "slug": "back-extension",
+    "name": "Back Extension",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bench"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      43,
+      16
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "back-extension-83410a02"
+  },
+  {
+    "slug": "good-morning",
+    "name": "Good Morning",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      46,
+      4
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "good-morning-06e33623"
+  },
+  {
+    "slug": "romanian-deadlift",
+    "name": "Romanian Deadlift",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      45,
+      4
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "romanian-deadlift-302ec5a5"
+  },
+  {
+    "slug": "jumping-jack",
+    "name": "Jumping Jack",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      48,
+      49
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "jumping-jack-e74e61d7"
+  },
+  {
+    "slug": "step-out-jack",
+    "name": "Step-Out Jack",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      47,
+      49
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "step-out-jack-dd88f4fd"
+  },
+  {
+    "slug": "high-knees",
+    "name": "High Knees",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      50,
+      48
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "high-knees-0f56d32e"
+  },
+  {
+    "slug": "marching-in-place",
+    "name": "Marching in Place",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": false,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      49,
+      48
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "marching-in-place-212eb80e"
+  },
+  {
+    "slug": "mountain-climber",
+    "name": "Mountain Climber",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      52,
+      48
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "mountain-climber-c50907e3"
+  },
+  {
+    "slug": "plank-shoulder-tap",
+    "name": "Plank Shoulder Tap",
+    "pattern": "core",
+    "goal": "conditioning",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      51,
+      14
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "plank-shoulder-tap-1fc3d108"
+  },
+  {
+    "slug": "burpee",
+    "name": "Burpee",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      54,
+      48
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "burpee-5497ae46"
+  },
+  {
+    "slug": "squat-thrust",
+    "name": "Squat Thrust",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      53,
+      48
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "squat-thrust-79a74ff2"
+  },
+  {
+    "slug": "inchworm",
+    "name": "Inchworm",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      56,
+      45
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "inchworm-55d869da"
+  },
+  {
+    "slug": "walkout-to-plank",
+    "name": "Walkout to Plank",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      55,
+      14
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "walkout-to-plank-1a9ec713"
+  },
+  {
+    "slug": "bear-crawl",
+    "name": "Bear Crawl",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": true,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      16,
+      58
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "bear-crawl-08076afe"
+  },
+  {
+    "slug": "crab-walk",
+    "name": "Crab Walk",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "bodyweight"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      57,
+      4
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "crab-walk-d7824962"
+  },
+  {
+    "slug": "farmer-s-carry",
+    "name": "Farmer's Carry",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      60,
+      1
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "farmer-s-carry-db1a78bd"
+  },
+  {
+    "slug": "suitcase-carry",
+    "name": "Suitcase Carry",
+    "pattern": "mobility",
+    "goal": "mobility",
+    "equipment": [
+      "db"
+    ],
+    "difficulty": "beginner",
+    "binder_aware": false,
+    "pelvic_floor_safe": true,
+    "contraindications": [],
+    "cue_primary": "Neutral ribs, long neck, easy breath.",
+    "cues": [
+      "Exhale as you work",
+      "Keep range comfortable",
+      "Ribs quiet"
+    ],
+    "breathing": "Exhale on exertion. Avoid breath holding.",
+    "coaching_points": [
+      "Stable base",
+      "Controlled tempo",
+      "Comfortable range"
+    ],
+    "common_errors": [
+      "Shrugging",
+      "Rushing tempo",
+      "Overextending"
+    ],
+    "progressions": [
+      "Add reps",
+      "Slow tempo 3-1-3",
+      "Pause at peak"
+    ],
+    "regressions": [
+      "Reduce range",
+      "Use support",
+      "Decrease load/band tension"
+    ],
+    "swaps": [
+      59,
+      1
+    ],
+    "rep_5min": "2\u00d730\u201360s or 2\u00d78 @RPE 7",
+    "rep_15min": "3\u00d78\u201312, rest 45s",
+    "rep_30min": "4\u00d78\u201310, rest 60s + iso 2\u00d730s",
+    "rep_45min": "5\u00d76\u201310, rest 60\u201375s + finisher",
+    "version": "1.0.0",
+    "last_reviewed_at": "2025-11-13",
+    "reviewer": "TransFitness v1 Editorial",
+    "media": {
+      "video": null,
+      "thumb": null,
+      "alt_text": ""
+    },
+    "_seed_id": "suitcase-carry-90dd3c2d"
+  }
+]
