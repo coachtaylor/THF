@@ -35,6 +35,10 @@ interface SupabaseExerciseRow {
   binder_aware_source: string;
   pelvic_floor_source: string;
   flags_reviewed: boolean;
+  // NEW: Body region and muscle targeting fields
+  target_muscles: string | null;
+  secondary_muscles: string | null;
+  raw_equipment: string | null;
 }
 
 /**
@@ -86,14 +90,92 @@ function inferPressureLevel(
   if (!binderAware) {
     return 'high'; // Not safe for binders = high pressure
   }
-  
+
   if (difficulty === 'beginner') {
     return 'low';
   } else if (difficulty === 'intermediate') {
     return 'medium';
   }
-  
+
   return 'high';
+}
+
+/**
+ * Infer body region tags from pattern and muscle groups
+ * Maps database fields to user-facing body focus selections
+ */
+function inferBodyRegionTags(
+  pattern: string,
+  targetMuscles: string | null,
+  secondaryMuscles: string | null
+): string[] {
+  const tags: string[] = [];
+
+  // Pattern-based inference
+  const patternLower = pattern.toLowerCase();
+
+  // Lower body patterns
+  if (['squat', 'lunge', 'hinge', 'gait'].includes(patternLower)) {
+    tags.push('lower_body', 'legs');
+  }
+
+  // Upper body patterns
+  if (patternLower === 'push') {
+    tags.push('upper_body', 'upper_push');
+  }
+  if (patternLower === 'pull') {
+    tags.push('upper_body', 'upper_pull');
+  }
+
+  // Core
+  if (patternLower === 'core') {
+    tags.push('core', 'abdomen');
+  }
+
+  // Cardio/conditioning
+  if (patternLower === 'conditioning') {
+    tags.push('cardio', 'full_body');
+  }
+
+  // Carry
+  if (patternLower === 'carry') {
+    tags.push('core', 'full_body');
+  }
+
+  // Muscle-based inference
+  const muscles = `${targetMuscles || ''} ${secondaryMuscles || ''}`.toLowerCase();
+
+  // Specific body parts from target_muscles
+  if (muscles.includes('quad') || muscles.includes('hamstring')) {
+    tags.push('legs');
+  }
+  if (muscles.includes('glute')) {
+    tags.push('glutes');
+  }
+  if (muscles.includes('pectoral') || muscles.includes('chest')) {
+    tags.push('chest');
+  }
+  if (muscles.includes('delt') || muscles.includes('shoulder')) {
+    tags.push('shoulders');
+  }
+  if (muscles.includes('bicep') || muscles.includes('tricep') || muscles.includes('forearm')) {
+    tags.push('arms');
+  }
+  if (muscles.includes('lat') || muscles.includes('trap') || muscles.includes('upper back') || muscles.includes('spine')) {
+    tags.push('back');
+  }
+  if (muscles.includes('abs') || muscles.includes('oblique') || muscles.includes('core')) {
+    tags.push('core', 'abdomen');
+  }
+  if (muscles.includes('hip') || muscles.includes('pelvis') || muscles.includes('adduct') || muscles.includes('abduct')) {
+    tags.push('hips');
+  }
+  if (muscles.includes('calves') || muscles.includes('calf')) {
+    tags.push('legs', 'lower_legs');
+  }
+
+  // Deduplicate tags
+  return [...new Set(tags)];
 }
 
 /**
@@ -103,7 +185,14 @@ export function mapSupabaseExercise(raw: SupabaseExerciseRow): Exercise {
   const equipmentArray = safeJsonParse<string[]>(raw.equipment, []);
   const cuesArray = safeJsonParse<string[]>(raw.cues, []);
   const swapsArray = safeJsonParse<string[]>(raw.swaps, []);
-  
+
+  // Generate body region tags from pattern + muscles
+  const bodyRegionTags = inferBodyRegionTags(
+    raw.pattern,
+    raw.target_muscles,
+    raw.secondary_muscles
+  );
+
   return {
     id: raw.id.toString(),
     name: raw.name,
@@ -117,8 +206,8 @@ export function mapSupabaseExercise(raw: SupabaseExerciseRow): Exercise {
     neutral_cues: [raw.cue_primary, ...cuesArray].filter(Boolean),
     breathing_cues: raw.breathing ? [raw.breathing] : [],
     trans_notes: {
-      binder: raw.binder_aware 
-        ? 'Safe for binder use - minimal chest compression' 
+      binder: raw.binder_aware
+        ? 'Safe for binder use - minimal chest compression'
         : undefined,
       pelvic_floor: raw.pelvic_floor_safe
         ? 'Pelvic floor aware - gentle engagement cues'
@@ -130,11 +219,18 @@ export function mapSupabaseExercise(raw: SupabaseExerciseRow): Exercise {
     })),
     videoUrl: '', // Not in CSV, add later
     tags: [
+      // Core attributes
       raw.difficulty,
       raw.pattern,
       raw.goal,
+      // Equipment
       ...equipmentArray,
-    ].filter(Boolean),
+      // Body regions (NEW!)
+      ...bodyRegionTags,
+      // Muscle groups (NEW!)
+      raw.target_muscles,
+      raw.secondary_muscles,
+    ].filter(Boolean) as string[],
   };
 }
 

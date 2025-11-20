@@ -4,7 +4,8 @@
 import { supabase } from './supabase';
 
 export interface EquipmentOption {
-  value: string;
+  raw: string; // Raw equipment string from database (e.g., "BODY WEIGHT", "DUMBBELLS")
+  value: string; // Canonical value (same as canonical for backwards compatibility)
   label: string;
   description: string;
   canonical: string;
@@ -21,6 +22,10 @@ export type CanonicalEquipment =
   | 'cable'
   | 'machine'
   | 'step'
+  | 'medicine_ball'
+  | 'stability_ball'
+  | 'rope'
+  | 'roller'
   | 'other';
 
 /**
@@ -101,6 +106,32 @@ function mapRawEquipmentToCanonical(raw: string): CanonicalEquipment | null {
     return 'step';
   }
 
+  // Medicine Ball
+  if (normalized.includes('MEDICINE BALL')) {
+    return 'medicine_ball';
+  }
+
+  // Stability Ball (includes BOSU BALL)
+  if (
+    normalized.includes('STABILITY BALL') ||
+    normalized.includes('BOSU')
+  ) {
+    return 'stability_ball';
+  }
+
+  // Rope
+  if (normalized.includes('ROPE')) {
+    return 'rope';
+  }
+
+  // Roller (includes wheel roller)
+  if (
+    normalized.includes('ROLLER') ||
+    normalized.includes('WHEEL')
+  ) {
+    return 'roller';
+  }
+
   // Other equipment (wall, chair, etc.)
   if (
     normalized.includes('WALL') ||
@@ -128,9 +159,32 @@ function getEquipmentLabel(canonical: CanonicalEquipment): string {
     cable: 'Cable Machine',
     machine: 'Weight Machines',
     step: 'Step / Box',
+    medicine_ball: 'Medicine Ball',
+    stability_ball: 'Stability Ball',
+    rope: 'Rope',
+    roller: 'Foam Roller',
     other: 'Other Equipment',
   };
   return labels[canonical];
+}
+
+/**
+ * Format equipment value into display label (exported for UI components)
+ */
+export function formatEquipmentLabel(equipment: string): string {
+  const normalized = equipment.toLowerCase().trim();
+
+  // Map to canonical and get label
+  const canonical = mapRawEquipmentToCanonical(normalized.toUpperCase());
+  if (canonical) {
+    return getEquipmentLabel(canonical);
+  }
+
+  // Fallback: capitalize first letter of each word
+  return equipment
+    .split(/[\s_-]+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
 /**
@@ -146,6 +200,10 @@ function getEquipmentDescription(canonical: CanonicalEquipment): string {
     cable: 'Cable machine or pulley system',
     machine: 'Weight machines at gym',
     step: 'Step platform or box',
+    medicine_ball: 'Weighted ball for throwing and core work',
+    stability_ball: 'Large inflatable ball for balance training',
+    rope: 'Jump rope or battle rope',
+    roller: 'Foam roller or ab wheel',
     other: 'Miscellaneous equipment',
   };
   return descriptions[canonical];
@@ -227,6 +285,28 @@ async function fetchRawEquipmentFromSupabase(): Promise<Map<string, number>> {
 }
 
 /**
+ * Get a representative raw equipment string for a canonical category
+ */
+function getRepresentativeRawEquipment(canonical: CanonicalEquipment): string {
+  const rawMap: Record<CanonicalEquipment, string> = {
+    bodyweight: 'BODY WEIGHT',
+    dumbbells: 'DUMBBELLS',
+    bands: 'BANDS',
+    kettlebell: 'KETTLEBELL',
+    barbell: 'BARBELL',
+    cable: 'CABLE',
+    machine: 'LEVERAGE MACHINE',
+    step: 'BENCH',
+    medicine_ball: 'MEDICINE BALL',
+    stability_ball: 'STABILITY BALL',
+    rope: 'ROPE',
+    roller: 'ROLLER',
+    other: 'WALL',
+  };
+  return rawMap[canonical];
+}
+
+/**
  * Get equipment options for display in UI
  * FIXED: No longer filters out dumbbells!
  */
@@ -236,14 +316,24 @@ export async function getEquipmentOptions(): Promise<EquipmentOption[]> {
     const rawEquipmentCounts = await fetchRawEquipmentFromSupabase();
 
     // Group by canonical equipment and sum counts
+    // Also track the most common raw equipment string for each canonical category
     const canonicalCounts = new Map<CanonicalEquipment, number>();
+    const canonicalToRaw = new Map<CanonicalEquipment, Map<string, number>>();
 
     rawEquipmentCounts.forEach((count, rawEquipment) => {
       const canonical = mapRawEquipmentToCanonical(rawEquipment);
-      
+
       if (canonical) {
+        // Update total count
         const current = canonicalCounts.get(canonical) || 0;
         canonicalCounts.set(canonical, current + count);
+
+        // Track raw equipment variants for this canonical
+        if (!canonicalToRaw.has(canonical)) {
+          canonicalToRaw.set(canonical, new Map());
+        }
+        const rawMap = canonicalToRaw.get(canonical)!;
+        rawMap.set(rawEquipment, count);
       }
     });
 
@@ -251,15 +341,28 @@ export async function getEquipmentOptions(): Promise<EquipmentOption[]> {
 
     // Convert to options array
     const options: EquipmentOption[] = Array.from(canonicalCounts.entries())
-      .map(([canonical, count]) => ({
-        value: canonical,
-        label: getEquipmentLabel(canonical),
-        description: getEquipmentDescription(canonical),
-        canonical,
-        count, // Include count for display
-      }))
+      .map(([canonical, count]) => {
+        // Find the most common raw equipment string for this canonical category
+        const rawVariants = canonicalToRaw.get(canonical);
+        let mostCommonRaw = getRepresentativeRawEquipment(canonical);
+
+        if (rawVariants && rawVariants.size > 0) {
+          // Get the raw equipment with the highest count
+          const sorted = Array.from(rawVariants.entries()).sort((a, b) => b[1] - a[1]);
+          mostCommonRaw = sorted[0][0];
+        }
+
+        return {
+          raw: mostCommonRaw,
+          value: canonical,
+          label: getEquipmentLabel(canonical),
+          description: getEquipmentDescription(canonical),
+          canonical,
+          count, // Include count for display
+        };
+      })
       .sort((a, b) => {
-        // Sort by priority
+        // Sort by priority (common → specialized → other)
         const priority: CanonicalEquipment[] = [
           'bodyweight',
           'dumbbells',
@@ -269,9 +372,13 @@ export async function getEquipmentOptions(): Promise<EquipmentOption[]> {
           'cable',
           'machine',
           'step',
+          'medicine_ball',
+          'stability_ball',
+          'rope',
+          'roller',
           'other',
         ];
-        return priority.indexOf(a.canonical as CanonicalEquipment) - 
+        return priority.indexOf(a.canonical as CanonicalEquipment) -
                priority.indexOf(b.canonical as CanonicalEquipment);
       });
 
@@ -280,9 +387,10 @@ export async function getEquipmentOptions(): Promise<EquipmentOption[]> {
 
   } catch (error) {
     console.error('❌ Error in getEquipmentOptions:', error);
-    
+
     // Fallback: return bodyweight only
     return [{
+      raw: 'BODY WEIGHT',
       value: 'bodyweight',
       label: 'Bodyweight',
       description: 'No equipment needed',
@@ -308,4 +416,16 @@ export async function getExerciseCountForEquipment(equipment: string): Promise<n
   const options = await getEquipmentOptions();
   const option = options.find(opt => opt.value === equipment);
   return option?.count ?? 0;
+}
+
+/**
+ * Map an array of raw equipment strings to canonical categories
+ */
+export function mapRawEquipmentArrayToCanonical(rawEquipment: string[]): CanonicalEquipment[] {
+  const canonical = rawEquipment
+    .map(raw => mapRawEquipmentToCanonical(raw))
+    .filter((c): c is CanonicalEquipment => c !== null);
+
+  // Deduplicate
+  return Array.from(new Set(canonical));
 }

@@ -2,7 +2,8 @@
 // Orchestrates generation of multi-day workout plans
 // Uses workoutGenerator.ts for individual workout generation
 
-import { Profile, Plan, Day, Workout } from '../types';
+import { Plan, Day, Workout, Goal } from '../types';
+import { Profile } from './storage/profile';
 import { generateWorkout, printWorkoutSummary } from './workoutGenerator';
 import { fetchAllExercises } from './exerciseService';
 
@@ -16,10 +17,10 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
   console.log('🏋️ GENERATING WORKOUT PLAN');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log(`User ID: ${profile.id}`);
-  console.log(`Block length: ${profile.preferences.blockLength} weeks`);
-  console.log(`Goals: ${profile.goals.join(', ')}`);
-  console.log(`Equipment: ${profile.preferences.equipment.join(', ')}`);
-  console.log(`Constraints: ${profile.constraints.join(', ') || 'none'}`);
+  console.log(`Block length: ${profile.block_length || 1} weeks`);
+  console.log(`Goals: ${profile.goals?.join(', ') || 'none'}`);
+  console.log(`Equipment: ${profile.equipment?.join(', ') || 'none'}`);
+  console.log(`Constraints: ${profile.constraints?.join(', ') || 'none'}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   // Fetch all exercises from Supabase
@@ -31,12 +32,14 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
   }
 
   // Calculate number of days
-  const daysCount = profile.preferences.blockLength === 1 ? 7 : 28;
+  const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
   const startDate = new Date();
 
-  // Generate workouts for each day
+  // Generate workouts for each day with variety tracking
   const days: Day[] = [];
-  
+  const usedExerciseIds = new Set<string>();
+  const VARIETY_WINDOW = 3; // Don't reuse exercises for 3 days
+
   for (let i = 0; i < daysCount; i++) {
     const dayNumber = i + 1;
     const dayDate = new Date(startDate);
@@ -45,17 +48,49 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     console.log(`\n📅 Generating Day ${dayNumber} (${dayDate.toLocaleDateString()})`);
     console.log('─────────────────────────────────────────');
 
+    // Filter out recently used exercises (last 3 days)
+    const availableExercises = exercises.filter(ex => !usedExerciseIds.has(ex.id));
+
+    // If we've filtered out too many, reset the used set to avoid running out
+    const exercisesToUse = availableExercises.length >= 10 ? availableExercises : exercises;
+
+    if (availableExercises.length < exercises.length) {
+      console.log(`🔄 Variety filter: ${exercises.length - availableExercises.length} exercises excluded from recent days`);
+    }
+
     // Generate all 4 workout variants for this day
     const variants: Day['variants'] = {
       5: null,   // Will be set if user has 5-min in their preferences
-      15: generateWorkout(profile, 15, exercises),
-      30: generateWorkout(profile, 30, exercises),
-      45: generateWorkout(profile, 45, exercises),
+      15: generateWorkout(profile, 15, exercisesToUse),
+      30: generateWorkout(profile, 30, exercisesToUse),
+      45: generateWorkout(profile, 45, exercisesToUse),
     };
 
     // Only generate 5-minute workout if user wants it
-    if (profile.preferences.workoutDurations.includes(5)) {
-      variants[5] = generateWorkout(profile, 5, exercises);
+    if (profile.preferred_minutes?.includes(5)) {
+      variants[5] = generateWorkout(profile, 5, exercisesToUse);
+    }
+
+    // Track exercises used today
+    const exercisesUsedToday = new Set<string>();
+    [variants[5], variants[15], variants[30], variants[45]].forEach(workout => {
+      if (workout) {
+        workout.exercises.forEach(ex => {
+          usedExerciseIds.add(ex.exerciseId);
+          exercisesUsedToday.add(ex.exerciseId);
+        });
+      }
+    });
+
+    console.log(`📊 Exercises used today: ${exercisesUsedToday.size}`);
+
+    // Clear old exercises after VARIETY_WINDOW days to allow reuse
+    if (i >= VARIETY_WINDOW && usedExerciseIds.size > 20) {
+      // Keep only the most recent exercises (rough heuristic)
+      const recentExercises = Array.from(usedExerciseIds).slice(-20);
+      usedExerciseIds.clear();
+      recentExercises.forEach(id => usedExerciseIds.add(id));
+      console.log(`🔄 Cleared old exercises from variety tracker`);
     }
 
     // Validate all workouts generated
@@ -76,10 +111,10 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
 
   const plan: Plan = {
     id: generatePlanId(),
-    blockLength: profile.preferences.blockLength,
+    blockLength: (profile.block_length || 1) as 1 | 4,
     startDate,
-    goals: profile.goals,
-    goalWeighting: profile.goalWeighting,
+    goals: profile.goals || [],
+    goalWeighting: profile.goal_weighting || { primary: 70, secondary: 30 },
     days,
   };
 
@@ -105,7 +140,7 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
     throw new Error('No exercises available');
   }
 
-  const daysCount = profile.preferences.blockLength === 1 ? 7 : 28;
+  const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
   const startDate = new Date();
   const days: Day[] = [];
 
@@ -126,7 +161,7 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
     }
 
     const variants: Day['variants'] = {
-      5: profile.preferences.workoutDurations.includes(5)
+      5: profile.preferred_minutes?.includes(5)
         ? generateWorkout(profile, 5, availableExercises.length > 0 ? availableExercises : exercises)
         : null,
       15: generateWorkout(profile, 15, availableExercises.length > 0 ? availableExercises : exercises),
@@ -152,10 +187,10 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
 
   return {
     id: generatePlanId(),
-    blockLength: profile.preferences.blockLength,
+    blockLength: (profile.block_length || 1) as 1 | 4,
     startDate,
-    goals: profile.goals,
-    goalWeighting: profile.goalWeighting,
+    goals: (profile.goals || []) as Goal[],
+    goalWeighting: profile.goal_weighting || { primary: 70, secondary: 30 },
     days,
   };
 }
@@ -179,7 +214,7 @@ export async function regenerateDay(
   console.log(`\n🔄 Regenerating Day ${dayNumber}`);
 
   const variants: Day['variants'] = {
-    5: profile.preferences.workoutDurations.includes(5)
+    5: profile.preferred_minutes?.includes(5)
       ? generateWorkout(profile, 5, exercises)
       : null,
     15: generateWorkout(profile, 15, exercises),

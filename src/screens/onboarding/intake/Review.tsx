@@ -93,11 +93,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
       setError(null);
 
       // Generate plan using profile data
-      const plan = await generatePlan({
-        profile,
-        blockLength: (profile.block_length || 1) as 1 | 4,
-        startDate: new Date(),
-      });
+      const plan = await generatePlan(profile);
 
       console.log('✅ Plan generated:', plan);
 
