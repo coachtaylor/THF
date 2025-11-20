@@ -316,16 +316,15 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
                       selectionType === 'secondary' && styles.goalCardSecondary,
                     ]}
                   >
-                    {selectionType === 'primary' && (
-                      <View style={styles.badge}>
+                    {selectionType === 'primary' ? (
+                      <View key="primary-badge" style={styles.badge}>
                         <Text style={styles.badgeText}>Primary</Text>
                       </View>
-                    )}
-                    {selectionType === 'secondary' && (
-                      <View style={[styles.badge, styles.badgeSecondary]}>
+                    ) : selectionType === 'secondary' ? (
+                      <View key="secondary-badge" style={[styles.badge, styles.badgeSecondary]}>
                         <Text style={styles.badgeText}>Secondary</Text>
                       </View>
-                    )}
+                    ) : null}
                     <Text style={[styles.goalLabel, isSelected && styles.goalLabelSelected]}>
                       {formatGoalLabel(goal)}
                     </Text>
