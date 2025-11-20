@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Button } from 'react-native-paper';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
@@ -9,6 +10,7 @@ import { savePlan } from '../../../services/storage/plan';
 import { Plan } from '../../../types';
 import { palette, spacing, typography } from '../../../theme';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
+import { formatEquipmentLabel } from '../../../utils/equipment';
 
 const GOAL_LABELS: Record<string, string> = {
   strength: 'Strength',
@@ -57,13 +59,21 @@ const BODY_REGION_LABELS: Record<string, string> = {
 };
 
 export default function Review({ navigation }: OnboardingScreenProps<'Review'>) {
-  const { profile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isSmall = width < 375;
 
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Refresh profile when screen comes into focus (e.g., when returning from Preferences)
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshProfile();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []) // Only run when screen comes into focus, not when refreshProfile changes
+  );
 
   if (!profile) {
     return (
@@ -73,7 +83,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     );
   }
 
-  const handleEdit = (screen: 'Goals' | 'Constraints' | 'Preferences') => {
+  const handleEdit = (screen: 'Goals' | 'Constraints') => {
     navigation.navigate(screen);
   };
 
@@ -111,6 +121,8 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
   const hrtFlags = profile.hrt_flags || [];
   const fitnessLevel = profile.fitness_level;
   const blockLength = profile.block_length || 1;
+  // Use raw equipment for display (more accurate), fallback to canonical if raw not available
+  const equipmentRaw = profile.equipment_raw || [];
   const equipment = profile.equipment || [];
   const bodyFocusPrefer = profile.body_focus_prefer || [];
   const bodyFocusSoftAvoid = profile.body_focus_soft_avoid || [];
@@ -128,8 +140,13 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     return regions.map((region) => BODY_REGION_LABELS[region] || region).join(', ');
   };
 
-  // Helper function to format equipment
-  const formatEquipment = (equipment: string[]): string => {
+  // Helper function to format equipment - prefer raw equipment labels
+  const formatEquipment = (): string => {
+    // Use raw equipment if available (more accurate), otherwise fall back to canonical
+    if (equipmentRaw.length > 0) {
+      return equipmentRaw.map((raw) => formatEquipmentLabel(raw)).join(', ');
+    }
+    // Fallback to canonical equipment labels
     return equipment.map((e) => EQUIPMENT_LABELS[e] || e).join(', ');
   };
 
@@ -195,8 +212,10 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     programItems.push(`Starting level: ${FITNESS_LEVEL_LABELS[fitnessLevel]}`);
   }
   programItems.push(`Program length: ${blockLength} week${blockLength !== 1 ? 's' : ''}`);
-  if (equipment.length > 0) {
-    programItems.push(`We'll use: ${formatEquipment(equipment)}`);
+  // Show equipment if we have either raw or canonical
+  const hasEquipment = equipmentRaw.length > 0 || equipment.length > 0;
+  if (hasEquipment) {
+    programItems.push(`We'll use: ${formatEquipment()}`);
   }
   if (lowSensoryMode) {
     programItems.push('Low sensory mode: ON (simpler flows and less chaos).');
@@ -207,20 +226,22 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
       style={[
         styles.container,
         {
-          paddingTop: Math.max(insets.top, spacing.l),
+          paddingTop: Math.max(insets.top, spacing.m),
           paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
         },
       ]}
     >
-      <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Review Your Profile</Text>
-      <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-        Review your selections and generate your personalized workout plan.
-      </Text>
+      <View style={styles.header}>
+        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Review Your Profile</Text>
+        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
+          Review your selections and generate your plan
+        </Text>
+      </View>
 
       <ProgressIndicator
-        currentStep={4}
-        totalSteps={4}
-        stepLabels={['Goals', 'Constraints', 'Preferences', 'Review']}
+        currentStep={3}
+        totalSteps={3}
+        stepLabels={['Goals & Preferences', 'Constraints', 'Review']}
       />
 
       <ScrollView
@@ -228,41 +249,55 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Goals Section */}
+        {/* Goals & Preferences Section - All items from Goals screen in one card */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Goals</Text>
+            <Text style={styles.sectionTitle}>Goals & Preferences</Text>
             <TouchableOpacity onPress={() => handleEdit('Goals')} style={styles.editButton}>
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.summaryCard}>
-            {goalsItems.length > 0 ? (
-              goalsItems.map((item, index) => (
-                <Text key={index} style={styles.summaryBullet}>
-                  {item}
-                </Text>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>No goals selected</Text>
+            {/* Goals */}
+            {goalsItems.length > 0 && (
+              <>
+                {goalsItems.map((item, index) => (
+                  <View key={`goal-${index}`} style={styles.bulletItem}>
+                    <View style={styles.bullet} />
+                    <Text style={styles.summaryBullet}>{item}</Text>
+                  </View>
+                ))}
+              </>
             )}
-          </View>
-        </View>
-
-        {/* Body Focus Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Body Focus</Text>
-            <TouchableOpacity onPress={() => handleEdit('Goals')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryCard}>
-            {bodyFocusItems.map((item, index) => (
-              <Text key={index} style={styles.summaryBullet}>
-                {item}
-              </Text>
-            ))}
+            
+            {/* Body Focus */}
+            {bodyFocusItems.length > 0 && (
+              <>
+                {bodyFocusItems.map((item, index) => (
+                  <View key={`body-${index}`} style={styles.bulletItem}>
+                    <View style={styles.bullet} />
+                    <Text style={styles.summaryBullet}>{item}</Text>
+                  </View>
+                ))}
+              </>
+            )}
+            
+            {/* Program Setup */}
+            {programItems.length > 0 && (
+              <>
+                {programItems.map((item, index) => (
+                  <View key={`program-${index}`} style={styles.bulletItem}>
+                    <View style={styles.bullet} />
+                    <Text style={styles.summaryBullet}>{item}</Text>
+                  </View>
+                ))}
+              </>
+            )}
+            
+            {/* Show empty state if nothing is selected */}
+            {goalsItems.length === 0 && bodyFocusItems.length === 0 && programItems.length === 0 && (
+              <Text style={styles.emptyText}>No goals or preferences selected</Text>
+            )}
           </View>
         </View>
 
@@ -277,37 +312,23 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
           <View style={styles.summaryCard}>
             {safetyItems.length > 0 ? (
               safetyItems.map((item, index) => (
-                <Text key={index} style={styles.summaryBullet}>
-                  {item}
-                </Text>
+                <View key={index} style={styles.bulletItem}>
+                  <View style={styles.bullet} />
+                  <Text style={styles.summaryBullet}>{item}</Text>
+                </View>
               ))
             ) : (
               <Text style={styles.emptyText}>No constraints selected</Text>
             )}
           </View>
         </View>
-
-        {/* Program Setup Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Program Setup</Text>
-            <TouchableOpacity onPress={() => handleEdit('Preferences')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryCard}>
-            {programItems.map((item, index) => (
-              <Text key={index} style={styles.summaryBullet}>
-                {item}
-              </Text>
-            ))}
-          </View>
-        </View>
       </ScrollView>
 
       <View style={styles.ctaContainer}>
         {error && (
-          <Text style={styles.errorText}>{error}</Text>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
         )}
         <Button
           mode="contained"
@@ -337,19 +358,24 @@ const styles = StyleSheet.create({
     backgroundColor: palette.deepBlack,
     paddingHorizontal: spacing.l,
   },
+  header: {
+    marginBottom: spacing.l,
+    paddingTop: spacing.s,
+  },
   headline: {
     ...typography.h1,
-    textAlign: 'center',
-    marginBottom: spacing.s,
+    textAlign: 'left',
+    marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   headlineSmall: {
     fontSize: 24,
   },
   subheadline: {
     ...typography.body,
-    textAlign: 'center',
-    marginBottom: spacing.l,
+    textAlign: 'left',
     color: palette.midGray,
+    lineHeight: 20,
   },
   subheadlineSmall: {
     fontSize: 14,
@@ -358,10 +384,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.m,
+    paddingBottom: spacing.xl,
   },
   section: {
-    marginBottom: spacing.l,
+    marginBottom: spacing.xl,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -372,50 +398,75 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.h3,
     color: palette.white,
+    letterSpacing: -0.3,
   },
   editButton: {
-    padding: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.s,
   },
   editButtonText: {
-    ...typography.button,
+    ...typography.bodySmall,
     color: palette.tealPrimary,
     fontSize: 14,
+    fontWeight: '600',
   },
   summaryCard: {
     backgroundColor: palette.darkCard,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: spacing.l,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: palette.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  summaryLabel: {
-    ...typography.bodySmall,
-    color: palette.midGray,
-    marginTop: spacing.s,
-    marginBottom: spacing.xxs,
+  bulletItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.s,
   },
-  summaryValue: {
-    ...typography.body,
-    color: palette.lightGray,
-    marginBottom: spacing.xs,
+  bullet: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: palette.tealPrimary,
+    marginTop: 7,
+    marginRight: spacing.s,
+    flexShrink: 0,
   },
   summaryBullet: {
     ...typography.body,
     color: palette.lightGray,
-    marginBottom: spacing.s,
+    flex: 1,
     lineHeight: 22,
   },
   emptyText: {
     ...typography.body,
     color: palette.midGray,
     fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: spacing.m,
   },
   ctaContainer: {
-    marginTop: spacing.m,
+    marginTop: spacing.s,
+    paddingTop: spacing.m,
+    borderTopWidth: 1,
+    borderTopColor: palette.border,
+  },
+  errorContainer: {
+    backgroundColor: palette.darkerCard,
+    borderRadius: 12,
+    padding: spacing.m,
+    marginBottom: spacing.m,
+    borderWidth: 1,
+    borderColor: palette.error,
   },
   generateButton: {
-    borderRadius: 16,
+    borderRadius: 14,
     marginBottom: spacing.xs,
+    overflow: 'hidden',
   },
   generateButtonContent: {
     paddingVertical: spacing.m,
@@ -424,6 +475,7 @@ const styles = StyleSheet.create({
   generateButtonLabel: {
     ...typography.button,
     color: palette.deepBlack,
+    fontWeight: '700',
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -437,7 +489,6 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: palette.error,
     textAlign: 'center',
-    marginBottom: spacing.s,
   },
 });
 

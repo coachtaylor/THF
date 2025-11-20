@@ -1,29 +1,34 @@
 import { MD3DarkTheme } from 'react-native-paper';
 
-// Dark Theme Palette (v2.0)
+// Modern Fitness App Theme (Inspired by Dribbble AI Fitness App)
 export const palette = {
-  // Background Colors
-  deepBlack: '#0A0E0E',
-  darkCard: '#1A1F1F',
-  darkerCard: '#141818',
-  border: '#2A2F2F',
+  // Background Colors - Softer, warmer dark tones
+  deepBlack: '#0F1419',
+  darkCard: '#1A1F26',
+  darkerCard: '#151920',
+  border: '#2A2F36',
   
-  // Accent Colors
+  // Accent Colors - Vibrant but approachable
   tealPrimary: '#00D9C0',
   tealDark: '#00B39D',
-  tealGlow: 'rgba(0, 217, 192, 0.15)',
+  tealGlow: 'rgba(0, 217, 192, 0.2)',
+  tealLight: 'rgba(0, 217, 192, 0.1)',
   
-  // Text Colors
+  // Text Colors - Better contrast and readability
   white: '#FFFFFF',
-  lightGray: '#B8C5C5',
-  midGray: '#7A8585',
-  disabled: '#4A5050',
+  lightGray: '#E0E4E8',
+  midGray: '#9CA3AF',
+  disabled: '#6B7280',
   
   // Semantic Colors
   success: '#00D9C0',
   warning: '#FFB84D',
   error: '#FF6B6B',
   info: '#5B9FFF',
+  
+  // Gradient colors for modern look
+  gradientStart: '#00D9C0',
+  gradientEnd: '#00B39D',
 };
 
 export const spacing = {
@@ -34,19 +39,20 @@ export const spacing = {
   l: 24,
   xl: 32,
   xxl: 48,
+  xxxl: 64,
 };
 
 export const typography = {
-  display: { fontSize: 34, fontWeight: '700' as const, color: palette.white },
-  h1: { fontSize: 28, fontWeight: '700' as const, color: palette.white },
-  h2: { fontSize: 24, fontWeight: '600' as const, color: palette.white },
-  h3: { fontSize: 20, fontWeight: '600' as const, color: palette.white },
-  h4: { fontSize: 18, fontWeight: '600' as const, color: palette.white },
-  bodyLarge: { fontSize: 17, fontWeight: '400' as const, color: palette.lightGray },
-  body: { fontSize: 15, fontWeight: '400' as const, color: palette.lightGray },
-  bodySmall: { fontSize: 13, fontWeight: '400' as const, color: palette.midGray },
-  caption: { fontSize: 12, fontWeight: '500' as const, color: palette.midGray },
-  button: { fontSize: 16, fontWeight: '600' as const, color: palette.white },
+  display: { fontSize: 36, fontWeight: '800' as const, color: palette.white, letterSpacing: -1 },
+  h1: { fontSize: 32, fontWeight: '700' as const, color: palette.white, letterSpacing: -0.5 },
+  h2: { fontSize: 26, fontWeight: '700' as const, color: palette.white, letterSpacing: -0.3 },
+  h3: { fontSize: 22, fontWeight: '600' as const, color: palette.white, letterSpacing: -0.2 },
+  h4: { fontSize: 18, fontWeight: '600' as const, color: palette.white, letterSpacing: -0.1 },
+  bodyLarge: { fontSize: 17, fontWeight: '400' as const, color: palette.lightGray, lineHeight: 24 },
+  body: { fontSize: 15, fontWeight: '400' as const, color: palette.lightGray, lineHeight: 22 },
+  bodySmall: { fontSize: 13, fontWeight: '400' as const, color: palette.midGray, lineHeight: 20 },
+  caption: { fontSize: 12, fontWeight: '500' as const, color: palette.midGray, lineHeight: 18 },
+  button: { fontSize: 17, fontWeight: '700' as const, color: palette.white, letterSpacing: 0.3 },
 };
 
 export const darkTheme = {

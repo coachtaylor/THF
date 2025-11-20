@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getProfile, updateProfile as updateProfileService, Profile } from '../services/storage/profile';
 
 export function useProfile() {
@@ -6,11 +6,7 @@ export function useProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -23,7 +19,11 @@ export function useProfile() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   async function updateProfile(updates: Partial<Profile>) {
     try {

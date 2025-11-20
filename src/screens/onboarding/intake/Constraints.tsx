@@ -77,8 +77,8 @@ export default function Constraints({ navigation }: OnboardingScreenProps<'Const
         surgeon_cleared: surgeonCleared,
         hrt_flags: hrtFlags,
       });
-      // Navigate to Preferences screen
-      navigation.navigate('Preferences');
+      // Navigate to Review screen
+      navigation.navigate('Review');
     } catch (error) {
       console.error('Error saving constraints:', error);
       // TODO: Show error toast
@@ -90,20 +90,22 @@ export default function Constraints({ navigation }: OnboardingScreenProps<'Const
       style={[
         styles.container,
         {
-          paddingTop: Math.max(insets.top, spacing.l),
+          paddingTop: Math.max(insets.top, spacing.m),
           paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
         },
       ]}
     >
-      <Text style={[styles.headline, isSmall && styles.headlineSmall]}>What are your constraints?</Text>
-      <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-        Help us customize your workouts to your needs and safety requirements.
-      </Text>
+      <View style={styles.header}>
+        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Safety & Constraints</Text>
+        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
+          Help us customize your workouts to your needs
+        </Text>
+      </View>
 
       <ProgressIndicator
         currentStep={2}
-        totalSteps={4}
-        stepLabels={['Goals', 'Constraints', 'Preferences', 'Review']}
+        totalSteps={3}
+        stepLabels={['Goals & Preferences', 'Constraints', 'Review']}
       />
 
       <ScrollView
@@ -113,61 +115,80 @@ export default function Constraints({ navigation }: OnboardingScreenProps<'Const
       >
         {/* General Constraints */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>General Constraints</Text>
-          {CONSTRAINT_OPTIONS.map((option) => (
-            <ConstraintCheckbox
-              key={option.id}
-              label={option.label}
-              description={option.description}
-              checked={constraints.includes(option.id)}
-              onPress={() => toggleConstraint(option.id)}
-            />
-          ))}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>General Constraints</Text>
+            <Text style={styles.sectionDescription}>Select any that apply to you</Text>
+          </View>
+          <View style={styles.optionsContainer}>
+            {CONSTRAINT_OPTIONS.map((option) => (
+              <ConstraintCheckbox
+                key={option.id}
+                label={option.label}
+                description={option.description}
+                checked={constraints.includes(option.id)}
+                onPress={() => toggleConstraint(option.id)}
+              />
+            ))}
+          </View>
         </View>
 
         {/* Surgery Flags */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Surgery History</Text>
-          {SURGERY_OPTIONS.map((option) => (
-            <ConstraintCheckbox
-              key={option.id}
-              label={option.label}
-              description={option.description}
-              checked={surgeryFlags.includes(option.id)}
-              onPress={() => toggleSurgeryFlag(option.id)}
-            />
-          ))}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Surgery History</Text>
+            <Text style={styles.sectionDescription}>Optional: Help us tailor recovery guidance</Text>
+          </View>
+          <View style={styles.optionsContainer}>
+            {SURGERY_OPTIONS.map((option) => (
+              <ConstraintCheckbox
+                key={option.id}
+                label={option.label}
+                description={option.description}
+                checked={surgeryFlags.includes(option.id)}
+                onPress={() => toggleSurgeryFlag(option.id)}
+              />
+            ))}
+          </View>
         </View>
 
         {/* Surgeon Clearance Banner */}
         {showSurgeonBanner && (
-          <SurgeonClearanceBanner visible={showSurgeonBanner} />
+          <View style={styles.bannerContainer}>
+            <SurgeonClearanceBanner visible={showSurgeonBanner} />
+          </View>
         )}
 
         {/* Surgeon Cleared Checkbox (only shown if surgery flags selected) */}
         {showSurgeonBanner && (
           <View style={styles.section}>
-            <ConstraintCheckbox
-              label="I have been cleared by my surgeon"
-              description="My surgeon has approved me for physical activity"
-              checked={surgeonCleared}
-              onPress={() => setSurgeonCleared((prev) => !prev)}
-            />
+            <View style={styles.optionsContainer}>
+              <ConstraintCheckbox
+                label="I have been cleared by my surgeon"
+                description="My surgeon has approved me for physical activity"
+                checked={surgeonCleared}
+                onPress={() => setSurgeonCleared((prev) => !prev)}
+              />
+            </View>
           </View>
         )}
 
         {/* HRT Flags */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hormone Replacement Therapy</Text>
-          {HRT_OPTIONS.map((option) => (
-            <ConstraintCheckbox
-              key={option.id}
-              label={option.label}
-              description={option.description}
-              checked={hrtFlags.includes(option.id)}
-              onPress={() => toggleHrtFlag(option.id)}
-            />
-          ))}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Hormone Replacement Therapy</Text>
+            <Text style={styles.sectionDescription}>Optional: For personalized training guidance</Text>
+          </View>
+          <View style={styles.optionsContainer}>
+            {HRT_OPTIONS.map((option) => (
+              <ConstraintCheckbox
+                key={option.id}
+                label={option.label}
+                description={option.description}
+                checked={hrtFlags.includes(option.id)}
+                onPress={() => toggleHrtFlag(option.id)}
+              />
+            ))}
+          </View>
         </View>
       </ScrollView>
 
@@ -192,19 +213,24 @@ const styles = StyleSheet.create({
     backgroundColor: palette.deepBlack,
     paddingHorizontal: spacing.l,
   },
+  header: {
+    marginBottom: spacing.l,
+    paddingTop: spacing.s,
+  },
   headline: {
     ...typography.h1,
-    textAlign: 'center',
-    marginBottom: spacing.s,
+    textAlign: 'left',
+    marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   headlineSmall: {
     fontSize: 24,
   },
   subheadline: {
     ...typography.body,
-    textAlign: 'center',
-    marginBottom: spacing.l,
+    textAlign: 'left',
     color: palette.midGray,
+    lineHeight: 20,
   },
   subheadlineSmall: {
     fontSize: 14,
@@ -213,22 +239,41 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.m,
+    paddingBottom: spacing.xl,
   },
   section: {
-    marginBottom: spacing.l,
+    marginBottom: spacing.xl,
+  },
+  sectionHeader: {
+    marginBottom: spacing.m,
   },
   sectionTitle: {
     ...typography.h3,
-    marginBottom: spacing.m,
+    marginBottom: spacing.xxs,
     color: palette.white,
+    letterSpacing: -0.3,
+  },
+  sectionDescription: {
+    ...typography.bodySmall,
+    color: palette.midGray,
+    lineHeight: 18,
+  },
+  optionsContainer: {
+    gap: spacing.xs,
+  },
+  bannerContainer: {
+    marginBottom: spacing.m,
   },
   ctaContainer: {
-    marginTop: spacing.m,
+    marginTop: spacing.s,
+    paddingTop: spacing.m,
+    borderTopWidth: 1,
+    borderTopColor: palette.border,
   },
   continueButton: {
-    borderRadius: 16,
+    borderRadius: 14,
     marginBottom: spacing.xs,
+    overflow: 'hidden',
   },
   continueButtonContent: {
     paddingVertical: spacing.m,
@@ -237,6 +282,7 @@ const styles = StyleSheet.create({
   continueButtonLabel: {
     ...typography.button,
     color: palette.deepBlack,
+    fontWeight: '700',
   },
 });
 

@@ -5,6 +5,8 @@ import { palette, spacing, typography } from '../../theme';
 import { Day, Workout, Exercise } from '../../types/plan';
 import { getExerciseById } from '../../data/exercises';
 import { formatEquipmentLabel } from '../../utils/equipment';
+import SafetyTag from '../ui/SafetyTag';
+import Card from '../ui/Card';
 
 interface DayCardProps {
   day: Day;
@@ -47,68 +49,64 @@ export default function DayCard({ day, workout, onStartWorkout, onPreview, onExe
     return date.toLocaleDateString('en-US', options);
   };
 
+  // Check if workout has binder-aware or pelvic-floor-friendly exercises
+  const hasBinderAware = workout.exercises.some(ei => {
+    const ex = exerciseMap[ei.exerciseId];
+    return ex?.binder_aware;
+  });
+  const hasPelvicFloorFriendly = workout.exercises.some(ei => {
+    const ex = exerciseMap[ei.exerciseId];
+    return ex?.pelvic_floor_aware;
+  });
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.dateText}>{formatDate(day.date)}</Text>
-        <Text style={styles.durationText}>{workout.duration} minutes</Text>
-      </View>
-
-      <View style={styles.workoutInfo}>
-        <Text style={styles.exerciseCount}>
-          {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
-        </Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.dateText}>{formatDate(day.date)}</Text>
+          <Text style={styles.durationText}>{workout.duration} min</Text>
+        </View>
+        <View style={styles.workoutMeta}>
+          <Text style={styles.exerciseCount}>
+            {workout.exercises.length} {workout.exercises.length === 1 ? 'exercise' : 'exercises'}
+          </Text>
+          {(hasBinderAware || hasPelvicFloorFriendly) && (
+            <View style={styles.safetyTags}>
+              {hasBinderAware && <SafetyTag type="binder-aware" size="small" />}
+              {hasPelvicFloorFriendly && <SafetyTag type="pelvic-floor-friendly" size="small" />}
+            </View>
+          )}
+        </View>
       </View>
 
       <ScrollView style={styles.exercisesList} showsVerticalScrollIndicator={false}>
         {workout.exercises.map((exerciseInstance, index) => {
           const exercise = exerciseMap[exerciseInstance.exerciseId];
           const exerciseName = exercise?.name || `Exercise ${exerciseInstance.exerciseId}`;
+          const equipment = exercise?.rawEquipment && exercise.rawEquipment.length > 0
+            ? formatEquipmentLabel(exercise.rawEquipment[0])
+            : exercise?.equipment.join(', ') || '';
 
           return (
             <TouchableOpacity
               key={index}
-              style={styles.exerciseItem}
               onPress={() => onExercisePress?.(exerciseInstance.exerciseId)}
               activeOpacity={0.7}
             >
-              <View style={styles.exerciseHeader}>
-                <Text style={styles.exerciseNumber}>{index + 1}</Text>
-                <View style={styles.exerciseNameContainer}>
-                  <Text style={styles.exerciseName}>{exerciseName}</Text>
-                  {(exercise?.binder_aware || exercise?.pelvic_floor_aware) && (
-                    <View style={styles.badgesContainer}>
-                      {exercise.binder_aware && (
-                        <View style={[styles.badge, { marginRight: spacing.xxs }]}>
-                          <Text style={styles.badgeText}>Binder-aware</Text>
-                        </View>
-                      )}
-                      {exercise.pelvic_floor_aware && (
-                        <View style={[styles.badge, styles.badgePelvic]}>
-                          <Text style={styles.badgeText}>Pelvic-floor friendly</Text>
-                        </View>
-                      )}
-                    </View>
-                  )}
+              <Card style={styles.exerciseCard} variant="outlined" padding="small">
+                <View style={styles.exerciseRow}>
+                  <View style={styles.exerciseNumber}>
+                    <Text style={styles.exerciseNumberText}>{index + 1}</Text>
+                  </View>
+                  <View style={styles.exerciseContent}>
+                    <Text style={styles.exerciseName}>{exerciseName}</Text>
+                    <Text style={styles.exerciseDetails}>
+                      {exerciseInstance.sets}×{exerciseInstance.reps} • {exerciseInstance.restSeconds}s rest
+                      {equipment && ` • ${equipment}`}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.exerciseDetails}>
-                <Text style={styles.exerciseDetail}>
-                  {exerciseInstance.sets} {exerciseInstance.sets === 1 ? 'set' : 'sets'} × {exerciseInstance.reps}{' '}
-                  {exerciseInstance.reps === 1 ? 'rep' : 'reps'}
-                </Text>
-                {exerciseInstance.format !== 'straight_sets' && (
-                  <Text style={styles.exerciseFormat}>{exerciseInstance.format}</Text>
-                )}
-                {exercise && (
-                  <Text style={styles.equipmentLabel}>
-                    {exercise.rawEquipment && exercise.rawEquipment.length > 0
-                      ? formatEquipmentLabel(exercise.rawEquipment[0])
-                      : exercise.equipment.join(', ')}
-                  </Text>
-                )}
-                <Text style={styles.restText}>Rest: {exerciseInstance.restSeconds}s</Text>
-              </View>
+              </Card>
             </TouchableOpacity>
           );
         })}
@@ -142,100 +140,93 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: palette.deepBlack,
-    padding: spacing.m,
+    padding: spacing.l,
   },
   header: {
-    marginBottom: spacing.m,
-  },
-  dateText: {
-    ...typography.h2,
-    marginBottom: spacing.xs,
-  },
-  durationText: {
-    ...typography.bodyLarge,
-    color: palette.tealPrimary,
-  },
-  workoutInfo: {
     marginBottom: spacing.m,
     paddingBottom: spacing.m,
     borderBottomWidth: 1,
     borderBottomColor: palette.border,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    marginBottom: spacing.xs,
+  },
+  dateText: {
+    ...typography.h3,
+    color: palette.white,
+    letterSpacing: -0.4,
+    flex: 1,
+  },
+  durationText: {
+    ...typography.body,
+    color: palette.tealPrimary,
+    fontWeight: '600',
+  },
+  workoutMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexWrap: 'wrap',
+  },
   exerciseCount: {
     ...typography.body,
     color: palette.lightGray,
+  },
+  safetyTags: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   exercisesList: {
     flex: 1,
     marginBottom: spacing.m,
   },
-  exerciseItem: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
+  exerciseCard: {
     marginBottom: spacing.s,
-    borderWidth: 1,
-    borderColor: palette.border,
   },
-  exerciseHeader: {
+  exerciseRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.s,
+    gap: spacing.m,
+    alignItems: 'flex-start',
   },
   exerciseNumber: {
-    ...typography.h4,
-    color: palette.tealPrimary,
-    marginRight: spacing.s,
-    width: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: palette.tealGlow,
+    borderWidth: 2,
+    borderColor: palette.tealPrimary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    shadowColor: palette.tealPrimary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  exerciseNameContainer: {
+  exerciseNumberText: {
+    ...typography.bodyLarge,
+    color: palette.tealPrimary,
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  exerciseContent: {
     flex: 1,
   },
   exerciseName: {
-    ...typography.h4,
-    marginBottom: spacing.xxs,
-  },
-  badgesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: spacing.xxs,
-  },
-  badge: {
-    backgroundColor: palette.tealPrimary,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  badgePelvic: {
-    backgroundColor: palette.tealDark,
-  },
-  badgeText: {
-    fontSize: 10,
+    ...typography.bodyLarge,
+    color: palette.white,
+    marginBottom: 4,
     fontWeight: '600',
-    color: palette.deepBlack,
-    letterSpacing: 0.2,
+    letterSpacing: -0.1,
   },
   exerciseDetails: {
-    marginLeft: 32,
-  },
-  exerciseDetail: {
-    ...typography.body,
-    marginBottom: spacing.xs,
-  },
-  exerciseFormat: {
-    ...typography.bodySmall,
-    color: palette.tealPrimary,
-    marginBottom: spacing.xs,
-    textTransform: 'uppercase',
-  },
-  equipmentLabel: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
-    marginBottom: spacing.xs,
-  },
-  restText: {
     ...typography.bodySmall,
     color: palette.midGray,
+    fontSize: 12,
   },
   actions: {
     flexDirection: 'row',

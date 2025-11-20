@@ -241,42 +241,38 @@ function calculateWeeklyMinutesTarget(profile: Profile): number {
 
 
 // Categorize exercises by goal
+// Now uses the 'goal' field directly from the database instead of tag matching
 function categorizeExercisesByGoal(
   exercises: Exercise[],
   goals: string[]
 ): Record<string, Exercise[]> {
   const categorized: Record<string, Exercise[]> = {};
 
-  // Map goals to exercise categories/tags
-  const goalMappings: Record<string, string[]> = {
-    strength: ['lower_body', 'upper_push', 'upper_pull', 'core', 'strength', 'conditioning'],
-    cardio: ['cardio', 'conditioning'],
-    flexibility: ['core', 'flexibility', 'stretching', 'mobility'],
-    endurance: ['cardio', 'endurance', 'conditioning'],
-    custom: [], // Custom can include any
-  };
-
   goals.forEach(goal => {
-    const categories = goalMappings[goal] || [];
+    // Match exercises by their goal field from the database
+    // The goal field should match the user's selected goal value
+    const goalLower = goal.toLowerCase();
     
-    if (categories.length === 0) {
-      // If no mapping, include all exercises (for custom or unknown goals)
-      categorized[goal] = exercises;
-    } else {
-      // Filter exercises that match any of the mapped categories/tags
-      categorized[goal] = exercises.filter(ex => 
-        categories.some(cat => 
-          ex.tags.includes(cat) || 
-          ex.tags.some(tag => tag.toLowerCase().includes(cat.toLowerCase()))
-        )
-      );
+    // Filter exercises where the goal field matches (case-insensitive)
+    // Also check tags as a fallback for exercises that might not have goal set
+    categorized[goal] = exercises.filter(ex => {
+      // Primary: Check if exercise goal matches
+      const exerciseGoal = ex.tags.find(tag => tag.toLowerCase() === goalLower);
+      if (exerciseGoal) return true;
       
-      // Fallback: If no exercises match the goal tags, use all exercises
-      // This ensures we always have exercises to work with
-      if (categorized[goal].length === 0 && exercises.length > 0) {
-        console.warn(`   ⚠️ Goal "${goal}": No exercises matched tags, using all exercises as fallback`);
-        categorized[goal] = exercises;
-      }
+      // Fallback: Check if any tag contains the goal (for flexibility)
+      return ex.tags.some(tag => tag.toLowerCase().includes(goalLower));
+    });
+    
+    // If we have very few exercises after filtering, it means the goal matching is too restrictive
+    // Use all exercises as fallback to ensure we have enough exercises
+    if (categorized[goal].length < exercises.length * 0.1 && exercises.length > 0) {
+      console.warn(`   ⚠️ Goal "${goal}": Only ${categorized[goal].length} exercises matched (out of ${exercises.length}), using all exercises as fallback`);
+      categorized[goal] = exercises;
+    } else if (categorized[goal].length === 0 && exercises.length > 0) {
+      // If no exercises match at all, use all exercises
+      console.warn(`   ⚠️ Goal "${goal}": No exercises matched, using all exercises as fallback`);
+      categorized[goal] = exercises;
     }
     
     console.log(`   Goal "${goal}": ${categorized[goal]?.length || 0} exercises`);
@@ -415,8 +411,13 @@ function generateWorkout(
     console.log(`   ✅ ${duration}min workout: ${selectedExercises.length} exercises`);
   }
 
+  // Remove duplicates before converting to ExerciseInstances
+  const uniqueSelectedExercises = selectedExercises.filter((ex, index, self) =>
+    index === self.findIndex(e => e.id === ex.id)
+  );
+
   // Convert to ExerciseInstances
-  const exerciseInstances: ExerciseInstance[] = selectedExercises.map(ex => ({
+  const exerciseInstances: ExerciseInstance[] = uniqueSelectedExercises.map(ex => ({
     exerciseId: ex.id,
     sets: duration === 5 ? 1 : duration === 15 ? 2 : 3,
     reps: 10,
@@ -424,9 +425,14 @@ function generateWorkout(
     restSeconds: 30
   }));
 
+  // Final duplicate check on exerciseId
+  const uniqueInstances = exerciseInstances.filter((inst, index, self) =>
+    index === self.findIndex(i => i.exerciseId === inst.exerciseId)
+  );
+
   return {
     duration,
-    exercises: exerciseInstances,
+    exercises: uniqueInstances,
     totalMinutes: duration
   };
 }

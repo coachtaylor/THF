@@ -42,36 +42,39 @@ export default function TimeVariantSelector({ selected, onSelect }: TimeVariantS
 
 const styles = StyleSheet.create({
   container: {
-    padding: spacing.m,
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.s,
     backgroundColor: palette.deepBlack,
     borderBottomWidth: 1,
     borderBottomColor: palette.border,
   },
   label: {
-    ...typography.h4,
-    marginBottom: spacing.s,
+    ...typography.caption,
+    marginBottom: spacing.xs,
+    color: palette.midGray,
   },
   variantsContainer: {
     flexDirection: 'row',
-    gap: spacing.s,
+    gap: spacing.xs,
   },
   variantButton: {
     flex: 1,
-    paddingVertical: spacing.m,
-    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
     backgroundColor: palette.darkCard,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: palette.border,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 36,
   },
   variantButtonSelected: {
     borderColor: palette.tealPrimary,
     backgroundColor: palette.tealGlow,
   },
   variantText: {
-    ...typography.body,
+    ...typography.bodySmall,
     fontWeight: '600',
   },
   variantTextSelected: {

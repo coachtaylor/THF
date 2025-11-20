@@ -69,11 +69,13 @@ function exerciseMatchesEquipmentCanonical(ex: Exercise, profile: Profile): bool
   const userCanon = new Set(profile.equipment ?? []);
   if (!userCanon.size) return true; // No preference = allow all
 
-  // If exercise requires no equipment, it's always available
+  // If exercise has no equipment specified (empty array or 'none'), 
+  // allow it if user selected bodyweight OR if user has very few exercises (graceful fallback)
   if (ex.equipment.length === 0 || ex.equipment.includes('none')) {
-    return true;
+    return userCanon.has('bodyweight');
   }
 
+  // Exercise has specific equipment requirements - check for match
   const exCanon = new Set(ex.equipment ?? []);
   for (const val of exCanon) {
     if (val !== 'none' && userCanon.has(val)) return true;
@@ -104,20 +106,16 @@ function exerciseMatchesEquipment(ex: Exercise, profile: Profile): boolean {
     return true;
   }
 
-  // If exercise requires no equipment, it's always available
-  if (ex.equipment.length === 0 || ex.equipment.includes('none')) {
-    return true;
-  }
-
   // 1) Try raw match first
   const hasExerciseRaw = !!(ex.rawEquipment && ex.rawEquipment.length);
   
   if (hasUserRaw && hasExerciseRaw) {
     const rawMatch = exerciseMatchesEquipmentRaw(ex, profile);
-    return rawMatch;
+    if (rawMatch) return true;
+    // If raw match fails, continue to canonical check
   }
 
-  // 2) Fallback to canonical if raw is missing on either side
+  // 2) Fallback to canonical matching
   // This handles the case where exercises don't have raw_equipment populated yet
   const canonicalMatch = exerciseMatchesEquipmentCanonical(ex, profile);
   return canonicalMatch;
@@ -382,6 +380,12 @@ export function filterExercisesByConstraints(
     return true;
   });
   console.log(`   Equipment filter: ${beforeEquipment} → ${filtered.length} exercises`);
+  console.log(`   User equipment (raw): ${(profile.equipment_raw || []).join(', ') || 'none'}`);
+  console.log(`   User equipment (canonical): ${(profile.equipment || []).join(', ') || 'none'}`);
+  if (filtered.length > 0) {
+    const sample = filtered[0];
+    console.log(`   Sample filtered exercise: ${sample.name} (equipment: ${sample.equipment.join(', ') || 'none'}, rawEquipment: ${sample.rawEquipment.join(', ') || 'none'})`);
+  }
 
   // 2. Filter by fitness level / difficulty
   // Only include exercises whose difficulty <= user's fitness level
@@ -451,20 +455,48 @@ export function filterExercisesByConstraints(
   filtered = filtered.filter(ex => isImpactAllowedForProfile(ex, profile));
   filtered = filtered.filter(ex => isFloorAllowedForProfile(ex, profile));
 
-  // Final graceful fallback: If all filtering removed everything, return equipment-filtered exercises only
-  // This ensures we always have some exercises to work with
+  // Final graceful fallback: If all filtering removed everything, try progressive fallbacks
   if (filtered.length === 0) {
-    console.log(`   ⚠️ All filters removed exercises, trying equipment-only fallback`);
+    console.log(`   ⚠️ All filters removed exercises, trying progressive fallbacks`);
+    
+    // Fallback 1: Equipment + difficulty only (skip constraints)
     filtered = exercises.filter(ex => {
       const matchesEquipment = exerciseMatchesEquipment(ex, profile);
       if (!matchesEquipment) return false;
+      if (fitnessLevel && !matchesDifficulty(ex, fitnessLevel)) return false;
       return true;
     });
-    console.log(`   Equipment-only fallback: ${filtered.length} exercises`);
+    console.log(`   Fallback 1 (equipment + difficulty): ${filtered.length} exercises`);
     
-    // Last resort: if equipment filtering still removes everything, return all exercises
+    // Fallback 2: Equipment only (skip all other filters)
     if (filtered.length === 0) {
-      console.log(`   ⚠️ Equipment filter also removed everything, returning ALL exercises as last resort`);
+      filtered = exercises.filter(ex => {
+        const matchesEquipment = exerciseMatchesEquipment(ex, profile);
+        return matchesEquipment;
+      });
+      console.log(`   Fallback 2 (equipment only): ${filtered.length} exercises`);
+    }
+    
+    // Fallback 3: If equipment filter is too restrictive, allow bodyweight as fallback
+    if (filtered.length === 0 && profile.equipment && profile.equipment.length > 0) {
+      console.log(`   Fallback 3: Equipment filter too restrictive, allowing bodyweight exercises as fallback`);
+      const equipmentWithBodyweight = [...(profile.equipment || []), 'bodyweight'];
+      filtered = exercises.filter(ex => {
+        if (ex.equipment.length === 0 || ex.equipment.includes('none') || ex.equipment.includes('bodyweight')) {
+          return true;
+        }
+        const exCanon = new Set(ex.equipment ?? []);
+        for (const val of exCanon) {
+          if (val !== 'none' && equipmentWithBodyweight.includes(val)) return true;
+        }
+        return false;
+      });
+      console.log(`   Fallback 3 (equipment + bodyweight): ${filtered.length} exercises`);
+    }
+    
+    // Last resort: return all exercises
+    if (filtered.length === 0) {
+      console.log(`   ⚠️ All fallbacks failed, returning ALL exercises as last resort`);
       filtered = exercises;
     }
   }

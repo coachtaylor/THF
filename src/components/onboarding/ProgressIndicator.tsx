@@ -29,26 +29,28 @@ export default function ProgressIndicator({ currentStep, totalSteps, stepLabels 
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.l,
+    marginBottom: spacing.xl,
   },
   progressBarContainer: {
-    marginBottom: spacing.xs,
+    marginBottom: spacing.s,
   },
   progressBarBackground: {
-    height: 4,
+    height: 3,
     backgroundColor: palette.border,
-    borderRadius: 2,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
     backgroundColor: palette.tealPrimary,
-    borderRadius: 2,
+    borderRadius: 3,
   },
   stepLabel: {
     ...typography.caption,
-    textAlign: 'center',
+    textAlign: 'left',
     color: palette.midGray,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
 });
 

@@ -72,17 +72,20 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
     }
   }
   
-  // Add goal (e.g., "mobility", "conditioning")
+  // Add goal (e.g., "mobility", "conditioning", "strength", "endurance")
+  // Always add the goal to tags so it can be matched directly
   if (db.goal) {
-    if (db.goal === 'conditioning') {
-      tags.push('strength'); // Conditioning maps to strength
+    const goalLower = db.goal.toLowerCase().trim();
+    // Always add the goal value itself to tags for direct matching
+    tags.push(goalLower);
+    
+    // Also add legacy mappings for backward compatibility
+    if (goalLower === 'conditioning') {
+      tags.push('strength'); // Conditioning also maps to strength
       tags.push('cardio'); // Also can be cardio
     }
-    if (db.goal === 'mobility') {
-      tags.push('flexibility'); // Mobility maps to flexibility
-    }
-    if (db.goal !== db.pattern) {
-      tags.push(db.goal);
+    if (goalLower === 'mobility') {
+      tags.push('flexibility'); // Mobility also maps to flexibility
     }
   }
   

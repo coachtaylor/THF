@@ -45,19 +45,21 @@ export default function WeeklyCalendar({ days, selectedDay, onSelectDay }: Weekl
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: spacing.m,
+    paddingVertical: spacing.s,
     backgroundColor: palette.deepBlack,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
   },
   scrollContent: {
     paddingHorizontal: spacing.m,
-    gap: spacing.s,
+    gap: spacing.xs,
   },
   dayCard: {
-    width: 60,
-    height: 70,
+    width: 52,
+    height: 56,
     backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.s,
+    borderRadius: 10,
+    padding: spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -70,7 +72,8 @@ const styles = StyleSheet.create({
   dayText: {
     ...typography.caption,
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 14,
+    fontSize: 11,
   },
   dayTextSelected: {
     color: palette.tealPrimary,
@@ -78,10 +81,10 @@ const styles = StyleSheet.create({
   },
   workoutIndicator: {
     position: 'absolute',
-    bottom: spacing.xxs,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    bottom: 4,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
     backgroundColor: palette.tealPrimary,
   },
 });

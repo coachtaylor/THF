@@ -70,7 +70,17 @@ export default function PlanView({ navigation }: PlanViewProps) {
         <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>My Plan</Text>
         <TouchableOpacity
-          onPress={() => navigation.navigate('Preferences')}
+          onPress={() => {
+            // Navigate to Goals screen to edit preferences
+            // Note: Goals screen is now GoalsAndPreferences combined
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              // If we can't go back, just log for now
+              // TODO: Add proper settings/profile edit screen
+              console.log('Settings - navigate to profile edit');
+            }
+          }}
           style={styles.settingsButton}
           activeOpacity={0.8}
         >
