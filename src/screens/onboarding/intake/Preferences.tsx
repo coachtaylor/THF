@@ -254,15 +254,17 @@ export default function Preferences({ navigation }: OnboardingScreenProps<'Prefe
               <Text style={styles.loadingText}>Loading equipment options...</Text>
             </View>
           ) : (
-            equipmentOptions.map((option) => (
-              <ConstraintCheckbox
-                key={option.raw}
-                label={option.label}
-                description={option.description}
-                checked={selectedRawEquipment.includes(option.raw)}
-                onPress={() => toggleEquipment(option.raw)}
-              />
-            ))
+            <View>
+              {equipmentOptions.map((option) => (
+                <ConstraintCheckbox
+                  key={option.raw}
+                  label={option.label}
+                  description={option.description}
+                  checked={selectedRawEquipment.includes(option.raw)}
+                  onPress={() => toggleEquipment(option.raw)}
+                />
+              ))}
+            </View>
           )}
         </View>
 
