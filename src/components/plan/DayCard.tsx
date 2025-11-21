@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { Button } from 'react-native-paper';
 import { palette, spacing, typography } from '../../theme';
 import { Day, Workout, Exercise } from '../../types/plan';
-import { getExerciseById } from '../../data/exercises';
+import { getCachedExercises } from '../../services/exerciseService';
 import { formatEquipmentLabel } from '../../utils/equipment';
 import SafetyTag from '../ui/SafetyTag';
 import Card from '../ui/Card';
@@ -24,10 +24,24 @@ export default function DayCard({ day, workout, onStartWorkout, onPreview, onExe
 
     // Load all exercises for this workout
     const loadExercises = async () => {
+      // Get all exercises from the same service the plan generator uses
+      const allExercises = await getCachedExercises();
       const exercises: Record<string, Exercise | undefined> = {};
+      
       for (const exerciseInstance of workout.exercises) {
         if (!exercises[exerciseInstance.exerciseId]) {
-          exercises[exerciseInstance.exerciseId] = await getExerciseById(exerciseInstance.exerciseId);
+          // Find exercise by ID (handle both string and numeric string IDs)
+          const exercise = allExercises.find(ex => 
+            ex.id === exerciseInstance.exerciseId || 
+            String(ex.id) === String(exerciseInstance.exerciseId)
+          );
+          
+          if (exercise) {
+            console.log(`✅ Loaded exercise: ${exercise.name} (id: ${exercise.id}, lookup: ${exerciseInstance.exerciseId})`);
+          } else {
+            console.warn(`⚠️ Exercise not found: ${exerciseInstance.exerciseId}. Available IDs: ${allExercises.slice(0, 5).map(e => e.id).join(', ')}...`);
+          }
+          exercises[exerciseInstance.exerciseId] = exercise;
         }
       }
       setExerciseMap(exercises);
