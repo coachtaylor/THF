@@ -66,7 +66,7 @@ export function mapSupabaseExercise(row: any): Exercise {
   console.log('   Parsed equipment:', equipment);
 
   return {
-    id: row.id || row.slug,
+    id: String(row.id || row.slug), // Convert to string to match Exercise type
     name: row.name || 'Unknown Exercise',
     category: row.pattern || 'full_body',
     equipment: equipment,

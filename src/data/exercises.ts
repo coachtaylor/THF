@@ -121,7 +121,7 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
   };
 
   return {
-    id: db.slug, // Use slug as id for consistency
+    id: String(db.id) || db.slug, // Use numeric ID as string (matches plan generator), fallback to slug
     name: db.name,
     equipment: db.equipment,
     rawEquipment: normalizeRawEquipment(db.raw_equipment),
@@ -230,8 +230,18 @@ export const exerciseLibrary: Exercise[] = [];
 
 export async function getExerciseById(id: string): Promise<Exercise | undefined> {
   const exercises = await getExerciseLibrary();
-  // id can be either slug or numeric id
-  return exercises.find(ex => ex.id === id || ex.id === `exercise-${id}`);
+  // id can be numeric string (e.g., "848"), slug, or prefixed format (e.g., "exercise-848")
+  // Try exact match first, then try numeric match if id is numeric
+  const exactMatch = exercises.find(ex => ex.id === id);
+  if (exactMatch) return exactMatch;
+  
+  // If id is numeric, try matching against numeric string IDs
+  if (/^\d+$/.test(id)) {
+    return exercises.find(ex => ex.id === id || String(ex.id) === id);
+  }
+  
+  // Try prefixed format
+  return exercises.find(ex => ex.id === `exercise-${id}`);
 }
 
 export async function getExercisesByCategory(category: string): Promise<Exercise[]> {

@@ -31,8 +31,9 @@ export type CanonicalEquipment =
 /**
  * Maps raw equipment strings to canonical categories
  * This determines which equipment gets shown and how they're grouped
+ * EXPORTED for use in workout generation
  */
-function mapRawEquipmentToCanonical(raw: string): CanonicalEquipment | null {
+export function mapRawEquipmentToCanonical(raw: string): CanonicalEquipment | null {
   const normalized = raw.toUpperCase().trim();
 
   // Bodyweight
