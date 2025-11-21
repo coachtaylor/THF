@@ -3,6 +3,7 @@
 
 import { Exercise, Workout, ExerciseInstance, Goal } from '../types';
 import { Profile } from './storage/profile';
+import { mapRawEquipmentToCanonical } from '../utils/equipment';
 
 interface WorkoutGenerationOptions {
   duration: 5 | 15 | 30 | 45;
@@ -66,12 +67,41 @@ export function filterByEquipment(
   }
 
   const filtered = exercises.filter(exercise => {
-    // Exercise is valid if it uses ANY of the user's equipment
-    const hasMatchingEquipment = exercise.equipment.some(eq =>
+    // First, check if exercise equipment (canonical) matches user equipment
+    const hasCanonicalMatch = exercise.equipment.some(eq =>
       userEquipment.includes(eq)
     );
-
-    return hasMatchingEquipment;
+    
+    if (hasCanonicalMatch) {
+      return true;
+    }
+    
+    // If no canonical match, check raw equipment by converting to canonical
+    if (exercise.rawEquipment && exercise.rawEquipment.length > 0) {
+      const exerciseCanonicalEquipment = exercise.rawEquipment
+        .map(raw => mapRawEquipmentToCanonical(raw))
+        .filter((c): c is string => c !== null);
+      
+      const hasRawMatch = exerciseCanonicalEquipment.some(canonical =>
+        userEquipment.includes(canonical)
+      );
+      
+      if (hasRawMatch) {
+        return true;
+      }
+    }
+    
+    // Also check if any exercise equipment strings (even if not canonical) 
+    // can be mapped to user's canonical equipment
+    const exerciseCanonicalFromEquipment = exercise.equipment
+      .map(eq => mapRawEquipmentToCanonical(eq))
+      .filter((c): c is string => c !== null);
+    
+    const hasMappedMatch = exerciseCanonicalFromEquipment.some(canonical =>
+      userEquipment.includes(canonical)
+    );
+    
+    return hasMappedMatch;
   });
 
   console.log(`✅ Found ${filtered.length} exercises matching user equipment`);
