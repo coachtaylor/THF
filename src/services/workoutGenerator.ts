@@ -1,7 +1,8 @@
 // src/services/workoutGenerator.ts
 // Core workout generation logic with filtering and selection
 
-import { Profile, Exercise, Workout, ExerciseInstance, Goal } from '../types';
+import { Exercise, Workout, ExerciseInstance, Goal } from '../types';
+import { Profile } from './storage/profile';
 
 interface WorkoutGenerationOptions {
   duration: 5 | 15 | 30 | 45;
@@ -18,17 +19,19 @@ export function generateWorkout(
   availableExercises: Exercise[]
 ): Workout {
   console.log(`🏋️ Generating ${duration}min workout for profile:`, profile.id);
-  
+  console.log(`📦 User equipment:`, profile.equipment);
+  console.log(`📚 Available exercises to filter: ${availableExercises.length}`);
+
   // Step 1: Filter by equipment availability
-  const withEquipment = filterByEquipment(availableExercises, profile.preferences.equipment);
+  const withEquipment = filterByEquipment(availableExercises, profile.equipment || []);
   console.log(`✅ After equipment filter: ${withEquipment.length} exercises`);
   
   // Step 2: Filter by safety constraints
-  const safeExercises = filterByConstraints(withEquipment, profile.constraints);
+  const safeExercises = filterByConstraints(withEquipment, profile.constraints || []);
   console.log(`✅ After safety filter: ${safeExercises.length} exercises`);
-  
+
   // Step 3: Select exercises based on goals
-  const selectedExercises = selectByGoals(safeExercises, profile.goals, duration);
+  const selectedExercises = selectByGoals(safeExercises, profile, duration);
   console.log(`✅ Selected ${selectedExercises.length} exercises for workout`);
   
   // Step 4: Structure into workout format
@@ -50,19 +53,30 @@ export function filterByEquipment(
     console.warn('⚠️ No equipment selected by user');
     return [];
   }
-  
-  return exercises.filter(exercise => {
+
+  console.log(`🔍 Filtering ${exercises.length} exercises for equipment:`, userEquipment);
+
+  // Log sample of exercise equipment to debug
+  if (exercises.length > 0) {
+    const sample = exercises.slice(0, 3);
+    console.log('📋 Sample exercise equipment:');
+    sample.forEach(ex => {
+      console.log(`  - ${ex.name}: [${ex.equipment.join(', ')}]`);
+    });
+  }
+
+  const filtered = exercises.filter(exercise => {
     // Exercise is valid if it uses ANY of the user's equipment
     const hasMatchingEquipment = exercise.equipment.some(eq =>
       userEquipment.includes(eq)
     );
-    
-    if (!hasMatchingEquipment) {
-      console.log(`❌ Filtered out: ${exercise.name} (needs ${exercise.equipment.join(', ')})`);
-    }
-    
+
     return hasMatchingEquipment;
   });
+
+  console.log(`✅ Found ${filtered.length} exercises matching user equipment`);
+
+  return filtered;
 }
 
 /**
@@ -96,31 +110,82 @@ export function filterByConstraints(
 }
 
 /**
- * Select exercises based on user goals
- * Prioritizes exercises that align with primary/secondary goals
+ * Select exercises based on user goals and body focus preferences
+ * Prioritizes exercises that align with primary/secondary goals and preferred body regions
  */
 export function selectByGoals(
   exercises: Exercise[],
-  goals: Goal[],
+  profile: Profile,
   duration: number
 ): Exercise[] {
   const exercisesNeeded = calculateExerciseCount(duration);
-  
+
   if (exercises.length === 0) {
     console.error('❌ No exercises available after filtering!');
     return [];
   }
-  
-  // For MVP: Simple selection
-  // TODO: Implement goal-based weighting and category distribution
-  
-  // Shuffle and take first N exercises
-  const shuffled = [...exercises].sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, exercisesNeeded);
-  
-  console.log(`📋 Selected exercises:`, selected.map(ex => ex.name));
-  
+
+  // Score each exercise based on profile preferences
+  const scored = exercises.map(exercise => ({
+    exercise,
+    score: calculateExerciseScore(exercise, profile)
+  }));
+
+  // Sort by score (highest first) and take top N
+  scored.sort((a, b) => b.score - a.score);
+  const selected = scored.slice(0, exercisesNeeded).map(s => s.exercise);
+
+  console.log(`📋 Selected exercises (with scores):`);
+  selected.forEach(ex => {
+    const scoreObj = scored.find(s => s.exercise.id === ex.id);
+    console.log(`  - ${ex.name} (score: ${scoreObj?.score.toFixed(1)})`);
+  });
+
   return selected;
+}
+
+/**
+ * Calculate a score for an exercise based on how well it matches the user's profile
+ * Higher score = better match
+ */
+function calculateExerciseScore(exercise: Exercise, profile: Profile): number {
+  let score = 0;
+
+  // 1. PRIMARY GOAL MATCH (70% weight = 7 points)
+  const primaryGoal = profile.goals?.[0];
+  if (primaryGoal && exercise.tags.some(tag => tag.toLowerCase() === primaryGoal.toLowerCase())) {
+    score += 7;
+  }
+
+  // 2. SECONDARY GOAL MATCH (30% weight = 3 points)
+  const secondaryGoal = profile.goals?.[1];
+  if (secondaryGoal && exercise.tags.some(tag => tag.toLowerCase() === secondaryGoal.toLowerCase())) {
+    score += 3;
+  }
+
+  // 3. BODY FOCUS PREFER (2 points per match)
+  const bodyFocusPrefer = profile.body_focus_prefer || [];
+  const matchingPrefer = bodyFocusPrefer.filter(region =>
+    exercise.tags.some(tag => tag.toLowerCase().includes(region.toLowerCase()))
+  );
+  if (matchingPrefer.length > 0) {
+    score += matchingPrefer.length * 2;
+  }
+
+  // 4. BODY FOCUS AVOID (penalty: -3 points per match)
+  const bodyFocusAvoid = profile.body_focus_soft_avoid || [];
+  const matchingAvoid = bodyFocusAvoid.filter(region =>
+    exercise.tags.some(tag => tag.toLowerCase().includes(region.toLowerCase()))
+  );
+  if (matchingAvoid.length > 0) {
+    score -= matchingAvoid.length * 3;
+  }
+
+  // 5. BASELINE RANDOMNESS (0-2 points)
+  // Add small random variance to break ties and add variety
+  score += Math.random() * 2;
+
+  return score;
 }
 
 /**
