@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from 'react-native-paper';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
@@ -7,7 +7,6 @@ import { useProfile } from '../../../hooks/useProfile';
 import { palette, spacing, typography } from '../../../theme';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
 import BodyRegionChip from '../../../components/onboarding/BodyRegionChip';
-import { fetchGoalsFromDatabase, formatGoalLabel } from '../../../utils/goals';
 
 // Body region options for focus areas
 const BODY_FOCUS_PREFER_OPTIONS = [
@@ -29,74 +28,22 @@ const BODY_FOCUS_SOFT_AVOID_OPTIONS = [
   { value: 'shoulders', label: 'Shoulders' },
 ];
 
-
-
-export default function GoalsAndPreferences({ navigation }: OnboardingScreenProps<'Goals'>) {
+export default function BodyFocus({ navigation }: OnboardingScreenProps<'BodyFocus'>) {
   const { profile, updateProfile } = useProfile();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isSmall = width < 375;
 
-  // Goals from database
-  const [availableGoals, setAvailableGoals] = useState<string[]>([]);
-  const [loadingGoals, setLoadingGoals] = useState<boolean>(true);
-  
   // Initialize from profile if available
-  const [primaryGoal, setPrimaryGoal] = useState<string | null>(null);
-  const [secondaryGoal, setSecondaryGoal] = useState<string | null>(null);
   const [bodyFocusPrefer, setBodyFocusPrefer] = useState<string[]>(profile?.body_focus_prefer || []);
   const [bodyFocusSoftAvoid, setBodyFocusSoftAvoid] = useState<string[]>(profile?.body_focus_soft_avoid || []);
 
-  // Load goals from database
   useEffect(() => {
-    const loadGoals = async () => {
-      try {
-        setLoadingGoals(true);
-        const goals = await fetchGoalsFromDatabase();
-        setAvailableGoals(goals);
-        
-        // Initialize selected goals from profile
-        if (profile?.goals && profile.goals.length > 0) {
-          const goals = profile.goals;
-          setPrimaryGoal(goals[0] || null);
-          setSecondaryGoal(goals[1] || null);
-        }
-      } catch (error) {
-        console.error('Error loading goals:', error);
-        // Fallback to default goals
-        setAvailableGoals(['strength', 'conditioning', 'mobility', 'endurance']);
-      } finally {
-        setLoadingGoals(false);
-      }
-    };
-
-    loadGoals();
-  }, []);
-
-
-  const handleGoalPress = (goal: string) => {
-    if (primaryGoal === goal) {
-      setPrimaryGoal(null);
-      if (secondaryGoal === goal) {
-        setSecondaryGoal(null);
-      }
-    } else if (secondaryGoal === goal) {
-      setSecondaryGoal(null);
-    } else if (!primaryGoal) {
-      setPrimaryGoal(goal);
-    } else if (!secondaryGoal) {
-      setSecondaryGoal(goal);
-    } else {
-      setPrimaryGoal(goal);
-      setSecondaryGoal(primaryGoal);
+    if (profile) {
+      setBodyFocusPrefer(profile.body_focus_prefer || []);
+      setBodyFocusSoftAvoid(profile.body_focus_soft_avoid || []);
     }
-  };
-
-  const getSelectionType = (goal: string): 'primary' | 'secondary' | null => {
-    if (primaryGoal === goal) return 'primary';
-    if (secondaryGoal === goal) return 'secondary';
-    return null;
-  };
+  }, [profile]);
 
   const toggleBodyFocusPrefer = (value: string) => {
     setBodyFocusPrefer((prev) =>
@@ -114,36 +61,18 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
     setBodyFocusSoftAvoid([]);
   };
 
-
-
   const handleContinue = async () => {
-    if (!primaryGoal) return;
-
-    const goals: string[] = [primaryGoal];
-    if (secondaryGoal) {
-      goals.push(secondaryGoal);
-    }
-
-    // Calculate goal weighting
-    const goalWeighting = secondaryGoal
-      ? { primary: 70, secondary: 30 }
-      : { primary: 100, secondary: 0 };
-
     try {
       await updateProfile({
-        goals,
-        goal_weighting: goalWeighting,
         body_focus_prefer: bodyFocusPrefer.length > 0 ? bodyFocusPrefer : undefined,
         body_focus_soft_avoid: bodyFocusSoftAvoid.length > 0 ? bodyFocusSoftAvoid : undefined,
       });
-      // Navigate to Program Setup screen
-      navigation.navigate('ProgramSetup');
+      // Navigate to Constraints screen
+      navigation.navigate('Constraints');
     } catch (error) {
-      console.error('Error saving goals and preferences:', error);
+      console.error('Error saving body focus preferences:', error);
     }
   };
-
-  const canContinue = primaryGoal !== null;
 
   return (
     <View
@@ -156,16 +85,16 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
       ]}
     >
       <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Goals & Preferences</Text>
+        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Body Focus</Text>
         <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          Customize your workout plan
+          Optional: Help us customize your workouts to target specific areas
         </Text>
       </View>
 
       <ProgressIndicator
-        currentStep={1}
-        totalSteps={4}
-        stepLabels={['Goals & Preferences', 'Program Setup', 'Constraints', 'Review']}
+        currentStep={2}
+        totalSteps={3}
+        stepLabels={['Goals & Preferences', 'Body Focus', 'Constraints']}
       />
 
       <ScrollView
@@ -173,62 +102,8 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Goals Section */}
+        {/* Focus More On Section */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Goals</Text>
-            <Text style={styles.sectionDescription}>Select your primary goal. Optional secondary goal.</Text>
-          </View>
-          {loadingGoals ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={palette.tealPrimary} />
-              <Text style={styles.loadingText}>Loading goals...</Text>
-            </View>
-          ) : (
-            <View style={styles.goalsGrid}>
-              {availableGoals.map((goal) => {
-                const selectionType = getSelectionType(goal);
-                const isSelected = primaryGoal === goal || secondaryGoal === goal;
-                return (
-                  <TouchableOpacity
-                    key={goal}
-                    onPress={() => handleGoalPress(goal)}
-                    activeOpacity={0.7}
-                    style={[
-                      styles.goalCard,
-                      isSelected && styles.goalCardSelected,
-                      selectionType === 'primary' && styles.goalCardPrimary,
-                      selectionType === 'secondary' && styles.goalCardSecondary,
-                    ]}
-                  >
-                    {selectionType === 'primary' ? (
-                      <View key="primary-badge" style={styles.badge}>
-                        <Text style={styles.badgeText}>Primary</Text>
-                      </View>
-                    ) : selectionType === 'secondary' ? (
-                      <View key="secondary-badge" style={[styles.badge, styles.badgeSecondary]}>
-                        <Text style={styles.badgeText}>Secondary</Text>
-                      </View>
-                    ) : null}
-                    <Text style={[styles.goalLabel, isSelected && styles.goalLabelSelected]}>
-                      {formatGoalLabel(goal)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        {/* Body Region Preferences Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Body Focus</Text>
-            <Text style={styles.sectionDescription}>
-              Optional: Help us customize your workouts to target specific areas
-            </Text>
-          </View>
-
           <View style={styles.bodyFocusCard}>
             <View style={styles.bodyFocusCardHeader}>
               <View style={styles.bodyFocusIconContainer}>
@@ -259,7 +134,10 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
               </View>
             )}
           </View>
+        </View>
 
+        {/* Go Gently With Section */}
+        <View style={styles.section}>
           <View style={styles.bodyFocusCard}>
             <View style={styles.bodyFocusCardHeader}>
               <View style={[styles.bodyFocusIconContainer, styles.bodyFocusIconContainerGentle]}>
@@ -297,26 +175,18 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
             )}
           </View>
         </View>
-
-
       </ScrollView>
 
       <View style={styles.ctaContainer}>
         <Button
           mode="contained"
           onPress={handleContinue}
-          disabled={!canContinue}
           style={styles.continueButton}
           contentStyle={styles.continueButtonContent}
           labelStyle={styles.continueButtonLabel}
         >
           Continue
         </Button>
-        {!canContinue && (
-          <Text style={styles.hintText}>
-            Please select at least one goal
-          </Text>
-        )}
       </View>
     </View>
   );
@@ -359,97 +229,10 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: spacing.l,
   },
-  sectionHeader: {
-    marginBottom: spacing.s,
-  },
-  sectionTitle: {
-    ...typography.h2,
-    marginBottom: spacing.xxs,
-    color: palette.white,
-    letterSpacing: -0.5,
-  },
-  sectionDescription: {
-    ...typography.body,
-    color: palette.midGray,
-    lineHeight: 22,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.l,
-    gap: spacing.s,
-  },
-  loadingText: {
-    ...typography.bodySmall,
-    color: palette.midGray,
-  },
-  goalsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.m,
-  },
-  goalCard: {
-    flex: 1,
-    minWidth: '47%',
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.s,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    alignItems: 'center',
-    minHeight: 60,
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  goalCardSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.darkerCard,
-    borderWidth: 2,
-  },
-  goalCardPrimary: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
-    borderWidth: 2,
-  },
-  goalCardSecondary: {
-    borderColor: palette.tealDark,
-    borderWidth: 2,
-    backgroundColor: palette.tealLight,
-  },
-  goalLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: palette.white,
-  },
-  goalLabelSelected: {
-    color: palette.tealPrimary,
-  },
-  badge: {
-    position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    backgroundColor: palette.tealPrimary,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  badgeSecondary: {
-    backgroundColor: palette.tealDark,
-  },
-  badgeText: {
-    ...typography.caption,
-    color: palette.deepBlack,
-    fontWeight: '700',
-    fontSize: 10,
-    letterSpacing: 0.2,
-  },
   bodyFocusCard: {
     backgroundColor: palette.darkCard,
     borderRadius: 14,
     padding: spacing.m,
-    marginBottom: spacing.m,
     borderWidth: 1,
     borderColor: palette.border,
   },
@@ -529,19 +312,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   continueButtonContent: {
-    paddingVertical: spacing.s,
+    paddingVertical: spacing.m,
     backgroundColor: palette.tealPrimary,
   },
   continueButtonLabel: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: palette.deepBlack,
-  },
-  hintText: {
-    ...typography.caption,
-    textAlign: 'center',
-    color: palette.midGray,
-    marginTop: spacing.xs,
   },
 });
 

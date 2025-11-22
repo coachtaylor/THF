@@ -10,31 +10,40 @@ interface WeeklyCalendarProps {
 }
 
 export default function WeeklyCalendar({ days, selectedDay, onSelectDay }: WeeklyCalendarProps) {
-  const formatDate = (date: Date): string => {
+  const formatDayName = (date: Date): string => {
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const dayName = daysOfWeek[date.getDay()];
-    const dayNumber = date.getDate();
-    return `${dayName}\n${dayNumber}`;
+    return daysOfWeek[date.getDay()];
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+      >
         {days.map((day) => {
-          const isSelected = day.dayNumber === selectedDay;
-          const hasWorkout = day.variants[15] !== null || day.variants[30] !== null;
+          const today = new Date();
+          const isToday = day.date.toDateString() === today.toDateString();
+          const isSelected = day.dayNumber === selectedDay || isToday;
+          const dayName = formatDayName(day.date);
+          const dayNumber = day.date.getDate();
 
           return (
             <TouchableOpacity
               key={day.dayNumber}
               onPress={() => onSelectDay(day.dayNumber)}
-              activeOpacity={0.8}
-              style={[styles.dayCard, isSelected && styles.dayCardSelected]}
+              activeOpacity={0.7}
+              style={styles.dayCard}
             >
-              <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>
-                {formatDate(day.date)}
+              <Text style={[styles.dayName, isSelected && styles.dayNameSelected]}>
+                {dayName}
               </Text>
-              {hasWorkout && <View style={styles.workoutIndicator} />}
+              <View style={[styles.dayNumberCircle, isSelected && styles.dayNumberCircleSelected]}>
+                <Text style={[styles.dayNumber, isSelected && styles.dayNumberSelected]}>
+                  {dayNumber}
+                </Text>
+              </View>
             </TouchableOpacity>
           );
         })}
@@ -45,47 +54,54 @@ export default function WeeklyCalendar({ days, selectedDay, onSelectDay }: Weekl
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: spacing.s,
+    paddingVertical: spacing.m,
     backgroundColor: palette.deepBlack,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
   },
   scrollContent: {
-    paddingHorizontal: spacing.m,
-    gap: spacing.xs,
+    paddingHorizontal: spacing.l,
+    gap: spacing.s,
   },
   dayCard: {
-    width: 52,
-    height: 56,
+    width: 50,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    position: 'relative',
+  },
+  dayName: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: palette.midGray,
+    marginBottom: spacing.s,
+    fontWeight: '500',
+  },
+  dayNameSelected: {
+    color: palette.tealPrimary,
+    fontWeight: '600',
+  },
+  dayNumberCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: palette.darkCard,
-    borderRadius: 10,
-    padding: spacing.xs,
+    borderWidth: 1.5,
+    borderColor: palette.border,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: palette.border,
+    marginBottom: spacing.xs,
   },
-  dayCardSelected: {
+  dayNumberCircleSelected: {
     borderColor: palette.tealPrimary,
     backgroundColor: palette.tealGlow,
   },
-  dayText: {
-    ...typography.caption,
+  dayNumber: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: palette.white,
     textAlign: 'center',
-    lineHeight: 14,
-    fontSize: 11,
   },
-  dayTextSelected: {
+  dayNumberSelected: {
     color: palette.tealPrimary,
     fontWeight: '700',
-  },
-  workoutIndicator: {
-    position: 'absolute',
-    bottom: 4,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: palette.tealPrimary,
   },
 });
 

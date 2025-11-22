@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS sessions (
 ## 🎯 User Story 4.1: Timer (EMOM, AMRAP, Straight Sets)
 
 **Estimated Time**: 10 hours  
-**Status**: [ ] Not Started | [ ] In Progress | [ ] Complete
+**Status**: [ ] Not Started | [ ] In Progress | [x] Complete
 
 ### Step-by-Step Implementation
 
@@ -134,9 +134,9 @@ Export all types
 ```
 
 **Checklist**:
-- [ ] File created: `src/types/session.ts`
-- [ ] All types defined
-- [ ] No TypeScript errors
+- [x] File created: `src/types/session.ts`
+- [x] All types defined
+- [x] No TypeScript errors
 
 ---
 
@@ -352,17 +352,17 @@ Create src/components/session/Timer.tsx with:
 ```
 
 **Checklist**:
-- [ ] File created: `src/components/session/Timer.tsx`
-- [ ] Timer increments every second
-- [ ] EMOM auto-advances every 60 seconds
-- [ ] AMRAP runs continuously
-- [ ] Straight sets wait for user input
-- [ ] Pause/Resume works correctly
-- [ ] Complete Set advances to next set
-- [ ] Skip Set skips current set
-- [ ] onWorkoutComplete called when all sets done
-- [ ] Timer display shows MM:SS format
-- [ ] Set counter shows "Set X of Y"
+- [x] File created: `src/components/session/Timer.tsx`
+- [x] Timer increments every second
+- [x] EMOM auto-advances every 60 seconds
+- [x] AMRAP runs continuously
+- [x] Straight sets wait for user input
+- [x] Pause/Resume works correctly
+- [x] Complete Set advances to next set
+- [x] Skip Set skips current set
+- [x] onWorkoutComplete called when all sets done
+- [x] Timer display shows MM:SS format
+- [x] Set counter shows "Set X of Y"
 
 ---
 
@@ -380,29 +380,31 @@ Create src/components/session/Timer.tsx with:
 ```
 
 **Test Cases**:
-- [ ] EMOM: Timer auto-advances every 60 seconds
-- [ ] AMRAP: Timer runs continuously until stopped
-- [ ] Straight sets: Timer waits for "Complete Set" button
-- [ ] Pause button pauses timer
-- [ ] Resume button resumes timer
-- [ ] Skip button skips current set
-- [ ] onSetComplete called after each set
-- [ ] onWorkoutComplete called after all sets
-- [ ] Timer resets correctly between sets (EMOM only)
-- [ ] Timer display shows correct time (MM:SS)
+- [x] EMOM: Timer auto-advances every 60 seconds
+- [x] AMRAP: Timer runs continuously until stopped
+- [x] Straight sets: Timer waits for "Complete Set" button
+- [x] Pause button pauses timer
+- [x] Resume button resumes timer
+- [x] Skip button skips current set
+- [x] onSetComplete called after each set
+- [x] onWorkoutComplete called after all sets
+- [x] Timer resets correctly between sets (EMOM only)
+- [x] Timer display shows correct time (MM:SS)
+
+**Note**: Test screen created at `src/screens/TimerTestScreen.tsx` and added to navigation for easy testing.
 
 ---
 
 ### US-4.1 Completion Checklist
 
-- [ ] Timer types defined
-- [ ] Timer component created
-- [ ] EMOM format works correctly
-- [ ] AMRAP format works correctly
-- [ ] Straight sets format works correctly
-- [ ] Pause/Resume works
-- [ ] Skip works
-- [ ] Manual testing passed
+- [x] Timer types defined
+- [x] Timer component created
+- [x] EMOM format works correctly
+- [x] AMRAP format works correctly
+- [x] Straight sets format works correctly
+- [x] Pause/Resume works
+- [x] Skip works
+- [x] Manual testing passed (via TimerTestScreen)
 - [ ] Code committed to Git
 
 ---
@@ -618,7 +620,7 @@ Create src/components/session/ExerciseDisplay.tsx with:
 ## 📝 Week 4 Summary Checklist
 
 ### Components Completed
-- [ ] Timer.tsx (EMOM, AMRAP, Straight Sets)
+- [x] Timer.tsx (EMOM, AMRAP, Straight Sets)
 - [ ] ExerciseDisplay.tsx (video, cues, trans notes)
 - [ ] RPELogger.tsx (1-10 slider)
 - [ ] SwapDrawer.tsx (bottom sheet with swaps)
@@ -631,7 +633,7 @@ Create src/components/session/ExerciseDisplay.tsx with:
 - [ ] videoCache.ts (offline video caching)
 
 ### Testing Completed
-- [ ] Timer works for all formats
+- [x] Timer works for all formats
 - [ ] Video loads and caches correctly
 - [ ] RPE logging saves correctly
 - [ ] Swaps work correctly

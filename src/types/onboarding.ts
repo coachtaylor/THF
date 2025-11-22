@@ -220,3 +220,33 @@ export const onboardingExamples = {
     heavyBinding: false,
   },
 };
+
+/**
+ * Navigation types for onboarding stack
+ */
+import { StackNavigationProp } from '@react-navigation/stack';
+
+export type OnboardingStackParamList = {
+  WhyTransFitness: undefined;
+  Disclaimer: undefined;
+  Goals: undefined;
+  BodyFocus: undefined;
+  ProgramSetup: undefined;
+  Constraints: undefined;
+  Review: undefined;
+  QuickStart: undefined;
+  PlanView: undefined;
+  TimerTest: undefined;
+};
+
+export type OnboardingScreenProps<T extends keyof OnboardingStackParamList> = {
+  navigation: StackNavigationProp<OnboardingStackParamList, T>;
+  route?: any;
+};
+
+export interface WhyTransFitnessContent {
+  headline: string;
+  bullets: string[];
+  ctaText: string;
+  skipText: string;
+}
