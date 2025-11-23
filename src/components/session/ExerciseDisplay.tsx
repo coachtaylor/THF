@@ -4,6 +4,7 @@ import { Video } from 'expo-av';
 
 import { Exercise } from '../../types';
 import { cacheVideo, getCachedVideo } from '../../services/videoCache';
+import { palette, spacing, typography } from '../../theme';
 
 interface ExerciseDisplayProps {
   exercise: Exercise;
@@ -135,75 +136,77 @@ const ExerciseDisplay: React.FC<ExerciseDisplayProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: palette.deepBlack,
   },
   video: {
     width: '100%',
-    height: 240,
-    backgroundColor: '#111827',
+    height: 180,
+    backgroundColor: palette.darkerCard,
   },
   lowSensoryNotice: {
-    padding: 16,
-    backgroundColor: '#f4f4f5',
+    padding: spacing.s,
+    backgroundColor: palette.darkCard,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: palette.border,
   },
   lowSensoryText: {
-    fontSize: 14,
-    color: '#6b7280',
+    ...typography.bodySmall,
+    color: palette.midGray,
     textAlign: 'center',
   },
   content: {
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
-    gap: 16,
+    padding: spacing.m,
+    gap: spacing.s,
   },
   exerciseName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0f172a',
-    marginBottom: 8,
+    ...typography.h3,
+    color: palette.white,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
   },
   section: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    borderRadius: 12,
-    padding: 16,
-    backgroundColor: '#f8fafc',
+    borderColor: palette.border,
+    borderRadius: 8,
+    padding: spacing.s,
+    backgroundColor: palette.darkCard,
   },
   sectionTitle: {
-    fontSize: 16,
+    ...typography.bodyLarge,
+    color: palette.tealPrimary,
+    marginBottom: spacing.xs,
     fontWeight: '600',
-    color: '#0f172a',
-    marginBottom: 8,
   },
   listItem: {
-    fontSize: 15,
-    color: '#1f2937',
-    marginBottom: 4,
+    ...typography.bodySmall,
+    color: palette.lightGray,
+    marginBottom: spacing.xxs,
+    marginLeft: spacing.xs,
   },
   transNotes: {
-    borderRadius: 12,
-    padding: 16,
-    backgroundColor: '#ecfdf5',
+    borderRadius: 8,
+    padding: spacing.s,
+    backgroundColor: palette.darkerCard,
     borderWidth: 1,
-    borderColor: '#6ee7b7',
+    borderColor: palette.tealPrimary,
   },
   transNotesTitle: {
-    fontSize: 16,
-    color: '#065f46',
+    ...typography.bodyLarge,
+    color: palette.tealPrimary,
+    marginBottom: spacing.xs,
     fontWeight: '600',
-    marginBottom: 8,
   },
   transNotesItem: {
-    fontSize: 15,
-    color: '#064e3b',
-    marginBottom: 6,
+    ...typography.bodySmall,
+    color: palette.lightGray,
+    marginBottom: spacing.xxs,
   },
   transNoteLabel: {
     fontWeight: '600',
+    color: palette.tealPrimary,
   },
 });
 

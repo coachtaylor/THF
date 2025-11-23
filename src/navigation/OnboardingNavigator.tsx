@@ -11,6 +11,8 @@ import Review from '../screens/onboarding/intake/Review';
 import QuickStart from '../screens/onboarding/QuickStart';
 import PlanView from '../screens/plan/PlanView';
 import TimerTestScreen from '../screens/TimerTestScreen';
+import ExerciseDisplayTestScreen from '../screens/ExerciseDisplayTestScreen';
+import SessionPlayer from '../screens/SessionPlayer';
 
 const Stack = createStackNavigator<OnboardingStackParamList>();
 
@@ -30,6 +32,8 @@ export default function OnboardingNavigator() {
       <Stack.Screen name="QuickStart" component={QuickStart} />
       <Stack.Screen name="PlanView" component={PlanView} />
       <Stack.Screen name="TimerTest" component={TimerTestScreen} />
+      <Stack.Screen name="ExerciseDisplayTest" component={ExerciseDisplayTestScreen} />
+      <Stack.Screen name="SessionPlayer" component={SessionPlayer} />
     </Stack.Navigator>
   );
 }

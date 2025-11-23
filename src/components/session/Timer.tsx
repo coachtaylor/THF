@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Button, IconButton } from 'react-native-paper';
 
 import { TimerFormat, TimerState } from '../../types/session';
+import { palette, spacing, typography } from '../../theme';
 
 interface TimerProps {
   format: TimerFormat;
@@ -285,47 +286,50 @@ const Timer: React.FC<TimerProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 24,
-    gap: 16,
+    padding: spacing.m,
+    gap: spacing.s,
   },
   instructions: {
-    fontSize: 16,
-    color: '#6b7280',
+    ...typography.bodySmall,
+    color: palette.midGray,
+    textAlign: 'center',
   },
   timerCard: {
-    backgroundColor: '#0f172a',
-    borderRadius: 16,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+    backgroundColor: palette.darkerCard,
+    borderRadius: 12,
+    paddingVertical: spacing.m,
+    paddingHorizontal: spacing.m,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   timerText: {
-    fontSize: 48,
+    fontSize: 40,
     fontWeight: 'bold',
-    color: '#f8fafc',
-    letterSpacing: 2,
+    color: palette.tealPrimary,
+    letterSpacing: 1,
   },
   setCounter: {
-    marginTop: 8,
-    fontSize: 18,
-    color: '#cbd5f5',
+    marginTop: spacing.xs,
+    ...typography.bodySmall,
+    color: palette.midGray,
   },
   controls: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.xs,
     justifyContent: 'center',
   },
   completeButton: {
-    minWidth: 140,
+    minWidth: 120,
   },
   actionButton: {
-    minWidth: 140,
+    minWidth: 120,
   },
   secondaryControls: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.xs,
   },
   iconRow: {
     flexDirection: 'row',

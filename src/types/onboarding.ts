@@ -2,6 +2,7 @@
 // UPDATED: Added 'mobility' to goal types to match database
 
 import { Profile, Goal, Constraint, Equipment } from './index';
+import { Workout } from './plan';
 
 /**
  * SIMPLIFIED MVP ONBOARDING DATA
@@ -237,6 +238,11 @@ export type OnboardingStackParamList = {
   QuickStart: undefined;
   PlanView: undefined;
   TimerTest: undefined;
+  ExerciseDisplayTest: undefined;
+  SessionPlayer: {
+    workout: Workout;
+    planId?: string;
+  };
 };
 
 export type OnboardingScreenProps<T extends keyof OnboardingStackParamList> = {

@@ -2,7 +2,7 @@
 
 **Goal**: User can complete workouts with timer, RPE logging, swaps, and pain flags  
 **Estimated Effort**: 40-45 hours  
-**Status**: [ ] Not Started | [ ] In Progress | [ ] Complete
+**Status**: [ ] Not Started | [x] In Progress | [ ] Complete
 
 ---
 
@@ -412,7 +412,7 @@ Create src/components/session/Timer.tsx with:
 ## 🎯 User Story 4.2: Exercise Display
 
 **Estimated Time**: 8 hours  
-**Status**: [ ] Not Started | [ ] In Progress | [ ] Complete
+**Status**: [ ] Not Started | [ ] In Progress | [x] Complete
 
 ### Implementation
 
@@ -573,16 +573,18 @@ Create src/components/session/ExerciseDisplay.tsx with:
 ```
 
 **Checklist**:
-- [ ] ExerciseDisplay component created
-- [ ] Video loads from cache
-- [ ] Video downloads and caches if not cached
-- [ ] Video loops and auto-plays
-- [ ] Video hidden in low-sensory mode
-- [ ] Exercise name displays
-- [ ] Neutral cues display as bullet list
-- [ ] Breathing cues display as bullet list
-- [ ] Trans notes display in highlighted box
-- [ ] Layout looks good on iPhone 12 and Pixel 5
+- [x] ExerciseDisplay component created
+- [x] Video loads from cache
+- [x] Video downloads and caches if not cached
+- [x] Video loops and auto-plays
+- [x] Video hidden in low-sensory mode
+- [x] Exercise name displays
+- [x] Neutral cues display as bullet list
+- [x] Breathing cues display as bullet list
+- [x] Trans notes display in highlighted box
+- [x] Layout looks good on iPhone 12 and Pixel 5
+- [x] Test screen created (ExerciseDisplayTestScreen.tsx)
+- [x] Styling matches app theme (dark theme with teal accents)
 
 ---
 
@@ -591,29 +593,43 @@ Create src/components/session/ExerciseDisplay.tsx with:
 **Note**: Due to length, I'll provide condensed versions. Follow same pattern as US-4.1 and US-4.2.
 
 ### US-4.3: RPE Logger (6 hours)
-- Create RPE slider (1-10 scale)
-- Save RPE with each completed set
-- Display RPE history for exercise
+**Status**: [ ] Not Started | [ ] In Progress | [x] Complete
+
+- [x] Create RPE buttons (1-10 scale)
+- [x] Save RPE with each completed set
+- [x] Display RPE history for exercise
+- [x] Show average RPE for exercise
+- [x] Component created: `src/components/session/RPELogger.tsx`
 
 ### US-4.4: Swap Drawer (8 hours)
-- Create bottom sheet with swap options
-- Display 2+ swaps per exercise
-- Show swap rationale
-- Link to FAQ page (v2.2)
-- Update session with swapped exercise
+**Status**: [ ] Not Started | [ ] In Progress | [x] Complete
+
+- [x] Create bottom sheet with swap options
+- [x] Display 2+ swaps per exercise
+- [x] Show swap rationale
+- [x] Link to FAQ page (v2.2) - placeholder implemented
+- [x] Update session with swapped exercise
+- [x] Component created: `src/components/session/SwapDrawer.tsx`
 
 ### US-4.5: Pain Flag (6 hours)
-- Create pain flag button
-- Trigger auto-regression (safer variant + 20% volume reduction)
-- Save pain flag to session
-- Show confirmation toast
+**Status**: [ ] Not Started | [ ] In Progress | [x] Complete
+
+- [x] Create pain flag button
+- [x] Trigger auto-regression (safer variant + 20% volume reduction)
+- [x] Save pain flag to session
+- [x] Show confirmation toast
+- [x] Component created: `src/components/session/PainFlagButton.tsx`
+- [x] Service created: `src/services/autoRegress.ts`
 
 ### US-4.6: Completion Screen (6 hours)
-- Display session stats (duration, exercises, sets, avg RPE)
-- Show encouragement message
-- Add "Save Session" button
-- Add "Share Progress" button (private)
-- Navigate back to Plan View
+**Status**: [ ] Not Started | [ ] In Progress | [x] Complete
+
+- [x] Display session stats (duration, exercises, sets, avg RPE)
+- [x] Show encouragement message
+- [x] Add "Save Session" button
+- [x] Add "Share Progress" button (private)
+- [x] Navigate back to Plan View
+- [x] Component created: `src/components/session/CompletionScreen.tsx`
 
 ---
 
@@ -621,29 +637,34 @@ Create src/components/session/ExerciseDisplay.tsx with:
 
 ### Components Completed
 - [x] Timer.tsx (EMOM, AMRAP, Straight Sets)
-- [ ] ExerciseDisplay.tsx (video, cues, trans notes)
-- [ ] RPELogger.tsx (1-10 slider)
-- [ ] SwapDrawer.tsx (bottom sheet with swaps)
-- [ ] PainFlagButton.tsx (auto-regression trigger)
-- [ ] CompletionScreen.tsx (stats, encouragement)
+- [x] ExerciseDisplay.tsx (video, cues, trans notes)
+- [x] RPELogger.tsx (1-10 buttons)
+- [x] SwapDrawer.tsx (bottom sheet with swaps)
+- [x] PainFlagButton.tsx (auto-regression trigger)
+- [x] CompletionScreen.tsx (stats, encouragement)
 
 ### Services Completed
 - [ ] sessionLogger.ts (save session to SQLite)
-- [ ] autoRegress.ts (pain flag logic)
-- [ ] videoCache.ts (offline video caching)
+- [x] autoRegress.ts (pain flag logic)
+- [x] videoCache.ts (offline video caching)
 
 ### Testing Completed
 - [x] Timer works for all formats
-- [ ] Video loads and caches correctly
-- [ ] RPE logging saves correctly
-- [ ] Swaps work correctly
-- [ ] Pain flag triggers auto-regression
+- [x] Video loads and caches correctly
+- [x] RPE logging saves correctly
+- [x] Swaps work correctly
+- [x] Pain flag triggers auto-regression
 - [ ] Session saves to SQLite
-- [ ] Completion screen displays stats
+- [x] Completion screen displays stats
+- [x] ExerciseDisplay test screen created
+
+### Test Screens Created
+- [x] TimerTestScreen.tsx (for testing Timer component)
+- [x] ExerciseDisplayTestScreen.tsx (for testing ExerciseDisplay component)
 
 ### Ready for Week 5
-- [ ] All Week 4 user stories complete
-- [ ] Code committed and pushed to Git
+- [ ] All Week 4 user stories complete (pending: sessionLogger.ts service)
+- [x] Code committed and pushed to Git
 
 ---
 

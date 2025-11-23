@@ -43,9 +43,10 @@ export default function PlanView({ navigation }: PlanViewProps) {
   const currentWorkout = currentDay.variants[selectedVariant];
 
   const handleStartWorkout = () => {
-    // TODO: Navigate to SessionPlayer when implemented (Week 4)
-    // navigation.navigate('SessionPlayer', { workout: currentWorkout });
-    console.log('Start workout:', currentWorkout);
+    navigation.navigate('SessionPlayer', { 
+      workout: currentWorkout,
+      planId: plan.id 
+    });
   };
 
   const handlePreview = () => {
@@ -66,15 +67,26 @@ export default function PlanView({ navigation }: PlanViewProps) {
     <View style={[styles.container, { paddingTop: Math.max(insets.top, spacing.s) }]}>
       {/* Header with Settings Button */}
       <View style={styles.header}>
-        <Button
-          mode="outlined"
-          onPress={() => navigation.navigate('TimerTest')}
-          style={styles.testButton}
-          labelStyle={styles.testButtonLabel}
-          compact
-        >
-          Test Timer
-        </Button>
+        <View style={styles.testButtons}>
+          <Button
+            mode="outlined"
+            onPress={() => navigation.navigate('TimerTest')}
+            style={styles.testButton}
+            labelStyle={styles.testButtonLabel}
+            compact
+          >
+            Test Timer
+          </Button>
+          <Button
+            mode="outlined"
+            onPress={() => navigation.navigate('ExerciseDisplayTest')}
+            style={styles.testButton}
+            labelStyle={styles.testButtonLabel}
+            compact
+          >
+            Test Exercise
+          </Button>
+        </View>
         <Text style={styles.headerTitle}>My Plan</Text>
         <TouchableOpacity
           onPress={() => {
@@ -147,6 +159,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.l,
     paddingVertical: spacing.m,
+  },
+  testButtons: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   testButton: {
     borderColor: palette.tealPrimary,
