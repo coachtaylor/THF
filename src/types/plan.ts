@@ -50,6 +50,7 @@ export interface Exercise {
     binder: string;
     pelvic_floor: string;
   };
+  target_muscles?: string | null; // Target muscles for the exercise
 }
 
 export interface Swap {

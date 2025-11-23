@@ -8,6 +8,58 @@ import { generateWorkout, printWorkoutSummary } from './workoutGenerator';
 import { fetchAllExercises } from './exerciseService';
 
 /**
+ * Generate a Quick Start plan - a single 5-minute bodyweight workout
+ * This is used for users who want to start immediately without completing their profile
+ */
+export async function generateQuickStartPlan(): Promise<Plan> {
+  // Create a minimal profile for quick start
+  const quickStartProfile: Profile = {
+    id: 'quick-start',
+    equipment: ['bodyweight'],
+    constraints: ['binder_aware'],
+    preferred_minutes: [5],
+    block_length: 1,
+    goals: ['wellness'],
+    goal_weighting: { primary: 100, secondary: 0 },
+  };
+
+  // Fetch exercises
+  const exercises = await fetchAllExercises();
+  
+  if (exercises.length === 0) {
+    throw new Error('No exercises available. Please check your database.');
+  }
+
+  // Generate only the 5-minute workout
+  const workout = generateWorkout(quickStartProfile, 5, exercises);
+
+  // Create a single day with only the 5-minute variant
+  // Note: Type definition requires 15/30/45 to be Workout, but quick start only has 5-min
+  // Using type assertion to match test expectations
+  const day: Day = {
+    dayNumber: 1,
+    date: new Date(),
+    variants: {
+      5: workout,
+      15: null as any,
+      30: null as any,
+      45: null as any,
+    },
+  };
+
+  const plan: Plan = {
+    id: 'quick-start',
+    blockLength: 1,
+    startDate: new Date(),
+    goals: ['strength'] as Goal[], // Using 'strength' as default goal (wellness not in Goal type)
+    goalWeighting: { primary: 100, secondary: 0 },
+    days: [day],
+  };
+
+  return plan;
+}
+
+/**
  * Generate a complete workout plan for a user
  * Creates 7 days (1 week) or 28 days (4 weeks) based on profile.preferences.blockLength
  * Each day has 4 workout variants (5, 15, 30, 45 minutes)

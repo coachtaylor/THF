@@ -134,7 +134,8 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
     neutral_cues: [], // TODO: Add cues column to database
     breathing_cues: [], // TODO: Add breathing column to database
     swaps: [], // TODO: Add swaps column to database
-    trans_notes
+    trans_notes,
+    target_muscles: db.target_muscles || null
   };
 }
 
@@ -311,7 +312,7 @@ interface DatabaseTransTip {
   exercise_id: number;
   population: string | null;
   context: string | null;
-  tips_json: string[] | null;
+  tips: any; // JSON object with structure: { form_focus: [...], hrt_considerations: [...], etc. }
 }
 
 /**
@@ -435,7 +436,7 @@ export async function getExerciseDetail(
         exercise_id,
         population,
         context,
-        tips_json
+        tips
       `)
       .eq('exercise_id', exerciseId);
 
@@ -444,14 +445,32 @@ export async function getExerciseDetail(
       // Continue without tips if tips fetch fails - we still have exercise data
     }
 
-    // Filter tips based on user profile
+    // Filter tips based on user profile and flatten JSON object into array
     const filteredTips = (tipsData || [])
       .filter((tip: DatabaseTransTip) => shouldIncludeTransTip(tip, profile))
-      .map((tip: DatabaseTransTip) => ({
-        population: tip.population,
-        context: tip.context,
-        tips: tip.tips_json || [],
-      }));
+      .map((tip: DatabaseTransTip) => {
+        // The tips field is a JSON object with structure like:
+        // { form_focus: [...], hrt_considerations: [...], etc. }
+        // We need to flatten it into an array of strings
+        const tipsObj = tip.tips || {};
+        const tipsArray: string[] = [];
+        
+        // Extract all tip arrays from the object and flatten
+        Object.values(tipsObj).forEach((value) => {
+          if (Array.isArray(value)) {
+            tipsArray.push(...value);
+          } else if (typeof value === 'string' && value !== '') {
+            // Handle disclaimer field which is a single string
+            tipsArray.push(value);
+          }
+        });
+        
+        return {
+          population: tip.population,
+          context: tip.context,
+          tips: tipsArray,
+        };
+      });
 
     // Map database exercise to ExerciseDetail
     const dbExercise = exerciseData as unknown as DatabaseExerciseDetail;
