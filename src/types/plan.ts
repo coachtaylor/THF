@@ -35,22 +35,41 @@ export interface ExerciseInstance {
 export interface Exercise {
   id: string;
   name: string;
-  equipment: string[]; // Canonical equipment categories (e.g., ["bodyweight"], ["dumbbells"])
-  rawEquipment: string[]; // Raw equipment labels from database, normalized to UPPERCASE (e.g., ["BODY WEIGHT"], ["DUMBBELL"])
+  slug: string;
+  pattern: string;
+  goal: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags: string[]; // e.g., ["lower_body", "strength"]
   binder_aware: boolean;
   heavy_binding_safe: boolean;
-  pelvic_floor_aware: boolean;
+  pelvic_floor_aware: boolean; //NEW
+  contraindications: string[]; // NEW
   pressure_level: 'low' | 'medium' | 'high';
-  neutral_cues: string[];
-  breathing_cues: string[];
+  cue_primary?: string;
+  breathing?: string;
+  rep_range_beginner?: string;
+  rep_range_intermediate?: string;
+  rep_range_advanced?: string;
+  effectiveness_rating?: number;
+  source?: string;
+  notes?: string;
+  dysphoria_tags?: string;
+  post_op_safe_weeks?: number;
+  created_at: Date;
+  version: string;
+  flags_reviewed: boolean;
+  reviewer?: string;
   swaps: Swap[];
   trans_notes: {
     binder: string;
     pelvic_floor: string;
   };
-  target_muscles?: string | null; // Target muscles for the exercise
+  target_muscles?: string;
+  secondary_muscles?: string;
+  commonErrors: string[];
+  gender_goal_emphasis?: 'fem_very_high' | 'fem_high' | 'fem_medium' | 'fem_low' | 
+                         'masc_very_high' | 'masc_high' | 'masc_medium' | 'masc_low' | 
+                         'neutral';
 }
 
 export interface Swap {

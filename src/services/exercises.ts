@@ -1,132 +1,108 @@
-// src/services/exercises.ts
-
 import { supabase } from '../utils/supabase';
+import { Exercise } from '../types/plan';
 
-export interface Exercise {
+interface DatabaseExercise {
   id: number;
   slug: string;
   name: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  binder_aware: boolean;
-  heavy_binding_safe: boolean;
-  pelvic_floor_safe: boolean;
   pattern: string;
   goal: string;
+  difficulty: string;
   equipment: string[];
+  
+  binder_aware: boolean;
+  pelvic_floor_safe: boolean;
+  heavy_binding_safe: boolean;
+  contraindications: string[];
+  
+  target_muscles?: string;
+  secondary_muscles?: string;
+  gender_goal_emphasis?: string;
+  
+  cue_primary?: string;
+  breathing?: string;
+  rep_range_beginner?: string;
+  rep_range_intermediate?: string;
+  rep_range_advanced?: string;
+  
+  effectiveness_rating?: number;
+  source?: string;
+  notes?: string;
+  dysphoria_tags?: string;
+  post_op_safe_weeks?: number;
+  
+  created_at: string;
+  version: string;
+  flags_reviewed: boolean;
+  reviewer?: string;
 }
 
-/**
- * Get exercises by single equipment type
- * 
- * ✅ Uses RPC function (recommended approach)
- * 
- * ❌ OLD - Won't work anymore:
- * const { data } = await supabase
- *   .from('exercises')
- *   .select('*')
- *   .eq('equipment', equipment_type); // This never worked!
- */
-export async function getExercisesByEquipment(
-  equipment: string,
-  filters?: {
-    difficulty?: string;
-    binderAware?: boolean;
-  }
-): Promise<Exercise[]> {
-  if (!supabase) {
-    throw new Error('Supabase client not initialized');
-  }
-
-  // ✅ NEW - Use RPC function
-  const { data, error } = await supabase.rpc('get_exercises_by_equipment', {
-    equipment_filter: equipment,
-    difficulty_filter: filters?.difficulty || null,
-    binder_aware_filter: filters?.binderAware ?? null,
-  });
-
-  if (error) {
-    console.error('Error fetching exercises:', error);
-    throw error;
-  }
-
-  return data || [];
-}
-
-/**
- * Get exercises by equipment using junction table (alternative approach)
- * 
- * ✅ Alternative: Use junction table directly
- * This approach queries the exercise_equipment junction table
- */
-export async function getExercisesByEquipmentJunction(
-  equipment: string
-): Promise<Exercise[]> {
-  if (!supabase) {
-    throw new Error('Supabase client not initialized');
-  }
-
-  // ✅ Alternative: Use junction table directly
+export async function loadExercises(): Promise<Exercise[]> {
   const { data, error } = await supabase
     .from('exercises')
-    .select(`
-      *,
-      exercise_equipment!inner (equipment_type)
-    `)
-    .eq('exercise_equipment.equipment_type', equipment);
+    .select('*');
 
   if (error) {
-    console.error('Error fetching exercises via junction table:', error);
+    console.error('Error loading exercises:', error);
     throw error;
   }
 
-  return data || [];
+  return data.map(mapDatabaseToExercise);
 }
 
-/**
- * Get exercises by multiple equipment types
- */
-export async function getExercisesByEquipmentList(
-  equipmentList: string[],
-  filters?: {
-    difficulty?: string;
-    binderAware?: boolean;
-  }
+function mapDatabaseToExercise(row: DatabaseExercise): Exercise {
+  return {
+    id: row.id.toString(),
+    name: row.name,
+    slug: row.slug,
+    pattern: row.pattern,
+    goal: row.goal,
+    difficulty: row.difficulty as Exercise['difficulty'],
+    equipment: Array.isArray(row.equipment) ? row.equipment : [],
+    binder_aware: row.binder_aware,
+    pelvic_floor_safe: row.pelvic_floor_safe,
+    heavy_binding_safe: row.heavy_binding_safe,
+    contraindications: row.contraindications || [],
+    target_muscles: row.target_muscles,
+    secondary_muscles: row.secondary_muscles,
+    gender_goal_emphasis: row.gender_goal_emphasis as Exercise['gender_goal_emphasis'],
+    cue_primary: row.cue_primary,
+    breathing: row.breathing,
+    rep_range_beginner: row.rep_range_beginner,
+    rep_range_intermediate: row.rep_range_intermediate,
+    rep_range_advanced: row.rep_range_advanced,
+    effectiveness_rating: row.effectiveness_rating,
+    source: row.source,
+    notes: row.notes,
+    dysphoria_tags: row.dysphoria_tags,
+    post_op_safe_weeks: row.post_op_safe_weeks,
+    created_at: new Date(row.created_at),
+    version: row.version,
+    flags_reviewed: row.flags_reviewed,
+    reviewer: row.reviewer,
+  };
+}
+
+// Helper: Get exercises by pattern
+export async function getExercisesByPattern(pattern: string): Promise<Exercise[]> {
+  const { data, error } = await supabase
+    .from('exercises')
+    .select('*')
+    .eq('pattern', pattern);
+  
+  if (error) throw error;
+  return data.map(mapDatabaseToExercise);
+}
+
+// Helper: Get exercises by gender emphasis
+export async function getExercisesByGenderEmphasis(
+  emphasis: string[]
 ): Promise<Exercise[]> {
-  if (!supabase) {
-    throw new Error('Supabase client not initialized');
-  }
-
-  const { data, error } = await supabase.rpc('get_exercises_by_equipment_list', {
-    equipment_filters: equipmentList,
-    difficulty_filter: filters?.difficulty || null,
-    binder_aware_filter: filters?.binderAware ?? null,
-  });
-
-  if (error) {
-    console.error('Error fetching exercises:', error);
-    throw error;
-  }
-
-  return data || [];
-}
-
-/**
- * Example usage in your components
- */
-export async function exampleUsage() {
-  // Get all dumbbell exercises
-  const dumbbellExercises = await getExercisesByEquipment('dumbbells');
+  const { data, error } = await supabase
+    .from('exercises')
+    .select('*')
+    .in('gender_goal_emphasis', emphasis);
   
-  // Get beginner bodyweight exercises that are binder-aware
-  const beginnerBodyweight = await getExercisesByEquipment('bodyweight', {
-    difficulty: 'beginner',
-    binderAware: true,
-  });
-  
-  // Get exercises that use dumbbells OR bands
-  const dumbbellsOrBands = await getExercisesByEquipmentList(['dumbbells', 'bands']);
-  
-  console.log('Dumbbell exercises:', dumbbellExercises.length);
-  console.log('Beginner bodyweight:', beginnerBodyweight.length);
-  console.log('Dumbbells or bands:', dumbbellsOrBands.length);
+  if (error) throw error;
+  return data.map(mapDatabaseToExercise);
 }

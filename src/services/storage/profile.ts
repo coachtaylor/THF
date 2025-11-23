@@ -7,27 +7,49 @@ const profileDb = SQLite.openDatabaseSync('transfitness.db');
 // Profile interface for storage (matches README specification)
 export interface Profile {
   id: string;
+  user_id: string;
   email?: string;
-  fitness_level?: 'beginner' | 'intermediate' | 'advanced';
+  gender_identity: 'mtf' | 'ftm' | 'nonbinary' | 'questioning';
+  pronouns?: string;
+  dysphoria_triggers?: string[];
+  fitness_experience?: 'beginner' | 'intermediate' | 'advanced';
   goals?: string[];
+  primary_goal: 'feminization' | 'masculinization' | 'general_fitness' | 'strength' | 'endurance';
+  secondary_goals?: string[];
   goal_weighting?: { primary: number; secondary: number };
   equipment?: string[]; // Canonical equipment categories (bodyweight, dumbbells, bands, kettlebell)
-  equipment_raw?: string[]; // Raw equipment labels from database (e.g. "BODY WEIGHT", "DUMBBELL", "CABLE MACHINE")
   constraints?: string[];
+  surgeries: Surgery[];
   surgery_flags?: string[];
   surgeon_cleared?: boolean;
+  binds_chest: boolean;
+  binding_frequency?: 'daily' | 'sometimes' | 'rarely' | 'never';
+  binding_duration_hours?: number;
+  binder_type?: 'commercial' | 'sports_bra' | 'ace_bandage' | 'diy';
   hrt_flags?: string[];
+  on_hrt: boolean;
+  hrt_type?: 'estrogen_blockers' | 'testosterone' | 'none';
+  hrt_start_date?: Date;
+  hrt_months_duration?: number;
   preferred_minutes?: number[];
   block_length?: number;
   low_sensory_mode?: boolean;
   cloud_sync_enabled?: boolean;
   disclaimer_acknowledged_at?: string;
   synced_at?: string;
-  created_at?: string;
+  created_at: Date;
+  updated_at: Date;
   // Onboarding fields for workout generation and trans-specific tips
   why_flags?: string[]; // Examples: 'support_transition', 'reduce_dysphoria', 'build_strength', 'move_more'
   body_focus_prefer?: string[]; // Allowed: 'legs', 'glutes', 'back', 'core', 'shoulders', 'arms', 'chest'
   body_focus_soft_avoid?: string[]; // Allowed: 'chest', 'hips', 'glutes', 'abdomen', 'shoulders'
+}
+
+export interface Surgery {
+  type: 'top_surgery' | 'bottom_surgery' | 'ffs' | 'orchiectomy' | 'other';
+  date: Date;
+  weeks_post_op?: number;
+  notes?: string;
 }
 
 // Ensure profiles table exists with correct schema (stores full profile as JSON)
