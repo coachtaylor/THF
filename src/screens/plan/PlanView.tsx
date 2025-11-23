@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Text, Button } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlan } from '../../hooks/usePlan';
 import { useProfile } from '../../hooks/useProfile';
 import WeeklyCalendar from '../../components/plan/WeeklyCalendar';
 import DayCard from '../../components/plan/DayCard';
-import TimeVariantSelector from '../../components/plan/TimeVariantSelector';
 import { ExerciseDetailSheet } from '../../components/exercise/ExerciseDetailSheet';
 import { palette, spacing, typography } from '../../theme';
 
@@ -44,9 +43,10 @@ export default function PlanView({ navigation }: PlanViewProps) {
   const currentWorkout = currentDay.variants[selectedVariant];
 
   const handleStartWorkout = () => {
-    // TODO: Navigate to SessionPlayer when implemented (Week 4)
-    // navigation.navigate('SessionPlayer', { workout: currentWorkout });
-    console.log('Start workout:', currentWorkout);
+    navigation.navigate('SessionPlayer', { 
+      workout: currentWorkout,
+      planId: plan.id 
+    });
   };
 
   const handlePreview = () => {
@@ -64,10 +64,29 @@ export default function PlanView({ navigation }: PlanViewProps) {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, spacing.xs) }]}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, spacing.s) }]}>
       {/* Header with Settings Button */}
       <View style={styles.header}>
-        <View style={styles.headerSpacer} />
+        <View style={styles.testButtons}>
+          <Button
+            mode="outlined"
+            onPress={() => navigation.navigate('TimerTest')}
+            style={styles.testButton}
+            labelStyle={styles.testButtonLabel}
+            compact
+          >
+            Test Timer
+          </Button>
+          <Button
+            mode="outlined"
+            onPress={() => navigation.navigate('ExerciseDisplayTest')}
+            style={styles.testButton}
+            labelStyle={styles.testButtonLabel}
+            compact
+          >
+            Test Exercise
+          </Button>
+        </View>
         <Text style={styles.headerTitle}>My Plan</Text>
         <TouchableOpacity
           onPress={() => {
@@ -78,33 +97,37 @@ export default function PlanView({ navigation }: PlanViewProps) {
             } else {
               // If we can't go back, just log for now
               // TODO: Add proper settings/profile edit screen
-              console.log('Settings - navigate to profile edit');
+              console.log('Menu - navigate to profile edit');
             }
           }}
-          style={styles.settingsButton}
-          activeOpacity={0.8}
+          style={styles.menuButton}
+          activeOpacity={0.7}
         >
-          <Text style={styles.settingsIcon}>⚙️</Text>
+          <View style={styles.menuIconContainer}>
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+            <View style={styles.menuLine} />
+          </View>
         </TouchableOpacity>
       </View>
 
       {/* Weekly Calendar */}
       <WeeklyCalendar days={plan.days} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
 
-      {/* Time Variant Selector */}
-      <TimeVariantSelector 
-        selected={selectedVariant} 
-        onSelect={setSelectedVariant}
-      />
-
       {/* Day Card */}
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <DayCard
           day={currentDay}
           workout={currentWorkout}
           onStartWorkout={handleStartWorkout}
           onPreview={handlePreview}
           onExercisePress={handleExercisePress}
+          selectedVariant={selectedVariant}
+          onSelectVariant={setSelectedVariant}
         />
       </ScrollView>
 
@@ -134,31 +157,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+    paddingHorizontal: spacing.l,
+    paddingVertical: spacing.m,
   },
-  headerSpacer: {
-    width: 40,
+  testButtons: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  testButton: {
+    borderColor: palette.tealPrimary,
+    borderWidth: 1,
+  },
+  testButtonLabel: {
+    color: palette.tealPrimary,
+    fontSize: 12,
   },
   headerTitle: {
     ...typography.h2,
     flex: 1,
     textAlign: 'center',
+    fontWeight: '700',
   },
-  settingsButton: {
-    width: 40,
-    height: 40,
+  menuButton: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
   },
-  settingsIcon: {
-    fontSize: 24,
+  menuIconContainer: {
+    width: 20,
+    height: 14,
+    justifyContent: 'space-between',
+  },
+  menuLine: {
+    width: 20,
+    height: 2,
+    backgroundColor: palette.white,
+    borderRadius: 1,
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: spacing.xl,
   },
   loadingText: {
     ...typography.body,

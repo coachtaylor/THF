@@ -18,7 +18,6 @@ export default function TimeVariantSelector({ selected, onSelect }: TimeVariantS
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Workout Duration</Text>
       <View style={styles.variantsContainer}>
         {VARIANTS.map((variant) => {
           const isSelected = variant.duration === selected;
@@ -26,7 +25,7 @@ export default function TimeVariantSelector({ selected, onSelect }: TimeVariantS
             <TouchableOpacity
               key={variant.duration}
               onPress={() => onSelect(variant.duration)}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
               style={[styles.variantButton, isSelected && styles.variantButtonSelected]}
             >
               <Text style={[styles.variantText, isSelected && styles.variantTextSelected]}>
@@ -42,40 +41,35 @@ export default function TimeVariantSelector({ selected, onSelect }: TimeVariantS
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
+    paddingHorizontal: spacing.l,
+    paddingVertical: spacing.m,
     backgroundColor: palette.deepBlack,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
-  },
-  label: {
-    ...typography.caption,
-    marginBottom: spacing.xs,
-    color: palette.midGray,
+    width: '100%',
   },
   variantsContainer: {
     flexDirection: 'row',
-    gap: spacing.xs,
+    gap: spacing.s,
   },
   variantButton: {
     flex: 1,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.s,
     paddingHorizontal: spacing.xs,
     backgroundColor: palette.darkCard,
     borderRadius: 10,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: palette.border,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 36,
+    minHeight: 40,
   },
   variantButtonSelected: {
     borderColor: palette.tealPrimary,
     backgroundColor: palette.tealGlow,
   },
   variantText: {
-    ...typography.bodySmall,
+    ...typography.body,
     fontWeight: '600',
+    color: palette.lightGray,
   },
   variantTextSelected: {
     color: palette.tealPrimary,

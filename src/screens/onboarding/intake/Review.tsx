@@ -83,7 +83,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     );
   }
 
-  const handleEdit = (screen: 'Goals' | 'Constraints') => {
+  const handleEdit = (screen: 'Goals' | 'ProgramSetup' | 'Constraints') => {
     navigation.navigate(screen);
   };
 
@@ -205,16 +205,16 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
 
   const programItems: string[] = [];
   if (fitnessLevel) {
-    programItems.push(`Starting level: ${FITNESS_LEVEL_LABELS[fitnessLevel]}`);
+    programItems.push(`Fitness level: ${FITNESS_LEVEL_LABELS[fitnessLevel]}`);
   }
   programItems.push(`Program length: ${blockLength} week${blockLength !== 1 ? 's' : ''}`);
   // Show equipment if we have either raw or canonical
   const hasEquipment = equipmentRaw.length > 0 || equipment.length > 0;
   if (hasEquipment) {
-    programItems.push(`We'll use: ${formatEquipment()}`);
+    programItems.push(`Equipment: ${formatEquipment()}`);
   }
   if (lowSensoryMode) {
-    programItems.push('Low sensory mode: ON (simpler flows and less chaos).');
+    programItems.push('Low sensory mode: ON');
   }
 
   return (
@@ -235,9 +235,9 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
       </View>
 
       <ProgressIndicator
-        currentStep={3}
-        totalSteps={3}
-        stepLabels={['Goals & Preferences', 'Constraints', 'Review']}
+        currentStep={4}
+        totalSteps={4}
+        stepLabels={['Goals & Preferences', 'Program Setup', 'Constraints', 'Review']}
       />
 
       <ScrollView
@@ -245,7 +245,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Goals & Preferences Section - All items from Goals screen in one card */}
+        {/* Goals & Preferences Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Goals & Preferences</Text>
@@ -278,21 +278,31 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
               </>
             )}
             
-            {/* Program Setup */}
-            {programItems.length > 0 && (
-              <>
-                {programItems.map((item, index) => (
-                  <View key={`program-${index}`} style={styles.bulletItem}>
-                    <View style={styles.bullet} />
-                    <Text style={styles.summaryBullet}>{item}</Text>
-                  </View>
-                ))}
-              </>
-            )}
-            
             {/* Show empty state if nothing is selected */}
-            {goalsItems.length === 0 && bodyFocusItems.length === 0 && programItems.length === 0 && (
+            {goalsItems.length === 0 && bodyFocusItems.length === 0 && (
               <Text style={styles.emptyText}>No goals or preferences selected</Text>
+            )}
+          </View>
+        </View>
+
+        {/* Program Setup Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Program Setup</Text>
+            <TouchableOpacity onPress={() => handleEdit('ProgramSetup')} style={styles.editButton}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.summaryCard}>
+            {programItems.length > 0 ? (
+              programItems.map((item, index) => (
+                <View key={`program-${index}`} style={styles.bulletItem}>
+                  <View style={styles.bullet} />
+                  <Text style={styles.summaryBullet}>{item}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No program setup selected</Text>
             )}
           </View>
         </View>
@@ -460,18 +470,18 @@ const styles = StyleSheet.create({
     borderColor: palette.error,
   },
   generateButton: {
-    borderRadius: 14,
+    borderRadius: 12,
     marginBottom: spacing.xs,
     overflow: 'hidden',
   },
   generateButtonContent: {
-    paddingVertical: spacing.m,
+    paddingVertical: spacing.s,
     backgroundColor: palette.tealPrimary,
   },
   generateButtonLabel: {
-    ...typography.button,
-    color: palette.deepBlack,
+    fontSize: 15,
     fontWeight: '700',
+    color: palette.deepBlack,
   },
   loadingContainer: {
     flexDirection: 'row',

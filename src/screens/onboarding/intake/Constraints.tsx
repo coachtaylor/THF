@@ -271,18 +271,18 @@ const styles = StyleSheet.create({
     borderTopColor: palette.border,
   },
   continueButton: {
-    borderRadius: 14,
+    borderRadius: 12,
     marginBottom: spacing.xs,
     overflow: 'hidden',
   },
   continueButtonContent: {
-    paddingVertical: spacing.m,
+    paddingVertical: spacing.s,
     backgroundColor: palette.tealPrimary,
   },
   continueButtonLabel: {
-    ...typography.button,
-    color: palette.deepBlack,
+    fontSize: 15,
     fontWeight: '700',
+    color: palette.deepBlack,
   },
 });
 
