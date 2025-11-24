@@ -163,9 +163,8 @@ const CompletionScreen: React.FC<CompletionScreenProps> = ({
         <Button
           mode="outlined"
           onPress={handleShareProgress}
-          style={styles.actionButton}
+          style={[styles.actionButton, { borderColor: palette.tealPrimary }]}
           textColor={palette.tealPrimary}
-          borderColor={palette.tealPrimary}
           contentStyle={styles.buttonContent}
         >
           Share Progress

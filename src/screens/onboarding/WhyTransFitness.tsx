@@ -19,7 +19,7 @@ const CONTENT: WhyTransFitnessContent = {
   skipText: 'Skip',
 };
 
-export default function WhyTransFitness({ navigation }: OnboardingScreenProps) {
+export default function WhyTransFitness({ navigation }: OnboardingScreenProps<'WhyTransFitness'>) {
   const { profile } = useProfile();
   const lowSensoryMode = profile?.low_sensory_mode ?? false;
   const { height: windowHeight } = useWindowDimensions();

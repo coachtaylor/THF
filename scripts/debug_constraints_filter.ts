@@ -38,40 +38,15 @@ interface DatabaseExercise {
   goal: string | null;
   difficulty: string | null;
   equipment: string[];
-  raw_equipment?: string | string[] | null;
   binder_aware: boolean;
   pelvic_floor_safe: boolean;
   target_muscles: string | null;
   secondary_muscles: string | null;
-  media_thumb: string | null;
+  media_thumb?: string | null; // Optional - column may not exist in database
 }
 
 // Exercises that are NOT safe for heavy binding (from BRD)
 const HEAVY_BINDING_UNSAFE_PATTERNS = ['jumping_jack', 'high_knees', 'mountain_climber', 'burpee', 'squat_thrust'];
-
-/**
- * Normalize raw equipment from database to a consistent array format.
- * Same logic as src/data/exercises.ts
- */
-function normalizeRawEquipment(raw: string | string[] | null | undefined): string[] {
-  if (!raw) return [];
-
-  if (Array.isArray(raw)) {
-    return raw
-      .map((r) => r?.toString().trim().toUpperCase())
-      .filter(Boolean) as string[];
-  }
-
-  const str = raw.toString().trim();
-  if (str.includes(',')) {
-    return str
-      .split(',')
-      .map((r) => r.trim().toUpperCase())
-      .filter(Boolean);
-  }
-
-  return str ? [str.toUpperCase()] : [];
-}
 
 // Map database exercise to Exercise interface (same logic as src/data/exercises.ts)
 function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
@@ -137,19 +112,29 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
 
   return {
     id: db.slug, // Use slug as id for consistency
+    slug: db.slug,
     name: db.name,
+    pattern: db.pattern || '',
+    goal: db.goal || '',
     equipment: db.equipment,
-    rawEquipment: normalizeRawEquipment(db.raw_equipment),
     difficulty: (db.difficulty as Exercise['difficulty']) || 'beginner',
     tags,
     binder_aware: db.binder_aware,
     heavy_binding_safe: heavy_binding_safe,
     pelvic_floor_aware: db.pelvic_floor_safe,
+    pelvic_floor_safe: db.pelvic_floor_safe,
+    contraindications: [],
     pressure_level,
     neutral_cues: [], // TODO: Add cues column to database
     breathing_cues: [], // TODO: Add breathing column to database
     swaps: [], // TODO: Add swaps column to database
-    trans_notes
+    trans_notes,
+    created_at: new Date(),
+    version: '1.0',
+    flags_reviewed: false,
+    commonErrors: [],
+    target_muscles: db.target_muscles || undefined,
+    secondary_muscles: db.secondary_muscles || undefined,
   };
 }
 
@@ -169,12 +154,10 @@ async function loadAllExercises(): Promise<Exercise[]> {
       goal,
       difficulty,
       equipment,
-      raw_equipment,
-      binder_aware,
-      pelvic_floor_safe,
-      target_muscles,
-      secondary_muscles,
-      media_thumb
+        binder_aware,
+        pelvic_floor_safe,
+        target_muscles,
+        secondary_muscles
     `);
 
   if (error) {
@@ -198,13 +181,30 @@ async function loadAllExercises(): Promise<Exercise[]> {
  */
 function createBaselineProfile(): Profile {
   return {
+    // NEW REQUIRED FIELDS
     id: 'baseline-test',
+    user_id: 'user-123',
+    gender_identity: 'ftm',
+    on_hrt: true,
+    hrt_type: 'testosterone',
+    binds_chest: false,
+    surgeries: [],
+    primary_goal: 'masculinization',
+    fitness_experience: 'intermediate',
+    workout_frequency: 4,
+    session_duration: 60,
+    equipment: ['dumbbells', 'barbell'],
+    
+    // KEEP OLD FIELDS (for compatibility)
     fitness_level: 'intermediate',
     goals: [],
-    goal_weighting: { primary: 0, secondary: 0 },
-    equipment: [],
+    goal_weighting: { primary: 80, secondary: 20 },
     constraints: [],
     surgery_flags: [],
+    
+    // METADATA
+    created_at: new Date(),
+    updated_at: new Date(),
   };
 }
 
@@ -213,13 +213,30 @@ function createBaselineProfile(): Profile {
  */
 function createBinderHeavyBindingProfile(): Profile {
   return {
+    // NEW REQUIRED FIELDS
     id: 'binder-heavy-binding-test',
+    user_id: 'user-456',
+    gender_identity: 'ftm',
+    on_hrt: true,
+    hrt_type: 'testosterone',
+    binds_chest: true,
+    surgeries: [],
+    primary_goal: 'masculinization',
+    fitness_experience: 'intermediate',
+    workout_frequency: 4,
+    session_duration: 60,
+    equipment: ['dumbbells', 'barbell'],
+    
+    // KEEP OLD FIELDS (for compatibility)
     fitness_level: 'intermediate',
     goals: [],
-    goal_weighting: { primary: 0, secondary: 0 },
-    equipment: [],
+    goal_weighting: { primary: 80, secondary: 20 },
     constraints: ['binder_aware', 'heavy_binding'],
     surgery_flags: [],
+    
+    // METADATA
+    created_at: new Date(),
+    updated_at: new Date(),
   };
 }
 
@@ -228,13 +245,36 @@ function createBinderHeavyBindingProfile(): Profile {
  */
 function createPostOpNoJumpingNoFloorProfile(): Profile {
   return {
+    // NEW REQUIRED FIELDS
     id: 'post-op-no-jump-no-floor-test',
+    user_id: 'user-789',
+    gender_identity: 'ftm',
+    on_hrt: true,
+    hrt_type: 'testosterone',
+    binds_chest: false,
+    surgeries: [
+      {
+        type: 'bottom_surgery',
+        date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90 days ago
+        weeks_post_op: 12,
+      },
+    ],
+    primary_goal: 'masculinization',
+    fitness_experience: 'intermediate',
+    workout_frequency: 4,
+    session_duration: 60,
+    equipment: ['dumbbells', 'barbell'],
+    
+    // KEEP OLD FIELDS (for compatibility)
     fitness_level: 'intermediate',
     goals: [],
-    goal_weighting: { primary: 0, secondary: 0 },
-    equipment: [],
+    goal_weighting: { primary: 80, secondary: 20 },
     constraints: ['post_op', 'no_jumping', 'no_floor'],
     surgery_flags: ['bottom_surgery'],
+    
+    // METADATA
+    created_at: new Date(),
+    updated_at: new Date(),
   };
 }
 
@@ -300,7 +340,7 @@ async function main() {
     postOpFiltered.slice(0, 5).forEach((ex, idx) => {
       console.log(`   ${idx + 1}. ${ex.name} (${ex.id})`);
       console.log(`      - pelvic_floor_aware: ${ex.pelvic_floor_aware}`);
-      console.log(`      - tags: ${ex.tags.join(', ')}`);
+      console.log(`      - tags: ${ex.tags?.join(', ') || 'none'}`);
     });
   } else {
     console.log('   ⚠️  No exercises passed the filter!');

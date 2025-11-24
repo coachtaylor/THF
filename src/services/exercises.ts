@@ -38,6 +38,9 @@ interface DatabaseExercise {
 }
 
 export async function loadExercises(): Promise<Exercise[]> {
+  if (!supabase) {
+    throw new Error('Supabase not initialized');
+  }
   const { data, error } = await supabase
     .from('exercises')
     .select('*');
@@ -54,20 +57,25 @@ function mapDatabaseToExercise(row: DatabaseExercise): Exercise {
   return {
     id: row.id.toString(),
     name: row.name,
-    slug: row.slug,
-    pattern: row.pattern,
-    goal: row.goal,
+    slug: row.slug || row.id.toString(),
+    pattern: row.pattern || '',
+    goal: row.goal || '',
     difficulty: row.difficulty as Exercise['difficulty'],
     equipment: Array.isArray(row.equipment) ? row.equipment : [],
+    tags: [], // Will be populated from pattern and goal
     binder_aware: row.binder_aware,
     pelvic_floor_safe: row.pelvic_floor_safe,
     heavy_binding_safe: row.heavy_binding_safe,
+    pelvic_floor_aware: row.pelvic_floor_safe, // Alias for backward compatibility
     contraindications: row.contraindications || [],
-    target_muscles: row.target_muscles,
-    secondary_muscles: row.secondary_muscles,
+    pressure_level: 'medium', // Default pressure level
+    target_muscles: row.target_muscles || undefined,
+    secondary_muscles: row.secondary_muscles || undefined,
     gender_goal_emphasis: row.gender_goal_emphasis as Exercise['gender_goal_emphasis'],
     cue_primary: row.cue_primary,
     breathing: row.breathing,
+    neutral_cues: [],
+    breathing_cues: [],
     rep_range_beginner: row.rep_range_beginner,
     rep_range_intermediate: row.rep_range_intermediate,
     rep_range_advanced: row.rep_range_advanced,
@@ -76,15 +84,24 @@ function mapDatabaseToExercise(row: DatabaseExercise): Exercise {
     notes: row.notes,
     dysphoria_tags: row.dysphoria_tags,
     post_op_safe_weeks: row.post_op_safe_weeks,
-    created_at: new Date(row.created_at),
-    version: row.version,
-    flags_reviewed: row.flags_reviewed,
+    created_at: new Date(row.created_at || Date.now()),
+    version: row.version || '1.0',
+    flags_reviewed: row.flags_reviewed || false,
     reviewer: row.reviewer,
+    swaps: [],
+    trans_notes: {
+      binder: row.binder_aware ? 'Safe for binding' : 'Use caution with binding',
+      pelvic_floor: row.pelvic_floor_safe ? 'Pelvic floor safe' : 'Use caution with pelvic floor',
+    },
+    commonErrors: [],
   };
 }
 
 // Helper: Get exercises by pattern
 export async function getExercisesByPattern(pattern: string): Promise<Exercise[]> {
+  if (!supabase) {
+    throw new Error('Supabase not initialized');
+  }
   const { data, error } = await supabase
     .from('exercises')
     .select('*')
@@ -98,6 +115,9 @@ export async function getExercisesByPattern(pattern: string): Promise<Exercise[]
 export async function getExercisesByGenderEmphasis(
   emphasis: string[]
 ): Promise<Exercise[]> {
+  if (!supabase) {
+    throw new Error('Supabase not initialized');
+  }
   const { data, error } = await supabase
     .from('exercises')
     .select('*')

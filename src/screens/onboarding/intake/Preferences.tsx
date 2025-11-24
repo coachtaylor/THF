@@ -7,7 +7,7 @@ import { useProfile } from '../../../hooks/useProfile';
 import { palette, spacing, typography } from '../../../theme';
 import ConstraintCheckbox from '../../../components/onboarding/ConstraintCheckbox';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import { getEquipmentOptions, EquipmentOption, mapRawEquipmentArrayToCanonical } from '../../../utils/equipment';
+import { getEquipmentOptions, EquipmentOption, CanonicalEquipment } from '../../../utils/equipment';
 
 // Block length options
 const BLOCK_LENGTH_OPTIONS = [
@@ -32,8 +32,8 @@ export default function Preferences({ navigation }: OnboardingScreenProps<'Prefe
   const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOption[]>([]);
   const [loadingEquipment, setLoadingEquipment] = useState<boolean>(true);
   
-  // Selected equipment (stored as raw equipment strings)
-  const [selectedRawEquipment, setSelectedRawEquipment] = useState<string[]>([]);
+  // Selected equipment (stored as canonical equipment)
+  const [selectedEquipment, setSelectedEquipment] = useState<CanonicalEquipment[]>([]);
 
   // Initialize from profile if available
   const [fitnessLevel, setFitnessLevel] = useState<'beginner' | 'intermediate' | 'advanced' | undefined>(
@@ -51,43 +51,22 @@ export default function Preferences({ navigation }: OnboardingScreenProps<'Prefe
         setEquipmentOptions(options);
         
         // Initialize selected equipment from profile
-        if (profile?.equipment_raw && profile.equipment_raw.length > 0) {
-          // Use raw equipment from profile if available
-          setSelectedRawEquipment(profile.equipment_raw);
-        } else if (profile?.equipment && profile.equipment.length > 0) {
-          // Fallback: map canonical equipment back to raw (find first matching raw for each canonical)
-          const mappedRaw: string[] = [];
-          profile.equipment.forEach((canonical) => {
-            const matchingOption = options.find(opt => opt.canonical === canonical);
-            if (matchingOption) {
-              mappedRaw.push(matchingOption.raw);
-            }
-          });
-          // If no matches found, default to bodyweight
-          if (mappedRaw.length === 0 && options.length > 0) {
-            const bodyweightOption = options.find(opt => opt.canonical === 'bodyweight') || options[0];
-            if (bodyweightOption) {
-              mappedRaw.push(bodyweightOption.raw);
-            }
-          }
-          setSelectedRawEquipment(mappedRaw.length > 0 ? mappedRaw : [options[0]?.raw || 'BODY WEIGHT']);
+        if (profile?.equipment && profile.equipment.length > 0) {
+          setSelectedEquipment(profile.equipment as CanonicalEquipment[]);
         } else {
           // Default to bodyweight
-          const bodyweightOption = options.find(opt => opt.canonical === 'bodyweight') || options[0];
-          if (bodyweightOption) {
-            setSelectedRawEquipment([bodyweightOption.raw]);
-          }
+          setSelectedEquipment(['bodyweight']);
         }
       } catch (error) {
         console.error('Error loading equipment options:', error);
         // Fallback to default options
         setEquipmentOptions([
-          { raw: 'BODY WEIGHT', canonical: 'bodyweight', label: 'Bodyweight', description: 'No equipment needed' },
-          { raw: 'DUMBBELL', canonical: 'dumbbells', label: 'Dumbbells', description: 'Free weights' },
-          { raw: 'RESISTANCE BAND', canonical: 'bands', label: 'Resistance Bands', description: 'Elastic bands' },
-          { raw: 'KETTLEBELL', canonical: 'kettlebell', label: 'Kettlebell', description: 'Kettlebell exercises' },
+          { raw: 'bodyweight', canonical: 'bodyweight', label: 'Bodyweight', description: 'No equipment needed', value: 'bodyweight' },
+          { raw: 'dumbbells', canonical: 'dumbbells', label: 'Dumbbells', description: 'Free weights', value: 'dumbbells' },
+          { raw: 'bands', canonical: 'bands', label: 'Resistance Bands', description: 'Elastic bands', value: 'bands' },
+          { raw: 'kettlebells', canonical: 'kettlebells', label: 'Kettlebells', description: 'Kettlebell exercises', value: 'kettlebells' },
         ]);
-        setSelectedRawEquipment(['BODY WEIGHT']);
+        setSelectedEquipment(['bodyweight']);
       } finally {
         setLoadingEquipment(false);
       }
@@ -103,47 +82,38 @@ export default function Preferences({ navigation }: OnboardingScreenProps<'Prefe
       setLowSensoryMode(profile.low_sensory_mode || false);
       
       // Update selected equipment if profile changes
-      if (profile.equipment_raw && profile.equipment_raw.length > 0) {
-        setSelectedRawEquipment(profile.equipment_raw);
+      if (profile.equipment && profile.equipment.length > 0) {
+        setSelectedEquipment(profile.equipment as CanonicalEquipment[]);
       }
     }
   }, [profile]);
 
-  const toggleEquipment = (rawEquipment: string) => {
-    setSelectedRawEquipment((prev) => {
-      if (prev.includes(rawEquipment)) {
+  const toggleEquipment = (canonical: CanonicalEquipment) => {
+    setSelectedEquipment((prev) => {
+      if (prev.includes(canonical)) {
         // Don't allow removing if it's the only option
         if (prev.length === 1) {
           return prev;
         }
-        return prev.filter((e) => e !== rawEquipment);
+        return prev.filter((e) => e !== canonical);
       }
-      return [...prev, rawEquipment];
+      return [...prev, canonical];
     });
   };
 
   const handleContinue = async () => {
     // Ensure at least one equipment is selected
-    if (selectedRawEquipment.length === 0) {
-      const bodyweightOption = equipmentOptions.find(opt => opt.canonical === 'bodyweight') || equipmentOptions[0];
-      if (bodyweightOption) {
-        setSelectedRawEquipment([bodyweightOption.raw]);
-      }
+    if (selectedEquipment.length === 0) {
+      setSelectedEquipment(['bodyweight']);
     }
 
-    // Map raw equipment to canonical categories
-    const canonicalEquipment = mapRawEquipmentArrayToCanonical(selectedRawEquipment);
-    
-    // Ensure at least bodyweight is included if no canonical mapping found
-    const finalCanonical = canonicalEquipment.length > 0 ? canonicalEquipment : ['bodyweight'];
-    const finalRaw = selectedRawEquipment.length > 0 ? selectedRawEquipment : ['BODY WEIGHT'];
+    const finalEquipment = selectedEquipment.length > 0 ? selectedEquipment : ['bodyweight'];
 
     try {
       await updateProfile({
         fitness_level: fitnessLevel,
         block_length: blockLength,
-        equipment: finalCanonical,
-        equipment_raw: finalRaw,
+        equipment: finalEquipment,
         low_sensory_mode: lowSensoryMode,
       });
       // Navigate to Review screen
@@ -154,7 +124,7 @@ export default function Preferences({ navigation }: OnboardingScreenProps<'Prefe
     }
   };
 
-  const canContinue = selectedRawEquipment.length > 0;
+  const canContinue = selectedEquipment.length > 0;
 
   return (
     <View
@@ -257,11 +227,11 @@ export default function Preferences({ navigation }: OnboardingScreenProps<'Prefe
             <View>
               {equipmentOptions.map((option) => (
                 <ConstraintCheckbox
-                  key={option.raw}
+                  key={option.canonical}
                   label={option.label}
                   description={option.description}
-                  checked={selectedRawEquipment.includes(option.raw)}
-                  onPress={() => toggleEquipment(option.raw)}
+                  checked={selectedEquipment.includes(option.canonical)}
+                  onPress={() => toggleEquipment(option.canonical)}
                 />
               ))}
             </View>

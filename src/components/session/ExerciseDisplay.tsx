@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Video } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 
 import { Exercise } from '../../types';
 import { cacheVideo, getCachedVideo } from '../../services/videoCache';
@@ -78,7 +78,7 @@ const ExerciseDisplay: React.FC<ExerciseDisplayProps> = ({
           source={{ uri: videoUri }}
           shouldPlay
           isLooping
-          resizeMode="cover"
+          resizeMode={ResizeMode.COVER}
           useNativeControls
         />
       )}

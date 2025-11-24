@@ -32,6 +32,12 @@ export interface ExerciseInstance {
   restSeconds: number;
 }
 
+// Exercise type moved to src/types/index.ts to avoid duplication
+// Re-export for backward compatibility
+export { Exercise } from './index';
+
+// Commented out to avoid duplication - Exercise is now defined in src/types/index.ts
+/*
 export interface Exercise {
   id: string;
   name: string;
@@ -39,6 +45,7 @@ export interface Exercise {
   pattern: string;
   goal: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
+  equipment: string[]; // Canonical equipment categories (bodyweight, dumbbells, bands, etc.)
   tags: string[]; // e.g., ["lower_body", "strength"]
   binder_aware: boolean;
   heavy_binding_safe: boolean;
@@ -47,6 +54,8 @@ export interface Exercise {
   pressure_level: 'low' | 'medium' | 'high';
   cue_primary?: string;
   breathing?: string;
+  neutral_cues?: string[]; // Array of neutral cues
+  breathing_cues?: string[]; // Array of breathing cues
   rep_range_beginner?: string;
   rep_range_intermediate?: string;
   rep_range_advanced?: string;
@@ -70,7 +79,9 @@ export interface Exercise {
   gender_goal_emphasis?: 'fem_very_high' | 'fem_high' | 'fem_medium' | 'fem_low' | 
                          'masc_very_high' | 'masc_high' | 'masc_medium' | 'masc_low' | 
                          'neutral';
+  videoUrl?: string; // Optional video URL for exercises
 }
+*/
 
 export interface Swap {
   exercise_id: string;

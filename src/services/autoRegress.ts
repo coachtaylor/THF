@@ -1,5 +1,6 @@
 // src/services/autoRegress.ts
-import { Exercise, ExerciseInstance, ExerciseDetail } from '../types/plan';
+import { ExerciseInstance, ExerciseDetail } from '../types/plan';
+import { Exercise } from '../types';
 import { fetchAllExercises } from './exerciseService';
 import { getExerciseDetail } from '../data/exercises';
 import { Profile } from './storage/profile';

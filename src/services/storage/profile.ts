@@ -1,56 +1,11 @@
 import * as SQLite from 'expo-sqlite';
 import { supabase } from '../../utils/supabase';
+// Profile and Surgery types are now in src/types/index.ts
+export { Profile, Surgery } from '../../types/index';
+import type { Profile, Surgery } from '../../types/index';
 
 // Open database connection for profile storage
 const profileDb = SQLite.openDatabaseSync('transfitness.db');
-
-// Profile interface for storage (matches README specification)
-export interface Profile {
-  id: string;
-  user_id: string;
-  email?: string;
-  gender_identity: 'mtf' | 'ftm' | 'nonbinary' | 'questioning';
-  pronouns?: string;
-  dysphoria_triggers?: string[];
-  fitness_experience?: 'beginner' | 'intermediate' | 'advanced';
-  goals?: string[];
-  primary_goal: 'feminization' | 'masculinization' | 'general_fitness' | 'strength' | 'endurance';
-  secondary_goals?: string[];
-  goal_weighting?: { primary: number; secondary: number };
-  equipment?: string[]; // Canonical equipment categories (bodyweight, dumbbells, bands, kettlebell)
-  constraints?: string[];
-  surgeries: Surgery[];
-  surgery_flags?: string[];
-  surgeon_cleared?: boolean;
-  binds_chest: boolean;
-  binding_frequency?: 'daily' | 'sometimes' | 'rarely' | 'never';
-  binding_duration_hours?: number;
-  binder_type?: 'commercial' | 'sports_bra' | 'ace_bandage' | 'diy';
-  hrt_flags?: string[];
-  on_hrt: boolean;
-  hrt_type?: 'estrogen_blockers' | 'testosterone' | 'none';
-  hrt_start_date?: Date;
-  hrt_months_duration?: number;
-  preferred_minutes?: number[];
-  block_length?: number;
-  low_sensory_mode?: boolean;
-  cloud_sync_enabled?: boolean;
-  disclaimer_acknowledged_at?: string;
-  synced_at?: string;
-  created_at: Date;
-  updated_at: Date;
-  // Onboarding fields for workout generation and trans-specific tips
-  why_flags?: string[]; // Examples: 'support_transition', 'reduce_dysphoria', 'build_strength', 'move_more'
-  body_focus_prefer?: string[]; // Allowed: 'legs', 'glutes', 'back', 'core', 'shoulders', 'arms', 'chest'
-  body_focus_soft_avoid?: string[]; // Allowed: 'chest', 'hips', 'glutes', 'abdomen', 'shoulders'
-}
-
-export interface Surgery {
-  type: 'top_surgery' | 'bottom_surgery' | 'ffs' | 'orchiectomy' | 'other';
-  date: Date;
-  weeks_post_op?: number;
-  notes?: string;
-}
 
 // Ensure profiles table exists with correct schema (stores full profile as JSON)
 export async function initProfileStorage(): Promise<void> {
@@ -104,7 +59,7 @@ export async function getProfile(): Promise<Profile | null> {
       profile.id = result.id;
       if (result.email) profile.email = result.email;
       if (result.synced_at) profile.synced_at = result.synced_at;
-      if (result.created_at) profile.created_at = result.created_at;
+      if (result.created_at) profile.created_at = new Date(result.created_at);
       return profile;
     } else {
       return null;
@@ -140,9 +95,21 @@ export async function updateProfile(updates: Partial<Profile>): Promise<void> {
         currentProfile.id = existing.id;
         if (existing.email) currentProfile.email = existing.email;
       } else {
-        // Create new profile
+        // Create new profile with required fields
         currentProfile = {
           id: updates.id || 'default',
+          user_id: updates.user_id || 'default-user',
+          gender_identity: updates.gender_identity || 'nonbinary',
+          primary_goal: updates.primary_goal || 'general_fitness',
+          fitness_experience: updates.fitness_experience || updates.fitness_level || 'beginner',
+          workout_frequency: updates.workout_frequency ?? 3,
+          session_duration: updates.session_duration ?? 30,
+          binds_chest: updates.binds_chest ?? false,
+          on_hrt: updates.on_hrt ?? false,
+          surgeries: updates.surgeries || [],
+          equipment: updates.equipment || [],
+          created_at: new Date(),
+          updated_at: new Date(),
           email: updates.email || '',
         };
       }

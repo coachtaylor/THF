@@ -2,11 +2,64 @@
 // UPDATED: Equipment type now accepts any string from database
 
 export interface Profile {
+  // EXISTING
   id: string;
-  goals: Goal[];
-  goalWeighting: { primary: number; secondary: number };
-  constraints: Constraint[];
-  preferences: Preferences;
+  equipment: string[];
+  created_at: Date;
+  updated_at: Date;
+  
+  // ✨ ADD THESE NEW REQUIRED FIELDS ✨
+  user_id: string;
+  gender_identity: 'mtf' | 'ftm' | 'nonbinary' | 'questioning';
+  on_hrt: boolean;
+  binds_chest: boolean;
+  surgeries: Surgery[];
+  primary_goal: 'feminization' | 'masculinization' | 'general_fitness' | 'strength' | 'endurance';
+  fitness_experience: 'beginner' | 'intermediate' | 'advanced';
+  workout_frequency: number;
+  session_duration: number;
+  
+  // ✨ ADD THESE NEW OPTIONAL FIELDS ✨
+  pronouns?: string;
+  hrt_type?: 'estrogen_blockers' | 'testosterone' | 'none';
+  hrt_start_date?: Date;
+  hrt_months_duration?: number;
+  binding_frequency?: 'daily' | 'sometimes' | 'rarely' | 'never';
+  binding_duration_hours?: number;
+  binder_type?: 'commercial' | 'sports_bra' | 'ace_bandage' | 'diy';
+  secondary_goals?: string[];
+  dysphoria_triggers?: string[];
+  email?: string;
+  
+  // KEEP OLD FIELDS (deprecated but maintain compatibility)
+  fitness_level?: 'beginner' | 'intermediate' | 'advanced';
+  goals?: string[];
+  goal_weighting?: { primary: number; secondary: number; };
+  constraints?: string[];
+  surgery_flags?: string[];
+  surgeon_cleared?: boolean;
+  hrt_flags?: string[];
+  preferred_minutes?: number[];
+  block_length?: number;
+  low_sensory_mode?: boolean;
+  disclaimer_acknowledged_at?: string;
+  cloud_sync_enabled?: boolean;
+  synced_at?: string;
+  why_flags?: string[];
+  body_focus_prefer?: string[];
+  body_focus_soft_avoid?: string[];
+  
+  // Legacy fields for backward compatibility
+  goalWeighting?: { primary: number; secondary: number }; // Alias for goal_weighting
+  preferences?: Preferences; // Legacy preferences structure
+}
+
+// ✨ ADD THIS NEW INTERFACE ✨
+export interface Surgery {
+  type: 'top_surgery' | 'bottom_surgery' | 'ffs' | 'orchiectomy' | 'other';
+  date: Date;
+  weeks_post_op?: number;
+  notes?: string;
 }
 
 export type Goal = 'strength' | 'cardio' | 'flexibility' | 'mobility';
@@ -34,24 +87,59 @@ export type Equipment =
   | string; // Allows any other equipment type from database
 
 export interface Exercise {
+  // EXISTING FIELDS - keep these
   id: string;
   name: string;
-  category: ExerciseCategory;
-  equipment: Equipment[];
+  equipment: string[]; // Changed from Equipment[] to string[] to match plan.ts
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   binder_aware: boolean;
+  pelvic_floor_safe: boolean; // Renamed from pelvic_floor_aware for consistency
+  tags?: string[];
+  video_url?: string; // Optional video URL
+  media_thumb?: string;
+  media_video?: string;
+  swaps?: Swap[]; // Made optional with better type
+  created_at: Date;
+  version: string;
+  flags_reviewed: boolean;
+  reviewer?: string;
+  
+  // ✨ ADD THESE NEW FIELDS ✨
+  slug: string;
+  pattern: string;
+  goal: string;
   heavy_binding_safe: boolean;
-  pelvic_floor_aware: boolean;
-  pressure_level: 'low' | 'medium' | 'high';
-  neutral_cues: string[];
-  breathing_cues: string[];
-  trans_notes: {
-    binder?: string;
-    pelvic_floor?: string;
+  contraindications: string[];
+  target_muscles?: string;
+  secondary_muscles?: string;
+  gender_goal_emphasis?: 'fem_very_high' | 'fem_high' | 'fem_medium' | 'fem_low' | 
+                         'masc_very_high' | 'masc_high' | 'masc_medium' | 'masc_low' | 
+                         'neutral';
+  cue_primary?: string;
+  breathing?: string;
+  rep_range_beginner?: string;
+  rep_range_intermediate?: string;
+  rep_range_advanced?: string;
+  effectiveness_rating?: number;
+  source?: string;
+  notes?: string;
+  dysphoria_tags?: string;
+  post_op_safe_weeks?: number;
+  
+  // Keep old fields for backward compatibility
+  neutral_cues?: string[];
+  breathing_cues?: string[];
+  
+  // Additional fields from plan.ts
+  pelvic_floor_aware?: boolean; // Alias for backward compatibility
+  pressure_level?: 'low' | 'medium' | 'high';
+  trans_notes?: {
+    binder: string;
+    pelvic_floor: string;
   };
-  swaps: Swap[];
-  videoUrl: string;
-  tags: string[];
+  commonErrors?: string[];
+  videoUrl?: string; // Alias for video_url for backward compatibility
+  category?: ExerciseCategory; // Keep for backward compatibility
 }
 
 export type ExerciseCategory = 
@@ -63,7 +151,8 @@ export type ExerciseCategory =
   | 'full_body';
 
 export interface Swap {
-  exerciseId: string;
+  exerciseId?: string; // For backward compatibility
+  exercise_id?: string; // From plan.ts
   rationale: string;
 }
 
