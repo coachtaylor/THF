@@ -6,6 +6,9 @@ import { Plan, Day, Workout, Goal } from '../types';
 import { Profile } from './storage/profile';
 import { generateWorkout, printWorkoutSummary } from './workoutGenerator';
 import { fetchAllExercises } from './exerciseService';
+import { selectTemplate } from './workoutGeneration/templateSelection';
+import { DayTemplate } from './workoutGeneration/templates/types';
+
 
 /**
  * Generate a Quick Start plan - a single 5-minute bodyweight workout
@@ -99,6 +102,12 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     throw new Error('No exercises available. Please check your database.');
   }
 
+  // Select workout template based on profile
+  const template = selectTemplate(profile);
+  console.log(`✓ Selected template: ${template.name}`);
+  console.log(`  HRT adjusted: ${template.adjusted_for_hrt}`);
+  console.log(`  Volume multiplier: ${template.volume_multiplier}\n`);
+
   // Calculate number of days
   const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
   const startDate = new Date();
@@ -116,6 +125,10 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     console.log(`\n📅 Generating Day ${dayNumber} (${dayDate.toLocaleDateString()})`);
     console.log('─────────────────────────────────────────');
 
+    // Get day template (cycle through template days)
+    const dayTemplate = template.days[i % template.days.length];
+    console.log(`  Day ${dayNumber}: ${dayTemplate.name} (${dayTemplate.focus})`);
+
     // Filter out recently used exercises (last 3 days)
     const availableExercises = exercises.filter(ex => !usedExerciseIds.has(ex.id));
 
@@ -129,14 +142,14 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     // Generate all 4 workout variants for this day
     const variants: Day['variants'] = {
       5: null,   // Will be set if user has 5-min in their preferences
-      15: generateWorkout(profile, 15, exercisesToUse),
-      30: generateWorkout(profile, 30, exercisesToUse),
-      45: generateWorkout(profile, 45, exercisesToUse),
+      15: generateWorkout(profile, 15, exercisesToUse, dayTemplate),
+      30: generateWorkout(profile, 30, exercisesToUse, dayTemplate),
+      45: generateWorkout(profile, 45, exercisesToUse, dayTemplate),
     };
 
     // Only generate 5-minute workout if user wants it
     if (profile.preferred_minutes?.includes(5)) {
-      variants[5] = generateWorkout(profile, 5, exercisesToUse);
+      variants[5] = generateWorkout(profile, 5, exercisesToUse, dayTemplate);
     }
 
     // Track exercises used today
