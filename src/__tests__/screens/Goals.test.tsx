@@ -88,7 +88,7 @@ describe('Goals', () => {
           }),
         })
       );
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('Constraints');
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('HRTAndBinding');
     });
   });
 

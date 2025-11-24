@@ -4,6 +4,9 @@ import { createStackNavigator } from '@react-navigation/stack';
 import WhyTransFitness from '../screens/onboarding/WhyTransFitness';
 import Disclaimer from '../screens/onboarding/Disclaimer';
 import type { OnboardingStackParamList } from '../types/onboarding';
+import GenderIdentity from '../screens/onboarding/intake/GenderIdentity';
+import HRTAndBinding from '../screens/onboarding/intake/HRTAndBinding';
+import Surgery from '../screens/onboarding/intake/Surgery';
 import GoalsAndPreferences from '../screens/onboarding/intake/GoalsAndPreferences';
 import ProgramSetup from '../screens/onboarding/intake/ProgramSetup';
 import Constraints from '../screens/onboarding/intake/Constraints';
@@ -25,9 +28,10 @@ export default function OnboardingNavigator() {
     >
       <Stack.Screen name="WhyTransFitness" component={WhyTransFitness} />
       <Stack.Screen name="Disclaimer" component={Disclaimer} />
+      <Stack.Screen name="GenderIdentity" component={GenderIdentity} />
       <Stack.Screen name="Goals" component={GoalsAndPreferences} />
-      <Stack.Screen name="ProgramSetup" component={ProgramSetup} />
-      <Stack.Screen name="Constraints" component={Constraints} />
+      <Stack.Screen name="HRTAndBinding" component={HRTAndBinding} />
+      <Stack.Screen name="Surgery" component={Surgery} />
       <Stack.Screen name="Review" component={Review} />
       <Stack.Screen name="QuickStart" component={QuickStart} />
       <Stack.Screen name="PlanView" component={PlanView} />

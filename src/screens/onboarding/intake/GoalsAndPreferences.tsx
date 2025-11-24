@@ -47,16 +47,36 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
   const [bodyFocusPrefer, setBodyFocusPrefer] = useState<string[]>(profile?.body_focus_prefer || []);
   const [bodyFocusSoftAvoid, setBodyFocusSoftAvoid] = useState<string[]>(profile?.body_focus_soft_avoid || []);
 
-  // Load goals from database
+  // Load goals from database and add gender-specific goals
   useEffect(() => {
     const loadGoals = async () => {
       try {
         setLoadingGoals(true);
-        const goals = await fetchGoalsFromDatabase();
-        setAvailableGoals(goals);
+        const dbGoals = await fetchGoalsFromDatabase();
+        
+        // Add gender-specific goals based on gender_identity
+        const allGoals: string[] = [...dbGoals];
+        
+        if (profile?.gender_identity === 'mtf') {
+          // Add feminization if not already present
+          if (!allGoals.includes('feminization')) {
+            allGoals.unshift('feminization'); // Add at beginning
+          }
+        } else if (profile?.gender_identity === 'ftm') {
+          // Add masculinization if not already present
+          if (!allGoals.includes('masculinization')) {
+            allGoals.unshift('masculinization'); // Add at beginning
+          }
+        }
+        
+        setAvailableGoals(allGoals);
         
         // Initialize selected goals from profile
-        if (profile?.goals && profile.goals.length > 0) {
+        if (profile?.primary_goal) {
+          // Use primary_goal if available
+          setPrimaryGoal(profile.primary_goal);
+        } else if (profile?.goals && profile.goals.length > 0) {
+          // Fallback to old goals array
           const goals = profile.goals;
           setPrimaryGoal(goals[0] || null);
           setSecondaryGoal(goals[1] || null);
@@ -64,14 +84,20 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
       } catch (error) {
         console.error('Error loading goals:', error);
         // Fallback to default goals
-        setAvailableGoals(['strength', 'conditioning', 'mobility', 'endurance']);
+        const fallbackGoals = ['strength', 'conditioning', 'mobility', 'endurance'];
+        if (profile?.gender_identity === 'mtf') {
+          fallbackGoals.unshift('feminization');
+        } else if (profile?.gender_identity === 'ftm') {
+          fallbackGoals.unshift('masculinization');
+        }
+        setAvailableGoals(fallbackGoals);
       } finally {
         setLoadingGoals(false);
       }
     };
 
     loadGoals();
-  }, []);
+  }, [profile?.gender_identity]);
 
 
   const handleGoalPress = (goal: string) => {
@@ -116,6 +142,26 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
 
 
 
+  // Map selected goal to primary_goal value
+  const mapGoalToPrimaryGoal = (goal: string): 'feminization' | 'masculinization' | 'general_fitness' | 'strength' | 'endurance' => {
+    // Check if goal is already a primary_goal value
+    if (goal === 'feminization' || goal === 'masculinization' || goal === 'general_fitness' || goal === 'strength' || goal === 'endurance') {
+      return goal as 'feminization' | 'masculinization' | 'general_fitness' | 'strength' | 'endurance';
+    }
+    
+    // Map database goals to primary_goal
+    if (goal === 'strength') return 'strength';
+    if (goal === 'cardio' || goal === 'endurance' || goal === 'conditioning') return 'endurance';
+    if (goal === 'flexibility' || goal === 'mobility') return 'general_fitness';
+    
+    // Default based on gender_identity if available
+    if (profile?.gender_identity === 'mtf') return 'feminization';
+    if (profile?.gender_identity === 'ftm') return 'masculinization';
+    
+    // Default fallback
+    return 'general_fitness';
+  };
+
   const handleContinue = async () => {
     if (!primaryGoal) return;
 
@@ -129,15 +175,19 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
       ? { primary: 70, secondary: 30 }
       : { primary: 100, secondary: 0 };
 
+    // Map selected goal to primary_goal
+    const mappedPrimaryGoal = mapGoalToPrimaryGoal(primaryGoal);
+
     try {
       await updateProfile({
         goals,
         goal_weighting: goalWeighting,
+        primary_goal: mappedPrimaryGoal,
         body_focus_prefer: bodyFocusPrefer.length > 0 ? bodyFocusPrefer : undefined,
         body_focus_soft_avoid: bodyFocusSoftAvoid.length > 0 ? bodyFocusSoftAvoid : undefined,
       });
-      // Navigate to Program Setup screen
-      navigation.navigate('ProgramSetup');
+      // Navigate to HRT & Binding screen
+      navigation.navigate('HRTAndBinding');
     } catch (error) {
       console.error('Error saving goals and preferences:', error);
     }
@@ -163,9 +213,9 @@ export default function GoalsAndPreferences({ navigation }: OnboardingScreenProp
       </View>
 
       <ProgressIndicator
-        currentStep={1}
-        totalSteps={4}
-        stepLabels={['Goals & Preferences', 'Program Setup', 'Constraints', 'Review']}
+        currentStep={2}
+        totalSteps={5}
+        stepLabels={['Gender Identity', 'Goals', 'HRT & Binding', 'Surgery', 'Review']}
       />
 
       <ScrollView
