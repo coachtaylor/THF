@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getProfile, updateProfile as updateProfileService, Profile } from '../services/storage/profile';
+import { migrateOldProfileToNew, needsMigration } from '../utils/profileMigration';
 
 export function useProfile() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -10,8 +11,17 @@ export function useProfile() {
     try {
       setLoading(true);
       setError(null);
-      const data = await getProfile();
-      setProfile(data);
+      const loadedProfile = await getProfile();
+      
+      if (loadedProfile && needsMigration(loadedProfile)) {
+        console.log('🔄 Migrating old profile to new structure...');
+        const migratedProfile = migrateOldProfileToNew(loadedProfile);
+        await updateProfileService(migratedProfile);
+        setProfile(migratedProfile);
+        console.log('✅ Profile migration completed');
+      } else {
+        setProfile(loadedProfile);
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       setError(error);

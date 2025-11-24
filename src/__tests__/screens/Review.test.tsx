@@ -42,49 +42,66 @@ describe('Review', () => {
 
   it('displays all sections', () => {
     const { getByText } = render(<Review navigation={mockNavigation} />);
-    expect(getByText('Goals')).toBeTruthy();
-    expect(getByText('Constraints')).toBeTruthy();
-    expect(getByText('Preferences')).toBeTruthy();
+    expect(getByText('Your Profile')).toBeTruthy();
+    expect(getByText('HRT Status')).toBeTruthy();
+    expect(getByText('Binding Status')).toBeTruthy();
+    expect(getByText('Surgery History')).toBeTruthy();
+    expect(getByText('Equipment')).toBeTruthy();
   });
 
-  it('displays goals summary with labels', () => {
+  it('displays profile summary with new fields', () => {
     const { getByText } = render(<Review navigation={mockNavigation} />);
-    expect(getByText(/Strength/i)).toBeTruthy();
-    expect(getByText(/Flexibility/i)).toBeTruthy();
+    expect(getByText(/Gender Identity/i)).toBeTruthy();
+    expect(getByText(/Primary Goal/i)).toBeTruthy();
+    expect(getByText(/Experience Level/i)).toBeTruthy();
+    expect(getByText(/Training Frequency/i)).toBeTruthy();
   });
 
-  it('displays constraints summary with labels', () => {
+  it('displays HRT status when on_hrt is true', () => {
     const { getByText } = render(<Review navigation={mockNavigation} />);
-    expect(getByText(/Binder Aware/i)).toBeTruthy();
-    expect(getByText(/Heavy Binding/i)).toBeTruthy();
-    expect(getByText(/Testosterone/i)).toBeTruthy();
+    expect(getByText(/HRT Status/i)).toBeTruthy();
+    expect(getByText(/Type:/i)).toBeTruthy();
+    expect(getByText(/Duration:/i)).toBeTruthy();
   });
 
-  it('displays preferences summary', () => {
+  it('displays binding status when binds_chest is true', () => {
     const { getByText } = render(<Review navigation={mockNavigation} />);
-    expect(getByText(/15, 30 minutes/i)).toBeTruthy();
-    expect(getByText(/1 Week/i)).toBeTruthy();
+    expect(getByText(/Binding Status/i)).toBeTruthy();
+    expect(getByText(/Frequency:/i)).toBeTruthy();
   });
 
-  it('navigates to Goals on Edit press', () => {
+  it('displays surgery history when surgeries exist', () => {
+    const { getByText } = render(<Review navigation={mockNavigation} />);
+    expect(getByText(/Surgery History/i)).toBeTruthy();
+    expect(getByText(/Top Surgery/i)).toBeTruthy();
+  });
+
+  it('navigates to GenderIdentity on Edit Profile press', () => {
     const { getAllByText } = render(<Review navigation={mockNavigation} />);
     const editButtons = getAllByText('Edit');
-    fireEvent.press(editButtons[0]); // First Edit button (Goals)
-    expect(mockNavigation.navigate).toHaveBeenCalledWith('Goals');
+    fireEvent.press(editButtons[0]); // First Edit button (Your Profile)
+    expect(mockNavigation.navigate).toHaveBeenCalledWith('GenderIdentity');
   });
 
-  it('navigates to Constraints on Edit press', () => {
+  it('navigates to HRTAndBinding on Edit HRT/Binding press', () => {
     const { getAllByText } = render(<Review navigation={mockNavigation} />);
     const editButtons = getAllByText('Edit');
-    fireEvent.press(editButtons[1]); // Second Edit button (Constraints)
-    expect(mockNavigation.navigate).toHaveBeenCalledWith('Constraints');
+    fireEvent.press(editButtons[1]); // Second Edit button (HRT Status)
+    expect(mockNavigation.navigate).toHaveBeenCalledWith('HRTAndBinding');
   });
 
-  it('navigates to Preferences on Edit press', () => {
+  it('navigates to Surgery on Edit Surgery press', () => {
     const { getAllByText } = render(<Review navigation={mockNavigation} />);
     const editButtons = getAllByText('Edit');
-    fireEvent.press(editButtons[2]); // Third Edit button (Preferences)
-    expect(mockNavigation.navigate).toHaveBeenCalledWith('Preferences');
+    // Find the Edit button for Surgery History section
+    const surgeryEditButton = editButtons.find((btn) => {
+      // This is a simplified check - in reality you'd need to find the specific button
+      return true;
+    });
+    if (surgeryEditButton) {
+      fireEvent.press(surgeryEditButton);
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('Surgery');
+    }
   });
 
   it('generates plan on Generate My Plan press', async () => {

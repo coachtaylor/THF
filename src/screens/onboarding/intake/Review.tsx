@@ -12,50 +12,71 @@ import { palette, spacing, typography } from '../../../theme';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
 import { formatEquipmentLabel } from '../../../utils/equipment';
 
-const GOAL_LABELS: Record<string, string> = {
+const GENDER_IDENTITY_LABELS: Record<string, string> = {
+  mtf: 'Trans Woman / Transfeminine',
+  ftm: 'Trans Man / Transmasculine',
+  nonbinary: 'Nonbinary / Gender Diverse',
+  questioning: 'Questioning',
+};
+
+const PRIMARY_GOAL_LABELS: Record<string, string> = {
+  feminization: 'Feminization',
+  masculinization: 'Masculinization',
+  general_fitness: 'General Fitness',
   strength: 'Strength',
-  cardio: 'Cardio',
-  flexibility: 'Flexibility',
-  custom: 'Custom',
+  endurance: 'Endurance',
 };
 
-const EQUIPMENT_LABELS: Record<string, string> = {
-  bodyweight: 'Bodyweight',
-  dumbbells: 'Dumbbells',
-  bands: 'Resistance Bands',
-  kettlebell: 'Kettlebell',
+const FITNESS_EXPERIENCE_LABELS: Record<string, string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
 };
 
-const CONSTRAINT_LABELS: Record<string, string> = {
-  binder_aware: 'Binder Aware',
-  heavy_binding: 'Heavy Binding',
-  post_op: 'Post-Op Recovery',
-  no_jumping: 'No Jumping',
-  no_floor: 'No Floor Work',
+const HRT_TYPE_LABELS: Record<string, string> = {
+  estrogen_blockers: 'Estrogen / Anti-Androgens',
+  testosterone: 'Testosterone',
+  none: 'Other / Not specified',
 };
 
-const SURGERY_LABELS: Record<string, string> = {
+const BINDING_FREQUENCY_LABELS: Record<string, string> = {
+  daily: 'Every workout (Daily)',
+  sometimes: 'Most workouts (Sometimes)',
+  rarely: 'Rarely',
+  never: 'Never',
+};
+
+const BINDER_TYPE_LABELS: Record<string, string> = {
+  commercial: 'Commercial binder (GC2B, Underworks, etc.)',
+  sports_bra: 'Sports bra',
+  ace_bandage: 'Ace bandage',
+  diy: 'DIY/Makeshift',
+};
+
+const SURGERY_TYPE_LABELS: Record<string, string> = {
   top_surgery: 'Top Surgery',
   bottom_surgery: 'Bottom Surgery',
-  other_surgery: 'Other Surgery',
+  ffs: 'Facial Feminization Surgery (FFS)',
+  orchiectomy: 'Orchiectomy',
+  other: 'Other surgery',
 };
 
-const HRT_LABELS: Record<string, string> = {
-  on_hrt: 'On HRT',
-  testosterone: 'Testosterone',
-  estrogen: 'Estrogen',
+const formatDate = (date: Date): string => {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
 };
 
-const BODY_REGION_LABELS: Record<string, string> = {
-  legs: 'Legs',
-  glutes: 'Glutes',
-  back: 'Back',
-  core: 'Core',
-  shoulders: 'Shoulders',
-  arms: 'Arms',
-  chest: 'Chest',
-  hips: 'Hips',
-  abdomen: 'Abdomen',
+const formatMonths = (months: number): string => {
+  if (months === 0) return '0 months';
+  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'}`;
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+  if (remainingMonths === 0) {
+    return `${years} ${years === 1 ? 'year' : 'years'}`;
+  }
+  return `${years} ${years === 1 ? 'year' : 'years'}, ${remainingMonths} ${remainingMonths === 1 ? 'month' : 'months'}`;
 };
 
 export default function Review({ navigation }: OnboardingScreenProps<'Review'>) {
@@ -67,12 +88,12 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Refresh profile when screen comes into focus (e.g., when returning from Preferences)
+  // Refresh profile when screen comes into focus
   useFocusEffect(
     React.useCallback(() => {
       refreshProfile();
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []) // Only run when screen comes into focus, not when refreshProfile changes
+    }, [])
   );
 
   if (!profile) {
@@ -83,7 +104,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     );
   }
 
-  const handleEdit = (screen: 'Goals' | 'ProgramSetup' | 'Constraints') => {
+  const handleEdit = (screen: 'GenderIdentity' | 'Goals' | 'HRTAndBinding' | 'Surgery') => {
     navigation.navigate(screen);
   };
 
@@ -110,104 +131,12 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     }
   };
 
-  const goals = profile.goals || [];
-  const goalWeighting = profile.goal_weighting || { primary: 100, secondary: 0 };
-  const constraints = profile.constraints || [];
-  const surgeryFlags = profile.surgery_flags || [];
-  const hrtFlags = profile.hrt_flags || [];
-  const fitnessLevel = profile.fitness_level;
-  const blockLength = profile.block_length || 1;
-  const equipment = profile.equipment || [];
-  const bodyFocusPrefer = profile.body_focus_prefer || [];
-  const bodyFocusSoftAvoid = profile.body_focus_soft_avoid || [];
-  const surgeonCleared = profile.surgeon_cleared;
-  const lowSensoryMode = profile.low_sensory_mode || false;
-
-  const FITNESS_LEVEL_LABELS: Record<string, string> = {
-    beginner: 'Beginner',
-    intermediate: 'Intermediate',
-    advanced: 'Advanced',
-  };
-
-  // Helper function to format body regions
-  const formatBodyRegions = (regions: string[]): string => {
-    return regions.map((region) => BODY_REGION_LABELS[region] || region).join(', ');
-  };
-
   // Helper function to format equipment
   const formatEquipment = (): string => {
-    return equipment.map((e) => EQUIPMENT_LABELS[e] || formatEquipmentLabel(e)).join(', ');
+    const equipment = profile.equipment || [];
+    if (equipment.length === 0) return 'No equipment selected';
+    return equipment.map((e) => formatEquipmentLabel(e)).join(', ');
   };
-
-  // Build summary items for each section
-  const goalsItems: string[] = [];
-  if (goals.length > 0) {
-    const primaryGoal = GOAL_LABELS[goals[0]] || goals[0];
-    if (goals.length > 1 && goalWeighting.secondary > 0) {
-      const secondaryGoal = GOAL_LABELS[goals[1]] || goals[1];
-      goalsItems.push(`Primary goal: ${primaryGoal} (${goalWeighting.primary}%)`);
-      goalsItems.push(`Secondary goal: ${secondaryGoal} (${goalWeighting.secondary}%)`);
-    } else {
-      goalsItems.push(`Primary goal: ${primaryGoal} (100%)`);
-    }
-  }
-
-  const bodyFocusItems: string[] = [];
-  if (bodyFocusPrefer.length > 0) {
-    bodyFocusItems.push(`We'll put extra emphasis on: ${formatBodyRegions(bodyFocusPrefer)}`);
-  }
-  if (bodyFocusSoftAvoid.length > 0) {
-    bodyFocusItems.push(`We'll go more gently with: ${formatBodyRegions(bodyFocusSoftAvoid)}`);
-  }
-  if (bodyFocusItems.length === 0) {
-    bodyFocusItems.push('No specific body focus selected.');
-  }
-
-  const safetyItems: string[] = [];
-  if (constraints.includes('binder_aware')) {
-    safetyItems.push("We'll prioritize binder-aware exercise options.");
-  }
-  if (constraints.includes('heavy_binding')) {
-    safetyItems.push("We'll be extra careful about breath and chest pressure when binding feels tight.");
-  }
-  if (constraints.includes('post_op')) {
-    safetyItems.push("We'll treat you as post-op and avoid aggressive positions until you're cleared.");
-  }
-  if (constraints.includes('no_jumping')) {
-    safetyItems.push("We'll avoid jumping and high-impact movements.");
-  }
-  if (constraints.includes('no_floor')) {
-    safetyItems.push("We'll avoid exercises that require getting onto the floor.");
-  }
-  if (surgeryFlags.includes('top_surgery')) {
-    safetyItems.push("We'll layer in tips specific to top surgery recovery where relevant.");
-  }
-  if (surgeryFlags.includes('bottom_surgery')) {
-    safetyItems.push("We'll layer in tips specific to bottom surgery and pelvic floor where relevant.");
-  }
-  if (hrtFlags.length > 0) {
-    safetyItems.push("We'll add context around training while on HRT.");
-  }
-  if (constraints.includes('post_op')) {
-    if (surgeonCleared === false) {
-      safetyItems.push("You marked that you're not cleared yet — we'll keep intensity and positions conservative.");
-    } else if (surgeonCleared === true) {
-      safetyItems.push("You marked that you've been cleared by your surgeon — we'll still avoid anything that feels sketchy, but open up more options.");
-    }
-  }
-
-  const programItems: string[] = [];
-  if (fitnessLevel) {
-    programItems.push(`Fitness level: ${FITNESS_LEVEL_LABELS[fitnessLevel]}`);
-  }
-  programItems.push(`Program length: ${blockLength} week${blockLength !== 1 ? 's' : ''}`);
-  // Show equipment if available
-  if (equipment.length > 0) {
-    programItems.push(`Equipment: ${formatEquipment()}`);
-  }
-  if (lowSensoryMode) {
-    programItems.push('Low sensory mode: ON');
-  }
 
   return (
     <View
@@ -227,9 +156,9 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
       </View>
 
       <ProgressIndicator
-        currentStep={4}
-        totalSteps={4}
-        stepLabels={['Goals & Preferences', 'Program Setup', 'Constraints', 'Review']}
+        currentStep={5}
+        totalSteps={5}
+        stepLabels={['Gender Identity', 'Goals', 'HRT & Binding', 'Surgery', 'Review']}
       />
 
       <ScrollView
@@ -237,87 +166,214 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Goals & Preferences Section */}
+        {/* SECTION 1: Your Profile */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Goals & Preferences</Text>
+            <Text style={styles.sectionTitle}>Your Profile</Text>
+            <TouchableOpacity onPress={() => handleEdit('GenderIdentity')} style={styles.editButton}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.summaryCard}>
+            <View style={styles.bulletItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.summaryBullet}>
+                <Text style={styles.label}>Gender Identity: </Text>
+                {GENDER_IDENTITY_LABELS[profile.gender_identity] || profile.gender_identity}
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.summaryBullet}>
+                <Text style={styles.label}>Primary Goal: </Text>
+                {PRIMARY_GOAL_LABELS[profile.primary_goal] || profile.primary_goal}
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.summaryBullet}>
+                <Text style={styles.label}>Experience Level: </Text>
+                {FITNESS_EXPERIENCE_LABELS[profile.fitness_experience] || profile.fitness_experience}
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.summaryBullet}>
+                <Text style={styles.label}>Training Frequency: </Text>
+                {profile.workout_frequency} {profile.workout_frequency === 1 ? 'day' : 'days'} per week
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* SECTION 2: HRT Status (only if on_hrt = true) */}
+        {profile.on_hrt && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>HRT Status</Text>
+              <TouchableOpacity onPress={() => handleEdit('HRTAndBinding')} style={styles.editButton}>
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.summaryCard}>
+              {profile.hrt_type && (
+                <View style={styles.bulletItem}>
+                  <View style={styles.bullet} />
+                  <Text style={styles.summaryBullet}>
+                    <Text style={styles.label}>Type: </Text>
+                    {HRT_TYPE_LABELS[profile.hrt_type] || profile.hrt_type}
+                  </Text>
+                </View>
+              )}
+              {profile.hrt_months_duration !== undefined && profile.hrt_months_duration > 0 && (
+                <View style={styles.bulletItem}>
+                  <View style={styles.bullet} />
+                  <Text style={styles.summaryBullet}>
+                    <Text style={styles.label}>Duration: </Text>
+                    {formatMonths(profile.hrt_months_duration)}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.bulletItem}>
+                <View style={styles.bullet} />
+                <Text style={styles.summaryBullet}>
+                  Impact on Programming: We've adjusted recovery time and volume for HRT
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* SECTION 3: Binding Status (only if binds_chest = true) */}
+        {profile.binds_chest && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Binding Status</Text>
+              <TouchableOpacity onPress={() => handleEdit('HRTAndBinding')} style={styles.editButton}>
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.summaryCard}>
+              {profile.binding_frequency && (
+                <View style={styles.bulletItem}>
+                  <View style={styles.bullet} />
+                  <Text style={styles.summaryBullet}>
+                    <Text style={styles.label}>Frequency: </Text>
+                    {BINDING_FREQUENCY_LABELS[profile.binding_frequency] || profile.binding_frequency}
+                  </Text>
+                </View>
+              )}
+              {profile.binding_duration_hours !== undefined && profile.binding_duration_hours > 0 && (
+                <View style={styles.bulletItem}>
+                  <View style={styles.bullet} />
+                  <Text style={styles.summaryBullet}>
+                    <Text style={styles.label}>Duration: </Text>
+                    {profile.binding_duration_hours} {profile.binding_duration_hours === 1 ? 'hour' : 'hours'} per session
+                  </Text>
+                </View>
+              )}
+              {profile.binder_type && (
+                <View style={styles.bulletItem}>
+                  <View style={styles.bullet} />
+                  <Text style={styles.summaryBullet}>
+                    <Text style={styles.label}>Binder Type: </Text>
+                    {BINDER_TYPE_LABELS[profile.binder_type] || profile.binder_type}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.bulletItem}>
+                <View style={styles.bullet} />
+                <Text style={styles.summaryBullet}>
+                  Impact on Programming: We'll exclude chest compression exercises
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* SECTION 4: Surgery History (only if surgeries.length > 0) */}
+        {profile.surgeries && profile.surgeries.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Surgery History</Text>
+              <TouchableOpacity onPress={() => handleEdit('Surgery')} style={styles.editButton}>
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.summaryCard}>
+              {profile.surgeries.map((surgery, index) => {
+                const isRecovering = surgery.weeks_post_op !== undefined && surgery.weeks_post_op < 12;
+                return (
+                  <View key={index} style={styles.surgeryItem}>
+                    <View style={styles.bulletItem}>
+                      <View style={styles.bullet} />
+                      <Text style={styles.summaryBullet}>
+                        <Text style={styles.label}>Type: </Text>
+                        {SURGERY_TYPE_LABELS[surgery.type] || surgery.type}
+                      </Text>
+                    </View>
+                    <View style={styles.bulletItem}>
+                      <View style={styles.bullet} />
+                      <Text style={styles.summaryBullet}>
+                        <Text style={styles.label}>Date: </Text>
+                        {formatDate(surgery.date)}
+                      </Text>
+                    </View>
+                    {surgery.weeks_post_op !== undefined && (
+                      <View style={styles.bulletItem}>
+                        <View style={styles.bullet} />
+                        <Text style={styles.summaryBullet}>
+                          <Text style={styles.label}>Weeks Post-Op: </Text>
+                          {surgery.weeks_post_op} {surgery.weeks_post_op === 1 ? 'week' : 'weeks'}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.bulletItem}>
+                      <View style={styles.bullet} />
+                      <Text style={styles.summaryBullet}>
+                        <Text style={styles.label}>Status: </Text>
+                        {isRecovering ? 'Still recovering' : 'Fully healed'}
+                      </Text>
+                    </View>
+                    {surgery.notes && (
+                      <View style={styles.bulletItem}>
+                        <View style={styles.bullet} />
+                        <Text style={styles.summaryBullet}>
+                          <Text style={styles.label}>Notes: </Text>
+                          {surgery.notes}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.bulletItem}>
+                      <View style={styles.bullet} />
+                      <Text style={styles.summaryBullet}>
+                        Impact on Programming: We'll avoid exercises that stress surgical sites
+                      </Text>
+                    </View>
+                    {index < profile.surgeries!.length - 1 && <View style={styles.surgerySeparator} />}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* SECTION 5: Equipment */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Equipment</Text>
             <TouchableOpacity onPress={() => handleEdit('Goals')} style={styles.editButton}>
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.summaryCard}>
-            {/* Goals */}
-            {goalsItems.length > 0 && (
-              <>
-                {goalsItems.map((item, index) => (
-                  <View key={`goal-${index}`} style={styles.bulletItem}>
-                    <View style={styles.bullet} />
-                    <Text style={styles.summaryBullet}>{item}</Text>
-                  </View>
-                ))}
-              </>
-            )}
-            
-            {/* Body Focus */}
-            {bodyFocusItems.length > 0 && (
-              <>
-                {bodyFocusItems.map((item, index) => (
-                  <View key={`body-${index}`} style={styles.bulletItem}>
-                    <View style={styles.bullet} />
-                    <Text style={styles.summaryBullet}>{item}</Text>
-                  </View>
-                ))}
-              </>
-            )}
-            
-            {/* Show empty state if nothing is selected */}
-            {goalsItems.length === 0 && bodyFocusItems.length === 0 && (
-              <Text style={styles.emptyText}>No goals or preferences selected</Text>
-            )}
-          </View>
-        </View>
-
-        {/* Program Setup Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Program Setup</Text>
-            <TouchableOpacity onPress={() => handleEdit('ProgramSetup')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryCard}>
-            {programItems.length > 0 ? (
-              programItems.map((item, index) => (
-                <View key={`program-${index}`} style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>{item}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>No program setup selected</Text>
-            )}
-          </View>
-        </View>
-
-        {/* Safety & Constraints Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Safety & Constraints</Text>
-            <TouchableOpacity onPress={() => handleEdit('Constraints')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryCard}>
-            {safetyItems.length > 0 ? (
-              safetyItems.map((item, index) => (
-                <View key={index} style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>{item}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>No constraints selected</Text>
-            )}
+            <View style={styles.bulletItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.summaryBullet}>
+                <Text style={styles.label}>Available Equipment: </Text>
+                {formatEquipment()}
+              </Text>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -440,12 +496,18 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 22,
   },
-  emptyText: {
-    ...typography.body,
-    color: palette.midGray,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    paddingVertical: spacing.m,
+  label: {
+    fontWeight: '600',
+    color: palette.white,
+  },
+  surgeryItem: {
+    marginBottom: spacing.m,
+  },
+  surgerySeparator: {
+    height: 1,
+    backgroundColor: palette.border,
+    marginTop: spacing.m,
+    marginBottom: spacing.m,
   },
   ctaContainer: {
     marginTop: spacing.s,
@@ -489,4 +551,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-
