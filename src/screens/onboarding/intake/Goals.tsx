@@ -44,10 +44,17 @@ export default function Goals({ navigation }: OnboardingScreenProps<'Goals'>) {
   const [bodyFocusSoftAvoid, setBodyFocusSoftAvoid] = useState<string[]>(profile?.body_focus_soft_avoid || []);
 
   useEffect(() => {
-    if (profile?.goals && profile.goals.length > 0) {
+    // Load from new primary_goal field first, fallback to old goals field
+    if (profile?.primary_goal) {
+      setPrimaryGoal(profile.primary_goal as Goal);
+    } else if (profile?.goals && profile.goals.length > 0) {
       const goals = profile.goals as Goal[];
       setPrimaryGoal(goals[0] || null);
-      setSecondaryGoal(goals[1] || null);
+    }
+    if (profile?.secondary_goals && profile.secondary_goals.length > 0) {
+      setSecondaryGoal(profile.secondary_goals[0] as Goal);
+    } else if (profile?.goals && profile.goals.length > 1) {
+      setSecondaryGoal(profile.goals[1] as Goal);
     }
     if (profile?.body_focus_prefer) {
       setBodyFocusPrefer(profile.body_focus_prefer);
@@ -105,25 +112,22 @@ export default function Goals({ navigation }: OnboardingScreenProps<'Goals'>) {
   const handleContinue = async () => {
     if (!primaryGoal) return; // Primary goal is required
 
-    const goals: string[] = [primaryGoal];
-    if (secondaryGoal) {
-      goals.push(secondaryGoal);
-    }
-
-    // Calculate goal weighting (default: 70/30 if secondary exists, 100/0 if not)
-    const goalWeighting = secondaryGoal
-      ? { primary: 70, secondary: 30 }
-      : { primary: 100, secondary: 0 };
+    const secondaryGoals: string[] = secondaryGoal ? [secondaryGoal] : [];
 
     try {
       await updateProfile({
-        goals,
-        goal_weighting: goalWeighting,
+        primary_goal: primaryGoal as 'feminization' | 'masculinization' | 'general_fitness' | 'strength' | 'endurance',
+        secondary_goals: secondaryGoals.length > 0 ? secondaryGoals : undefined,
+        // Keep old fields for backward compatibility
+        goals: [primaryGoal, ...secondaryGoals],
+        goal_weighting: secondaryGoal
+          ? { primary: 70, secondary: 30 }
+          : { primary: 100, secondary: 0 },
         body_focus_prefer: bodyFocusPrefer.length > 0 ? bodyFocusPrefer : undefined,
         body_focus_soft_avoid: bodyFocusSoftAvoid.length > 0 ? bodyFocusSoftAvoid : undefined,
       });
-      // Navigate to Constraints screen
-      navigation.navigate('Constraints');
+      // Navigate to Experience screen
+      navigation.navigate('Experience');
     } catch (error) {
       console.error('Error saving goals:', error);
       // TODO: Show error toast
@@ -148,9 +152,9 @@ export default function Goals({ navigation }: OnboardingScreenProps<'Goals'>) {
       </Text>
 
       <ProgressIndicator
-        currentStep={1}
-        totalSteps={4}
-        stepLabels={['Goals', 'Constraints', 'Preferences', 'Review']}
+        currentStep={5}
+        totalSteps={8}
+        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
       />
 
       <ScrollView

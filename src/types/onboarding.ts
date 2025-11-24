@@ -264,9 +264,12 @@ export type OnboardingStackParamList = {
   WhyTransFitness: undefined;
   Disclaimer: undefined;
   GenderIdentity: undefined;
-  Goals: undefined;
-  HRTAndBinding: undefined;
+  HRTStatus: undefined;
+  BindingInfo: undefined;
   Surgery: undefined;
+  Goals: undefined;
+  Experience: undefined;
+  DysphoriaTriggers: undefined;
   Review: undefined;
   QuickStart: undefined;
   PlanView: undefined;
