@@ -263,11 +263,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 export type OnboardingStackParamList = {
   WhyTransFitness: undefined;
   Disclaimer: undefined;
+  GenderIdentity: undefined;
   Goals: undefined;
-  BodyFocus: undefined;
-  ProgramSetup: undefined;
-  Constraints: undefined;
-  Preferences: undefined;
+  HRTAndBinding: undefined;
+  Surgery: undefined;
   Review: undefined;
   QuickStart: undefined;
   PlanView: undefined;

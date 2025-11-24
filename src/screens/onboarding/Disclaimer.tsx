@@ -84,7 +84,7 @@ export default function Disclaimer({ navigation }: OnboardingScreenProps<'Discla
     } catch {
       // no-op for now; storage added in US-2.2
     }
-    navigation.navigate('Goals');
+    navigation.navigate('GenderIdentity');
   };
 
   const handleQuickStart = () => {

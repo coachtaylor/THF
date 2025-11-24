@@ -48,6 +48,18 @@ export async function fetchGoalsFromDatabase(): Promise<string[]> {
  * Format goal value for display (capitalize first letter)
  */
 export function formatGoalLabel(goal: string): string {
+  // Special formatting for gender-specific goals
+  if (goal === 'feminization') {
+    return 'Feminization';
+  }
+  if (goal === 'masculinization') {
+    return 'Masculinization';
+  }
+  if (goal === 'general_fitness') {
+    return 'General Fitness';
+  }
+  
+  // Default: capitalize first letter
   return goal.charAt(0).toUpperCase() + goal.slice(1);
 }
 
