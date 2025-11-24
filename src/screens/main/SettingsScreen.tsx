@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useProfile } from '../../hooks/useProfile';
+import { logout } from '../../services/auth/auth';
+import { clearSession } from '../../services/auth/session';
 import { palette, spacing, typography } from '../../theme';
 
 type MainTabParamList = {
@@ -68,6 +70,32 @@ export default function SettingsScreen() {
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Log Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await logout();
+              await clearSession();
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to log out. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -303,6 +331,17 @@ export default function SettingsScreen() {
             <Ionicons name="chatbubble-outline" size={20} color={palette.white} />
           </TouchableOpacity>
         </View>
+
+        {/* Logout Section */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out-outline" size={24} color={palette.error} />
+            <Text style={styles.logoutButtonText}>Log Out</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -378,5 +417,22 @@ const styles = StyleSheet.create({
   },
   dangerText: {
     color: palette.error,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.m,
+    backgroundColor: palette.darkCard,
+    borderRadius: 12,
+    padding: spacing.m,
+    borderWidth: 1,
+    borderColor: palette.error + '40',
+    marginTop: spacing.xl,
+  },
+  logoutButtonText: {
+    ...typography.button,
+    color: palette.error,
+    fontSize: 18,
   },
 });
