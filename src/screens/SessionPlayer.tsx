@@ -24,6 +24,7 @@ import { fetchAllExercises } from '../services/exerciseService';
 import { useProfile } from '../hooks/useProfile';
 import { getCachedVideo, cacheVideo } from '../services/videoCache';
 import { palette, spacing, typography } from '../theme';
+import { useWorkout } from '../contexts/WorkoutContext';
 import type { OnboardingScreenProps } from '../types/onboarding';
 
 type WorkoutPhase = 'warm-up' | 'main' | 'cool-down';
@@ -72,6 +73,7 @@ interface ExerciseInstanceWithData extends ExerciseInstance {
 export default function SessionPlayer({ navigation, route }: SessionPlayerProps) {
   const { workout, planId = 'default', warmUp, coolDown, safetyCheckpoints = [] } = route.params;
   const { profile } = useProfile();
+  const { startWorkout } = useWorkout();
   const insets = useSafeAreaInsets();
 
   const [phase, setPhase] = useState<WorkoutPhase>(warmUp ? 'warm-up' : 'main');
@@ -490,15 +492,74 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   };
 
   const handleWorkoutComplete = async () => {
+    console.log('🏋️ Workout completion started');
     const endTime = new Date().toISOString();
     setCompletedAt(endTime);
-    setSessionComplete(true);
-
+    
     // Clear interval
     if (elapsedTimeIntervalRef.current) {
       clearInterval(elapsedTimeIntervalRef.current);
       elapsedTimeIntervalRef.current = null;
     }
+
+    // Calculate workout duration
+    const startTime = new Date(startedAt);
+    const endTimeDate = new Date(endTime);
+    const durationSeconds = Math.floor((endTimeDate.getTime() - startTime.getTime()) / 1000);
+    const durationMinutes = Math.floor(durationSeconds / 60);
+
+    // Convert completed sets to WorkoutContext format
+    // Group by exercise to get correct set numbers
+    const exerciseSetCounts = new Map<string, number>();
+    const contextSets = completedSets.map((set) => {
+      const count = exerciseSetCounts.get(set.exerciseId) || 0;
+      exerciseSetCounts.set(set.exerciseId, count + 1);
+      return {
+        exercise_id: set.exerciseId,
+        set_number: count + 1,
+        reps: set.reps,
+        weight: set.weight || 0,
+        rpe: set.rpe,
+        timestamp: new Date(set.completedAt),
+      };
+    });
+
+    // Create ActiveWorkout for context
+    const activeWorkout = {
+      id: planId,
+      workout_name: `Workout - ${new Date().toLocaleDateString()}`,
+      estimated_duration_minutes: durationMinutes,
+      warm_up: warmUp || { total_duration_minutes: 0, exercises: [] },
+      main_workout: exercises.map((ex, idx) => ({
+        exerciseId: ex.id,
+        sets: ex.sets || 3,
+        reps: ex.reps || 10,
+        format: 'straight_sets' as const,
+        restSeconds: ex.restSeconds || 60,
+        exercise_name: ex.name,
+      })),
+      cool_down: coolDown || { total_duration_minutes: 0, exercises: [] },
+      safety_checkpoints: safetyCheckpoints,
+      metadata: {
+        template_name: 'Session',
+        day_focus: 'Full Body',
+        user_goal: profile?.primary_goal || 'general_fitness',
+        hrt_adjusted: false,
+        rules_applied: [],
+        exercises_excluded_count: 0,
+        total_exercises: exercises.length,
+        generation_timestamp: new Date(),
+      },
+    };
+
+    // Note: We'll pass data via navigation params instead of context
+    // since startWorkout resets everything. WorkoutSummaryScreen will
+    // need to be updated to accept navigation params as fallback.
+    console.log('✅ Workout data prepared:', {
+      exercises: exercises.length,
+      sets: completedSets.length,
+      duration: durationMinutes,
+    });
 
     // POST /workouts/{id}/complete
     try {
@@ -510,10 +571,22 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         endTime
       );
       await saveSession(sessionData);
-      console.log('Workout completed:', { workoutId: planId, completedAt: endTime });
+      console.log('✅ Workout saved to database');
     } catch (error) {
       console.error('Failed to save session:', error);
     }
+
+    // Navigate to summary screen with data
+    console.log('🧭 Navigating to WorkoutSummaryScreen');
+    navigation.replace('WorkoutSummary', {
+      workoutData: {
+        completedSets: contextSets,
+        workoutDuration: durationSeconds,
+        totalExercises: exercises.length,
+        exercisesCompleted: exercises.length,
+        workoutName: `Workout - ${new Date().toLocaleDateString()}`,
+      },
+    });
   };
 
   const handleRPESubmit = (rpe: number) => {
@@ -558,18 +631,8 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     }
   };
 
-  if (sessionComplete) {
-    return (
-      <CompletionScreen
-        completedSets={completedSets}
-        startedAt={startedAt}
-        completedAt={completedAt!}
-        exerciseCount={exercises.length}
-        onSaveSession={handleSaveSession}
-        onBackToPlan={() => navigation.navigate('PlanView')}
-      />
-    );
-  }
+  // Note: Navigation now happens directly in handleWorkoutComplete
+  // This useEffect is no longer needed but kept for backwards compatibility
 
   if (!currentExercise) {
     return (
