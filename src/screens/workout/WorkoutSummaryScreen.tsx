@@ -14,15 +14,29 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkout } from '../../contexts/WorkoutContext';
 import { palette, spacing, typography } from '../../theme';
+import { useRoute } from '@react-navigation/native';
 
 type RootStackParamList = {
-  WorkoutSummary: undefined;
+  WorkoutSummary: {
+    workoutData?: {
+      completedSets: any[];
+      workoutDuration: number;
+      totalExercises: number;
+      exercisesCompleted: number;
+      workoutName?: string;
+    };
+  };
   Home: undefined;
   DetailedStats: undefined;
   [key: string]: any;
 };
 
 type WorkoutSummaryScreenNavigationProp = StackNavigationProp<RootStackParamList, 'WorkoutSummary'>;
+type WorkoutSummaryScreenRouteProp = {
+  key: string;
+  name: 'WorkoutSummary';
+  params?: RootStackParamList['WorkoutSummary'];
+};
 
 type WorkoutRating = 'great' | 'good' | 'okay' | 'hard' | 'tough';
 
@@ -37,14 +51,18 @@ const RATING_OPTIONS: Array<{ value: WorkoutRating; emoji: string; label: string
 export default function WorkoutSummaryScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<WorkoutSummaryScreenNavigationProp>();
-  const {
-    workout,
-    completedSets,
-    workoutDuration,
-    totalExercises,
-    exercisesCompleted,
-    completeWorkout,
-  } = useWorkout();
+  const route = useRoute<WorkoutSummaryScreenRouteProp>();
+  const workoutContext = useWorkout();
+  
+  // Use route params if available (from SessionPlayer), otherwise use context
+  const routeData = route.params?.workoutData;
+  const workout = routeData ? null : workoutContext.workout;
+  const completedSets = routeData?.completedSets || workoutContext.completedSets;
+  const workoutDuration = routeData?.workoutDuration || workoutContext.workoutDuration;
+  const totalExercises = routeData?.totalExercises || workoutContext.totalExercises;
+  const exercisesCompleted = routeData?.exercisesCompleted || workoutContext.exercisesCompleted;
+  const completeWorkout = workoutContext.completeWorkout;
+  const clearWorkout = workoutContext.clearWorkout;
 
   const [rating, setRating] = useState<WorkoutRating | null>(null);
   const [notes, setNotes] = useState('');
@@ -144,8 +162,11 @@ export default function WorkoutSummaryScreen() {
         console.log('Workout notes:', notes);
       }
 
-      // Complete workout in context
+      // Complete workout in context (save to database)
       await completeWorkout();
+
+      // Clear workout state
+      clearWorkout();
 
       // Navigate to Home
       navigation.reset({
@@ -168,10 +189,19 @@ export default function WorkoutSummaryScreen() {
     navigation.navigate('DetailedStats');
   };
 
-  if (!workout) {
+  // Allow summary screen to work with route params even if no workout in context
+  const workoutName = routeData?.workoutName || workout?.workout_name || 'Workout Complete';
+  
+  if (!workout && !routeData) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <Text style={styles.errorText}>No workout data found</Text>
+        <TouchableOpacity 
+          style={styles.doneButton}
+          onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
+        >
+          <Text style={styles.doneButtonText}>Go Home</Text>
+        </TouchableOpacity>
       </View>
     );
   }

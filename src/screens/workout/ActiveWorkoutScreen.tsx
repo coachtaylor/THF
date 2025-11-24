@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -18,6 +18,7 @@ import { palette, spacing, typography } from '../../theme';
 
 type RootStackParamList = {
   ActiveWorkout: undefined;
+  WorkoutSummary: undefined;
   ExerciseDetail: { exerciseId: string };
   [key: string]: any;
 };
@@ -38,6 +39,7 @@ export default function ActiveWorkoutScreen() {
     isResting,
     totalExercises,
     exercisesCompleted,
+    isWorkoutComplete,
     updateSetData,
     completeSet,
     skipSet,
@@ -45,6 +47,13 @@ export default function ActiveWorkoutScreen() {
     pauseWorkout,
     resumeWorkout,
   } = useWorkout();
+
+  // Navigate to summary screen when workout is complete
+  useEffect(() => {
+    if (isWorkoutComplete && workout) {
+      navigation.replace('WorkoutSummary');
+    }
+  }, [isWorkoutComplete, workout, navigation]);
   
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   
