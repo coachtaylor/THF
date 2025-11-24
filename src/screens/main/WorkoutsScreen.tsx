@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -166,6 +166,10 @@ export default function WorkoutsScreen() {
   const completedThisMonth = workouts.filter(w => w.status === 'completed').length;
   const totalScheduled = workouts.length;
 
+  const handleProfilePress = () => {
+    navigation.navigate('Settings');
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -174,14 +178,19 @@ export default function WorkoutsScreen() {
           <Ionicons name="arrow-back" size={28} color={palette.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Workout History</Text>
-        <TouchableOpacity onPress={() => {
-          // Could open month picker or cycle months
-          changeMonth('next');
-        }}>
-          <Text style={styles.monthSelector}>
-            🗓️ {currentMonth.toLocaleDateString('en-US', { month: 'long' })}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={() => {
+            // Could open month picker or cycle months
+            changeMonth('next');
+          }}>
+            <Text style={styles.monthSelector}>
+              🗓️ {currentMonth.toLocaleDateString('en-US', { month: 'long' })}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
+            <Ionicons name="person-circle-outline" size={28} color={palette.white} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -300,9 +309,17 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: spacing.m,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.m,
+  },
   monthSelector: {
     ...typography.body,
     color: palette.tealPrimary,
+  },
+  profileButton: {
+    padding: spacing.xs,
   },
   scroll: {
     flex: 1,

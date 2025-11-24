@@ -118,6 +118,10 @@ export default function HomeScreen() {
     return 'friend';
   };
 
+  const handleProfilePress = () => {
+    navigation.navigate('Settings');
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -130,7 +134,7 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.headerIcon}>
             <Ionicons name="notifications-outline" size={24} color={palette.white} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon}>
+          <TouchableOpacity style={styles.headerIcon} onPress={handleProfilePress}>
             <Ionicons name="person-circle-outline" size={28} color={palette.white} />
           </TouchableOpacity>
         </View>
