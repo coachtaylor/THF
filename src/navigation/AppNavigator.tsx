@@ -1,33 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React from 'react';
 import OnboardingNavigator from './OnboardingNavigator';
 import MainNavigator from './MainNavigator';
-import { getProfile } from '../services/storage/profile';
 
-export default function AppNavigator() {
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
+type AppNavigatorProps = {
+  hasCompletedOnboarding: boolean;
+};
 
-  useEffect(() => {
-    async function checkOnboardingStatus() {
-      try {
-        const profile = await getProfile();
-        setHasCompletedOnboarding(profile !== null);
-      } catch (error) {
-        console.error('Error checking onboarding status:', error);
-        setHasCompletedOnboarding(false);
-      }
-    }
-    checkOnboardingStatus();
-  }, []);
-
-  // Show nothing while checking onboarding status
-  if (hasCompletedOnboarding === null) {
-    return null;
-  }
-
-  return (
-    <NavigationContainer>
-      {hasCompletedOnboarding ? <MainNavigator /> : <OnboardingNavigator />}
-    </NavigationContainer>
-  );
+export default function AppNavigator({ hasCompletedOnboarding }: AppNavigatorProps) {
+  return hasCompletedOnboarding ? <MainNavigator /> : <OnboardingNavigator />;
 }
