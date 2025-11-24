@@ -2,7 +2,7 @@ import { Profile } from '../storage/profile';
 import { Exercise } from '../../types/plan';
 import { Rule, SafetyContext, EvaluationContext } from './rules/types';
 import { bindingSafetyRules } from './rules/bindingSafety';
-import { postOperativeRules } from './rules/postOperative';
+import { postOperativeRules } from './postOperative';
 import { hrtAdjustmentRules } from './rules/hrtAdjustment';
 
 const ALL_RULES: Rule[] = [

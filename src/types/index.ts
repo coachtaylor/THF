@@ -188,6 +188,7 @@ export interface ExerciseInstance {
   reps: number;
   format: 'EMOM' | 'AMRAP' | 'straight_sets';
   restSeconds: number;
+  weight_guidance?: string; // Optional guidance for weight selection
 }
 
 export interface Session {
