@@ -10,7 +10,13 @@ import { palette, spacing, typography } from '../../theme';
 
 type RootStackParamList = {
   WorkoutOverview: { workoutId: string };
-  ActiveWorkout: { workoutId: string };
+  SessionPlayer: {
+    workout: any;
+    planId?: string;
+    warmUp?: any;
+    coolDown?: any;
+    safetyCheckpoints?: any[];
+  };
   ExerciseDetail: { exerciseId: string };
   [key: string]: any;
 };
@@ -49,11 +55,35 @@ export default function WorkoutOverviewScreen() {
     }
   };
 
-  const handleStartWorkout = () => {
-    if (workout) {
-      // Navigate to active workout screen - adjust route name as needed
-      // navigation.navigate('ActiveWorkout', { workoutId });
-      console.log('Start workout:', workoutId);
+  const handleStartWorkout = async () => {
+    if (!workout) return;
+
+    try {
+      // Convert WorkoutDetailData to Workout format for SessionPlayer
+      // SessionPlayer expects a Workout object with exercises array
+      const workoutForSession = {
+        duration: workout.estimated_duration_minutes as 5 | 15 | 30 | 45,
+        exercises: workout.main_workout.map((ex, index) => ({
+          exerciseId: ex.exercise_id,
+          sets: ex.sets,
+          reps: ex.reps,
+          format: 'straight_sets' as const,
+          restSeconds: ex.rest_seconds,
+        })),
+        totalMinutes: workout.estimated_duration_minutes,
+      };
+
+      // Navigate to SessionPlayer with workout data
+      // We'll need to add SessionPlayer to the MainNavigator stack
+      navigation.navigate('SessionPlayer', {
+        workout: workoutForSession,
+        planId: workout.id,
+        warmUp: workout.warm_up,
+        coolDown: workout.cool_down,
+        safetyCheckpoints: workout.safety_checkpoints,
+      });
+    } catch (error) {
+      console.error('Failed to start workout:', error);
     }
   };
 

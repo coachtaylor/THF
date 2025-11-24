@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useProfile } from '../../hooks/useProfile';
 import { getTodaysWorkout } from '../../services/storage/workout';
 import { getWeeklyStats, getCurrentStreak } from '../../services/storage/stats';
+import { generatePlan } from '../../services/planGenerator';
+import { savePlan } from '../../services/storage/plan';
 import { palette, spacing, typography } from '../../theme';
 
 type MainTabParamList = {
@@ -16,7 +20,15 @@ type MainTabParamList = {
   Settings: undefined;
 };
 
-type HomeScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Home'>;
+type MainStackParamList = {
+  MainTabs: undefined;
+  WorkoutOverview: { workoutId: string };
+};
+
+type HomeScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'Home'>,
+  StackNavigationProp<MainStackParamList>
+>;
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -27,6 +39,7 @@ export default function HomeScreen() {
   const [weeklyStats, setWeeklyStats] = useState<any>(null);
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [generatingPlan, setGeneratingPlan] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -53,9 +66,47 @@ export default function HomeScreen() {
 
   const handleStartWorkout = () => {
     if (todaysWorkout) {
-      // Navigate to workout screen - adjust route name as needed
-      // navigation.navigate('WorkoutOverview', { workoutId: todaysWorkout.id });
-      console.log('Start workout:', todaysWorkout.id);
+      navigation.navigate('WorkoutOverview', { workoutId: todaysWorkout.id });
+    }
+  };
+
+  const handleGeneratePlan = async () => {
+    if (!profile) {
+      Alert.alert('Profile Required', 'Please complete your profile in Settings first.');
+      return;
+    }
+
+    setGeneratingPlan(true);
+    try {
+      // Ensure profile has required fields for plan generation
+      const profileWithDefaults = {
+        ...profile,
+        block_length: profile.block_length || 1,
+        goals: profile.goals || [profile.primary_goal || 'general_fitness'],
+        goal_weighting: profile.goal_weighting || { primary: 100, secondary: 0 },
+      };
+
+      const plan = await generatePlan(profileWithDefaults);
+      const userId = profile.user_id || profile.id || 'default';
+      await savePlan(plan, userId);
+
+      Alert.alert('Plan Generated!', 'Your workout plan has been created successfully.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            // Reload dashboard to show today's workout
+            loadDashboardData();
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('Failed to generate plan:', error);
+      Alert.alert(
+        'Generation Failed',
+        error instanceof Error ? error.message : 'Failed to generate workout plan. Please try again.'
+      );
+    } finally {
+      setGeneratingPlan(false);
     }
   };
 
@@ -150,8 +201,19 @@ export default function HomeScreen() {
         ) : (
           <View style={styles.noWorkoutCard}>
             <Text style={styles.noWorkoutText}>No workout scheduled for today</Text>
-            <TouchableOpacity style={styles.generateButton}>
-              <Text style={styles.generateButtonText}>Generate Workout</Text>
+            <TouchableOpacity
+              style={[styles.generateButton, generatingPlan && styles.generateButtonDisabled]}
+              onPress={handleGeneratePlan}
+              disabled={generatingPlan}
+            >
+              {generatingPlan ? (
+                <View style={styles.generateButtonLoading}>
+                  <ActivityIndicator size="small" color={palette.deepBlack} />
+                  <Text style={styles.generateButtonText}>Generating...</Text>
+                </View>
+              ) : (
+                <Text style={styles.generateButtonText}>Generate Workout Plan</Text>
+              )}
             </TouchableOpacity>
           </View>
         )}
@@ -192,16 +254,21 @@ export default function HomeScreen() {
         <View style={styles.quickActionsRow}>
           <TouchableOpacity
             style={styles.quickActionButton}
-            onPress={() => navigation.navigate('Workouts')}
+            onPress={handleGeneratePlan}
+            disabled={generatingPlan}
           >
-            <Text style={styles.quickActionText}>View Program</Text>
+            {generatingPlan ? (
+              <ActivityIndicator size="small" color={palette.white} />
+            ) : (
+              <Text style={styles.quickActionText}>Generate Plan</Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.quickActionButton}
-            onPress={() => navigation.navigate('Progress')}
+            onPress={() => navigation.navigate('Workouts')}
           >
-            <Text style={styles.quickActionText}>See Progress</Text>
+            <Text style={styles.quickActionText}>View Program</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -384,6 +451,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: spacing.l,
     paddingVertical: spacing.m,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  generateButtonDisabled: {
+    opacity: 0.6,
+  },
+  generateButtonLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
   },
   generateButtonText: {
     ...typography.button,

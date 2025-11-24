@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { palette } from '../theme';
 
@@ -7,10 +8,14 @@ import HomeScreen from '../screens/main/HomeScreen';
 import WorkoutsScreen from '../screens/main/WorkoutsScreen';
 import ProgressScreen from '../screens/main/ProgressScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
+import WorkoutOverviewScreen from '../screens/workout/WorkoutOverviewScreen';
+import SessionPlayer from '../screens/SessionPlayer';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-export default function MainNavigator() {
+// Bottom Tab Navigator for main screens
+function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -68,6 +73,27 @@ export default function MainNavigator() {
         }}
       />
     </Tab.Navigator>
+  );
+}
+
+// Stack Navigator that wraps tabs and includes workout screens
+export default function MainNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen
+        name="WorkoutOverview"
+        component={WorkoutOverviewScreen}
+      />
+      <Stack.Screen
+        name="SessionPlayer"
+        component={SessionPlayer}
+      />
+    </Stack.Navigator>
   );
 }
 

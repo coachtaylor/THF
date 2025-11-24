@@ -14,6 +14,7 @@ export interface CompletedSet {
   setNumber: number;
   rpe: number;
   reps: number;
+  weight?: number; // Weight in lbs
   completedAt: string;
 }
 
