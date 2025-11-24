@@ -1,4 +1,4 @@
-import { Rule, EvaluationContext } from './types';
+import { Rule, EvaluationContext } from './rules/types';
 
 function calculateWeeksPostOp(surgeryDate: Date): number {
   const now = new Date();
