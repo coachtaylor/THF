@@ -3,7 +3,20 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import Surgery from '../../screens/onboarding/intake/Surgery';
 
 const mockUpdateProfile = jest.fn();
-const mockNavigation = { navigate: jest.fn() };
+const mockNavigation = {
+  navigate: jest.fn(),
+  goBack: jest.fn(),
+  reset: jest.fn(),
+  setParams: jest.fn(),
+  dispatch: jest.fn(),
+  addListener: jest.fn(() => jest.fn()),
+  removeListener: jest.fn(),
+  canGoBack: jest.fn(() => true),
+  getParent: jest.fn(),
+  getState: jest.fn(),
+  isFocused: jest.fn(() => true),
+  getId: jest.fn(() => 'test-id'),
+} as any;
 
 jest.mock('../../hooks/useProfile', () => ({
   useProfile: () => ({
@@ -33,7 +46,7 @@ describe('Surgery Screen', () => {
 
   it('renders headline correctly', () => {
     const { getByText } = render(<Surgery navigation={mockNavigation} />);
-    expect(getByText('Surgery History')).toBeTruthy();
+    expect(getByText('Have you had any gender-affirming surgeries?')).toBeTruthy();
   });
 
   it('renders initial question', () => {
@@ -43,9 +56,9 @@ describe('Surgery Screen', () => {
 
   it('shows surgery type options when Yes selected', () => {
     const { getByText } = render(<Surgery navigation={mockNavigation} />);
-    const yesButton = getByText('Yes');
+    const yesButton = getByText("Yes, I've had surgery");
     fireEvent.press(yesButton);
-    expect(getByText('Select surgery types:')).toBeTruthy();
+    expect(getByText('Which surgeries have you had? (Select all that apply)')).toBeTruthy();
   });
 
   it('renders all surgery type options', () => {

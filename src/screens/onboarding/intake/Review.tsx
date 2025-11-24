@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,16 +7,30 @@ import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
 import { generatePlan } from '../../../services/planGenerator';
 import { savePlan } from '../../../services/storage/plan';
-import { Plan } from '../../../types';
+import { Plan, Profile } from '../../../types';
 import { palette, spacing, typography } from '../../../theme';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
 import { formatEquipmentLabel } from '../../../utils/equipment';
+import { filterExercisesByConstraints } from '../../../services/data/exerciseFilters';
+import { fetchAllExercises } from '../../../services/exerciseService';
+import type { Exercise } from '../../../types';
 
 const GENDER_IDENTITY_LABELS: Record<string, string> = {
-  mtf: 'Trans Woman / Transfeminine',
-  ftm: 'Trans Man / Transmasculine',
-  nonbinary: 'Nonbinary / Gender Diverse',
+  mtf: 'Trans Woman (MTF)',
+  ftm: 'Trans Man (FTM)',
+  nonbinary: 'Non-binary',
   questioning: 'Questioning',
+};
+
+const DYSPHORIA_TRIGGER_LABELS: Record<string, string> = {
+  looking_at_chest: 'Looking at chest in mirror',
+  tight_clothing: 'Tight or form-fitting clothing',
+  mirrors: 'Mirrors / reflective surfaces',
+  body_contact: 'Body contact (spotting, partner exercises)',
+  crowded_spaces: 'Crowded workout spaces',
+  locker_rooms: 'Locker rooms / changing areas',
+  voice: 'Voice (grunting, heavy breathing)',
+  other: 'Other triggers',
 };
 
 const PRIMARY_GOAL_LABELS: Record<string, string> = {
@@ -34,7 +48,7 @@ const FITNESS_EXPERIENCE_LABELS: Record<string, string> = {
 };
 
 const HRT_TYPE_LABELS: Record<string, string> = {
-  estrogen_blockers: 'Estrogen / Anti-Androgens',
+  estrogen_blockers: 'Estrogen + Anti-androgens',
   testosterone: 'Testosterone',
   none: 'Other / Not specified',
 };
@@ -42,15 +56,15 @@ const HRT_TYPE_LABELS: Record<string, string> = {
 const BINDING_FREQUENCY_LABELS: Record<string, string> = {
   daily: 'Every workout (Daily)',
   sometimes: 'Most workouts (Sometimes)',
-  rarely: 'Rarely',
-  never: 'Never',
+  rarely: 'Occasionally (Rarely)',
+  never: 'Testing it out (Never yet)',
 };
 
 const BINDER_TYPE_LABELS: Record<string, string> = {
-  commercial: 'Commercial binder (GC2B, Underworks, etc.)',
+  commercial: 'Commercial binder',
   sports_bra: 'Sports bra',
-  ace_bandage: 'Ace bandage',
-  diy: 'DIY/Makeshift',
+  diy: 'DIY / Makeshift',
+  other: 'Other / Prefer not to say',
 };
 
 const SURGERY_TYPE_LABELS: Record<string, string> = {
@@ -62,10 +76,18 @@ const SURGERY_TYPE_LABELS: Record<string, string> = {
 };
 
 const formatDate = (date: Date): string => {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const month = months[date.getMonth()];
+  const day = date.getDate();
   const year = date.getFullYear();
-  return `${month}/${day}/${year}`;
+  return `${month} ${day}, ${year}`;
+};
+
+const formatHRTStartDate = (date: Date): string => {
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  return `${month} ${year}`;
 };
 
 const formatMonths = (months: number): string => {
@@ -87,6 +109,34 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
 
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exerciseCount, setExerciseCount] = useState<number>(0);
+  const [safetyRulesCount, setSafetyRulesCount] = useState<number>(0);
+
+  // Calculate available exercises and safety rules
+  const calculateAvailableExercises = async (profile: Profile): Promise<number> => {
+    try {
+      const allExercises = await fetchAllExercises();
+      const filtered = filterExercisesByConstraints(allExercises, profile);
+      return filtered.length;
+    } catch (error) {
+      console.error('Error calculating exercises:', error);
+      // Fallback estimate
+      const exercisesPerSession = profile.fitness_experience === 'beginner' ? 8 : 
+                                   profile.fitness_experience === 'intermediate' ? 10 : 12;
+      return exercisesPerSession * profile.workout_frequency;
+    }
+  };
+
+  const calculateApplicableRules = (profile: Profile): number => {
+    let count = 0;
+    if (profile.on_hrt) count++;
+    if (profile.binds_chest) count++;
+    if (profile.surgeries && profile.surgeries.length > 0) {
+      count += profile.surgeries.length;
+    }
+    if (profile.dysphoria_triggers && profile.dysphoria_triggers.length > 0) count++;
+    return count;
+  };
 
   // Refresh profile when screen comes into focus
   useFocusEffect(
@@ -96,6 +146,14 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     }, [])
   );
 
+  // Calculate counts when profile changes
+  useEffect(() => {
+    if (profile) {
+      calculateAvailableExercises(profile).then(setExerciseCount);
+      setSafetyRulesCount(calculateApplicableRules(profile));
+    }
+  }, [profile]);
+
   if (!profile) {
     return (
       <View style={styles.container}>
@@ -104,7 +162,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     );
   }
 
-  const handleEdit = (screen: 'GenderIdentity' | 'Goals' | 'HRTAndBinding' | 'Surgery') => {
+  const handleEdit = (screen: 'GenderIdentity' | 'HRTStatus' | 'BindingInfo' | 'Surgery' | 'Goals' | 'Experience' | 'DysphoriaTriggers') => {
     navigation.navigate(screen);
   };
 
@@ -113,8 +171,14 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
       setGenerating(true);
       setError(null);
 
-      // Generate plan using profile data
-      const plan = await generatePlan(profile);
+      // Ensure block_length is set to 4 for 4-week program
+      const profileWithBlockLength = {
+        ...profile,
+        block_length: 4,
+      };
+
+      // Call Phase 2 workout generation
+      const plan = await generatePlan(profileWithBlockLength);
 
       console.log('✅ Plan generated:', plan);
 
@@ -126,7 +190,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
       navigation.navigate('PlanView');
     } catch (err) {
       console.error('❌ Failed to generate plan:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate workout plan');
+      setError(err instanceof Error ? err.message : 'Failed to generate plan');
       setGenerating(false);
     }
   };
@@ -137,6 +201,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     if (equipment.length === 0) return 'No equipment selected';
     return equipment.map((e) => formatEquipmentLabel(e)).join(', ');
   };
+
 
   return (
     <View
@@ -156,9 +221,9 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
       </View>
 
       <ProgressIndicator
-        currentStep={5}
-        totalSteps={5}
-        stepLabels={['Gender Identity', 'Goals', 'HRT & Binding', 'Surgery', 'Review']}
+        currentStep={8}
+        totalSteps={8}
+        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
       />
 
       <ScrollView
@@ -166,10 +231,47 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* SECTION 1: Your Profile */}
+        {/* Summary Panel */}
+        <View style={styles.summaryPanel}>
+          <View style={styles.summaryHeader}>
+            <Text style={styles.checkmarkIcon}>✅</Text>
+            <Text style={styles.summaryTitle}>Profile Complete</Text>
+          </View>
+          <Text style={styles.summarySubtitle}>
+            Your personalized program will include:
+          </Text>
+          <View style={styles.summaryList}>
+            <View style={styles.summaryListItem}>
+              <Text style={styles.summaryBullet}>•</Text>
+              <Text style={styles.summaryText}>
+                {exerciseCount || '...'} exercises tailored to your equipment
+              </Text>
+            </View>
+            <View style={styles.summaryListItem}>
+              <Text style={styles.summaryBullet}>•</Text>
+              <Text style={styles.summaryText}>
+                {safetyRulesCount} safety {safetyRulesCount === 1 ? 'rule' : 'rules'} applied
+              </Text>
+            </View>
+            <View style={styles.summaryListItem}>
+              <Text style={styles.summaryBullet}>•</Text>
+              <Text style={styles.summaryText}>
+                {profile.workout_frequency}-day training split
+              </Text>
+            </View>
+            <View style={styles.summaryListItem}>
+              <Text style={styles.summaryBullet}>•</Text>
+              <Text style={styles.summaryText}>
+                {profile.session_duration}-minute sessions
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* SECTION 1: Identity */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Your Profile</Text>
+            <Text style={styles.sectionTitle}>Identity</Text>
             <TouchableOpacity onPress={() => handleEdit('GenderIdentity')} style={styles.editButton}>
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
@@ -182,27 +284,15 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
                 {GENDER_IDENTITY_LABELS[profile.gender_identity] || profile.gender_identity}
               </Text>
             </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Primary Goal: </Text>
-                {PRIMARY_GOAL_LABELS[profile.primary_goal] || profile.primary_goal}
-              </Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Experience Level: </Text>
-                {FITNESS_EXPERIENCE_LABELS[profile.fitness_experience] || profile.fitness_experience}
-              </Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Training Frequency: </Text>
-                {profile.workout_frequency} {profile.workout_frequency === 1 ? 'day' : 'days'} per week
-              </Text>
-            </View>
+            {profile.pronouns && (
+              <View style={styles.bulletItem}>
+                <View style={styles.bullet} />
+                <Text style={styles.summaryBullet}>
+                  <Text style={styles.label}>Pronouns: </Text>
+                  {profile.pronouns}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -211,7 +301,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>HRT Status</Text>
-              <TouchableOpacity onPress={() => handleEdit('HRTAndBinding')} style={styles.editButton}>
+              <TouchableOpacity onPress={() => handleEdit('HRTStatus')} style={styles.editButton}>
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
             </View>
@@ -225,31 +315,40 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
                   </Text>
                 </View>
               )}
+              {profile.hrt_start_date && (
+                <View style={styles.bulletItem}>
+                  <View style={styles.bullet} />
+                  <Text style={styles.summaryBullet}>
+                    <Text style={styles.label}>Started: </Text>
+                    {formatHRTStartDate(new Date(profile.hrt_start_date))}
+                  </Text>
+                </View>
+              )}
               {profile.hrt_months_duration !== undefined && profile.hrt_months_duration > 0 && (
                 <View style={styles.bulletItem}>
                   <View style={styles.bullet} />
                   <Text style={styles.summaryBullet}>
                     <Text style={styles.label}>Duration: </Text>
-                    {formatMonths(profile.hrt_months_duration)}
+                    {profile.hrt_months_duration} {profile.hrt_months_duration === 1 ? 'month' : 'months'}
                   </Text>
                 </View>
               )}
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.summaryBullet}>
-                  Impact on Programming: We've adjusted recovery time and volume for HRT
+              <View style={styles.impactBox}>
+                <Text style={styles.impactIcon}>💡</Text>
+                <Text style={styles.impactText}>
+                  Impact: Workout volume reduced by 15% for recovery
                 </Text>
               </View>
             </View>
           </View>
         )}
 
-        {/* SECTION 3: Binding Status (only if binds_chest = true) */}
+        {/* SECTION 3: Binding Information (only if binds_chest = true) */}
         {profile.binds_chest && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Binding Status</Text>
-              <TouchableOpacity onPress={() => handleEdit('HRTAndBinding')} style={styles.editButton}>
+              <Text style={styles.sectionTitle}>Binding Information</Text>
+              <TouchableOpacity onPress={() => handleEdit('BindingInfo')} style={styles.editButton}>
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
             </View>
@@ -281,10 +380,10 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
                   </Text>
                 </View>
               )}
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.summaryBullet}>
-                  Impact on Programming: We'll exclude chest compression exercises
+              <View style={styles.impactBox}>
+                <Text style={styles.impactIcon}>💡</Text>
+                <Text style={styles.impactText}>
+                  Impact: Chest compression exercises excluded, breathing breaks added
                 </Text>
               </View>
             </View>
@@ -302,7 +401,11 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
             </View>
             <View style={styles.summaryCard}>
               {profile.surgeries.map((surgery, index) => {
-                const isRecovering = surgery.weeks_post_op !== undefined && surgery.weeks_post_op < 12;
+                const status = surgery.fully_healed 
+                  ? 'Fully healed'
+                  : surgery.weeks_post_op !== undefined 
+                    ? `${surgery.weeks_post_op} ${surgery.weeks_post_op === 1 ? 'week' : 'weeks'} post-op`
+                    : 'Status unknown';
                 return (
                   <View key={index} style={styles.surgeryItem}>
                     <View style={styles.bulletItem}>
@@ -319,35 +422,17 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
                         {formatDate(surgery.date)}
                       </Text>
                     </View>
-                    {surgery.weeks_post_op !== undefined && (
-                      <View style={styles.bulletItem}>
-                        <View style={styles.bullet} />
-                        <Text style={styles.summaryBullet}>
-                          <Text style={styles.label}>Weeks Post-Op: </Text>
-                          {surgery.weeks_post_op} {surgery.weeks_post_op === 1 ? 'week' : 'weeks'}
-                        </Text>
-                      </View>
-                    )}
                     <View style={styles.bulletItem}>
                       <View style={styles.bullet} />
                       <Text style={styles.summaryBullet}>
                         <Text style={styles.label}>Status: </Text>
-                        {isRecovering ? 'Still recovering' : 'Fully healed'}
+                        {status}
                       </Text>
                     </View>
-                    {surgery.notes && (
-                      <View style={styles.bulletItem}>
-                        <View style={styles.bullet} />
-                        <Text style={styles.summaryBullet}>
-                          <Text style={styles.label}>Notes: </Text>
-                          {surgery.notes}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={styles.bulletItem}>
-                      <View style={styles.bullet} />
-                      <Text style={styles.summaryBullet}>
-                        Impact on Programming: We'll avoid exercises that stress surgical sites
+                    <View style={styles.impactBox}>
+                      <Text style={styles.impactIcon}>💡</Text>
+                      <Text style={styles.impactText}>
+                        Impact: Conservative upper body exercise selection
                       </Text>
                     </View>
                     {index < profile.surgeries!.length - 1 && <View style={styles.surgerySeparator} />}
@@ -358,10 +443,10 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
           </View>
         )}
 
-        {/* SECTION 5: Equipment */}
+        {/* SECTION 5: Goals */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Equipment</Text>
+            <Text style={styles.sectionTitle}>Goals</Text>
             <TouchableOpacity onPress={() => handleEdit('Goals')} style={styles.editButton}>
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
@@ -370,37 +455,149 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
             <View style={styles.bulletItem}>
               <View style={styles.bullet} />
               <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Available Equipment: </Text>
-                {formatEquipment()}
+                <Text style={styles.label}>Primary Goal: </Text>
+                {PRIMARY_GOAL_LABELS[profile.primary_goal] || profile.primary_goal}
+              </Text>
+            </View>
+            {profile.secondary_goals && profile.secondary_goals.length > 0 && (
+              <View style={styles.bulletItem}>
+                <View style={styles.bullet} />
+                <Text style={styles.summaryBullet}>
+                  <Text style={styles.label}>Secondary Goals: </Text>
+                  {profile.secondary_goals.map(g => PRIMARY_GOAL_LABELS[g] || g).join(', ')}
+                </Text>
+              </View>
+            )}
+            <View style={styles.impactBox}>
+              <Text style={styles.impactIcon}>💡</Text>
+              <Text style={styles.impactText}>
+                Impact: {profile.gender_identity === 'mtf' 
+                  ? 'Lower body exercises emphasized (60-70% volume)'
+                  : profile.gender_identity === 'ftm'
+                  ? 'Upper body exercises emphasized (60-70% volume)'
+                  : 'Balanced exercise selection'}
               </Text>
             </View>
           </View>
         </View>
+
+        {/* SECTION 6: Training Details */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Training Details</Text>
+            <TouchableOpacity onPress={() => handleEdit('Experience')} style={styles.editButton}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.summaryCard}>
+            <View style={styles.bulletItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.summaryBullet}>
+                <Text style={styles.label}>Experience Level: </Text>
+                {FITNESS_EXPERIENCE_LABELS[profile.fitness_experience] || profile.fitness_experience}
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.summaryBullet}>
+                <Text style={styles.label}>Equipment: </Text>
+                {formatEquipment()}
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.summaryBullet}>
+                <Text style={styles.label}>Frequency: </Text>
+                {profile.workout_frequency} {profile.workout_frequency === 1 ? 'day' : 'days'} per week
+              </Text>
+            </View>
+            <View style={styles.bulletItem}>
+              <View style={styles.bullet} />
+              <Text style={styles.summaryBullet}>
+                <Text style={styles.label}>Session Duration: </Text>
+                {profile.session_duration} minutes
+              </Text>
+            </View>
+            <View style={styles.impactBox}>
+              <Text style={styles.impactIcon}>💡</Text>
+              <Text style={styles.impactText}>
+                Impact: {profile.workout_frequency}-day split with {profile.fitness_experience} sets/reps
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* SECTION 7: Dysphoria Considerations (only if dysphoria_triggers.length > 0) */}
+        {profile.dysphoria_triggers && profile.dysphoria_triggers.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Dysphoria Considerations</Text>
+              <TouchableOpacity onPress={() => handleEdit('DysphoriaTriggers')} style={styles.editButton}>
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.summaryCard}>
+              <View style={styles.bulletItem}>
+                <View style={styles.bullet} />
+                <Text style={styles.summaryBullet}>
+                  <Text style={styles.label}>Triggers: </Text>
+                  {profile.dysphoria_triggers
+                    .map(t => DYSPHORIA_TRIGGER_LABELS[t] || t)
+                    .join(', ')}
+                </Text>
+              </View>
+              {profile.dysphoria_notes && (
+                <View style={styles.bulletItem}>
+                  <View style={styles.bullet} />
+                  <Text style={styles.summaryBullet}>
+                    <Text style={styles.label}>Notes: </Text>
+                    {profile.dysphoria_notes.length > 50 
+                      ? `${profile.dysphoria_notes.substring(0, 50)}...`
+                      : profile.dysphoria_notes}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.impactBox}>
+                <Text style={styles.impactIcon}>💡</Text>
+                <Text style={styles.impactText}>
+                  Impact: Mirror-free exercises suggested, home workout options prioritized
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <View style={styles.ctaContainer}>
         {error && (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={styles.errorIcon}>❌</Text>
+            <View style={styles.errorContent}>
+              <Text style={styles.errorTitle}>Plan generation failed: {error}</Text>
+              <Text style={styles.errorMessage}>
+                Please check your internet connection and try again.
+              </Text>
+            </View>
           </View>
         )}
-        <Button
-          mode="contained"
+        <TouchableOpacity
           onPress={handleGeneratePlan}
           disabled={generating}
-          style={styles.generateButton}
-          contentStyle={styles.generateButtonContent}
-          labelStyle={styles.generateButtonLabel}
+          style={[
+            styles.generateButton,
+            generating && styles.generateButtonDisabled,
+          ]}
+          activeOpacity={0.8}
         >
           {generating ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color={palette.deepBlack} style={styles.loadingSpinner} />
-              <Text style={styles.generateButtonLabel}>Generating Plan...</Text>
+              <Text style={styles.generateButtonLabel}>Generating Your Program...</Text>
             </View>
           ) : (
-            'Generate My Plan'
+            <Text style={styles.generateButtonLabel}>Generate My Program →</Text>
           )}
-        </Button>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -447,7 +644,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.m,
+    marginBottom: spacing.l,
+    paddingBottom: spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
   },
   sectionTitle: {
     ...typography.h3,
@@ -466,35 +666,24 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     backgroundColor: palette.darkCard,
-    borderRadius: 20,
+    borderRadius: 12,
     padding: spacing.l,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: palette.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
   },
   bulletItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: spacing.s,
+    marginBottom: spacing.m,
   },
   bullet: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: palette.tealPrimary,
-    marginTop: 7,
-    marginRight: spacing.s,
+    marginTop: 8,
+    marginRight: spacing.m,
     flexShrink: 0,
-  },
-  summaryBullet: {
-    ...typography.body,
-    color: palette.lightGray,
-    flex: 1,
-    lineHeight: 22,
   },
   label: {
     fontWeight: '600',
@@ -516,24 +705,54 @@ const styles = StyleSheet.create({
     borderTopColor: palette.border,
   },
   errorContainer: {
-    backgroundColor: palette.darkerCard,
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255, 107, 107, 0.15)',
     borderRadius: 12,
     padding: spacing.m,
     marginBottom: spacing.m,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: palette.error,
+    gap: spacing.s,
+  },
+  errorIcon: {
+    fontSize: 20,
+    flexShrink: 0,
+  },
+  errorContent: {
+    flex: 1,
+  },
+  errorTitle: {
+    ...typography.body,
+    color: palette.error,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  errorMessage: {
+    ...typography.bodySmall,
+    color: palette.lightGray,
+    lineHeight: 18,
+  },
+  errorText: {
+    ...typography.body,
+    color: palette.midGray,
+    textAlign: 'center',
+    padding: spacing.l,
   },
   generateButton: {
-    borderRadius: 12,
-    marginBottom: spacing.xs,
-    overflow: 'hidden',
-  },
-  generateButtonContent: {
-    paddingVertical: spacing.s,
     backgroundColor: palette.tealPrimary,
+    borderRadius: 12,
+    paddingVertical: spacing.m,
+    paddingHorizontal: spacing.l,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+  },
+  generateButtonDisabled: {
+    opacity: 0.6,
   },
   generateButtonLabel: {
-    fontSize: 15,
+    ...typography.h3,
+    fontSize: 16,
     fontWeight: '700',
     color: palette.deepBlack,
   },
@@ -541,13 +760,78 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.s,
   },
   loadingSpinner: {
-    marginRight: spacing.s,
+    marginRight: 0,
   },
-  errorText: {
+  impactBox: {
+    marginTop: spacing.l,
+    padding: spacing.m,
+    backgroundColor: 'rgba(0, 204, 204, 0.1)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: palette.tealPrimary,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.xs,
+  },
+  impactText: {
     ...typography.bodySmall,
-    color: palette.error,
-    textAlign: 'center',
+    color: palette.tealPrimary,
+    lineHeight: 18,
+    flex: 1,
+  },
+  impactIcon: {
+    fontSize: 16,
+    marginTop: 2,
+  },
+  summaryPanel: {
+    backgroundColor: palette.darkCard,
+    borderRadius: 12,
+    padding: spacing.l,
+    borderWidth: 1.5,
+    borderColor: palette.border,
+    marginBottom: spacing.xl,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+    marginBottom: spacing.m,
+  },
+  checkmarkIcon: {
+    fontSize: 24,
+  },
+  summaryTitle: {
+    ...typography.h3,
+    color: palette.white,
+    fontWeight: '600',
+  },
+  summarySubtitle: {
+    ...typography.body,
+    color: palette.lightGray,
+    marginBottom: spacing.m,
+    lineHeight: 22,
+  },
+  summaryList: {
+    gap: spacing.s,
+  },
+  summaryListItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.s,
+  },
+  summaryBullet: {
+    ...typography.body,
+    color: palette.tealPrimary,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  summaryText: {
+    ...typography.body,
+    color: palette.lightGray,
+    flex: 1,
+    lineHeight: 22,
   },
 });

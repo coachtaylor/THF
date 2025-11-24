@@ -11,18 +11,30 @@ export interface Profile {
   surgeries: Surgery[];
   fitness_experience: 'beginner' | 'intermediate' | 'advanced';
   workout_frequency: number; // days per week
-  session_duration: number; // minutes
+  session_duration: number; // minutes per workout (replaces block_length) - typically 30, 45, 60, or 90
   equipment: string[];
   created_at: Date;
   updated_at: Date;
   
-  // OPTIONAL FIELDS
+  // OPTIONAL FIELDS - Personal Information
+  pronouns?: string; // User-specified pronouns (e.g., "she/her", "he/him", "they/them")
+  
+  // OPTIONAL FIELDS - HRT Information
   hrt_type?: 'estrogen_blockers' | 'testosterone' | 'none';
-  hrt_start_date?: Date;
-  hrt_months_duration?: number;
+  hrt_start_date?: Date; // When user started HRT
+  hrt_months_duration?: number; // Computed field (calculated from hrt_start_date)
+  
+  // OPTIONAL FIELDS - Binding Information
   binding_frequency?: 'daily' | 'sometimes' | 'rarely' | 'never';
   binding_duration_hours?: number;
-  binder_type?: 'commercial' | 'sports_bra' | 'ace_bandage' | 'diy';
+  binder_type?: 'commercial' | 'sports_bra' | 'ace_bandage' | 'diy' | 'other';
+  
+  // OPTIONAL FIELDS - Goals
+  secondary_goals?: string[]; // Array of secondary goals (max 2)
+  
+  // OPTIONAL FIELDS - Dysphoria
+  dysphoria_triggers?: DysphoriaTrigger[]; // Array of trigger identifiers
+  dysphoria_notes?: string; // Optional free-text notes about dysphoria triggers
   
   // DEPRECATED FIELDS (kept for backwards compatibility)
   /** @deprecated Use primary_goal instead */
@@ -42,13 +54,10 @@ export interface Profile {
   id?: string; // Alias for user_id
   goalWeighting?: { primary: number; secondary: number }; // Alias for goal_weighting
   preferences?: Preferences; // Legacy preferences structure
-  pronouns?: string;
-  secondary_goals?: string[];
-  dysphoria_triggers?: string[];
   email?: string;
   surgeon_cleared?: boolean;
   preferred_minutes?: number[];
-  block_length?: number;
+  block_length?: number; // @deprecated Use session_duration instead
   low_sensory_mode?: boolean;
   disclaimer_acknowledged_at?: string;
   cloud_sync_enabled?: boolean;
@@ -58,12 +67,45 @@ export interface Profile {
   body_focus_soft_avoid?: string[];
 }
 
-// ✨ ADD THIS NEW INTERFACE ✨
+// Surgery interface
 export interface Surgery {
   type: 'top_surgery' | 'bottom_surgery' | 'ffs' | 'orchiectomy' | 'other';
   date: Date;
   weeks_post_op?: number;
+  fully_healed?: boolean; // Whether surgery is fully healed
   notes?: string;
+}
+
+// Dysphoria trigger types
+export type DysphoriaTrigger = 
+  | 'looking_at_chest'
+  | 'tight_clothing'
+  | 'mirrors'
+  | 'body_contact'
+  | 'crowded_spaces'
+  | 'locker_rooms'
+  | 'voice'
+  | 'other';
+
+// Onboarding step types
+export type OnboardingStep = 
+  | 'gender_identity'
+  | 'hrt_status'
+  | 'binding_info'
+  | 'surgery_history'
+  | 'goals'
+  | 'experience'
+  | 'dysphoria'
+  | 'review';
+
+// Onboarding session interface
+export interface OnboardingSession {
+  session_id: string;
+  current_step: OnboardingStep;
+  total_steps: 8;
+  data: Partial<Profile>;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export type Goal = 'strength' | 'cardio' | 'flexibility' | 'mobility';
