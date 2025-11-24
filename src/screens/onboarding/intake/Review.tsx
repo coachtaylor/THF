@@ -117,8 +117,6 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
   const hrtFlags = profile.hrt_flags || [];
   const fitnessLevel = profile.fitness_level;
   const blockLength = profile.block_length || 1;
-  // Use raw equipment for display (more accurate), fallback to canonical if raw not available
-  const equipmentRaw = profile.equipment_raw || [];
   const equipment = profile.equipment || [];
   const bodyFocusPrefer = profile.body_focus_prefer || [];
   const bodyFocusSoftAvoid = profile.body_focus_soft_avoid || [];
@@ -136,14 +134,9 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     return regions.map((region) => BODY_REGION_LABELS[region] || region).join(', ');
   };
 
-  // Helper function to format equipment - prefer raw equipment labels
+  // Helper function to format equipment
   const formatEquipment = (): string => {
-    // Use raw equipment if available (more accurate), otherwise fall back to canonical
-    if (equipmentRaw.length > 0) {
-      return equipmentRaw.map((raw) => formatEquipmentLabel(raw)).join(', ');
-    }
-    // Fallback to canonical equipment labels
-    return equipment.map((e) => EQUIPMENT_LABELS[e] || e).join(', ');
+    return equipment.map((e) => EQUIPMENT_LABELS[e] || formatEquipmentLabel(e)).join(', ');
   };
 
   // Build summary items for each section
@@ -208,9 +201,8 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     programItems.push(`Fitness level: ${FITNESS_LEVEL_LABELS[fitnessLevel]}`);
   }
   programItems.push(`Program length: ${blockLength} week${blockLength !== 1 ? 's' : ''}`);
-  // Show equipment if we have either raw or canonical
-  const hasEquipment = equipmentRaw.length > 0 || equipment.length > 0;
-  if (hasEquipment) {
+  // Show equipment if available
+  if (equipment.length > 0) {
     programItems.push(`Equipment: ${formatEquipment()}`);
   }
   if (lowSensoryMode) {

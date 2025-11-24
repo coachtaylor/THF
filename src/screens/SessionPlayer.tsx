@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Modal, Portal, Card } from 'react-native-paper';
-import { Video } from 'expo-av';
-import { Workout, ExerciseInstance, Exercise } from '../types/plan';
+import { Video, ResizeMode } from 'expo-av';
+import { Workout, ExerciseInstance } from '../types/plan';
+import { Exercise } from '../types';
 import { CompletedSet, TimerFormat } from '../types/session';
 import Timer from '../components/session/Timer';
 import RPELogger from '../components/session/RPELogger';
@@ -94,7 +95,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   };
 
   const loadVideo = async () => {
-    if (!currentExercise?.videoUrl || profile?.low_sensory_mode) {
+      if (!currentExercise?.videoUrl && !currentExercise?.video_url || profile?.low_sensory_mode) {
       setVideoUri(null);
       return;
     }
@@ -109,8 +110,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         return;
       }
 
-      if (currentExercise.videoUrl) {
-        const uri = await cacheVideo(currentExercise.id, currentExercise.videoUrl);
+      const videoUrl = currentExercise.videoUrl || currentExercise.video_url;
+      if (videoUrl) {
+        const uri = await cacheVideo(currentExercise.id, videoUrl);
         setVideoUri(uri);
       }
     } catch (error) {
@@ -288,7 +290,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
               source={{ uri: videoUri }}
               shouldPlay
               isLooping
-              resizeMode="cover"
+              resizeMode={ResizeMode.COVER}
               useNativeControls
             />
           </View>
@@ -389,10 +391,10 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             />
             <Card.Content>
               <ScrollView style={styles.modalScrollView}>
-                {currentExercise.neutral_cues?.length > 0 && (
+                {currentExercise.neutral_cues && currentExercise.neutral_cues.length > 0 && (
                   <View style={styles.modalSection}>
                     <Text style={styles.modalSectionTitle}>Neutral Cues</Text>
-                    {currentExercise.neutral_cues.map((cue, index) => (
+                    {currentExercise.neutral_cues.map((cue: string, index: number) => (
                       <Text key={index} style={styles.modalListItem}>
                         • {cue}
                       </Text>
@@ -400,10 +402,10 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                   </View>
                 )}
 
-                {currentExercise.breathing_cues?.length > 0 && (
+                {currentExercise.breathing_cues && currentExercise.breathing_cues.length > 0 && (
                   <View style={styles.modalSection}>
                     <Text style={styles.modalSectionTitle}>Breathing Cues</Text>
-                    {currentExercise.breathing_cues.map((cue, index) => (
+                    {currentExercise.breathing_cues.map((cue: string, index: number) => (
                       <Text key={index} style={styles.modalListItem}>
                         • {cue}
                       </Text>

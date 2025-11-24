@@ -37,6 +37,11 @@ export function useExerciseDetail(
       setLoading(true);
 
       try {
+        if (exerciseId === null || profile === null) {
+          setExercise(null);
+          setLoading(false);
+          return;
+        }
         const exerciseDetail = await getExerciseDetail(exerciseId, profile);
 
         // Don't update state if component unmounted or dependency changed

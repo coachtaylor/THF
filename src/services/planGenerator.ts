@@ -14,13 +14,29 @@ import { fetchAllExercises } from './exerciseService';
 export async function generateQuickStartPlan(): Promise<Plan> {
   // Create a minimal profile for quick start
   const quickStartProfile: Profile = {
+    // NEW REQUIRED FIELDS
     id: 'quick-start',
+    user_id: 'quick-start-user',
+    gender_identity: 'nonbinary',
+    on_hrt: false,
+    binds_chest: false,
+    surgeries: [],
+    primary_goal: 'general_fitness',
+    fitness_experience: 'beginner',
+    workout_frequency: 3,
+    session_duration: 15,
     equipment: ['bodyweight'],
+    
+    // KEEP OLD FIELDS (for compatibility)
+    goals: ['wellness'],
+    goal_weighting: { primary: 100, secondary: 0 },
     constraints: ['binder_aware'],
     preferred_minutes: [5],
     block_length: 1,
-    goals: ['wellness'],
-    goal_weighting: { primary: 100, secondary: 0 },
+    
+    // METADATA
+    created_at: new Date(),
+    updated_at: new Date(),
   };
 
   // Fetch exercises
@@ -165,7 +181,9 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     id: generatePlanId(),
     blockLength: (profile.block_length || 1) as 1 | 4,
     startDate,
-    goals: profile.goals || [],
+    goals: (profile.goals || []).filter((g): g is Goal => 
+      g === 'strength' || g === 'cardio' || g === 'flexibility' || g === 'mobility'
+    ),
     goalWeighting: profile.goal_weighting || { primary: 70, secondary: 30 },
     days,
   };

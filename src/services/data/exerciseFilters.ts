@@ -16,43 +16,6 @@ const DIFFICULTY_ORDER: FitnessLevel[] = ['beginner', 'intermediate', 'advanced'
 // INDIVIDUAL FILTER HELPERS
 // ============================================================================
 
-/**
- * Normalize raw equipment set from array to Set for efficient matching.
- * 
- * @param list - Array of raw equipment strings (may be undefined/null)
- * @returns Set of normalized (UPPERCASE) equipment strings
- */
-function normalizeRawSet(list: string[] | undefined | null): Set<string> {
-  const set = new Set<string>();
-  for (const v of list ?? []) {
-    const norm = v.toString().trim().toUpperCase();
-    if (norm) set.add(norm);
-  }
-  return set;
-}
-
-/**
- * Check if exercise matches user's equipment using raw equipment strings.
- * 
- * Rules:
- * - Match if any exercise raw equipment item is in the user's raw selection
- * - Uses normalized UPPERCASE strings for comparison
- * 
- * @param ex - Exercise to check
- * @param profile - User profile with equipment preferences
- * @returns true if exercise matches user's raw equipment selection
- */
-function exerciseMatchesEquipmentRaw(ex: Exercise, profile: Profile): boolean {
-  const userRawSet = normalizeRawSet(profile.equipment_raw);
-  const exRawSet = normalizeRawSet(ex.rawEquipment);
-  
-  // Match if any exercise raw item is in the user's raw selection
-  for (const val of exRawSet) {
-    if (userRawSet.has(val)) return true;
-  }
-  
-  return false;
-}
 
 /**
  * Check if exercise matches user's equipment using canonical categories.
@@ -85,40 +48,19 @@ function exerciseMatchesEquipmentCanonical(ex: Exercise, profile: Profile): bool
 }
 
 /**
- * Check if exercise matches user's equipment using raw equipment first, then canonical fallback.
+ * Check if exercise matches user's equipment using canonical categories.
  * 
  * Rules:
- * 1. First try raw equipment matching (if both user and exercise have raw equipment)
- * 2. Fall back to canonical matching if raw is missing on either side
- * 3. No user equipment preference → all exercises allowed
- * 4. Exercise requires no equipment → always allowed
+ * 1. No user equipment preference → all exercises allowed
+ * 2. Exercise requires no equipment → always allowed
+ * 3. Match if any exercise canonical equipment is in the user's canonical selection
  * 
  * @param ex - Exercise to check
  * @param profile - User profile with equipment preferences
  * @returns true if exercise matches user's available equipment
  */
 function exerciseMatchesEquipment(ex: Exercise, profile: Profile): boolean {
-  // If user has no equipment preferences, allow all exercises
-  const hasUserRaw = !!(profile.equipment_raw && profile.equipment_raw.length);
-  const hasUserCanonical = !!(profile.equipment && profile.equipment.length);
-  
-  if (!hasUserRaw && !hasUserCanonical) {
-    return true;
-  }
-
-  // 1) Try raw match first
-  const hasExerciseRaw = !!(ex.rawEquipment && ex.rawEquipment.length);
-  
-  if (hasUserRaw && hasExerciseRaw) {
-    const rawMatch = exerciseMatchesEquipmentRaw(ex, profile);
-    if (rawMatch) return true;
-    // If raw match fails, continue to canonical check
-  }
-
-  // 2) Fallback to canonical matching
-  // This handles the case where exercises don't have raw_equipment populated yet
-  const canonicalMatch = exerciseMatchesEquipmentCanonical(ex, profile);
-  return canonicalMatch;
+  return exerciseMatchesEquipmentCanonical(ex, profile);
 }
 
 // Alias for backward compatibility
@@ -263,7 +205,7 @@ export function isHighImpact(exercise: Exercise): boolean {
   }
   
   // Check tags for jumping-related terms
-  if (exercise.tags.some(tag => {
+  if (exercise.tags?.some(tag => {
     const lowerTag = tag.toLowerCase();
     return lowerTag.includes('jump') || 
            lowerTag === 'jumping' || 
@@ -312,7 +254,7 @@ export function isFloorBased(exercise: Exercise): boolean {
   }
   
   // Check tags for floor-related terms
-  if (exercise.tags.some(tag => {
+  if (exercise.tags?.some(tag => {
     const lowerTag = tag.toLowerCase();
     return lowerTag.includes('floor') ||
            lowerTag.includes('prone') ||
@@ -366,7 +308,6 @@ export function filterExercisesByConstraints(
   const constraints = profile.constraints || [];
 
   console.log(`🔍 Filtering ${exercises.length} exercises with profile:`, {
-    equipment_raw: profile.equipment_raw,
     equipment: profile.equipment,
     fitness_level: profile.fitness_level,
     constraints: profile.constraints,
@@ -380,11 +321,10 @@ export function filterExercisesByConstraints(
     return true;
   });
   console.log(`   Equipment filter: ${beforeEquipment} → ${filtered.length} exercises`);
-  console.log(`   User equipment (raw): ${(profile.equipment_raw || []).join(', ') || 'none'}`);
   console.log(`   User equipment (canonical): ${(profile.equipment || []).join(', ') || 'none'}`);
   if (filtered.length > 0) {
     const sample = filtered[0];
-    console.log(`   Sample filtered exercise: ${sample.name} (equipment: ${sample.equipment.join(', ') || 'none'}, rawEquipment: ${sample.rawEquipment.join(', ') || 'none'})`);
+    console.log(`   Sample filtered exercise: ${sample.name} (equipment: ${sample.equipment.join(', ') || 'none'})`);
   }
 
   // 2. Filter by fitness level / difficulty

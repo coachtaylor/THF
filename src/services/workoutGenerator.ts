@@ -3,7 +3,7 @@
 
 import { Exercise, Workout, ExerciseInstance } from '../types';
 import { Profile } from './storage/profile';
-import { mapRawEquipmentToCanonical } from '../utils/equipment';
+import { mapRawEquipmentToCanonical, CanonicalEquipment } from '../utils/equipment';
 
 interface WorkoutGenerationOptions {
   duration: 5 | 15 | 30 | 45;
@@ -82,24 +82,12 @@ export function filterByEquipment(
     );
     if (hasCanonicalMatch) return true;
 
-    // Try mapping raw equipment to canonical
-    if (exercise.rawEquipment && exercise.rawEquipment.length > 0) {
-      const exerciseCanonicalEquipment = exercise.rawEquipment
-        .map(raw => mapRawEquipmentToCanonical(raw))
-        .filter((c): c is string => c !== null);
-
-      const hasRawMatch = exerciseCanonicalEquipment.some(canonical =>
-        userEquipment.includes(canonical)
-      );
-      if (hasRawMatch) return true;
-    }
-
     // Map exercise.equipment strings to canonical
     const exerciseCanonicalFromEquipment = exercise.equipment
       .map(eq => mapRawEquipmentToCanonical(eq))
-      .filter((c): c is string => c !== null);
+      .filter((c): c is CanonicalEquipment => c !== null);
 
-    const hasMappedMatch = exerciseCanonicalFromEquipment.some(mapped =>
+    const hasMappedMatch = exerciseCanonicalFromEquipment.some((mapped: CanonicalEquipment) =>
       userEquipment.includes(mapped)
     );
     if (hasMappedMatch) return true;
@@ -190,7 +178,6 @@ export function selectByGoals(
     const ex = item.exercise;
     const equipmentList: string[] = [
       ...(ex.equipment || []),
-      ...(ex.rawEquipment || []),
     ];
 
     const hitsSet = new Set<string>();
@@ -342,7 +329,7 @@ function calculateExerciseScore(
   const primaryGoal = profile.goals?.[0];
   if (
     primaryGoal &&
-    exercise.tags.some(
+    exercise.tags?.some(
       tag => tag.toLowerCase() === primaryGoal.toLowerCase()
     )
   ) {
@@ -353,7 +340,7 @@ function calculateExerciseScore(
   const secondaryGoal = profile.goals?.[1];
   if (
     secondaryGoal &&
-    exercise.tags.some(
+    exercise.tags?.some(
       tag => tag.toLowerCase() === secondaryGoal.toLowerCase()
     )
   ) {
@@ -363,14 +350,14 @@ function calculateExerciseScore(
   // 3. BODY FOCUS PREFER (2 points per match)
   const bodyFocusPrefer = profile.body_focus_prefer || [];
   const matchingPrefer = bodyFocusPrefer.filter(region =>
-    exercise.tags.some(tag => tag.toLowerCase() === region.toLowerCase())
+    exercise.tags?.some(tag => tag.toLowerCase() === region.toLowerCase())
   );
   score += matchingPrefer.length * 2;
 
   // 4. BODY FOCUS AVOID (-3 points per match)
-  const bodyFocusAvoid = profile.body_focus_avoid || [];
+  const bodyFocusAvoid = profile.body_focus_soft_avoid || [];
   const matchingAvoid = bodyFocusAvoid.filter(region =>
-    exercise.tags.some(tag => tag.toLowerCase() === region.toLowerCase())
+    exercise.tags?.some(tag => tag.toLowerCase() === region.toLowerCase())
   );
   if (matchingAvoid.length > 0) {
     score -= matchingAvoid.length * 3;
@@ -464,18 +451,18 @@ function calculateReps(
 /**
  * Select workout format based on duration
  */
-function selectFormat(duration: number): string {
+function selectFormat(duration: number): 'EMOM' | 'AMRAP' | 'straight_sets' {
   switch (duration) {
     case 5:
-      return 'continuous';
+      return 'straight_sets';
     case 15:
-      return 'circuit';
+      return 'straight_sets';
     case 30:
-      return 'superset';
+      return 'straight_sets';
     case 45:
-      return 'blocks';
+      return 'straight_sets';
     default:
-      return 'circuit';
+      return 'straight_sets';
   }
 }
 

@@ -57,7 +57,8 @@ describe('WhyTransFitness', () => {
     });
     const { UNSAFE_getByType } = render(<WhyTransFitness navigation={mockNavigation} />);
     // Check if Image component exists (hero image)
-    const images = UNSAFE_getByType('Image');
+    const { Image } = require('react-native');
+    const images = UNSAFE_getByType(Image);
     expect(images).toBeTruthy();
   });
 });

@@ -111,9 +111,9 @@ export default function DayCard({ day, workout, onStartWorkout, onPreview, onExe
         {workout.exercises.map((exerciseInstance, index) => {
           const exercise = exerciseMap[exerciseInstance.exerciseId];
           const exerciseName = exercise?.name || `Exercise ${exerciseInstance.exerciseId}`;
-          const equipment = exercise?.rawEquipment && exercise.rawEquipment.length > 0
-            ? formatEquipmentLabel(exercise.rawEquipment[0])
-            : exercise?.equipment.join(', ') || '';
+          const equipment = exercise?.equipment && exercise.equipment.length > 0
+            ? exercise.equipment.map(eq => formatEquipmentLabel(eq)).join(', ')
+            : '';
           const difficulty = exercise?.difficulty || 'beginner';
           const targetMuscles = exercise?.target_muscles;
 

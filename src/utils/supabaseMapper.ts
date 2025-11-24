@@ -67,23 +67,49 @@ export function mapSupabaseExercise(row: any): Exercise {
 
   return {
     id: String(row.id || row.slug), // Convert to string to match Exercise type
+    slug: row.slug || String(row.id || ''),
     name: row.name || 'Unknown Exercise',
+    pattern: row.pattern || '',
+    goal: row.goal || '',
     category: row.pattern || 'full_body',
     equipment: equipment,
-    difficulty: row.difficulty || 'beginner',
+    difficulty: (row.difficulty || 'beginner') as Exercise['difficulty'],
+    tags: parseTextArray(row.tags),
     binder_aware: row.binder_aware ?? true,
+    pelvic_floor_safe: row.pelvic_floor_safe ?? true,
     heavy_binding_safe: row.heavy_binding_safe ?? false,
-    pelvic_floor_aware: row.pelvic_floor_safe ?? true,
-    pressure_level: row.pressure_level || 'low',
+    pelvic_floor_aware: row.pelvic_floor_safe ?? true, // Alias for backward compatibility
+    contraindications: parseTextArray(row.contraindications),
+    pressure_level: (row.pressure_level || 'low') as 'low' | 'medium' | 'high',
+    target_muscles: row.target_muscles || undefined,
+    secondary_muscles: row.secondary_muscles || undefined,
+    gender_goal_emphasis: row.gender_goal_emphasis as Exercise['gender_goal_emphasis'],
+    cue_primary: row.cue_primary || undefined,
+    breathing: row.breathing || undefined,
     neutral_cues: parseTextArray(row.cues || row.cue_primary),
     breathing_cues: parseTextArray(row.breathing),
-    trans_notes: {
-      binder: row.trans_notes?.binder || '',
-      pelvic_floor: row.trans_notes?.pelvic_floor || '',
-    },
+    rep_range_beginner: row.rep_range_beginner || undefined,
+    rep_range_intermediate: row.rep_range_intermediate || undefined,
+    rep_range_advanced: row.rep_range_advanced || undefined,
+    effectiveness_rating: row.effectiveness_rating || undefined,
+    source: row.source || undefined,
+    notes: row.notes || undefined,
+    dysphoria_tags: Array.isArray(row.dysphoria_tags) 
+      ? row.dysphoria_tags.join(', ')
+      : (row.dysphoria_tags || undefined),
+    post_op_safe_weeks: row.post_op_safe_weeks || undefined,
+    created_at: row.created_at ? new Date(row.created_at) : new Date(),
+    version: row.version || '1.0',
+    flags_reviewed: row.flags_reviewed || false,
+    reviewer: row.reviewer || undefined,
     swaps: [],
-    videoUrl: row.media_video || row.media_thumb || '',
-    tags: parseTextArray(row.tags),
+    trans_notes: {
+      binder: row.trans_notes?.binder || (row.binder_aware ? 'Safe for binding' : 'Use caution with binding'),
+      pelvic_floor: row.trans_notes?.pelvic_floor || (row.pelvic_floor_safe ? 'Pelvic floor safe' : 'Use caution with pelvic floor'),
+    },
+    commonErrors: [],
+    videoUrl: row.media_video || row.media_thumb || undefined,
+    video_url: row.media_video || row.media_thumb || undefined,
   };
 }
 

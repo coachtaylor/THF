@@ -86,11 +86,28 @@ export function onboardingToProfile(data: OnboardingData, userId: string): Profi
   }
   
   return {
+    // NEW REQUIRED FIELDS
     id: userId,
+    user_id: userId,
+    gender_identity: 'nonbinary', // Default, should be set from data
+    on_hrt: false, // Default, should be set from data
+    binds_chest: false, // Default, should be set from data
+    surgeries: [],
+    primary_goal: 'general_fitness', // Default, should be set from data
+    fitness_experience: data.fitnessLevel || 'beginner',
+    workout_frequency: 3, // Default
+    session_duration: 30, // Default
+    equipment: data.equipment || [],
+    
+    // KEEP OLD FIELDS (for compatibility)
     goals: [data.primaryGoal as Goal],
     goalWeighting: {
       primary: 1.0, // 100% weight on primary goal for MVP
       secondary: 0.0,
+    },
+    goal_weighting: {
+      primary: 100,
+      secondary: 0,
     },
     constraints,
     preferences: {
@@ -99,6 +116,12 @@ export function onboardingToProfile(data: OnboardingData, userId: string): Profi
       equipment: data.equipment,
       lowSensoryMode: false, // Default off
     },
+    block_length: 4,
+    low_sensory_mode: false,
+    
+    // METADATA
+    created_at: new Date(),
+    updated_at: new Date(),
   };
 }
 
@@ -113,29 +136,39 @@ export function onboardingFullToProfile(
   
   // Add secondary goal if provided
   if (data.secondaryGoal) {
+    baseProfile.goals = baseProfile.goals || [];
     baseProfile.goals.push(data.secondaryGoal as Goal);
     baseProfile.goalWeighting = {
       primary: 0.7,
       secondary: 0.3,
     };
+    baseProfile.goal_weighting = {
+      primary: 70,
+      secondary: 30,
+    };
   }
   
   // Add optional constraints
   if (data.postOpRecovery) {
+    baseProfile.constraints = baseProfile.constraints || [];
     baseProfile.constraints.push('post_op');
   }
   
   if (data.onHRT) {
+    baseProfile.on_hrt = true;
+    baseProfile.constraints = baseProfile.constraints || [];
     baseProfile.constraints.push('hrt');
   }
   
   // Add optional preferences
-  if (data.programLength) {
+  if (data.programLength && baseProfile.preferences) {
     baseProfile.preferences.blockLength = data.programLength;
+    baseProfile.block_length = data.programLength;
   }
   
-  if (data.lowSensoryMode) {
+  if (data.lowSensoryMode && baseProfile.preferences) {
     baseProfile.preferences.lowSensoryMode = true;
+    baseProfile.low_sensory_mode = true;
   }
   
   return baseProfile;
@@ -234,6 +267,7 @@ export type OnboardingStackParamList = {
   BodyFocus: undefined;
   ProgramSetup: undefined;
   Constraints: undefined;
+  Preferences: undefined;
   Review: undefined;
   QuickStart: undefined;
   PlanView: undefined;

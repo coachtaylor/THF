@@ -12,6 +12,9 @@ export async function fetchAllExercises(): Promise<Exercise[]> {
   try {
     console.log('🔄 Fetching exercises from Supabase...');
 
+    if (!supabase) {
+      throw new Error('Supabase not initialized');
+    }
     const { data, error } = await supabase
       .from('exercises')
       .select('*');
@@ -33,7 +36,6 @@ export async function fetchAllExercises(): Promise<Exercise[]> {
       name: data[0]?.name,
       equipment: data[0]?.equipment,
       equipment_type: typeof data[0]?.equipment,
-      raw_equipment: data[0]?.raw_equipment,
     });
 
     // Map using supabaseMapper (this parses the JSON strings)
@@ -62,6 +64,9 @@ export async function fetchAllExercises(): Promise<Exercise[]> {
  */
 export async function fetchExercisesByIds(ids: string[]): Promise<Exercise[]> {
   try {
+    if (!supabase) {
+      throw new Error('Supabase not initialized');
+    }
     const { data, error } = await supabase
       .from('exercises')
       .select('*')
@@ -81,6 +86,9 @@ export async function fetchExercisesByIds(ids: string[]): Promise<Exercise[]> {
  */
 export async function getExerciseCount(): Promise<number> {
   try {
+    if (!supabase) {
+      throw new Error('Supabase not initialized');
+    }
     const { count, error } = await supabase
       .from('exercises')
       .select('*', { count: 'exact', head: true });
