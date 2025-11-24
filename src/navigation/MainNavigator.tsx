@@ -1,8 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { palette } from '../theme';
+import { useNavigation } from '@react-navigation/native';
+import { palette, spacing } from '../theme';
 
 import HomeScreen from '../screens/main/HomeScreen';
 import WorkoutsScreen from '../screens/main/WorkoutsScreen';
@@ -14,12 +16,36 @@ import SessionPlayer from '../screens/SessionPlayer';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+// Profile button component that navigates to Settings
+function ProfileButton() {
+  const navigation = useNavigation<any>();
+  return (
+    <TouchableOpacity
+      onPress={() => navigation.navigate('Settings')}
+      style={{ marginRight: spacing.l, padding: spacing.xs }}
+    >
+      <Ionicons name="person-circle-outline" size={28} color={palette.white} />
+    </TouchableOpacity>
+  );
+}
+
 // Bottom Tab Navigator for main screens
 function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
+        headerStyle: {
+          backgroundColor: palette.deepBlack,
+          borderBottomWidth: 1,
+          borderBottomColor: palette.border,
+        },
+        headerTintColor: palette.white,
+        headerTitleStyle: {
+          fontSize: 18,
+          fontWeight: '600',
+        },
+        headerRight: () => <ProfileButton />,
         tabBarActiveTintColor: palette.tealPrimary,
         tabBarInactiveTintColor: palette.midGray,
         tabBarStyle: {
@@ -40,6 +66,7 @@ function MainTabs() {
         name="Home"
         component={HomeScreen}
         options={{
+          headerShown: false, // HomeScreen has custom header
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -49,6 +76,7 @@ function MainTabs() {
         name="Workouts"
         component={WorkoutsScreen}
         options={{
+          headerShown: false, // WorkoutsScreen has custom header
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar" size={size} color={color} />
           ),
@@ -67,9 +95,8 @@ function MainTabs() {
         name="Settings"
         component={SettingsScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
-          ),
+          headerShown: false, // SettingsScreen has custom header
+          tabBarButton: () => null, // Hide from tab bar
         }}
       />
     </Tab.Navigator>
