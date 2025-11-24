@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
@@ -8,45 +8,38 @@ import ProgressIndicator from '../../../components/onboarding/ProgressIndicator'
 import PrimaryButton from '../../../components/ui/PrimaryButton';
 
 type GenderIdentityOption = 'mtf' | 'ftm' | 'nonbinary' | 'questioning';
+type PronounOption = 'he/him' | 'she/her' | 'they/them' | 'other';
 
 interface GenderOption {
   value: GenderIdentityOption;
   title: string;
   description: string;
-  icon: string;
-  accentColor: string;
 }
 
 const GENDER_OPTIONS: GenderOption[] = [
   {
     value: 'mtf',
-    title: 'Trans Woman / Transfeminine',
-    description: "We'll emphasize lower body development (glutes, hips, legs)",
-    icon: '♀',
-    accentColor: palette.tealPrimary,
+    title: 'Trans woman (MTF)',
+    description: 'Assigned male at birth, woman-identified',
   },
   {
     value: 'ftm',
-    title: 'Trans Man / Transmasculine',
-    description: "We'll emphasize upper body development (shoulders, back, chest)",
-    icon: '♂',
-    accentColor: palette.tealPrimary,
+    title: 'Trans man (FTM)',
+    description: 'Assigned female at birth, man-identified',
   },
   {
     value: 'nonbinary',
-    title: 'Nonbinary / Gender Diverse',
-    description: "We'll create balanced, flexible programming",
-    icon: '⚧',
-    accentColor: palette.tealPrimary,
+    title: 'Non-binary',
+    description: 'Gender identity outside the binary',
   },
   {
     value: 'questioning',
-    title: 'Questioning / Prefer not to say',
-    description: "We'll focus on general fitness without gender-specific emphasis",
-    icon: '○',
-    accentColor: palette.midGray,
+    title: 'Questioning',
+    description: 'Still exploring gender identity',
   },
 ];
+
+const PRONOUN_OPTIONS: PronounOption[] = ['he/him', 'she/her', 'they/them', 'other'];
 
 export default function GenderIdentity({ navigation }: OnboardingScreenProps<'GenderIdentity'>) {
   const { profile, updateProfile } = useProfile();
@@ -54,28 +47,72 @@ export default function GenderIdentity({ navigation }: OnboardingScreenProps<'Ge
   const { width } = useWindowDimensions();
   const isSmall = width < 375;
 
-  const [selectedOption, setSelectedOption] = useState<GenderIdentityOption | null>(
+  // Parse existing pronouns from profile
+  const parsePronouns = (pronounsString?: string): PronounOption[] => {
+    if (!pronounsString) return [];
+    const parts = pronounsString.split('/').map(p => p.trim());
+    return parts.filter(p => PRONOUN_OPTIONS.includes(p as PronounOption)) as PronounOption[];
+  };
+
+  const [selectedGender, setSelectedGender] = useState<GenderIdentityOption | null>(
     (profile?.gender_identity as GenderIdentityOption) || null
   );
 
-  const handleOptionPress = (option: GenderIdentityOption) => {
-    setSelectedOption(option);
+  const [selectedPronouns, setSelectedPronouns] = useState<PronounOption[]>(
+    profile?.pronouns ? parsePronouns(profile.pronouns) : []
+  );
+
+  const [customPronouns, setCustomPronouns] = useState<string>(
+    profile?.pronouns && !PRONOUN_OPTIONS.some(p => profile.pronouns?.includes(p))
+      ? profile.pronouns
+      : ''
+  );
+
+  const [showCustomInput, setShowCustomInput] = useState<boolean>(
+    profile?.pronouns ? !PRONOUN_OPTIONS.some(p => profile.pronouns?.includes(p)) : false
+  );
+
+  const handleGenderPress = (option: GenderIdentityOption) => {
+    setSelectedGender(option);
+  };
+
+  const handlePronounPress = (pronoun: PronounOption) => {
+    if (pronoun === 'other') {
+      setShowCustomInput(true);
+      // Don't add 'other' to selectedPronouns, just show input
+      return;
+    }
+
+    if (selectedPronouns.includes(pronoun)) {
+      setSelectedPronouns(selectedPronouns.filter(p => p !== pronoun));
+    } else {
+      setSelectedPronouns([...selectedPronouns, pronoun]);
+    }
   };
 
   const handleContinue = async () => {
-    if (!selectedOption) return;
+    if (!selectedGender) return;
 
     try {
+      // Build pronouns string
+      let pronounsString: string | undefined = undefined;
+      if (selectedPronouns.length > 0) {
+        pronounsString = selectedPronouns.join('/');
+      } else if (showCustomInput && customPronouns.trim()) {
+        pronounsString = customPronouns.trim();
+      }
+
       await updateProfile({
-        gender_identity: selectedOption,
+        gender_identity: selectedGender,
+        pronouns: pronounsString,
       });
-      navigation.navigate('Goals');
+      navigation.navigate('HRTStatus');
     } catch (error) {
       console.error('Error saving gender identity:', error);
     }
   };
 
-  const canContinue = selectedOption !== null;
+  const canContinue = selectedGender !== null;
 
   return (
     <View
@@ -88,16 +125,16 @@ export default function GenderIdentity({ navigation }: OnboardingScreenProps<'Ge
       ]}
     >
       <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Your Gender Identity</Text>
+        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>How do you identify?</Text>
         <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          This helps us personalize your workout programming
+          This helps us personalize your training program for your body composition goals.
         </Text>
       </View>
 
       <ProgressIndicator
         currentStep={1}
-        totalSteps={5}
-        stepLabels={['Gender Identity', 'Goals', 'HRT & Binding', 'Surgery', 'Review']}
+        totalSteps={8}
+        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
       />
 
       <ScrollView
@@ -105,61 +142,88 @@ export default function GenderIdentity({ navigation }: OnboardingScreenProps<'Ge
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.optionsContainer}>
-          {GENDER_OPTIONS.map((option) => {
-            const isSelected = selectedOption === option.value;
-            const isTealAccent = option.accentColor === palette.tealPrimary;
+        {/* Gender Identity Section */}
+        <View style={styles.section}>
+          <View style={styles.optionsContainer}>
+            {GENDER_OPTIONS.map((option) => {
+              const isSelected = selectedGender === option.value;
 
-            return (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => handleOptionPress(option.value)}
-                activeOpacity={0.7}
-                style={[
-                  styles.optionCard,
-                  isSelected && styles.optionCardSelected,
-                  isSelected && isTealAccent && styles.optionCardSelectedTeal,
-                ]}
-              >
-                <View style={styles.optionContent}>
-                  <View
-                    style={[
-                      styles.iconContainer,
-                      isSelected && isTealAccent && styles.iconContainerSelected,
-                    ]}
-                  >
-                    <Text style={[styles.icon, isSelected && isTealAccent && styles.iconSelected]}>
-                      {option.icon}
-                    </Text>
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => handleGenderPress(option.value)}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.genderCard,
+                    isSelected && styles.genderCardSelected,
+                  ]}
+                >
+                  <View style={styles.genderCardContent}>
+                    <View style={styles.genderCardLeft}>
+                      {isSelected && (
+                        <View style={styles.checkmarkContainer}>
+                          <Text style={styles.checkmark}>✓</Text>
+                        </View>
+                      )}
+                      <View style={styles.genderTextContainer}>
+                        <Text style={[styles.genderTitle, isSelected && styles.genderTitleSelected]}>
+                          {option.title}
+                        </Text>
+                        <Text style={[styles.genderDescription, isSelected && styles.genderDescriptionSelected]}>
+                          {option.description}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.textContainer}>
-                    <Text
-                      style={[
-                        styles.optionTitle,
-                        isSelected && isTealAccent && styles.optionTitleSelected,
-                      ]}
-                    >
-                      {option.title}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.optionDescription,
-                        isSelected && isTealAccent && styles.optionDescriptionSelected,
-                      ]}
-                    >
-                      {option.description}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
-        <View style={styles.privacyNote}>
-          <Text style={styles.privacyText}>
-            Your gender identity is private and never shared. It only affects workout programming.
-          </Text>
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Pronouns Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>What are your pronouns? (Optional)</Text>
+          <View style={styles.pronounChipsContainer}>
+            {PRONOUN_OPTIONS.map((pronoun) => {
+              const isSelected = selectedPronouns.includes(pronoun);
+              const isOther = pronoun === 'other';
+
+              return (
+                <TouchableOpacity
+                  key={pronoun}
+                  onPress={() => handlePronounPress(pronoun)}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.pronounChip,
+                    isSelected && styles.pronounChipSelected,
+                    isOther && showCustomInput && styles.pronounChipSelected,
+                  ]}
+                >
+                  <Text style={[styles.pronounChipText, isSelected && styles.pronounChipTextSelected]}>
+                    {pronoun}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {showCustomInput && (
+            <View style={styles.customPronounsContainer}>
+              <Text style={styles.customPronounsLabel}>Custom pronouns:</Text>
+              <TextInput
+                style={styles.customPronounsInput}
+                value={customPronouns}
+                onChangeText={setCustomPronouns}
+                placeholder="e.g., xe/xem, ze/zir"
+                placeholderTextColor={palette.midGray}
+                autoCapitalize="none"
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -170,7 +234,7 @@ export default function GenderIdentity({ navigation }: OnboardingScreenProps<'Ge
           disabled={!canContinue}
         />
         {!canContinue && (
-          <Text style={styles.hintText}>Please select an option to continue</Text>
+          <Text style={styles.hintText}>Please select a gender identity to continue</Text>
         )}
       </View>
     </View>
@@ -211,86 +275,125 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing.xl,
   },
-  optionsContainer: {
-    gap: spacing.m,
+  section: {
     marginBottom: spacing.l,
   },
-  optionCard: {
+  sectionTitle: {
+    ...typography.h3,
+    color: palette.white,
+    marginBottom: spacing.m,
+  },
+  optionsContainer: {
+    gap: spacing.m,
+  },
+  genderCard: {
     backgroundColor: palette.darkCard,
     borderRadius: 16,
     padding: spacing.l,
     borderWidth: 2,
     borderColor: palette.border,
-    minHeight: 120,
+    minHeight: 80,
   },
-  optionCardSelected: {
+  genderCardSelected: {
+    borderWidth: 3,
     borderColor: palette.tealPrimary,
     backgroundColor: palette.darkerCard,
   },
-  optionCardSelectedTeal: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
-  },
-  optionContent: {
+  genderCardContent: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  genderCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
     gap: spacing.m,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: palette.darkerCard,
-    borderWidth: 2,
-    borderColor: palette.border,
+  checkmarkContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: palette.tealPrimary,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
-  iconContainerSelected: {
-    backgroundColor: palette.tealPrimary,
-    borderColor: palette.tealPrimary,
-  },
-  icon: {
-    fontSize: 24,
-    color: palette.midGray,
-  },
-  iconSelected: {
+  checkmark: {
     color: palette.deepBlack,
+    fontSize: 16,
+    fontWeight: '700',
   },
-  textContainer: {
+  genderTextContainer: {
     flex: 1,
-    justifyContent: 'center',
   },
-  optionTitle: {
+  genderTitle: {
     ...typography.h3,
     marginBottom: spacing.xs,
     color: palette.white,
   },
-  optionTitleSelected: {
+  genderTitleSelected: {
     color: palette.tealPrimary,
   },
-  optionDescription: {
+  genderDescription: {
     ...typography.body,
     color: palette.midGray,
     lineHeight: 20,
   },
-  optionDescriptionSelected: {
+  genderDescriptionSelected: {
     color: palette.lightGray,
   },
-  privacyNote: {
-    marginTop: spacing.m,
-    padding: spacing.m,
-    backgroundColor: palette.darkerCard,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: palette.border,
+  divider: {
+    height: 1,
+    backgroundColor: palette.border,
+    marginVertical: spacing.xl,
   },
-  privacyText: {
-    ...typography.caption,
+  pronounChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.s,
+  },
+  pronounChip: {
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.s,
+    borderRadius: 20,
+    backgroundColor: palette.darkCard,
+    borderWidth: 2,
+    borderColor: palette.border,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pronounChipSelected: {
+    backgroundColor: palette.tealPrimary,
+    borderColor: palette.tealPrimary,
+  },
+  pronounChipText: {
+    ...typography.body,
+    color: palette.lightGray,
+    fontWeight: '500',
+  },
+  pronounChipTextSelected: {
+    color: palette.deepBlack,
+    fontWeight: '600',
+  },
+  customPronounsContainer: {
+    marginTop: spacing.m,
+  },
+  customPronounsLabel: {
+    ...typography.bodySmall,
     color: palette.midGray,
-    textAlign: 'center',
-    lineHeight: 16,
+    marginBottom: spacing.xs,
+    fontWeight: '600',
+  },
+  customPronounsInput: {
+    backgroundColor: palette.darkCard,
+    borderWidth: 2,
+    borderColor: palette.border,
+    borderRadius: 12,
+    padding: spacing.m,
+    ...typography.body,
+    color: palette.white,
   },
   ctaContainer: {
     marginTop: spacing.s,
@@ -305,4 +408,3 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 });
-

@@ -91,7 +91,7 @@ export default function PlanView({ navigation }: PlanViewProps) {
         <TouchableOpacity
           onPress={() => {
             // Navigate to Goals screen to edit preferences
-            // Note: Goals screen is now GoalsAndPreferences combined
+            // Note: Goals screen is now simplified (equipment moved to Experience screen)
             if (navigation.canGoBack()) {
               navigation.goBack();
             } else {

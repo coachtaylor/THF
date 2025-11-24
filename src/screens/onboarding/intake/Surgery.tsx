@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
@@ -14,16 +14,56 @@ type SurgeryTypeOption = 'top_surgery' | 'bottom_surgery' | 'ffs' | 'orchiectomy
 interface SurgeryFormData {
   type: SurgeryTypeOption;
   date: Date | null;
+  month: number | null;
+  year: number | null;
+  fully_healed: boolean;
   notes: string;
 }
 
-const SURGERY_TYPE_OPTIONS: { value: SurgeryTypeOption; label: string }[] = [
-  { value: 'top_surgery', label: 'Top Surgery (Chest reconstruction)' },
-  { value: 'bottom_surgery', label: 'Bottom Surgery (Genital reconstruction)' },
-  { value: 'ffs', label: 'Facial Feminization Surgery (FFS)' },
-  { value: 'orchiectomy', label: 'Orchiectomy' },
-  { value: 'other', label: 'Other surgery' },
+interface SurgeryTypeOptionConfig {
+  value: SurgeryTypeOption;
+  title: string;
+  description?: string;
+}
+
+const SURGERY_TYPE_OPTIONS: SurgeryTypeOptionConfig[] = [
+  { value: 'top_surgery', title: 'Top Surgery', description: '(Chest reconstruction, mastectomy)' },
+  { value: 'bottom_surgery', title: 'Bottom Surgery', description: '(Vaginoplasty, phalloplasty, metoidioplasty)' },
+  { value: 'ffs', title: 'Facial Feminization Surgery (FFS)' },
+  { value: 'orchiectomy', title: 'Orchiectomy' },
+  { value: 'other', title: 'Other surgery' },
 ];
+
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const generateYears = (): number[] => {
+  const currentYear = new Date().getFullYear();
+  const years: number[] = [];
+  for (let i = 0; i <= 10; i++) {
+    years.push(currentYear - i);
+  }
+  return years;
+};
+
+const formatWeeksPostOp = (weeks: number | undefined): string => {
+  if (weeks === undefined) return '';
+  if (weeks === 0) return 'Less than 1 week post-op';
+  if (weeks < 4) {
+    return `You are approximately ${weeks} ${weeks === 1 ? 'week' : 'weeks'} post-op`;
+  }
+  const months = Math.floor(weeks / 4.33);
+  const remainingWeeks = Math.floor(weeks % 4.33);
+  if (months === 0) {
+    return `You are approximately ${weeks} ${weeks === 1 ? 'week' : 'weeks'} post-op`;
+  }
+  if (remainingWeeks === 0) {
+    return `You are approximately ${months} ${months === 1 ? 'month' : 'months'} post-op (about ${weeks} ${weeks === 1 ? 'week' : 'weeks'})`;
+  }
+  return `You are approximately ${months} ${months === 1 ? 'month' : 'months'} post-op (about ${weeks} ${weeks === 1 ? 'week' : 'weeks'})`;
+};
 
 export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>) {
   const { profile, updateProfile } = useProfile();
@@ -36,13 +76,18 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
   );
 
   const [selectedTypes, setSelectedTypes] = useState<SurgeryTypeOption[]>([]);
+  const [expandedSurgeries, setExpandedSurgeries] = useState<Set<SurgeryTypeOption>>(new Set());
+  const [showMonthPicker, setShowMonthPicker] = useState<SurgeryTypeOption | null>(null);
+  const [showYearPicker, setShowYearPicker] = useState<SurgeryTypeOption | null>(null);
   const [surgeryForms, setSurgeryForms] = useState<Record<SurgeryTypeOption, SurgeryFormData>>({
-    top_surgery: { type: 'top_surgery', date: null, notes: '' },
-    bottom_surgery: { type: 'bottom_surgery', date: null, notes: '' },
-    ffs: { type: 'ffs', date: null, notes: '' },
-    orchiectomy: { type: 'orchiectomy', date: null, notes: '' },
-    other: { type: 'other', date: null, notes: '' },
+    top_surgery: { type: 'top_surgery', date: null, month: null, year: null, fully_healed: false, notes: '' },
+    bottom_surgery: { type: 'bottom_surgery', date: null, month: null, year: null, fully_healed: false, notes: '' },
+    ffs: { type: 'ffs', date: null, month: null, year: null, fully_healed: false, notes: '' },
+    orchiectomy: { type: 'orchiectomy', date: null, month: null, year: null, fully_healed: false, notes: '' },
+    other: { type: 'other', date: null, month: null, year: null, fully_healed: false, notes: '' },
   });
+
+  const years = generateYears();
 
   // Initialize from profile if available
   useEffect(() => {
@@ -51,19 +96,25 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
       setSelectedTypes(types);
       
       const forms: Record<SurgeryTypeOption, SurgeryFormData> = {
-        top_surgery: { type: 'top_surgery', date: null, notes: '' },
-        bottom_surgery: { type: 'bottom_surgery', date: null, notes: '' },
-        ffs: { type: 'ffs', date: null, notes: '' },
-        orchiectomy: { type: 'orchiectomy', date: null, notes: '' },
-        other: { type: 'other', date: null, notes: '' },
+        top_surgery: { type: 'top_surgery', date: null, month: null, year: null, fully_healed: false, notes: '' },
+        bottom_surgery: { type: 'bottom_surgery', date: null, month: null, year: null, fully_healed: false, notes: '' },
+        ffs: { type: 'ffs', date: null, month: null, year: null, fully_healed: false, notes: '' },
+        orchiectomy: { type: 'orchiectomy', date: null, month: null, year: null, fully_healed: false, notes: '' },
+        other: { type: 'other', date: null, month: null, year: null, fully_healed: false, notes: '' },
       };
 
       profile.surgeries.forEach(surgery => {
+        const surgeryDate = new Date(surgery.date);
         forms[surgery.type] = {
           type: surgery.type,
           date: surgery.date,
+          month: surgeryDate.getMonth(),
+          year: surgeryDate.getFullYear(),
+          fully_healed: surgery.fully_healed || false,
           notes: surgery.notes || '',
         };
+        // Auto-expand surgeries that have data
+        setExpandedSurgeries(prev => new Set([...prev, surgery.type]));
       });
 
       setSurgeryForms(forms);
@@ -73,89 +124,130 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
   const toggleSurgeryType = (type: SurgeryTypeOption) => {
     if (selectedTypes.includes(type)) {
       setSelectedTypes(selectedTypes.filter(t => t !== type));
+      setExpandedSurgeries(prev => {
+        const next = new Set(prev);
+        next.delete(type);
+        return next;
+      });
       // Clear form data for deselected type
       setSurgeryForms(prev => ({
         ...prev,
-        [type]: { type, date: null, notes: '' },
+        [type]: { type, date: null, month: null, year: null, fully_healed: false, notes: '' },
       }));
     } else {
       setSelectedTypes([...selectedTypes, type]);
+      // Auto-expand when selected
+      setExpandedSurgeries(prev => new Set([...prev, type]));
     }
   };
 
-  const updateSurgeryDate = (type: SurgeryTypeOption, dateString: string) => {
-    // Parse date string (format: YYYY-MM-DD)
-    let date: Date | null = null;
-    if (dateString && dateString.length >= 10) {
-      // Try parsing as YYYY-MM-DD
-      const parts = dateString.split('-');
-      if (parts.length === 3) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-        const day = parseInt(parts[2], 10);
-        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-          const parsed = new Date(year, month, day);
-          // Verify the date is valid
-          if (parsed.getFullYear() === year && 
-              parsed.getMonth() === month && 
-              parsed.getDate() === day) {
-            date = parsed;
-          }
-        }
+  const toggleExpanded = (type: SurgeryTypeOption) => {
+    setExpandedSurgeries(prev => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
       }
-      // Fallback to standard Date parsing
-      if (!date) {
-        const parsed = new Date(dateString);
-        if (!isNaN(parsed.getTime())) {
-          date = parsed;
-        }
-      }
-    }
+      return next;
+    });
+  };
 
-    setSurgeryForms(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        date,
-      },
-    }));
+  const updateSurgeryMonth = (type: SurgeryTypeOption, month: number) => {
+    setSurgeryForms(prev => {
+      const form = prev[type];
+      const newDate = form.year !== null ? new Date(form.year, month, 1) : null;
+      return {
+        ...prev,
+        [type]: {
+          ...form,
+          month,
+          date: newDate,
+        },
+      };
+    });
+    setShowMonthPicker(null);
+  };
+
+  const updateSurgeryYear = (type: SurgeryTypeOption, year: number) => {
+    setSurgeryForms(prev => {
+      const form = prev[type];
+      const newDate = form.month !== null ? new Date(year, form.month, 1) : null;
+      return {
+        ...prev,
+        [type]: {
+          ...form,
+          year,
+          date: newDate,
+        },
+      };
+    });
+    setShowYearPicker(null);
   };
 
   const updateSurgeryNotes = (type: SurgeryTypeOption, notes: string) => {
+    // Limit to 500 characters
+    const trimmedNotes = notes.slice(0, 500);
     setSurgeryForms(prev => ({
       ...prev,
       [type]: {
         ...prev[type],
-        notes,
+        notes: trimmedNotes,
       },
     }));
   };
 
-  const formatDateForInput = (date: Date | null): string => {
-    if (!date) return '';
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  const setFullyHealed = (type: SurgeryTypeOption, value: boolean) => {
+    setSurgeryForms(prev => ({
+      ...prev,
+      [type]: {
+        ...prev[type],
+        fully_healed: value,
+      },
+    }));
   };
 
-  const calculateWeeksPostOp = (date: Date | null): number | undefined => {
-    if (!date) return undefined;
-    const weeksPostOp = Math.floor(
-      (new Date().getTime() - date.getTime()) / (7 * 24 * 60 * 60 * 1000)
-    );
-    return Math.max(0, weeksPostOp);
+
+  const calculateWeeksPostOp = (surgeryDate: Date | null): number | undefined => {
+    if (!surgeryDate) return undefined;
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - surgeryDate.getTime());
+    const diffWeeks = Math.floor(diffTime / (7 * 24 * 60 * 60 * 1000));
+    return diffWeeks;
   };
 
-  const getWeeksPostOpContext = (weeks: number | undefined): string => {
+  const getRecoveryGuidance = (weeks: number | undefined): string => {
     if (weeks === undefined) return '';
     if (weeks < 6) {
-      return '🛑 We\'ll keep exercises very gentle and conservative';
-    } else if (weeks < 12) {
-      return '⚠️ We\'ll avoid exercises that stress surgical sites';
+      return '🛑 Early Recovery Phase: We\'ll keep exercises very gentle and conservative';
+    } else if (weeks >= 6 && weeks < 12) {
+      return '⚠️ Active Recovery Phase: We\'ll avoid exercises that stress surgical sites';
     } else {
-      return '✅ Most exercises will be available';
+      return '✅ Late Recovery Phase: Most exercises will be available';
     }
+  };
+
+  const validateSurgeryDate = (month: number | null, year: number | null): string | null => {
+    if (month === null || year === null) return null;
+    
+    const now = new Date();
+    const surgeryDate = new Date(year, month, 1);
+    const tenYearsAgo = new Date();
+    tenYearsAgo.setFullYear(now.getFullYear() - 10);
+
+    if (surgeryDate > now) {
+      return 'Date cannot be in the future';
+    }
+    if (surgeryDate < tenYearsAgo) {
+      return 'Date cannot be more than 10 years ago';
+    }
+    return null;
+  };
+
+  const isSurgeryComplete = (type: SurgeryTypeOption): boolean => {
+    const form = surgeryForms[type];
+    return form.month !== null && form.year !== null && 
+           validateSurgeryDate(form.month, form.year) === null;
   };
 
   const handleContinue = async () => {
@@ -173,6 +265,7 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
               type,
               date: form.date!,
               weeks_post_op: calculateWeeksPostOp(form.date),
+              fully_healed: form.fully_healed || undefined,
               notes: form.notes || undefined,
             };
           });
@@ -180,7 +273,7 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
         await updateProfile({ surgeries });
       }
 
-      navigation.navigate('Review');
+      navigation.navigate('Goals');
     } catch (error) {
       console.error('Error saving surgery information:', error);
     }
@@ -188,7 +281,11 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
 
   const canContinue = hasSurgeries !== null && 
     (hasSurgeries === 'no' || (hasSurgeries === 'yes' && selectedTypes.length > 0 && 
-      selectedTypes.every(type => surgeryForms[type].date !== null)));
+      selectedTypes.every(type => {
+        const form = surgeryForms[type];
+        return form.month !== null && form.year !== null && 
+               validateSurgeryDate(form.month, form.year) === null;
+      })));
 
   // Check if any surgery is less than 12 weeks post-op
   const hasRecentSurgery = hasSurgeries === 'yes' && selectedTypes.some(type => {
@@ -207,16 +304,18 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
       ]}
     >
       <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Surgery History</Text>
+        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>
+          Have you had any gender-affirming surgeries?
+        </Text>
         <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          Help us adjust your program for post-surgical recovery
+          This helps us adjust your program for post-surgical recovery.
         </Text>
       </View>
 
       <ProgressIndicator
         currentStep={4}
-        totalSteps={5}
-        stepLabels={['Gender Identity', 'Goals', 'HRT & Binding', 'Surgery', 'Review']}
+        totalSteps={8}
+        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
       />
 
       <ScrollView
@@ -225,10 +324,6 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Have you had any gender-affirming surgeries?</Text>
-          </View>
-
           <View style={styles.buttonGroup}>
             <TouchableOpacity
               onPress={() => setHasSurgeries('yes')}
@@ -244,7 +339,7 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
                   hasSurgeries === 'yes' && styles.largeButtonTextSelected,
                 ]}
               >
-                Yes
+                Yes, I've had surgery
               </Text>
             </TouchableOpacity>
 
@@ -252,6 +347,7 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
               onPress={() => {
                 setHasSurgeries('no');
                 setSelectedTypes([]);
+                setExpandedSurgeries(new Set());
               }}
               activeOpacity={0.7}
               style={[
@@ -272,95 +368,187 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
 
           {hasSurgeries === 'yes' && (
             <View style={styles.subsection}>
-              <Text style={styles.subsectionTitle}>Select surgery types:</Text>
-              <View style={styles.checkboxContainer}>
+              <Text style={styles.subsectionTitle}>Which surgeries have you had? (Select all that apply)</Text>
+              <View style={styles.surgeryCardsContainer}>
                 {SURGERY_TYPE_OPTIONS.map((option) => {
                   const isSelected = selectedTypes.includes(option.value);
+                  const isExpanded = expandedSurgeries.has(option.value);
+                  const form = surgeryForms[option.value];
+                  const weeksPostOp = calculateWeeksPostOp(form.date);
+                  const recoveryGuidance = getRecoveryGuidance(weeksPostOp);
+                  const dateError = validateSurgeryDate(form.month, form.year);
+                  const isComplete = isSurgeryComplete(option.value);
+                  
                   return (
-                    <TouchableOpacity
-                      key={option.value}
-                      onPress={() => toggleSurgeryType(option.value)}
-                      activeOpacity={0.7}
-                      style={styles.checkboxRow}
-                    >
-                      <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                        {isSelected && <Text style={styles.checkmark}>✓</Text>}
-                      </View>
-                      <Text style={[styles.checkboxLabel, isSelected && styles.checkboxLabelSelected]}>
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
+                    <View key={option.value} style={styles.surgeryCardWrapper}>
+                      <TouchableOpacity
+                        onPress={() => toggleSurgeryType(option.value)}
+                        activeOpacity={0.7}
+                        style={[
+                          styles.surgeryCard,
+                          isSelected && styles.surgeryCardSelected,
+                        ]}
+                      >
+                        <View style={styles.surgeryCardCheckbox}>
+                          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                            {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                          </View>
+                        </View>
+                        <View style={styles.surgeryCardContent}>
+                          <View style={styles.surgeryCardTitleRow}>
+                            <Text style={[styles.surgeryCardTitle, isSelected && styles.surgeryCardTitleSelected]}>
+                              {option.title}
+                            </Text>
+                            {isSelected && isComplete && (
+                              <View style={styles.completeCheckmark}>
+                                <Text style={styles.completeCheckmarkText}>✓</Text>
+                              </View>
+                            )}
+                          </View>
+                          {option.description && (
+                            <Text style={[styles.surgeryCardDescription, isSelected && styles.surgeryCardDescriptionSelected]}>
+                              {option.description}
+                            </Text>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+
+                      {/* Expandable Details Card */}
+                      {isSelected && (
+                        <View style={styles.expandableCard}>
+                          <TouchableOpacity
+                            onPress={() => toggleExpanded(option.value)}
+                            activeOpacity={0.7}
+                            style={styles.expandableHeader}
+                          >
+                            <Text style={styles.expandableHeaderTitle}>
+                              {option.title}
+                            </Text>
+                            <Text style={styles.expandableHeaderIcon}>
+                              {isExpanded ? '▲' : '▼'}
+                            </Text>
+                          </TouchableOpacity>
+
+                          {isExpanded && (
+                            <View style={styles.expandableContent}>
+                              <View style={styles.formField}>
+                                <Text style={styles.formLabel}>Surgery Date:</Text>
+                                <View style={styles.datePickerRow}>
+                                  <TouchableOpacity
+                                    onPress={() => setShowMonthPicker(option.value)}
+                                    style={styles.datePickerButton}
+                                  >
+                                    <Text style={styles.datePickerButtonText}>
+                                      {form.month !== null ? MONTHS[form.month] : 'Month'}
+                                    </Text>
+                                    <Text style={styles.datePickerArrow}>▼</Text>
+                                  </TouchableOpacity>
+
+                                  <TouchableOpacity
+                                    onPress={() => setShowYearPicker(option.value)}
+                                    style={styles.datePickerButton}
+                                  >
+                                    <Text style={styles.datePickerButtonText}>
+                                      {form.year !== null ? form.year.toString() : 'Year'}
+                                    </Text>
+                                    <Text style={styles.datePickerArrow}>▼</Text>
+                                  </TouchableOpacity>
+
+                                  <TouchableOpacity
+                                    style={styles.calendarButton}
+                                    onPress={() => {
+                                      // Calendar icon - could open native date picker if needed
+                                      // For now, just visual
+                                    }}
+                                  >
+                                    <Text style={styles.calendarIcon}>📅</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+
+                              <View style={styles.formField}>
+                                <Text style={styles.formLabel}>Status:</Text>
+                                <View style={styles.statusRow}>
+                                  <TouchableOpacity
+                                    onPress={() => setFullyHealed(option.value, true)}
+                                    activeOpacity={0.7}
+                                    style={styles.statusOption}
+                                  >
+                                    <View style={[styles.radioButton, form.fully_healed && styles.radioButtonSelected]}>
+                                      {form.fully_healed && <View style={styles.radioButtonInner} />}
+                                    </View>
+                                    <Text style={styles.statusLabel}>Fully healed</Text>
+                                  </TouchableOpacity>
+
+                                  <TouchableOpacity
+                                    onPress={() => setFullyHealed(option.value, false)}
+                                    activeOpacity={0.7}
+                                    style={styles.statusOption}
+                                  >
+                                    <View style={[styles.radioButton, !form.fully_healed && styles.radioButtonSelected]}>
+                                      {!form.fully_healed && <View style={styles.radioButtonInner} />}
+                                    </View>
+                                    <Text style={styles.statusLabel}>Still recovering</Text>
+                                  </TouchableOpacity>
+                                </View>
+                                {dateError && (
+                                  <Text style={styles.errorText}>{dateError}</Text>
+                                )}
+                              </View>
+
+                              {form.date && weeksPostOp !== undefined && (
+                                <>
+                                  <View style={styles.infoMessage}>
+                                    <Text style={styles.infoIcon}>💡</Text>
+                                    <Text style={styles.infoText}>
+                                      {formatWeeksPostOp(weeksPostOp)}
+                                    </Text>
+                                  </View>
+                                  {recoveryGuidance && (
+                                    <View style={styles.recoveryGuidance}>
+                                      <Text style={styles.recoveryGuidanceText}>
+                                        {recoveryGuidance}
+                                      </Text>
+                                    </View>
+                                  )}
+                                </>
+                              )}
+
+                              <View style={styles.formField}>
+                                <View style={styles.notesLabelRow}>
+                                  <Text style={styles.formLabel}>Optional Notes:</Text>
+                                  <Text style={styles.characterCount}>
+                                    {form.notes.length}/500
+                                  </Text>
+                                </View>
+                                <TextInput
+                                  style={styles.notesInput}
+                                  value={form.notes}
+                                  onChangeText={(text) => updateSurgeryNotes(option.value, text)}
+                                  placeholder="Any additional information..."
+                                  placeholderTextColor={palette.midGray}
+                                  multiline
+                                  numberOfLines={3}
+                                  textAlignVertical="top"
+                                  maxLength={500}
+                                />
+                              </View>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                    </View>
                   );
                 })}
               </View>
 
-              {selectedTypes.length > 0 && (
-                <>
-                  {hasRecentSurgery && (
-                    <View style={styles.warningBanner}>
-                      <Text style={styles.warningIcon}>⚠️</Text>
-                      <View style={styles.warningTextContainer}>
-                        <Text style={styles.warningTitle}>Important</Text>
-                        <Text style={styles.warningMessage}>
-                          Always follow your surgeon's specific guidance. We'll be conservative with exercise selection, but check with your surgeon before starting any new program.
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-
-                  <View style={styles.formsContainer}>
-                    {selectedTypes.map((type) => {
-                      const form = surgeryForms[type];
-                      const option = SURGERY_TYPE_OPTIONS.find(o => o.value === type);
-                      const weeksPostOp = calculateWeeksPostOp(form.date);
-                      const contextMessage = getWeeksPostOpContext(weeksPostOp);
-
-                      return (
-                        <View key={type} style={styles.surgeryFormCard}>
-                          <Text style={styles.surgeryFormTitle}>{option?.label}</Text>
-
-                          <View style={styles.formField}>
-                            <Text style={styles.formLabel}>Surgery Date *</Text>
-                            <TextInput
-                              style={styles.dateInput}
-                              value={formatDateForInput(form.date)}
-                              onChangeText={(text) => updateSurgeryDate(type, text)}
-                              placeholder="YYYY-MM-DD"
-                              placeholderTextColor={palette.midGray}
-                              keyboardType="default"
-                            />
-                            {form.date && weeksPostOp !== undefined && (
-                              <>
-                                <Text style={styles.weeksPostOpText}>
-                                  {weeksPostOp} {weeksPostOp === 1 ? 'week' : 'weeks'} post-op
-                                </Text>
-                                {contextMessage && (
-                                  <Text style={styles.contextMessage}>
-                                    {contextMessage}
-                                  </Text>
-                                )}
-                              </>
-                            )}
-                          </View>
-
-                          <View style={styles.formField}>
-                            <Text style={styles.formLabel}>Notes (optional)</Text>
-                            <TextInput
-                              style={styles.notesInput}
-                              value={form.notes}
-                              onChangeText={(text) => updateSurgeryNotes(type, text)}
-                              placeholder="Any additional information..."
-                              placeholderTextColor={palette.midGray}
-                              multiline
-                              numberOfLines={3}
-                              textAlignVertical="top"
-                            />
-                          </View>
-                        </View>
-                      );
-                    })}
-                  </View>
-                </>
+              {selectedTypes.length > 0 && hasRecentSurgery && (
+                <View style={styles.warningBanner}>
+                  <Text style={styles.warningIcon}>⚠️</Text>
+                  <Text style={styles.warningMessage}>
+                    Important: Always follow your surgeon's specific guidance. We'll be conservative with exercise selection, but check with your surgeon before starting any new program.
+                  </Text>
+                </View>
               )}
             </View>
           )}
@@ -379,6 +567,66 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
           </Text>
         )}
       </View>
+
+      {/* Month Picker Modal */}
+      <Modal
+        visible={showMonthPicker !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMonthPicker(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMonthPicker(null)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Month</Text>
+            <FlatList
+              data={MONTHS}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item, index }) => (
+                <TouchableOpacity
+                  onPress={() => showMonthPicker && updateSurgeryMonth(showMonthPicker, index)}
+                  style={styles.modalItem}
+                >
+                  <Text style={styles.modalItemText}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Year Picker Modal */}
+      <Modal
+        visible={showYearPicker !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowYearPicker(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowYearPicker(null)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Year</Text>
+            <FlatList
+              data={years}
+              keyExtractor={(item) => item.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => showYearPicker && updateSurgeryYear(showYearPicker, item)}
+                  style={styles.modalItem}
+                >
+                  <Text style={styles.modalItemText}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -465,14 +713,168 @@ const styles = StyleSheet.create({
     marginBottom: spacing.m,
     color: palette.white,
   },
-  checkboxContainer: {
+  surgeryCardsContainer: {
     gap: spacing.m,
     marginBottom: spacing.l,
   },
-  checkboxRow: {
+  surgeryCardWrapper: {
+    marginBottom: spacing.m,
+  },
+  surgeryCard: {
+    backgroundColor: palette.darkCard,
+    borderRadius: 16,
+    padding: spacing.l,
+    borderWidth: 2,
+    borderColor: palette.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.m,
+    minHeight: 80,
+  },
+  surgeryCardSelected: {
+    borderWidth: 3,
+    borderColor: palette.tealPrimary,
+    backgroundColor: palette.darkerCard,
+  },
+  surgeryCardCheckbox: {
+    flexShrink: 0,
+  },
+  surgeryCardContent: {
+    flex: 1,
+  },
+  surgeryCardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  surgeryCardTitle: {
+    ...typography.h3,
+    color: palette.white,
+    flex: 1,
+  },
+  surgeryCardTitleSelected: {
+    color: palette.tealPrimary,
+  },
+  completeCheckmark: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: palette.tealPrimary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: spacing.s,
+  },
+  completeCheckmarkText: {
+    color: palette.deepBlack,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  surgeryCardDescription: {
+    ...typography.body,
+    color: palette.midGray,
+    lineHeight: 20,
+  },
+  surgeryCardDescriptionSelected: {
+    color: palette.lightGray,
+  },
+  expandableCard: {
+    marginTop: spacing.s,
+    backgroundColor: palette.darkerCard,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: palette.border,
+    overflow: 'hidden',
+  },
+  expandableHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.m,
+    backgroundColor: palette.darkCard,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
+  },
+  expandableHeaderTitle: {
+    ...typography.h3,
+    color: palette.white,
+    fontWeight: '600',
+  },
+  expandableHeaderIcon: {
+    ...typography.body,
+    color: palette.tealPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  expandableContent: {
+    padding: spacing.m,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    gap: spacing.l,
+    marginTop: spacing.s,
+  },
+  statusOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+  },
+  radioButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: palette.border,
+    backgroundColor: palette.darkerCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioButtonSelected: {
+    borderColor: palette.tealPrimary,
+  },
+  radioButtonInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: palette.tealPrimary,
+  },
+  statusLabel: {
+    ...typography.body,
+    color: palette.white,
+  },
+  infoMessage: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.s,
+    backgroundColor: 'rgba(0, 204, 204, 0.1)',
+    borderRadius: 12,
+    padding: spacing.m,
+    marginTop: spacing.m,
+    marginBottom: spacing.m,
+  },
+  infoIcon: {
+    fontSize: 20,
+    flexShrink: 0,
+  },
+  infoText: {
+    ...typography.body,
+    color: palette.tealPrimary,
+    flex: 1,
+    lineHeight: 20,
+  },
+  recoveryGuidance: {
+    backgroundColor: 'rgba(0, 204, 204, 0.1)',
+    borderRadius: 12,
+    padding: spacing.m,
+    marginTop: spacing.s,
+    marginBottom: spacing.m,
+    borderLeftWidth: 3,
+    borderLeftColor: palette.tealPrimary,
+  },
+  recoveryGuidanceText: {
+    ...typography.body,
+    color: palette.tealPrimary,
+    lineHeight: 20,
   },
   checkbox: {
     width: 24,
@@ -527,14 +929,60 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     fontWeight: '600',
   },
-  dateInput: {
+  notesLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  characterCount: {
+    ...typography.caption,
+    color: palette.midGray,
+  },
+  errorText: {
+    ...typography.bodySmall,
+    color: palette.error,
+    marginTop: spacing.xs,
+  },
+  datePickerRow: {
+    flexDirection: 'row',
+    gap: spacing.s,
+    alignItems: 'center',
+  },
+  datePickerButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: palette.darkCard,
     borderWidth: 1.5,
     borderColor: palette.border,
     borderRadius: 12,
     padding: spacing.m,
+    minHeight: 48,
+  },
+  datePickerButtonText: {
     ...typography.body,
     color: palette.white,
+  },
+  datePickerArrow: {
+    ...typography.body,
+    color: palette.midGray,
+    fontSize: 12,
+    marginLeft: spacing.xs,
+  },
+  calendarButton: {
+    width: 48,
+    height: 48,
+    backgroundColor: palette.darkCard,
+    borderWidth: 1.5,
+    borderColor: palette.border,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarIcon: {
+    fontSize: 20,
   },
   weeksPostOpText: {
     ...typography.caption,
@@ -557,24 +1005,17 @@ const styles = StyleSheet.create({
     padding: spacing.m,
     marginBottom: spacing.l,
     alignItems: 'flex-start',
+    gap: spacing.s,
   },
   warningIcon: {
-    fontSize: 24,
-    marginRight: spacing.m,
-  },
-  warningTextContainer: {
-    flex: 1,
-  },
-  warningTitle: {
-    ...typography.h4,
-    color: palette.warning,
-    marginBottom: spacing.xs,
-    fontWeight: '600',
+    fontSize: 20,
+    flexShrink: 0,
   },
   warningMessage: {
     ...typography.bodySmall,
-    color: palette.lightGray,
-    lineHeight: typography.bodySmall.fontSize * 1.5,
+    color: palette.warning,
+    flex: 1,
+    lineHeight: 18,
   },
   notesInput: {
     backgroundColor: palette.darkCard,
@@ -597,6 +1038,35 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: palette.midGray,
     marginTop: spacing.xs,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: palette.darkCard,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '50%',
+    paddingTop: spacing.l,
+  },
+  modalTitle: {
+    ...typography.h3,
+    color: palette.white,
+    textAlign: 'center',
+    marginBottom: spacing.m,
+    paddingHorizontal: spacing.l,
+  },
+  modalItem: {
+    padding: spacing.m,
+    paddingHorizontal: spacing.l,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
+  },
+  modalItemText: {
+    ...typography.body,
+    color: palette.white,
   },
 });
 

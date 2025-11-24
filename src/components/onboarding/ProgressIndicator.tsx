@@ -18,9 +18,12 @@ export default function ProgressIndicator({ currentStep, totalSteps, stepLabels 
           <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
         </View>
       </View>
+      <Text style={styles.stepLabel}>
+        Step {currentStep} of {totalSteps}
+      </Text>
       {stepLabels && stepLabels.length > 0 && (
-        <Text style={styles.stepLabel}>
-          {stepLabels[currentStep - 1]} ({currentStep}/{totalSteps})
+        <Text style={styles.stepSubLabel}>
+          {stepLabels[currentStep - 1]}
         </Text>
       )}
     </View>
@@ -46,10 +49,20 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   stepLabel: {
+    ...typography.bodySmall,
+    textAlign: 'left',
+    color: palette.white,
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: spacing.xs,
+    letterSpacing: 0.2,
+  },
+  stepSubLabel: {
     ...typography.caption,
     textAlign: 'left',
     color: palette.midGray,
     fontSize: 11,
+    marginTop: spacing.xs / 2,
     letterSpacing: 0.2,
   },
 });
