@@ -214,9 +214,13 @@ export function isCanonicalEquipment(value: string): value is CanonicalEquipment
  * Returns canonical equipment options with exercise counts.
  */
 export async function getEquipmentOptions(): Promise<EquipmentOption[]> {
+  if (!supabase) {
+    console.error('Supabase not initialized');
+    return [];
+  }
   const { data, error } = await supabase
     .from('exercises')
-    .select('equipment, raw_equipment');
+    .select('equipment');
 
   if (error) {
     console.error('❌ Failed to fetch equipment from Supabase:', error);
@@ -226,21 +230,13 @@ export async function getEquipmentOptions(): Promise<EquipmentOption[]> {
   const counts = new Map<CanonicalEquipment, number>();
 
   for (const row of data ?? []) {
-    const rawArray = normalizeToStringArray(row.raw_equipment);
     const equipArray = normalizeToStringArray(row.equipment);
-
-    const canonicalFromRaw = rawArray
-      .map(r => mapRawEquipmentToCanonical(r))
-      .filter((c): c is CanonicalEquipment => c !== null);
 
     const canonicalFromEquip = equipArray
       .map(e => mapRawEquipmentToCanonical(e))
       .filter((c): c is CanonicalEquipment => c !== null);
 
-    const canonicalSet = new Set<CanonicalEquipment>([
-      ...canonicalFromRaw,
-      ...canonicalFromEquip,
-    ]);
+    const canonicalSet = new Set<CanonicalEquipment>(canonicalFromEquip);
 
     // If we somehow got nothing, assume bodyweight as a super-safe fallback
     if (canonicalSet.size === 0) canonicalSet.add('bodyweight');
@@ -289,14 +285,14 @@ export function getEquipmentCount(
 }
 
 /**
- * Map an array of raw equipment strings to canonical categories (deduped).
+ * Map an array of equipment strings to canonical categories (deduped).
  * Used by workout generation when normalizing profile.equipment, etc.
  */
-export function mapRawEquipmentArrayToCanonical(
-  rawEquipment: string[]
+export function mapEquipmentArrayToCanonical(
+  equipmentStrings: string[]
 ): CanonicalEquipment[] {
-  const canonical = rawEquipment
-    .map(raw => mapRawEquipmentToCanonical(raw))
+  const canonical = equipmentStrings
+    .map(eq => mapRawEquipmentToCanonical(eq))
     .filter((c): c is CanonicalEquipment => c !== null);
 
   return Array.from(new Set(canonical));

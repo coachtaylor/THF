@@ -50,6 +50,7 @@ export const typography = {
   h4: { fontSize: 18, fontWeight: '600' as const, color: palette.white, letterSpacing: -0.1 },
   bodyLarge: { fontSize: 17, fontWeight: '400' as const, color: palette.lightGray, lineHeight: 24 },
   body: { fontSize: 15, fontWeight: '400' as const, color: palette.lightGray, lineHeight: 22 },
+  bodyMedium: { fontSize: 15, fontWeight: '500' as const, color: palette.lightGray, lineHeight: 22 },
   bodySmall: { fontSize: 13, fontWeight: '400' as const, color: palette.midGray, lineHeight: 20 },
   caption: { fontSize: 12, fontWeight: '500' as const, color: palette.midGray, lineHeight: 18 },
   button: { fontSize: 17, fontWeight: '700' as const, color: palette.white, letterSpacing: 0.3 },

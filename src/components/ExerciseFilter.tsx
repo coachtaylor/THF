@@ -1,7 +1,8 @@
 // src/components/ExerciseFilter.tsx
 
 import React, { useState, useEffect } from 'react';
-import { getExercisesByEquipment, Exercise } from '../services/exercises';
+import { loadExercises as fetchExercises } from '../services/exercises';
+import { Exercise } from '../types/plan';
 
 export const ExerciseFilter: React.FC = () => {
   const [selectedEquipment, setSelectedEquipment] = useState<string>('bodyweight');
@@ -12,28 +13,45 @@ export const ExerciseFilter: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const loadExercises = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const allExercises = await fetchExercises();
+        
+        // Filter exercises
+        let filtered = allExercises;
+        
+        // Filter by equipment
+        if (selectedEquipment) {
+          filtered = filtered.filter(ex => 
+            ex.equipment.includes(selectedEquipment) || ex.equipment.length === 0
+          );
+        }
+        
+        // Filter by difficulty
+        if (selectedDifficulty) {
+          filtered = filtered.filter(ex => ex.difficulty === selectedDifficulty);
+        }
+        
+        // Filter by binder aware
+        if (binderAware) {
+          filtered = filtered.filter(ex => ex.binder_aware);
+        }
+        
+        setExercises(filtered);
+        console.log(`Found ${filtered.length} exercises`);
+      } catch (err) {
+        setError('Failed to load exercises');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     loadExercises();
   }, [selectedEquipment, selectedDifficulty, binderAware]);
-
-  const loadExercises = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await getExercisesByEquipment(selectedEquipment, {
-        difficulty: selectedDifficulty || undefined,
-        binderAware: binderAware || undefined,
-      });
-      
-      setExercises(data);
-      console.log(`Found ${data.length} exercises`);
-    } catch (err) {
-      setError('Failed to load exercises');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="exercise-filter">

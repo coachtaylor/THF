@@ -42,16 +42,16 @@ function getHeavyBindingScore(exercise: Exercise): number {
   let score = 0;
 
   // Prioritize lower body
-  if (exercise.tags.includes('lower_body')) score += 3;
+  if (exercise.tags?.includes('lower_body')) score += 3;
 
   // Prioritize core
-  if (exercise.tags.includes('core')) score += 2;
+  if (exercise.tags?.includes('core')) score += 2;
 
   // De-prioritize upper body
-  if (exercise.tags.includes('upper_body')) score -= 1;
+  if (exercise.tags?.includes('upper_body')) score -= 1;
 
   // De-prioritize cardio
-  if (exercise.tags.includes('cardio')) score -= 2;
+  if (exercise.tags?.includes('cardio')) score -= 2;
 
   return score;
 }

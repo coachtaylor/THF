@@ -11,46 +11,29 @@ interface DatabaseExercise {
   goal: string | null;
   difficulty: string | null;
   equipment: string[];
-  raw_equipment?: string | string[] | null;
   binder_aware: boolean;
   pelvic_floor_safe: boolean;
-  target_muscles: string | null;
-  secondary_muscles: string | null;
-  media_thumb: string | null;
+  heavy_binding_safe?: boolean;
+  contraindications?: string[];
+  target_muscles?: string | null;
+  secondary_muscles?: string | null;
+  media_thumb?: string | null;
+  cue_primary?: string | null;
+  breathing?: string | null;
+  rep_range_beginner?: string | null;
+  rep_range_intermediate?: string | null;
+  rep_range_advanced?: string | null;
+  effectiveness_rating?: number | null;
+  source?: string | null;
+  notes?: string | null;
+  dysphoria_tags?: string[] | null;
+  post_op_safe_weeks?: number | null;
+  created_at?: string;
+  version?: string;
+  flags_reviewed?: boolean;
+  reviewer?: string | null;
 }
 
-/**
- * Normalize raw equipment from database to a consistent array format.
- * 
- * Handles:
- * - null/undefined → empty array
- * - Array of strings → normalize each to UPPERCASE
- * - Single string → split by comma if needed, normalize to UPPERCASE
- * 
- * @param raw - Raw equipment from database (string, string[], or null/undefined)
- * @returns Normalized array of UPPERCASE equipment strings
- */
-function normalizeRawEquipment(raw: string | string[] | null | undefined): string[] {
-  if (!raw) return [];
-
-  if (Array.isArray(raw)) {
-    return raw
-      .map((r) => r?.toString().trim().toUpperCase())
-      .filter(Boolean) as string[];
-  }
-
-  // If stored as a single string, split by comma if it contains commas
-  const str = raw.toString().trim();
-  if (str.includes(',')) {
-    return str
-      .split(',')
-      .map((r) => r.trim().toUpperCase())
-      .filter(Boolean);
-  }
-
-  // Single value
-  return str ? [str.toUpperCase()] : [];
-}
 
 // Exercises that are NOT safe for heavy binding (from BRD)
 const HEAVY_BINDING_UNSAFE_PATTERNS = ['jumping_jack', 'high_knees', 'mountain_climber', 'burpee', 'squat_thrust'];
@@ -122,20 +105,42 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
 
   return {
     id: String(db.id) || db.slug, // Use numeric ID as string (matches plan generator), fallback to slug
+    slug: db.slug || String(db.id),
     name: db.name,
+    pattern: db.pattern || '',
+    goal: db.goal || '',
     equipment: db.equipment,
-    rawEquipment: normalizeRawEquipment(db.raw_equipment),
     difficulty: (db.difficulty as Exercise['difficulty']) || 'beginner',
     tags,
     binder_aware: db.binder_aware,
+    pelvic_floor_safe: db.pelvic_floor_safe,
     heavy_binding_safe: heavy_binding_safe,
-    pelvic_floor_aware: db.pelvic_floor_safe,
+    pelvic_floor_aware: db.pelvic_floor_safe, // Alias for backward compatibility
+    contraindications: db.contraindications || [],
     pressure_level,
+    target_muscles: db.target_muscles ?? undefined,
+    secondary_muscles: db.secondary_muscles ?? undefined,
+    cue_primary: db.cue_primary ?? undefined,
+    breathing: db.breathing ?? undefined,
     neutral_cues: [], // TODO: Add cues column to database
     breathing_cues: [], // TODO: Add breathing column to database
+    rep_range_beginner: db.rep_range_beginner ?? undefined,
+    rep_range_intermediate: db.rep_range_intermediate ?? undefined,
+    rep_range_advanced: db.rep_range_advanced ?? undefined,
+    effectiveness_rating: db.effectiveness_rating ?? undefined,
+    source: db.source ?? undefined,
+    notes: db.notes ?? undefined,
+    dysphoria_tags: Array.isArray(db.dysphoria_tags) 
+      ? db.dysphoria_tags.join(', ') 
+      : (db.dysphoria_tags ?? undefined),
+    post_op_safe_weeks: db.post_op_safe_weeks ?? undefined,
     swaps: [], // TODO: Add swaps column to database
     trans_notes,
-    target_muscles: db.target_muscles || null
+    commonErrors: [],
+    created_at: db.created_at ? new Date(db.created_at) : new Date(),
+    version: db.version || '1.0',
+    flags_reviewed: db.flags_reviewed || false,
+    reviewer: db.reviewer ?? undefined,
   };
 }
 
@@ -162,12 +167,27 @@ export async function fetchExercises(): Promise<Exercise[]> {
         goal,
         difficulty,
         equipment,
-        raw_equipment,
         binder_aware,
         pelvic_floor_safe,
+        heavy_binding_safe,
+        contraindications,
         target_muscles,
         secondary_muscles,
-        media_thumb
+        gender_goal_emphasis,
+        cue_primary,
+        breathing,
+        rep_range_beginner,
+        rep_range_intermediate,
+        rep_range_advanced,
+        effectiveness_rating,
+        source,
+        notes,
+        dysphoria_tags,
+        post_op_safe_weeks,
+        created_at,
+        version,
+        flags_reviewed,
+        reviewer
       `);
 
     if (error) {
@@ -195,7 +215,7 @@ export async function fetchExercises(): Promise<Exercise[]> {
     // Log sample exercise
     if (mapped.length > 0) {
       const sample = mapped[0];
-      console.log(`   Sample: ${sample.name} (id: ${sample.id}, equipment: ${sample.equipment.join(', ')}, rawEquipment: ${sample.rawEquipment.join(', ')})`);
+      console.log(`   Sample: ${sample.name} (id: ${sample.id}, equipment: ${sample.equipment.join(', ')})`);
     }
     
     return mapped;
@@ -248,8 +268,8 @@ export async function getExerciseById(id: string): Promise<Exercise | undefined>
 export async function getExercisesByCategory(category: string): Promise<Exercise[]> {
   const exercises = await getExerciseLibrary();
   return exercises.filter(ex => 
-    ex.tags.includes(category) || 
-    ex.tags.some(tag => tag.toLowerCase().includes(category.toLowerCase()))
+    ex.tags?.includes(category) || 
+    ex.tags?.some(tag => tag.toLowerCase().includes(category.toLowerCase()))
   );
 }
 
@@ -296,7 +316,7 @@ interface DatabaseExerciseDetail {
   pelvic_floor_safe: boolean;
   target_muscles: string | null;
   secondary_muscles: string | null;
-  media_thumb: string | null;
+  media_thumb?: string | null; // Optional - column may not exist in database
   cue_primary: string | null;
   cues: string[] | null;
   breathing: string | null;
@@ -406,7 +426,6 @@ export async function getExerciseDetail(
         pelvic_floor_safe,
         target_muscles,
         secondary_muscles,
-        media_thumb,
         cue_primary,
         cues,
         breathing,

@@ -1,34 +1,11 @@
 import * as SQLite from 'expo-sqlite';
 import { supabase } from '../../utils/supabase';
+// Profile and Surgery types are now in src/types/index.ts
+export { Profile, Surgery } from '../../types/index';
+import type { Profile, Surgery } from '../../types/index';
 
 // Open database connection for profile storage
 const profileDb = SQLite.openDatabaseSync('transfitness.db');
-
-// Profile interface for storage (matches README specification)
-export interface Profile {
-  id: string;
-  email?: string;
-  fitness_level?: 'beginner' | 'intermediate' | 'advanced';
-  goals?: string[];
-  goal_weighting?: { primary: number; secondary: number };
-  equipment?: string[]; // Canonical equipment categories (bodyweight, dumbbells, bands, kettlebell)
-  equipment_raw?: string[]; // Raw equipment labels from database (e.g. "BODY WEIGHT", "DUMBBELL", "CABLE MACHINE")
-  constraints?: string[];
-  surgery_flags?: string[];
-  surgeon_cleared?: boolean;
-  hrt_flags?: string[];
-  preferred_minutes?: number[];
-  block_length?: number;
-  low_sensory_mode?: boolean;
-  cloud_sync_enabled?: boolean;
-  disclaimer_acknowledged_at?: string;
-  synced_at?: string;
-  created_at?: string;
-  // Onboarding fields for workout generation and trans-specific tips
-  why_flags?: string[]; // Examples: 'support_transition', 'reduce_dysphoria', 'build_strength', 'move_more'
-  body_focus_prefer?: string[]; // Allowed: 'legs', 'glutes', 'back', 'core', 'shoulders', 'arms', 'chest'
-  body_focus_soft_avoid?: string[]; // Allowed: 'chest', 'hips', 'glutes', 'abdomen', 'shoulders'
-}
 
 // Ensure profiles table exists with correct schema (stores full profile as JSON)
 export async function initProfileStorage(): Promise<void> {
@@ -82,7 +59,7 @@ export async function getProfile(): Promise<Profile | null> {
       profile.id = result.id;
       if (result.email) profile.email = result.email;
       if (result.synced_at) profile.synced_at = result.synced_at;
-      if (result.created_at) profile.created_at = result.created_at;
+      if (result.created_at) profile.created_at = new Date(result.created_at);
       return profile;
     } else {
       return null;
@@ -118,9 +95,21 @@ export async function updateProfile(updates: Partial<Profile>): Promise<void> {
         currentProfile.id = existing.id;
         if (existing.email) currentProfile.email = existing.email;
       } else {
-        // Create new profile
+        // Create new profile with required fields
         currentProfile = {
           id: updates.id || 'default',
+          user_id: updates.user_id || 'default-user',
+          gender_identity: updates.gender_identity || 'nonbinary',
+          primary_goal: updates.primary_goal || 'general_fitness',
+          fitness_experience: updates.fitness_experience || updates.fitness_level || 'beginner',
+          workout_frequency: updates.workout_frequency ?? 3,
+          session_duration: updates.session_duration ?? 30,
+          binds_chest: updates.binds_chest ?? false,
+          on_hrt: updates.on_hrt ?? false,
+          surgeries: updates.surgeries || [],
+          equipment: updates.equipment || [],
+          created_at: new Date(),
+          updated_at: new Date(),
           email: updates.email || '',
         };
       }

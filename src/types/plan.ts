@@ -32,26 +32,56 @@ export interface ExerciseInstance {
   restSeconds: number;
 }
 
+// Exercise type moved to src/types/index.ts to avoid duplication
+// Re-export for backward compatibility
+export { Exercise } from './index';
+
+// Commented out to avoid duplication - Exercise is now defined in src/types/index.ts
+/*
 export interface Exercise {
   id: string;
   name: string;
-  equipment: string[]; // Canonical equipment categories (e.g., ["bodyweight"], ["dumbbells"])
-  rawEquipment: string[]; // Raw equipment labels from database, normalized to UPPERCASE (e.g., ["BODY WEIGHT"], ["DUMBBELL"])
+  slug: string;
+  pattern: string;
+  goal: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
+  equipment: string[]; // Canonical equipment categories (bodyweight, dumbbells, bands, etc.)
   tags: string[]; // e.g., ["lower_body", "strength"]
   binder_aware: boolean;
   heavy_binding_safe: boolean;
-  pelvic_floor_aware: boolean;
+  pelvic_floor_aware: boolean; //NEW
+  contraindications: string[]; // NEW
   pressure_level: 'low' | 'medium' | 'high';
-  neutral_cues: string[];
-  breathing_cues: string[];
+  cue_primary?: string;
+  breathing?: string;
+  neutral_cues?: string[]; // Array of neutral cues
+  breathing_cues?: string[]; // Array of breathing cues
+  rep_range_beginner?: string;
+  rep_range_intermediate?: string;
+  rep_range_advanced?: string;
+  effectiveness_rating?: number;
+  source?: string;
+  notes?: string;
+  dysphoria_tags?: string;
+  post_op_safe_weeks?: number;
+  created_at: Date;
+  version: string;
+  flags_reviewed: boolean;
+  reviewer?: string;
   swaps: Swap[];
   trans_notes: {
     binder: string;
     pelvic_floor: string;
   };
-  target_muscles?: string | null; // Target muscles for the exercise
+  target_muscles?: string;
+  secondary_muscles?: string;
+  commonErrors: string[];
+  gender_goal_emphasis?: 'fem_very_high' | 'fem_high' | 'fem_medium' | 'fem_low' | 
+                         'masc_very_high' | 'masc_high' | 'masc_medium' | 'masc_low' | 
+                         'neutral';
+  videoUrl?: string; // Optional video URL for exercises
 }
+*/
 
 export interface Swap {
   exercise_id: string;

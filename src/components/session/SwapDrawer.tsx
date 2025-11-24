@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
 import { Button, Portal, Card, Divider } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Swap, Exercise } from '../../types/plan';
+import { Swap } from '../../types/plan';
+import { Exercise } from '../../types';
 import { palette, spacing, typography } from '../../theme';
 import { fetchAllExercises } from '../../services/exerciseService';
 
@@ -15,7 +16,10 @@ interface SwapDrawerProps {
   onViewFAQ?: () => void;
 }
 
-interface SwapOption extends Swap {
+interface SwapOption {
+  exercise_id: string;
+  exerciseId?: string; // For backward compatibility
+  rationale: string;
   exerciseName?: string;
   exerciseDetails?: Exercise;
 }
@@ -48,28 +52,39 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
       // Fetch all exercises to get swap details
       const allExercises = await fetchAllExercises();
       
-      const swapOptions: SwapOption[] = exercise.swaps.map((swap) => {
-        // Find the swap exercise details
-        const swapExercise = allExercises.find(
-          (ex) => ex.id === swap.exercise_id || ex.id === swap.exercise_id.toString()
-        );
-        
-        return {
-          ...swap,
-          exerciseName: swapExercise?.name || 'Unknown Exercise',
-          exerciseDetails: swapExercise,
-        };
-      });
+      const swapOptions: SwapOption[] = exercise.swaps
+        .filter(swap => swap.exercise_id != null || swap.exerciseId != null) // Filter out undefined
+        .map((swap): SwapOption | null => {
+          const exerciseId = swap.exercise_id || swap.exerciseId;
+          if (!exerciseId) {
+            return null;
+          }
+          // Find the swap exercise details
+          const swapExercise = allExercises.find(
+            (ex) => ex.id === String(exerciseId) || ex.id === exerciseId.toString()
+          );
+          
+          return {
+            exercise_id: String(exerciseId),
+            rationale: swap.rationale,
+            exerciseName: swapExercise?.name || 'Unknown Exercise',
+            exerciseDetails: swapExercise,
+          };
+        })
+        .filter((swap): swap is SwapOption => swap !== null && swap.exercise_id != null);
 
       setSwaps(swapOptions);
     } catch (error) {
       console.error('Failed to load swap details:', error);
       // Fallback to swaps without details
       setSwaps(
-        exercise.swaps.map((swap) => ({
-          ...swap,
-          exerciseName: 'Loading...',
-        }))
+        exercise.swaps
+          .filter(swap => swap.exercise_id != null || swap.exerciseId != null)
+          .map((swap): SwapOption => ({
+            exercise_id: String(swap.exercise_id || swap.exerciseId || ''),
+            rationale: swap.rationale,
+            exerciseName: 'Loading...',
+          }))
       );
     } finally {
       setLoading(false);
@@ -166,7 +181,7 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
                                 </Text>
                               </View>
                             )}
-                            {swap.exerciseDetails.equipment &&
+                            {swap.exerciseDetails?.equipment &&
                               swap.exerciseDetails.equipment.length > 0 && (
                                 <View style={[styles.badge, styles.equipmentBadge]}>
                                   <Text style={styles.badgeText}>

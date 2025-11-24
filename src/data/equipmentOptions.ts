@@ -1,6 +1,6 @@
 // src/data/equipmentOptions.ts
 
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../utils/supabase';
 
 /** Types */
 export type RawEquipmentOption = {
@@ -8,7 +8,7 @@ export type RawEquipmentOption = {
   label: string; // pretty label, e.g. "Body Weight"
 };
 
-/** Load distinct raw_equipment values from Supabase */
+/** Load distinct equipment values from Supabase */
 function prettyLabelFromRaw(raw: string): string {
   const cleaned = raw.trim().toLowerCase().replace(/[_\s]+/g, ' ');
   return cleaned
@@ -18,16 +18,16 @@ function prettyLabelFromRaw(raw: string): string {
 }
 
 export async function getRawEquipmentOptions(): Promise<RawEquipmentOption[]> {
+  if (!supabase) {
+    console.error('Supabase not initialized');
+    return [];
+  }
   const { data, error } = await supabase
-    .from('exercise_staging_tagged') // adjust if your table/view name differs
-    .select('raw_equipment')
-    .not('raw_equipment', 'is', null)
-    .neq('raw_equipment', '')
-    .group('raw_equipment')
-    .order('raw_equipment', { ascending: true });
+    .from('exercises')
+    .select('equipment');
 
   if (error) {
-    console.error('Error loading raw equipment options', error);
+    console.error('Error loading equipment options', error);
     return [];
   }
 
@@ -35,13 +35,16 @@ export async function getRawEquipmentOptions(): Promise<RawEquipmentOption[]> {
   const options: RawEquipmentOption[] = [];
 
   for (const row of data ?? []) {
-    const raw = String(row.raw_equipment).trim();
-    if (!raw || seen.has(raw)) continue;
-    seen.add(raw);
-    options.push({
-      value: raw,
-      label: prettyLabelFromRaw(raw),
-    });
+    const equipmentArray = Array.isArray(row.equipment) ? row.equipment : [];
+    for (const equip of equipmentArray) {
+      const raw = String(equip).trim();
+      if (!raw || seen.has(raw)) continue;
+      seen.add(raw);
+      options.push({
+        value: raw,
+        label: prettyLabelFromRaw(raw),
+      });
+    }
   }
 
   return options;
