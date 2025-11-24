@@ -69,6 +69,7 @@ interface WorkoutContextType {
   updateSetData: (field: 'reps' | 'weight' | 'rpe', value: number) => void;
   completeSet: () => Promise<void>;
   skipSet: () => void;
+  skipRest: () => void;
   nextExercise: () => void;
   previousExercise: () => void;
   pauseWorkout: () => void;
@@ -235,6 +236,11 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       nextExercise();
     }
   };
+
+  const skipRest = () => {
+    setIsResting(false);
+    setRestTimer(0);
+  };
   
   const nextExercise = () => {
     if (!workout) return;
@@ -370,6 +376,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     updateSetData,
     completeSet,
     skipSet,
+    skipRest,
     nextExercise,
     previousExercise,
     pauseWorkout,
