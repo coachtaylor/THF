@@ -1,276 +1,324 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Svg, { Path } from 'react-native-svg';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
-import { palette, spacing, typography } from '../../../theme';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import PrimaryButton from '../../../components/ui/PrimaryButton';
-import type { Surgery as SurgeryType } from '../../../types';
 
-type SurgerySelection = 'yes' | 'no';
-type SurgeryTypeOption = 'top_surgery' | 'bottom_surgery' | 'ffs' | 'orchiectomy' | 'other';
+type HasSurgeries = 'yes' | 'no' | null;
 
-interface SurgeryFormData {
-  type: SurgeryTypeOption;
+const SURGERY_OPTIONS = [
+  {
+    value: 'top_surgery',
+    title: 'Top Surgery',
+    description: 'Chest reconstruction, mastectomy',
+  },
+  {
+    value: 'bottom_surgery',
+    title: 'Bottom Surgery',
+    description: 'Vaginoplasty, phalloplasty, metoidioplasty',
+  },
+  {
+    value: 'ffs',
+    title: 'Facial Feminization (FFS)',
+    description: 'Forehead, jaw, nose, etc.',
+  },
+  {
+    value: 'orchiectomy',
+    title: 'Orchiectomy',
+    description: 'Surgical removal of testes',
+  },
+  {
+    value: 'other',
+    title: 'Other surgery',
+    description: 'Other gender-affirming procedure',
+  },
+] as const;
+
+type SurgeryValue = (typeof SURGERY_OPTIONS)[number]['value'];
+
+interface SurgeryData {
   date: Date | null;
-  month: number | null;
-  year: number | null;
-  fully_healed: boolean;
+  fullyHealed: boolean;
   notes: string;
 }
 
-interface SurgeryTypeOptionConfig {
-  value: SurgeryTypeOption;
-  title: string;
-  description?: string;
-}
+// Checkmark SVG Component
+const CheckmarkSVG = () => (
+  <Svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+    <Path
+      d="M3 8 L6.5 11.5 L13 5"
+      stroke="#0F1419"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
-const SURGERY_TYPE_OPTIONS: SurgeryTypeOptionConfig[] = [
-  { value: 'top_surgery', title: 'Top Surgery', description: '(Chest reconstruction, mastectomy)' },
-  { value: 'bottom_surgery', title: 'Bottom Surgery', description: '(Vaginoplasty, phalloplasty, metoidioplasty)' },
-  { value: 'ffs', title: 'Facial Feminization Surgery (FFS)' },
-  { value: 'orchiectomy', title: 'Orchiectomy' },
-  { value: 'other', title: 'Other surgery' },
-];
+// Calendar Icon Component
+const CalendarIcon = () => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M16 2V6"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M8 2V6"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M3 10H21"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
+// Info Icon Component
+const InfoIcon = () => (
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 16V12"
+      stroke="#5B9FFF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 8H12.01"
+      stroke="#5B9FFF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+      stroke="#5B9FFF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
-const generateYears = (): number[] => {
-  const currentYear = new Date().getFullYear();
-  const years: number[] = [];
-  for (let i = 0; i <= 10; i++) {
-    years.push(currentYear - i);
-  }
-  return years;
+// Close Icon Component
+const CloseIcon = () => (
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 6L6 18"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M6 6L18 18"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Helper: Calculate weeks post-op
+const calculateWeeksPostOp = (date: Date): number => {
+  const weeks = Math.floor((Date.now() - date.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  return Math.max(0, weeks);
 };
 
-const formatWeeksPostOp = (weeks: number | undefined): string => {
-  if (weeks === undefined) return '';
-  if (weeks === 0) return 'Less than 1 week post-op';
-  if (weeks < 4) {
-    return `You are approximately ${weeks} ${weeks === 1 ? 'week' : 'weeks'} post-op`;
+// Helper: Get recovery phase
+const getRecoveryPhase = (weeks: number) => {
+  if (weeks < 6) {
+    return {
+      phase: 'Early Recovery',
+      color: '#FF6B6B',
+      description: 'Focus on gentle movement and healing',
+    };
   }
-  const months = Math.floor(weeks / 4.33);
-  const remainingWeeks = Math.floor(weeks % 4.33);
-  if (months === 0) {
-    return `You are approximately ${weeks} ${weeks === 1 ? 'week' : 'weeks'} post-op`;
+  if (weeks < 12) {
+    return {
+      phase: 'Active Recovery',
+      color: '#FFB84D',
+      description: 'Gradually increasing activity with caution',
+    };
   }
-  if (remainingWeeks === 0) {
-    return `You are approximately ${months} ${months === 1 ? 'month' : 'months'} post-op (about ${weeks} ${weeks === 1 ? 'week' : 'weeks'})`;
-  }
-  return `You are approximately ${months} ${months === 1 ? 'month' : 'months'} post-op (about ${weeks} ${weeks === 1 ? 'week' : 'weeks'})`;
+  return {
+    phase: 'Late Recovery',
+    color: '#00D9C0',
+    description: 'Most exercises available with modifications',
+  };
+};
+
+// Helper: Format date as "January 2024"
+const formatDate = (date: Date): string => {
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
+  return `${months[date.getMonth()]} ${date.getFullYear()}`;
+};
+
+// Helper: Get date 10 years ago
+const getTenYearsAgo = (): Date => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 10);
+  return date;
 };
 
 export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>) {
   const { profile, updateProfile } = useProfile();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 375;
 
-  const [hasSurgeries, setHasSurgeries] = useState<SurgerySelection | null>(
-    profile?.surgeries && profile.surgeries.length > 0 ? 'yes' : profile?.surgeries?.length === 0 ? 'no' : null
+  const [hasSurgeries, setHasSurgeries] = useState<HasSurgeries>(
+    profile?.surgeries && profile.surgeries.length > 0
+      ? 'yes'
+      : profile?.surgeries?.length === 0
+        ? 'no'
+        : null
   );
+  const [selectedSurgeries, setSelectedSurgeries] = useState<SurgeryValue[]>([]);
+  const [surgeryData, setSurgeryData] = useState<Map<SurgeryValue, SurgeryData>>(new Map());
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [currentSurgery, setCurrentSurgery] = useState<SurgeryValue | null>(null);
+  const [tempDate, setTempDate] = useState<Date>(new Date());
 
-  const [selectedTypes, setSelectedTypes] = useState<SurgeryTypeOption[]>([]);
-  const [expandedSurgeries, setExpandedSurgeries] = useState<Set<SurgeryTypeOption>>(new Set());
-  const [showMonthPicker, setShowMonthPicker] = useState<SurgeryTypeOption | null>(null);
-  const [showYearPicker, setShowYearPicker] = useState<SurgeryTypeOption | null>(null);
-  const [surgeryForms, setSurgeryForms] = useState<Record<SurgeryTypeOption, SurgeryFormData>>({
-    top_surgery: { type: 'top_surgery', date: null, month: null, year: null, fully_healed: false, notes: '' },
-    bottom_surgery: { type: 'bottom_surgery', date: null, month: null, year: null, fully_healed: false, notes: '' },
-    ffs: { type: 'ffs', date: null, month: null, year: null, fully_healed: false, notes: '' },
-    orchiectomy: { type: 'orchiectomy', date: null, month: null, year: null, fully_healed: false, notes: '' },
-    other: { type: 'other', date: null, month: null, year: null, fully_healed: false, notes: '' },
-  });
-
-  const years = generateYears();
-
-  // Initialize from profile if available
+  // Initialize from profile
   useEffect(() => {
     if (profile?.surgeries && profile.surgeries.length > 0) {
-      const types = profile.surgeries.map(s => s.type);
-      setSelectedTypes(types);
-      
-      const forms: Record<SurgeryTypeOption, SurgeryFormData> = {
-        top_surgery: { type: 'top_surgery', date: null, month: null, year: null, fully_healed: false, notes: '' },
-        bottom_surgery: { type: 'bottom_surgery', date: null, month: null, year: null, fully_healed: false, notes: '' },
-        ffs: { type: 'ffs', date: null, month: null, year: null, fully_healed: false, notes: '' },
-        orchiectomy: { type: 'orchiectomy', date: null, month: null, year: null, fully_healed: false, notes: '' },
-        other: { type: 'other', date: null, month: null, year: null, fully_healed: false, notes: '' },
-      };
+      const types = profile.surgeries.map((s) => s.type) as SurgeryValue[];
+      setSelectedSurgeries(types);
 
-      profile.surgeries.forEach(surgery => {
-        const surgeryDate = new Date(surgery.date);
-        forms[surgery.type] = {
-          type: surgery.type,
-          date: surgery.date,
-          month: surgeryDate.getMonth(),
-          year: surgeryDate.getFullYear(),
-          fully_healed: surgery.fully_healed || false,
+      const data = new Map<SurgeryValue, SurgeryData>();
+      profile.surgeries.forEach((surgery) => {
+        data.set(surgery.type as SurgeryValue, {
+          date: surgery.date ? new Date(surgery.date) : null,
+          fullyHealed: surgery.fully_healed || false,
           notes: surgery.notes || '',
-        };
-        // Auto-expand surgeries that have data
-        setExpandedSurgeries(prev => new Set([...prev, surgery.type]));
+        });
       });
-
-      setSurgeryForms(forms);
+      setSurgeryData(data);
     }
   }, [profile]);
 
-  const toggleSurgeryType = (type: SurgeryTypeOption) => {
-    if (selectedTypes.includes(type)) {
-      setSelectedTypes(selectedTypes.filter(t => t !== type));
-      setExpandedSurgeries(prev => {
-        const next = new Set(prev);
-        next.delete(type);
-        return next;
-      });
-      // Clear form data for deselected type
-      setSurgeryForms(prev => ({
-        ...prev,
-        [type]: { type, date: null, month: null, year: null, fully_healed: false, notes: '' },
-      }));
+  // Initialize tempDate when opening picker
+  useEffect(() => {
+    if (showDatePicker && currentSurgery) {
+      const existing = surgeryData.get(currentSurgery);
+      setTempDate(existing?.date || new Date());
+    }
+  }, [showDatePicker, currentSurgery, surgeryData]);
+
+  const toggleSurgery = (surgery: SurgeryValue) => {
+    if (selectedSurgeries.includes(surgery)) {
+      setSelectedSurgeries(selectedSurgeries.filter((s) => s !== surgery));
+      const newData = new Map(surgeryData);
+      newData.delete(surgery);
+      setSurgeryData(newData);
     } else {
-      setSelectedTypes([...selectedTypes, type]);
-      // Auto-expand when selected
-      setExpandedSurgeries(prev => new Set([...prev, type]));
+      setSelectedSurgeries([...selectedSurgeries, surgery]);
+      const newData = new Map(surgeryData);
+      newData.set(surgery, { date: null, fullyHealed: false, notes: '' });
+      setSurgeryData(newData);
     }
   };
 
-  const toggleExpanded = (type: SurgeryTypeOption) => {
-    setExpandedSurgeries(prev => {
-      const next = new Set(prev);
-      if (next.has(type)) {
-        next.delete(type);
-      } else {
-        next.add(type);
-      }
-      return next;
-    });
+  const openDatePicker = (surgery: SurgeryValue) => {
+    setCurrentSurgery(surgery);
+    setShowDatePicker(true);
   };
 
-  const updateSurgeryMonth = (type: SurgeryTypeOption, month: number) => {
-    setSurgeryForms(prev => {
-      const form = prev[type];
-      const newDate = form.year !== null ? new Date(form.year, month, 1) : null;
-      return {
-        ...prev,
-        [type]: {
-          ...form,
-          month,
-          date: newDate,
-        },
-      };
-    });
-    setShowMonthPicker(null);
-  };
+  const handleDateConfirm = () => {
+    if (!currentSurgery) return;
 
-  const updateSurgeryYear = (type: SurgeryTypeOption, year: number) => {
-    setSurgeryForms(prev => {
-      const form = prev[type];
-      const newDate = form.month !== null ? new Date(year, form.month, 1) : null;
-      return {
-        ...prev,
-        [type]: {
-          ...form,
-          year,
-          date: newDate,
-        },
-      };
-    });
-    setShowYearPicker(null);
-  };
+    const today = new Date();
+    const tenYearsAgo = getTenYearsAgo();
 
-  const updateSurgeryNotes = (type: SurgeryTypeOption, notes: string) => {
-    // Limit to 500 characters
-    const trimmedNotes = notes.slice(0, 500);
-    setSurgeryForms(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        notes: trimmedNotes,
-      },
-    }));
-  };
-
-  const setFullyHealed = (type: SurgeryTypeOption, value: boolean) => {
-    setSurgeryForms(prev => ({
-      ...prev,
-      [type]: {
-        ...prev[type],
-        fully_healed: value,
-      },
-    }));
-  };
-
-
-  const calculateWeeksPostOp = (surgeryDate: Date | null): number | undefined => {
-    if (!surgeryDate) return undefined;
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - surgeryDate.getTime());
-    const diffWeeks = Math.floor(diffTime / (7 * 24 * 60 * 60 * 1000));
-    return diffWeeks;
-  };
-
-  const getRecoveryGuidance = (weeks: number | undefined): string => {
-    if (weeks === undefined) return '';
-    if (weeks < 6) {
-      return '🛑 Early Recovery Phase: We\'ll keep exercises very gentle and conservative';
-    } else if (weeks >= 6 && weeks < 12) {
-      return '⚠️ Active Recovery Phase: We\'ll avoid exercises that stress surgical sites';
-    } else {
-      return '✅ Late Recovery Phase: Most exercises will be available';
+    if (tempDate > today) {
+      setShowDatePicker(false);
+      return;
     }
+
+    if (tempDate < tenYearsAgo) {
+      setShowDatePicker(false);
+      return;
+    }
+
+    const newData = new Map(surgeryData);
+    const existing = newData.get(currentSurgery) || { date: null, fullyHealed: false, notes: '' };
+    newData.set(currentSurgery, { ...existing, date: tempDate });
+    setSurgeryData(newData);
+    setShowDatePicker(false);
   };
 
-  const validateSurgeryDate = (month: number | null, year: number | null): string | null => {
-    if (month === null || year === null) return null;
-    
-    const now = new Date();
-    const surgeryDate = new Date(year, month, 1);
-    const tenYearsAgo = new Date();
-    tenYearsAgo.setFullYear(now.getFullYear() - 10);
-
-    if (surgeryDate > now) {
-      return 'Date cannot be in the future';
-    }
-    if (surgeryDate < tenYearsAgo) {
-      return 'Date cannot be more than 10 years ago';
-    }
-    return null;
+  const updateFullyHealed = (surgery: SurgeryValue, fullyHealed: boolean) => {
+    const newData = new Map(surgeryData);
+    const existing = newData.get(surgery) || { date: null, fullyHealed: false, notes: '' };
+    newData.set(surgery, { ...existing, fullyHealed });
+    setSurgeryData(newData);
   };
 
-  const isSurgeryComplete = (type: SurgeryTypeOption): boolean => {
-    const form = surgeryForms[type];
-    return form.month !== null && form.year !== null && 
-           validateSurgeryDate(form.month, form.year) === null;
+  const updateNotes = (surgery: SurgeryValue, notes: string) => {
+    const newData = new Map(surgeryData);
+    const existing = newData.get(surgery) || { date: null, fullyHealed: false, notes: '' };
+    newData.set(surgery, { ...existing, notes });
+    setSurgeryData(newData);
   };
 
   const handleContinue = async () => {
+    if (hasSurgeries === null) return;
+
     try {
-      if (hasSurgeries === 'no') {
-        await updateProfile({
-          surgeries: [],
-        });
-      } else if (hasSurgeries === 'yes') {
-        const surgeries: SurgeryType[] = selectedTypes
-          .filter(type => surgeryForms[type].date !== null)
-          .map(type => {
-            const form = surgeryForms[type];
+      if (hasSurgeries === 'yes') {
+        const surgeries = selectedSurgeries
+          .map((type) => {
+            const data = surgeryData.get(type);
+            if (!data || !data.date) return null;
+
+            const weeksPostOp = calculateWeeksPostOp(data.date);
+
             return {
               type,
-              date: form.date!,
-              weeks_post_op: calculateWeeksPostOp(form.date),
-              fully_healed: form.fully_healed || undefined,
-              notes: form.notes || undefined,
+              date: data.date,
+              weeks_post_op: weeksPostOp,
+              fully_healed: data.fullyHealed,
+              notes: data.notes || undefined,
             };
-          });
+          })
+          .filter((s) => s !== null);
 
         await updateProfile({ surgeries });
+      } else {
+        await updateProfile({ surgeries: [] });
       }
 
       navigation.navigate('Goals');
@@ -279,794 +327,847 @@ export default function Surgery({ navigation }: OnboardingScreenProps<'Surgery'>
     }
   };
 
-  const canContinue = hasSurgeries !== null && 
-    (hasSurgeries === 'no' || (hasSurgeries === 'yes' && selectedTypes.length > 0 && 
-      selectedTypes.every(type => {
-        const form = surgeryForms[type];
-        return form.month !== null && form.year !== null && 
-               validateSurgeryDate(form.month, form.year) === null;
-      })));
+  const canContinue =
+    hasSurgeries !== null &&
+    (hasSurgeries === 'no' ||
+      (selectedSurgeries.length > 0 &&
+        selectedSurgeries.every((s) => {
+          const data = surgeryData.get(s);
+          return data && data.date !== null;
+        })));
 
-  // Check if any surgery is less than 12 weeks post-op
-  const hasRecentSurgery = hasSurgeries === 'yes' && selectedTypes.some(type => {
-    const weeksPostOp = calculateWeeksPostOp(surgeryForms[type].date);
-    return weeksPostOp !== undefined && weeksPostOp < 12;
-  });
+  const tenYearsAgo = getTenYearsAgo();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.m),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
-    >
-      <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>
-          Have you had any gender-affirming surgeries?
-        </Text>
-        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          This helps us adjust your program for post-surgical recovery.
-        </Text>
-      </View>
-
-      <ProgressIndicator
-        currentStep={4}
-        totalSteps={8}
-        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
-      />
-
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.section}>
-          <View style={styles.buttonGroup}>
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          <View style={styles.progressWrapper}>
+            <ProgressIndicator currentStep={4} totalSteps={8} />
+          </View>
+          <Text style={styles.headline}>
+            Have you had any gender-affirming surgeries?
+          </Text>
+          <Text style={styles.subheadline}>
+            This helps us adjust for post-surgical recovery
+          </Text>
+        </View>
+
+        {/* Segmented Control */}
+        <View style={styles.segmentedContainer}>
+          <View style={styles.segmentControl}>
             <TouchableOpacity
-              onPress={() => setHasSurgeries('yes')}
+              style={[styles.segment, hasSurgeries === 'yes' && styles.segmentActive]}
+              onPress={() => {
+                setHasSurgeries('yes');
+                if (hasSurgeries === 'no') {
+                  setSelectedSurgeries([]);
+                  setSurgeryData(new Map());
+                }
+              }}
               activeOpacity={0.7}
-              style={[
-                styles.largeButton,
-                hasSurgeries === 'yes' && styles.largeButtonSelected,
-              ]}
             >
               <Text
                 style={[
-                  styles.largeButtonText,
-                  hasSurgeries === 'yes' && styles.largeButtonTextSelected,
+                  styles.segmentText,
+                  hasSurgeries === 'yes' && styles.segmentTextActive,
                 ]}
               >
-                Yes, I've had surgery
+                Yes
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
+              style={[styles.segment, hasSurgeries === 'no' && styles.segmentActive]}
               onPress={() => {
                 setHasSurgeries('no');
-                setSelectedTypes([]);
-                setExpandedSurgeries(new Set());
+                setSelectedSurgeries([]);
+                setSurgeryData(new Map());
               }}
               activeOpacity={0.7}
-              style={[
-                styles.largeButton,
-                hasSurgeries === 'no' && styles.largeButtonSelected,
-              ]}
             >
               <Text
                 style={[
-                  styles.largeButtonText,
-                  hasSurgeries === 'no' && styles.largeButtonTextSelected,
+                  styles.segmentText,
+                  hasSurgeries === 'no' && styles.segmentTextActive,
                 ]}
               >
                 No / Not yet
               </Text>
             </TouchableOpacity>
           </View>
+        </View>
 
-          {hasSurgeries === 'yes' && (
-            <View style={styles.subsection}>
-              <Text style={styles.subsectionTitle}>Which surgeries have you had? (Select all that apply)</Text>
-              <View style={styles.surgeryCardsContainer}>
-                {SURGERY_TYPE_OPTIONS.map((option) => {
-                  const isSelected = selectedTypes.includes(option.value);
-                  const isExpanded = expandedSurgeries.has(option.value);
-                  const form = surgeryForms[option.value];
-                  const weeksPostOp = calculateWeeksPostOp(form.date);
-                  const recoveryGuidance = getRecoveryGuidance(weeksPostOp);
-                  const dateError = validateSurgeryDate(form.month, form.year);
-                  const isComplete = isSurgeryComplete(option.value);
-                  
-                  return (
-                    <View key={option.value} style={styles.surgeryCardWrapper}>
-                      <TouchableOpacity
-                        onPress={() => toggleSurgeryType(option.value)}
-                        activeOpacity={0.7}
+        {/* Conditional: Surgery Selection */}
+        {hasSurgeries === 'yes' && (
+          <>
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionLabel}>Which surgeries? (Select all)</Text>
+
+              {SURGERY_OPTIONS.map((surgery, index) => {
+                const isSelected = selectedSurgeries.includes(surgery.value);
+                const data = surgeryData.get(surgery.value);
+                const weeksPostOp = data?.date ? calculateWeeksPostOp(data.date) : 0;
+                const recoveryPhase = data?.date ? getRecoveryPhase(weeksPostOp) : null;
+                const timelinePosition = data?.date
+                  ? Math.min((weeksPostOp / 24) * 100, 100)
+                  : 0;
+
+                return (
+                  <View key={surgery.value}>
+                    {/* Checkbox Card */}
+                    <TouchableOpacity
+                      style={[
+                        styles.checkboxCard,
+                        isSelected && styles.checkboxCardSelected,
+                        index === SURGERY_OPTIONS.length - 1 && styles.lastCard,
+                      ]}
+                      onPress={() => toggleSurgery(surgery.value)}
+                      activeOpacity={0.8}
+                    >
+                      <View
                         style={[
-                          styles.surgeryCard,
-                          isSelected && styles.surgeryCardSelected,
+                          styles.checkbox,
+                          isSelected && styles.checkboxSelected,
                         ]}
                       >
-                        <View style={styles.surgeryCardCheckbox}>
-                          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                            {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                        {isSelected && <CheckmarkSVG />}
+                      </View>
+                      <View style={styles.textContainer}>
+                        <Text
+                          style={[
+                            styles.cardTitle,
+                            isSelected && styles.cardTitleSelected,
+                          ]}
+                        >
+                          {surgery.title}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.cardDescription,
+                            isSelected && styles.cardDescriptionSelected,
+                          ]}
+                        >
+                          {surgery.description}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    {/* Inline Expansion */}
+                    {isSelected && (
+                      <View style={styles.expansionContainer}>
+                        <View style={styles.expansionCard}>
+                          {/* Date Section */}
+                          <View style={styles.dateSection}>
+                            <Text style={styles.dateLabel}>Surgery Date</Text>
+                            <TouchableOpacity
+                              style={[
+                                styles.dateButton,
+                                data?.date && styles.dateButtonWithValue,
+                              ]}
+                              onPress={() => openDatePicker(surgery.value)}
+                              activeOpacity={0.8}
+                            >
+                              <Text
+                                style={[
+                                  styles.dateText,
+                                  !data?.date && styles.dateTextPlaceholder,
+                                ]}
+                              >
+                                {data?.date ? formatDate(data.date) : 'Select date'}
+                              </Text>
+                              <CalendarIcon />
+                            </TouchableOpacity>
                           </View>
-                        </View>
-                        <View style={styles.surgeryCardContent}>
-                          <View style={styles.surgeryCardTitleRow}>
-                            <Text style={[styles.surgeryCardTitle, isSelected && styles.surgeryCardTitleSelected]}>
-                              {option.title}
-                            </Text>
-                            {isSelected && isComplete && (
-                              <View style={styles.completeCheckmark}>
-                                <Text style={styles.completeCheckmarkText}>✓</Text>
-                              </View>
-                            )}
-                          </View>
-                          {option.description && (
-                            <Text style={[styles.surgeryCardDescription, isSelected && styles.surgeryCardDescriptionSelected]}>
-                              {option.description}
-                            </Text>
-                          )}
-                        </View>
-                      </TouchableOpacity>
 
-                      {/* Expandable Details Card */}
-                      {isSelected && (
-                        <View style={styles.expandableCard}>
-                          <TouchableOpacity
-                            onPress={() => toggleExpanded(option.value)}
-                            activeOpacity={0.7}
-                            style={styles.expandableHeader}
-                          >
-                            <Text style={styles.expandableHeaderTitle}>
-                              {option.title}
-                            </Text>
-                            <Text style={styles.expandableHeaderIcon}>
-                              {isExpanded ? '▲' : '▼'}
-                            </Text>
-                          </TouchableOpacity>
-
-                          {isExpanded && (
-                            <View style={styles.expandableContent}>
-                              <View style={styles.formField}>
-                                <Text style={styles.formLabel}>Surgery Date:</Text>
-                                <View style={styles.datePickerRow}>
-                                  <TouchableOpacity
-                                    onPress={() => setShowMonthPicker(option.value)}
-                                    style={styles.datePickerButton}
-                                  >
-                                    <Text style={styles.datePickerButtonText}>
-                                      {form.month !== null ? MONTHS[form.month] : 'Month'}
-                                    </Text>
-                                    <Text style={styles.datePickerArrow}>▼</Text>
-                                  </TouchableOpacity>
-
-                                  <TouchableOpacity
-                                    onPress={() => setShowYearPicker(option.value)}
-                                    style={styles.datePickerButton}
-                                  >
-                                    <Text style={styles.datePickerButtonText}>
-                                      {form.year !== null ? form.year.toString() : 'Year'}
-                                    </Text>
-                                    <Text style={styles.datePickerArrow}>▼</Text>
-                                  </TouchableOpacity>
-
-                                  <TouchableOpacity
-                                    style={styles.calendarButton}
-                                    onPress={() => {
-                                      // Calendar icon - could open native date picker if needed
-                                      // For now, just visual
-                                    }}
-                                  >
-                                    <Text style={styles.calendarIcon}>📅</Text>
-                                  </TouchableOpacity>
-                                </View>
-                              </View>
-
-                              <View style={styles.formField}>
-                                <Text style={styles.formLabel}>Status:</Text>
-                                <View style={styles.statusRow}>
-                                  <TouchableOpacity
-                                    onPress={() => setFullyHealed(option.value, true)}
-                                    activeOpacity={0.7}
-                                    style={styles.statusOption}
-                                  >
-                                    <View style={[styles.radioButton, form.fully_healed && styles.radioButtonSelected]}>
-                                      {form.fully_healed && <View style={styles.radioButtonInner} />}
-                                    </View>
-                                    <Text style={styles.statusLabel}>Fully healed</Text>
-                                  </TouchableOpacity>
-
-                                  <TouchableOpacity
-                                    onPress={() => setFullyHealed(option.value, false)}
-                                    activeOpacity={0.7}
-                                    style={styles.statusOption}
-                                  >
-                                    <View style={[styles.radioButton, !form.fully_healed && styles.radioButtonSelected]}>
-                                      {!form.fully_healed && <View style={styles.radioButtonInner} />}
-                                    </View>
-                                    <Text style={styles.statusLabel}>Still recovering</Text>
-                                  </TouchableOpacity>
-                                </View>
-                                {dateError && (
-                                  <Text style={styles.errorText}>{dateError}</Text>
-                                )}
-                              </View>
-
-                              {form.date && weeksPostOp !== undefined && (
-                                <>
-                                  <View style={styles.infoMessage}>
-                                    <Text style={styles.infoIcon}>💡</Text>
-                                    <Text style={styles.infoText}>
-                                      {formatWeeksPostOp(weeksPostOp)}
-                                    </Text>
-                                  </View>
-                                  {recoveryGuidance && (
-                                    <View style={styles.recoveryGuidance}>
-                                      <Text style={styles.recoveryGuidanceText}>
-                                        {recoveryGuidance}
-                                      </Text>
-                                    </View>
-                                  )}
-                                </>
-                              )}
-
-                              <View style={styles.formField}>
-                                <View style={styles.notesLabelRow}>
-                                  <Text style={styles.formLabel}>Optional Notes:</Text>
-                                  <Text style={styles.characterCount}>
-                                    {form.notes.length}/500
-                                  </Text>
-                                </View>
-                                <TextInput
-                                  style={styles.notesInput}
-                                  value={form.notes}
-                                  onChangeText={(text) => updateSurgeryNotes(option.value, text)}
-                                  placeholder="Any additional information..."
-                                  placeholderTextColor={palette.midGray}
-                                  multiline
-                                  numberOfLines={3}
-                                  textAlignVertical="top"
-                                  maxLength={500}
+                          {/* Recovery Timeline */}
+                          {data?.date && (
+                            <View style={styles.timelineContainer}>
+                              <Text style={styles.timelineLabel}>Recovery Progress</Text>
+                              <View style={styles.timelineBarContainer}>
+                                <View style={[styles.timelineSegment, styles.segment1]} />
+                                <View style={[styles.timelineSegment, styles.segment2]} />
+                                <View style={[styles.timelineSegment, styles.segment3]} />
+                                <View
+                                  style={[
+                                    styles.positionDot,
+                                    { left: `${timelinePosition}%` },
+                                  ]}
                                 />
                               </View>
+                              <Text style={styles.timelineDescription}>
+                                {recoveryPhase?.description}
+                              </Text>
                             </View>
                           )}
-                        </View>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
 
-              {selectedTypes.length > 0 && hasRecentSurgery && (
-                <View style={styles.warningBanner}>
-                  <Text style={styles.warningIcon}>⚠️</Text>
-                  <Text style={styles.warningMessage}>
-                    Important: Always follow your surgeon's specific guidance. We'll be conservative with exercise selection, but check with your surgeon before starting any new program.
+                          {/* Status Radio */}
+                          <View style={styles.statusSection}>
+                            <Text style={styles.statusLabel}>Current status</Text>
+                            <View style={styles.statusOptions}>
+                              <TouchableOpacity
+                                style={[
+                                  styles.statusRadio,
+                                  data?.fullyHealed && styles.statusRadioSelected,
+                                ]}
+                                onPress={() => updateFullyHealed(surgery.value, true)}
+                                activeOpacity={0.8}
+                              >
+                                <View
+                                  style={[
+                                    styles.radioCircle,
+                                    data?.fullyHealed && styles.radioCircleSelected,
+                                  ]}
+                                >
+                                  {data?.fullyHealed && <View style={styles.radioDot} />}
+                                </View>
+                                <Text
+                                  style={[
+                                    styles.radioText,
+                                    data?.fullyHealed && styles.radioTextSelected,
+                                  ]}
+                                >
+                                  Fully healed
+                                </Text>
+                              </TouchableOpacity>
+
+                              <TouchableOpacity
+                                style={[
+                                  styles.statusRadio,
+                                  !data?.fullyHealed && styles.statusRadioSelected,
+                                ]}
+                                onPress={() => updateFullyHealed(surgery.value, false)}
+                                activeOpacity={0.8}
+                              >
+                                <View
+                                  style={[
+                                    styles.radioCircle,
+                                    !data?.fullyHealed && styles.radioCircleSelected,
+                                  ]}
+                                >
+                                  {!data?.fullyHealed && <View style={styles.radioDot} />}
+                                </View>
+                                <Text
+                                  style={[
+                                    styles.radioText,
+                                    !data?.fullyHealed && styles.radioTextSelected,
+                                  ]}
+                                >
+                                  Still recovering
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+
+                          {/* Notes Input */}
+                          <View style={styles.notesSection}>
+                            <View style={styles.notesLabelRow}>
+                              <Text style={styles.notesLabel}>Notes</Text>
+                              <View style={styles.optionalBadge}>
+                                <Text style={styles.optionalBadgeText}>OPTIONAL</Text>
+                              </View>
+                            </View>
+                            <TextInput
+                              style={styles.notesInput}
+                              value={data?.notes || ''}
+                              onChangeText={(text) => updateNotes(surgery.value, text)}
+                              placeholder="Any additional details..."
+                              placeholderTextColor="#6B7280"
+                              multiline
+                              textAlignVertical="top"
+                            />
+                          </View>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Info Badge */}
+            <View style={styles.infoBadgeContainer}>
+              <View style={styles.infoBadge}>
+                <View style={styles.badgeIconContainer}>
+                  <InfoIcon />
+                </View>
+                <View style={styles.badgeTextContainer}>
+                  <Text style={styles.badgeTitle}>Recovery Timeline</Text>
+                  <Text style={styles.badgeDescription}>
+                    We'll adjust exercise selection based on your recovery phase
                   </Text>
                 </View>
-              )}
+              </View>
             </View>
-          )}
+          </>
+        )}
+
+        {/* Footer - Inside ScrollView (NOT sticky) */}
+        <View style={[styles.footerContainer, { paddingBottom: insets.bottom + 16 }]}>
+          <TouchableOpacity
+            style={[
+              styles.primaryButton,
+              canContinue && styles.buttonShadow,
+              !canContinue && styles.primaryButtonDisabled,
+            ]}
+            onPress={handleContinue}
+            disabled={!canContinue}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={canContinue ? ['#00D9C0', '#00B39D'] : ['#2A2F36', '#1A1F26']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
+            >
+              <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
+                Continue
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+          <Text style={styles.hintText}>
+            Your information is private and secure
+          </Text>
         </View>
       </ScrollView>
 
-      <View style={styles.ctaContainer}>
-        <PrimaryButton
-          onPress={handleContinue}
-          label="Continue"
-          disabled={!canContinue}
-        />
-        {!canContinue && hasSurgeries === 'yes' && (
-          <Text style={styles.hintText}>
-            Please select at least one surgery type and provide a date for each
-          </Text>
-        )}
-      </View>
-
-      {/* Month Picker Modal */}
+      {/* Date Picker Modal */}
       <Modal
-        visible={showMonthPicker !== null}
+        visible={showDatePicker}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowMonthPicker(null)}
+        onRequestClose={() => setShowDatePicker(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowMonthPicker(null)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Month</Text>
-            <FlatList
-              data={MONTHS}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  onPress={() => showMonthPicker && updateSurgeryMonth(showMonthPicker, index)}
-                  style={styles.modalItem}
-                >
-                  <Text style={styles.modalItemText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowDatePicker(false)}
+          />
+          <View
+            style={[
+              styles.modalContainer,
+              { paddingBottom: insets.bottom + 24 },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Surgery Date</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(false)}
+                activeOpacity={0.7}
+              >
+                <CloseIcon />
+              </TouchableOpacity>
+            </View>
 
-      {/* Year Picker Modal */}
-      <Modal
-        visible={showYearPicker !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowYearPicker(null)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowYearPicker(null)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Year</Text>
-            <FlatList
-              data={years}
-              keyExtractor={(item) => item.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => showYearPicker && updateSurgeryYear(showYearPicker, item)}
-                  style={styles.modalItem}
-                >
-                  <Text style={styles.modalItemText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                maximumDate={new Date()}
+                minimumDate={tenYearsAgo}
+                textColor="#FFFFFF"
+                themeVariant="dark"
+                onChange={(event, date) => {
+                  if (Platform.OS === 'android') {
+                    if (event.type === 'set' && date) {
+                      setTempDate(date);
+                      setShowDatePicker(false);
+                    } else if (event.type === 'dismissed') {
+                      setShowDatePicker(false);
+                    }
+                  } else {
+                    if (date) {
+                      setTempDate(date);
+                    }
+                  }
+                }}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleDateConfirm}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.confirmButtonText}>Confirm</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
-  },
-  header: {
-    marginBottom: spacing.l,
-    paddingTop: spacing.s,
-  },
-  headline: {
-    ...typography.h1,
-    textAlign: 'left',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.8,
-  },
-  headlineSmall: {
-    fontSize: 28,
-  },
-  subheadline: {
-    ...typography.bodyLarge,
-    textAlign: 'left',
-    color: palette.midGray,
-    lineHeight: 24,
-  },
-  subheadlineSmall: {
-    fontSize: 15,
+    backgroundColor: '#0F1419',
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: 0,
   },
-  section: {
-    marginBottom: spacing.xl,
+  header: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
   },
-  sectionHeader: {
-    marginBottom: spacing.m,
+  progressWrapper: {
+    marginBottom: 8,
   },
-  sectionTitle: {
-    ...typography.h2,
-    marginBottom: spacing.m,
-    color: palette.white,
-    letterSpacing: -0.5,
-  },
-  buttonGroup: {
-    gap: spacing.m,
-    marginBottom: spacing.m,
-  },
-  largeButton: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
-    borderWidth: 2,
-    borderColor: palette.border,
-    alignItems: 'center',
-    minHeight: 64,
-    justifyContent: 'center',
-  },
-  largeButtonSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
-  },
-  largeButtonText: {
-    ...typography.h3,
-    color: palette.white,
-  },
-  largeButtonTextSelected: {
-    color: palette.tealPrimary,
-  },
-  subsection: {
-    marginTop: spacing.l,
-    paddingTop: spacing.l,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-  },
-  subsectionTitle: {
-    ...typography.h3,
-    marginBottom: spacing.m,
-    color: palette.white,
-  },
-  surgeryCardsContainer: {
-    gap: spacing.m,
-    marginBottom: spacing.l,
-  },
-  surgeryCardWrapper: {
-    marginBottom: spacing.m,
-  },
-  surgeryCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
-    borderWidth: 2,
-    borderColor: palette.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.m,
-    minHeight: 80,
-  },
-  surgeryCardSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.darkerCard,
-  },
-  surgeryCardCheckbox: {
-    flexShrink: 0,
-  },
-  surgeryCardContent: {
-    flex: 1,
-  },
-  surgeryCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  surgeryCardTitle: {
-    ...typography.h3,
-    color: palette.white,
-    flex: 1,
-  },
-  surgeryCardTitleSelected: {
-    color: palette.tealPrimary,
-  },
-  completeCheckmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: palette.tealPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing.s,
-  },
-  completeCheckmarkText: {
-    color: palette.deepBlack,
-    fontSize: 14,
+  headline: {
+    fontSize: 28,
     fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 34,
+    letterSpacing: -0.4,
+    marginBottom: 8,
+    textAlign: 'left',
   },
-  surgeryCardDescription: {
-    ...typography.body,
-    color: palette.midGray,
-    lineHeight: 20,
+  subheadline: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#9CA3AF',
+    lineHeight: 22,
+    textAlign: 'left',
   },
-  surgeryCardDescriptionSelected: {
-    color: palette.lightGray,
+  segmentedContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
   },
-  expandableCard: {
-    marginTop: spacing.s,
-    backgroundColor: palette.darkerCard,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    overflow: 'hidden',
-  },
-  expandableHeader: {
+  segmentControl: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    backgroundColor: '#1A1F26',
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#2A2F36',
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.m,
-    backgroundColor: palette.darkCard,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+    minHeight: 44,
   },
-  expandableHeaderTitle: {
-    ...typography.h3,
-    color: palette.white,
-    fontWeight: '600',
+  segmentActive: {
+    backgroundColor: '#00D9C0',
   },
-  expandableHeaderIcon: {
-    ...typography.body,
-    color: palette.tealPrimary,
+  segmentText: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#9CA3AF',
   },
-  expandableContent: {
-    padding: spacing.m,
+  segmentTextActive: {
+    color: '#0F1419',
   },
-  statusRow: {
-    flexDirection: 'row',
-    gap: spacing.l,
-    marginTop: spacing.s,
+  sectionContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
-  statusOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s,
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'left',
   },
-  radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  checkboxCard: {
+    backgroundColor: '#1A1F26',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 2,
-    borderColor: palette.border,
-    backgroundColor: palette.darkerCard,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioButtonSelected: {
-    borderColor: palette.tealPrimary,
-  },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: palette.tealPrimary,
-  },
-  statusLabel: {
-    ...typography.body,
-    color: palette.white,
-  },
-  infoMessage: {
+    borderColor: '#2A2F36',
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.s,
-    backgroundColor: 'rgba(0, 204, 204, 0.1)',
-    borderRadius: 12,
-    padding: spacing.m,
-    marginTop: spacing.m,
-    marginBottom: spacing.m,
+    alignItems: 'center',
+    minHeight: 64,
   },
-  infoIcon: {
-    fontSize: 20,
-    flexShrink: 0,
+  checkboxCardSelected: {
+    borderColor: '#00D9C0',
+    backgroundColor: 'rgba(0, 217, 192, 0.08)',
   },
-  infoText: {
-    ...typography.body,
-    color: palette.tealPrimary,
-    flex: 1,
-    lineHeight: 20,
-  },
-  recoveryGuidance: {
-    backgroundColor: 'rgba(0, 204, 204, 0.1)',
-    borderRadius: 12,
-    padding: spacing.m,
-    marginTop: spacing.s,
-    marginBottom: spacing.m,
-    borderLeftWidth: 3,
-    borderLeftColor: palette.tealPrimary,
-  },
-  recoveryGuidanceText: {
-    ...typography.body,
-    color: palette.tealPrimary,
-    lineHeight: 20,
+  lastCard: {
+    marginBottom: 0,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: palette.border,
-    backgroundColor: palette.darkerCard,
-    alignItems: 'center',
+    borderColor: '#2A2F36',
+    marginRight: 16,
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   checkboxSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealPrimary,
+    borderColor: '#00D9C0',
+    backgroundColor: '#00D9C0',
   },
-  checkmark: {
-    color: palette.deepBlack,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  checkboxLabel: {
-    ...typography.body,
-    color: palette.lightGray,
+  textContainer: {
     flex: 1,
   },
-  checkboxLabelSelected: {
-    color: palette.white,
+  cardTitle: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#FFFFFF',
+    lineHeight: 22,
+    textAlign: 'left',
   },
-  formsContainer: {
-    gap: spacing.l,
-    marginTop: spacing.m,
+  cardTitleSelected: {
+    color: '#00D9C0',
   },
-  surgeryFormCard: {
-    backgroundColor: palette.darkerCard,
+  cardDescription: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#9CA3AF',
+    marginTop: 2,
+    lineHeight: 18,
+    textAlign: 'left',
+  },
+  cardDescriptionSelected: {
+    color: '#B8C5C5',
+  },
+  expansionContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  expansionCard: {
+    backgroundColor: '#151920',
     borderRadius: 12,
-    padding: spacing.m,
-    borderWidth: 1.5,
-    borderColor: palette.border,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#2A2F36',
   },
-  surgeryFormTitle: {
-    ...typography.h3,
-    color: palette.tealPrimary,
-    marginBottom: spacing.m,
+  dateSection: {
+    marginBottom: 20,
   },
-  formField: {
-    marginBottom: spacing.m,
-  },
-  formLabel: {
-    ...typography.bodySmall,
-    color: palette.midGray,
-    marginBottom: spacing.xs,
+  dateLabel: {
+    fontSize: 14,
     fontWeight: '600',
+    color: '#9CA3AF',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'left',
+  },
+  dateButton: {
+    backgroundColor: '#1A1F26',
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 52,
+  },
+  dateButtonWithValue: {
+    borderColor: '#00D9C0',
+  },
+  dateText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
+  },
+  dateTextPlaceholder: {
+    color: '#6B7280',
+    fontWeight: '400',
+  },
+  timelineContainer: {
+    marginBottom: 20,
+  },
+  timelineLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    marginBottom: 12,
+    textAlign: 'left',
+  },
+  timelineBarContainer: {
+    flexDirection: 'row',
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2A2F36',
+    overflow: 'visible',
+    marginBottom: 12,
+    position: 'relative',
+  },
+  timelineSegment: {
+    flex: 1,
+  },
+  segment1: {
+    backgroundColor: '#FF6B6B',
+  },
+  segment2: {
+    backgroundColor: '#FFB84D',
+  },
+  segment3: {
+    backgroundColor: '#00D9C0',
+  },
+  positionDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: '#0F1419',
+    position: 'absolute',
+    top: -4,
+    marginLeft: -8,
+  },
+  timelineDescription: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#B8C5C5',
+    lineHeight: 20,
+    textAlign: 'left',
+  },
+  statusSection: {
+    marginBottom: 20,
+  },
+  statusLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    marginBottom: 8,
+    textAlign: 'left',
+  },
+  statusOptions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  statusRadio: {
+    flex: 1,
+    backgroundColor: '#1A1F26',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  statusRadioSelected: {
+    borderColor: '#00D9C0',
+    backgroundColor: 'rgba(0, 217, 192, 0.08)',
+  },
+  radioCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioCircleSelected: {
+    borderColor: '#00D9C0',
+  },
+  radioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00D9C0',
+  },
+  radioText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#E0E4E8',
+    textAlign: 'left',
+  },
+  radioTextSelected: {
+    fontWeight: '600',
+    color: '#00D9C0',
+  },
+  notesSection: {
+    marginBottom: 0,
   },
   notesLabelRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: 8,
   },
-  characterCount: {
-    ...typography.caption,
-    color: palette.midGray,
-  },
-  errorText: {
-    ...typography.bodySmall,
-    color: palette.error,
-    marginTop: spacing.xs,
-  },
-  datePickerRow: {
-    flexDirection: 'row',
-    gap: spacing.s,
-    alignItems: 'center',
-  },
-  datePickerButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: palette.darkCard,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: spacing.m,
-    minHeight: 48,
-  },
-  datePickerButtonText: {
-    ...typography.body,
-    color: palette.white,
-  },
-  datePickerArrow: {
-    ...typography.body,
-    color: palette.midGray,
-    fontSize: 12,
-    marginLeft: spacing.xs,
-  },
-  calendarButton: {
-    width: 48,
-    height: 48,
-    backgroundColor: palette.darkCard,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  calendarIcon: {
-    fontSize: 20,
-  },
-  weeksPostOpText: {
-    ...typography.caption,
-    color: palette.tealPrimary,
-    marginTop: spacing.xs,
+  notesLabel: {
+    fontSize: 13,
     fontWeight: '600',
+    color: '#9CA3AF',
+    textAlign: 'left',
   },
-  contextMessage: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
-    marginTop: spacing.xs,
-    lineHeight: 18,
+  optionalBadge: {
+    backgroundColor: 'rgba(91, 159, 255, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
   },
-  warningBanner: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 184, 77, 0.15)',
-    borderLeftWidth: 4,
-    borderLeftColor: palette.warning,
-    borderRadius: 12,
-    padding: spacing.m,
-    marginBottom: spacing.l,
-    alignItems: 'flex-start',
-    gap: spacing.s,
-  },
-  warningIcon: {
-    fontSize: 20,
-    flexShrink: 0,
-  },
-  warningMessage: {
-    ...typography.bodySmall,
-    color: palette.warning,
-    flex: 1,
-    lineHeight: 18,
+  optionalBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#5B9FFF',
+    textTransform: 'uppercase',
   },
   notesInput: {
-    backgroundColor: palette.darkCard,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: spacing.m,
-    ...typography.body,
-    color: palette.white,
+    backgroundColor: '#1A1F26',
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: '#FFFFFF',
     minHeight: 80,
+    textAlignVertical: 'top',
+    textAlign: 'left',
   },
-  ctaContainer: {
-    marginTop: spacing.s,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
+  infoBadgeContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  infoBadge: {
+    backgroundColor: 'rgba(91, 159, 255, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#5B9FFF',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  badgeIconContainer: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
+    flexShrink: 0,
+  },
+  badgeTextContainer: {
+    flex: 1,
+  },
+  badgeTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#5B9FFF',
+    marginBottom: 4,
+    textAlign: 'left',
+  },
+  badgeDescription: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#B8C5C5',
+    lineHeight: 19,
+    textAlign: 'left',
+  },
+  footerContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 0,
+  },
+  primaryButton: {
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.4,
+  },
+  buttonShadow: {
+    shadowColor: '#00D9C0',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  buttonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 28,
+  },
+  buttonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F1419',
+  },
+  buttonTextDisabled: {
+    color: '#6B7280',
   },
   hintText: {
-    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#6B7280',
     textAlign: 'center',
-    color: palette.midGray,
-    marginTop: spacing.xs,
+    lineHeight: 18,
+    marginBottom: 24,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(15, 20, 25, 0.9)',
     justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: palette.darkCard,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '50%',
-    paddingTop: spacing.l,
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalContainer: {
+    backgroundColor: '#1A1F26',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
+    paddingHorizontal: 24,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
-    ...typography.h3,
-    color: palette.white,
-    textAlign: 'center',
-    marginBottom: spacing.m,
-    paddingHorizontal: spacing.l,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
   },
-  modalItem: {
-    padding: spacing.m,
-    paddingHorizontal: spacing.l,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+  datePickerContainer: {
+    marginVertical: 16,
+    width: '100%',
+    alignItems: 'center',
+    ...(Platform.OS === 'ios' && {
+      height: 216,
+      justifyContent: 'center',
+      backgroundColor: '#1A1F26',
+      borderRadius: 12,
+      overflow: 'hidden',
+    }),
   },
-  modalItemText: {
-    ...typography.body,
-    color: palette.white,
+  confirmButton: {
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#00D9C0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  confirmButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F1419',
   },
 });
-

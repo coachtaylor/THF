@@ -347,35 +347,35 @@ export default function BindingInfo({ navigation }: OnboardingScreenProps<'Bindi
               </View>
             </View>
           )}
-        </ScrollView>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[
-              styles.primaryButton,
-              canContinue && styles.buttonShadow,
-              !canContinue && styles.primaryButtonDisabled,
-            ]}
-            onPress={handleContinue}
-            disabled={!canContinue}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={canContinue ? ['#00D9C0', '#00B39D'] : ['#2A2F36', '#1A1F26']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.buttonGradient}
+          {/* Footer - Inside ScrollView */}
+          <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                canContinue && styles.buttonShadow,
+                !canContinue && styles.primaryButtonDisabled,
+              ]}
+              onPress={handleContinue}
+              disabled={!canContinue}
+              activeOpacity={0.8}
             >
-              <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
-                Continue
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <Text style={styles.hintText}>
-            Optional fields help us personalize your training
-          </Text>
-        </View>
+              <LinearGradient
+                colors={canContinue ? ['#00D9C0', '#00B39D'] : ['#2A2F36', '#1A1F26']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.buttonGradient}
+              >
+                <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
+                  Continue
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            <Text style={styles.hintText}>
+              Optional fields help us personalize your training
+            </Text>
+          </View>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 0,
   },
   segmentedContainer: {
     paddingHorizontal: 24,
@@ -685,10 +685,10 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 24,
+    marginTop: 24,
     borderTopWidth: 1,
     borderTopColor: '#2A2F36',
-    backgroundColor: '#0F1419',
   },
   primaryButton: {
     height: 56,

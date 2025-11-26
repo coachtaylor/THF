@@ -415,6 +415,12 @@ export function useWorkout() {
   return context;
 }
 
+// Safe version that returns null instead of throwing
+export function useWorkoutSafe() {
+  const context = useContext(WorkoutContext);
+  return context || null;
+}
+
 // Helper functions
 
 async function saveSetToDatabase(workoutId: string, setLog: SetLog): Promise<void> {

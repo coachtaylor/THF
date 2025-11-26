@@ -279,6 +279,15 @@ export type OnboardingStackParamList = {
     workout: Workout;
     planId?: string;
   };
+  WorkoutSummary: {
+    workoutData?: {
+      completedSets: any[];
+      workoutDuration: number;
+      totalExercises: number;
+      exercisesCompleted: number;
+      workoutName?: string;
+    };
+  };
 };
 
 export type OnboardingScreenProps<T extends keyof OnboardingStackParamList> = {

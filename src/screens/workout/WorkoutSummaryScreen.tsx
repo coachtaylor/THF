@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useWorkout } from '../../contexts/WorkoutContext';
+import { useWorkoutSafe } from '../../contexts/WorkoutContext';
 import { palette, spacing, typography } from '../../theme';
 import { useRoute } from '@react-navigation/native';
 
@@ -52,17 +52,21 @@ export default function WorkoutSummaryScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<WorkoutSummaryScreenNavigationProp>();
   const route = useRoute<WorkoutSummaryScreenRouteProp>();
-  const workoutContext = useWorkout();
   
-  // Use route params if available (from SessionPlayer), otherwise use context
+  // Use route params if available (from SessionPlayer), otherwise try context
   const routeData = route.params?.workoutData;
-  const workout = routeData ? null : workoutContext.workout;
-  const completedSets = routeData?.completedSets || workoutContext.completedSets;
-  const workoutDuration = routeData?.workoutDuration || workoutContext.workoutDuration;
-  const totalExercises = routeData?.totalExercises || workoutContext.totalExercises;
-  const exercisesCompleted = routeData?.exercisesCompleted || workoutContext.exercisesCompleted;
-  const completeWorkout = workoutContext.completeWorkout;
-  const clearWorkout = workoutContext.clearWorkout;
+  
+  // Use safe version of useWorkout that doesn't throw if WorkoutProvider isn't available
+  const workoutContext = useWorkoutSafe();
+  
+  // Use route params if available, otherwise fall back to context
+  const workout = routeData ? null : (workoutContext?.workout || null);
+  const completedSets = routeData?.completedSets || workoutContext?.completedSets || [];
+  const workoutDuration = routeData?.workoutDuration || workoutContext?.workoutDuration || 0;
+  const totalExercises = routeData?.totalExercises || workoutContext?.totalExercises || 0;
+  const exercisesCompleted = routeData?.exercisesCompleted || workoutContext?.exercisesCompleted || 0;
+  const completeWorkout = workoutContext?.completeWorkout || (() => {});
+  const clearWorkout = workoutContext?.clearWorkout || (() => {});
 
   const [rating, setRating] = useState<WorkoutRating | null>(null);
   const [notes, setNotes] = useState('');
