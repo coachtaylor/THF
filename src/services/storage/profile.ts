@@ -54,7 +54,18 @@ export async function getProfile(): Promise<Profile | null> {
 
     const result = resultRef.value;
     if (result) {
-      const profile: Profile = JSON.parse(result.profile_data || '{}');
+      const parsed = JSON.parse(result.profile_data || '{}');
+      // Convert date strings back to Date objects
+      if (parsed.created_at && typeof parsed.created_at === 'string') {
+        parsed.created_at = new Date(parsed.created_at);
+      }
+      if (parsed.updated_at && typeof parsed.updated_at === 'string') {
+        parsed.updated_at = new Date(parsed.updated_at);
+      }
+      if (parsed.hrt_start_date && typeof parsed.hrt_start_date === 'string') {
+        parsed.hrt_start_date = new Date(parsed.hrt_start_date);
+      }
+      const profile: Profile = parsed as Profile;
       // Ensure required fields are set from row data
       profile.id = result.id;
       if (result.email) profile.email = result.email;
@@ -91,7 +102,18 @@ export async function updateProfile(updates: Partial<Profile>): Promise<void> {
 
       let currentProfile: Profile;
       if (existing) {
-        currentProfile = JSON.parse(existing.profile_data || '{}');
+        const parsed = JSON.parse(existing.profile_data || '{}');
+        // Convert date strings back to Date objects
+        if (parsed.created_at && typeof parsed.created_at === 'string') {
+          parsed.created_at = new Date(parsed.created_at);
+        }
+        if (parsed.updated_at && typeof parsed.updated_at === 'string') {
+          parsed.updated_at = new Date(parsed.updated_at);
+        }
+        if (parsed.hrt_start_date && typeof parsed.hrt_start_date === 'string') {
+          parsed.hrt_start_date = new Date(parsed.hrt_start_date);
+        }
+        currentProfile = parsed as Profile;
         currentProfile.id = existing.id;
         if (existing.email) currentProfile.email = existing.email;
       } else {
@@ -101,7 +123,7 @@ export async function updateProfile(updates: Partial<Profile>): Promise<void> {
           user_id: updates.user_id || 'default-user',
           gender_identity: updates.gender_identity || 'nonbinary',
           primary_goal: updates.primary_goal || 'general_fitness',
-          fitness_experience: updates.fitness_experience || updates.fitness_level || 'beginner',
+          fitness_experience: (updates.fitness_experience || updates.fitness_level || 'beginner') as 'beginner' | 'intermediate' | 'advanced',
           workout_frequency: updates.workout_frequency ?? 3,
           session_duration: updates.session_duration ?? 30,
           binds_chest: updates.binds_chest ?? false,
@@ -114,23 +136,30 @@ export async function updateProfile(updates: Partial<Profile>): Promise<void> {
         };
       }
 
-      // Merge updates
+      // Merge updates - ALWAYS update the updated_at timestamp
       const updatedProfile: Profile = {
         ...currentProfile,
         ...updates,
         id: updates.id || currentProfile.id || 'default',
+        updated_at: new Date(), // Always update this timestamp
       };
 
-      // Save to database
-      const profileDataJson = JSON.stringify(updatedProfile);
-      const { id, email } = updatedProfile;
-
+      // Convert Date objects to ISO strings for JSON storage
+      const profileDataJson = JSON.stringify(updatedProfile, (key, value) => {
+        if (value instanceof Date) {
+          return value.toISOString();
+        }
+        return value;
+      });
       // Use prepared statement pattern for expo-sqlite
       const insertStmt = profileDb.prepareSync(
         `INSERT OR REPLACE INTO profiles_storage (id, email, profile_data, synced_at)
          VALUES (?, ?, ?, ?);`
       );
-      insertStmt.executeSync([id, email || null, profileDataJson, updatedProfile.synced_at || null]);
+      const idValue: string = updatedProfile.id || 'default';
+      const emailValue: string | null = updatedProfile.email ? String(updatedProfile.email) : null;
+      const syncedAtValue: string | null = updatedProfile.synced_at ? String(updatedProfile.synced_at) : null;
+      insertStmt.executeSync([idValue, emailValue, profileDataJson, syncedAtValue]);
       insertStmt.finalizeSync();
 
       console.log('✅ Profile updated:', updatedProfile);
@@ -174,6 +203,51 @@ export async function syncProfileToCloud(profile: Profile): Promise<void> {
     console.log('✅ Profile synced to Supabase');
   } catch (error) {
     console.error('❌ Error syncing profile to cloud:', error);
+    throw error;
+  }
+}
+
+// Add this function to inspect the database
+export async function debugProfileStorage(): Promise<void> {
+  try {
+    profileDb.withTransactionSync(() => {
+      // Check profiles_storage table
+      const stmt = profileDb.prepareSync(
+        'SELECT id, email, created_at, profile_data FROM profiles_storage;'
+      );
+      const rows = stmt.executeSync().getAllSync() as any[];
+      
+      console.log(`📊 Found ${rows.length} profile(s) in profiles_storage:`);
+      rows.forEach((row, index) => {
+        console.log(`\nProfile ${index + 1}:`);
+        console.log(`  ID: ${row.id}`);
+        console.log(`  Email: ${row.email || 'none'}`);
+        console.log(`  Created: ${row.created_at}`);
+        console.log(`  Data: ${row.profile_data ? JSON.parse(row.profile_data) : 'empty'}`);
+      });
+      stmt.finalizeSync();
+    });
+  } catch (error) {
+    console.error('❌ Error checking profile storage:', error);
+  }
+}
+
+/**
+ * Delete the current profile (resets onboarding status)
+ * After calling this, restart the app to see onboarding again
+ */
+export async function deleteProfile(): Promise<void> {
+  try {
+    profileDb.withTransactionSync(() => {
+      const deleteStmt = profileDb.prepareSync(
+        'DELETE FROM profiles_storage;'
+      );
+      deleteStmt.executeSync();
+      deleteStmt.finalizeSync();
+    });
+    console.log('✅ Profile deleted - onboarding will reset on next app start');
+  } catch (error) {
+    console.error('❌ Error deleting profile:', error);
     throw error;
   }
 }

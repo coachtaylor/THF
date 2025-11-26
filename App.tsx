@@ -34,11 +34,28 @@ export default function App() {
 
       // Check if user has completed onboarding
       const completed = await checkOnboardingStatus();
+      console.log('🔍 App initialization - Onboarding status:', completed);
+      
+      // Debug: Check what profile exists
+      const { getProfile, debugProfileStorage } = await import('./src/services/storage/profile');
+      const profile = await getProfile();
+      console.log('🔍 Current profile on app start:', profile ? 'EXISTS' : 'NULL');
+      if (profile) {
+        console.log('🔍 Profile fields check:');
+        console.log('  - gender_identity:', profile.gender_identity);
+        console.log('  - primary_goal:', profile.primary_goal);
+        console.log('  - fitness_experience:', profile.fitness_experience);
+        console.log('  - id:', profile.id || profile.user_id);
+      } else {
+        console.log('🔍 No profile found in database');
+      }
+      await debugProfileStorage();
+      
       setHasCompletedOnboarding(completed);
 
       setIsReady(true);
     } catch (error) {
-      console.error('App initialization failed:', error);
+      console.error('❌ App initialization failed:', error);
       setIsReady(true); // Still show app even if initialization fails
     }
   };
@@ -46,6 +63,9 @@ export default function App() {
   if (!isReady) {
     return null; // Or loading screen
   }
+
+  console.log('🔍 App render - hasCompletedOnboarding:', hasCompletedOnboarding);
+  console.log('🔍 App render - Rendering:', hasCompletedOnboarding ? 'MainNavigator' : 'OnboardingNavigator');
 
   return (
     <SafeAreaProvider style={{ backgroundColor: theme.colors.background }}>
