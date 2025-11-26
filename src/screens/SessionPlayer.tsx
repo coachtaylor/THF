@@ -1,10 +1,13 @@
 // src/screens/SessionPlayer.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Alert } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Modal, Portal, Card } from 'react-native-paper';
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
+import Slider from '@react-native-community/slider';
 import { Workout, ExerciseInstance } from '../types/plan';
 import { Exercise } from '../types';
 import { CompletedSet, TimerFormat } from '../types/session';
@@ -24,8 +27,8 @@ import { fetchAllExercises } from '../services/exerciseService';
 import { useProfile } from '../hooks/useProfile';
 import { getCachedVideo, cacheVideo } from '../services/videoCache';
 import { palette, spacing, typography } from '../theme';
-import { useWorkout } from '../contexts/WorkoutContext';
 import type { OnboardingScreenProps } from '../types/onboarding';
+import { CommonActions } from '@react-navigation/native';
 
 type WorkoutPhase = 'warm-up' | 'main' | 'cool-down';
 
@@ -70,10 +73,35 @@ interface ExerciseInstanceWithData extends ExerciseInstance {
   exercise: Exercise;
 }
 
+// SVG Icon Components
+const PlayIconSVG = () => (
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Path d="M8 5 L19 12 L8 19 Z" fill="#0F1419" />
+  </Svg>
+);
+
+const CheckmarkSVG = () => (
+  <Svg width={18} height={18} viewBox="0 0 18 18" fill="none">
+    <Path
+      d="M3 9 L7 13 L15 5"
+      stroke="#0F1419"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Helper Functions
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 export default function SessionPlayer({ navigation, route }: SessionPlayerProps) {
   const { workout, planId = 'default', warmUp, coolDown, safetyCheckpoints = [] } = route.params;
   const { profile } = useProfile();
-  const { startWorkout } = useWorkout();
   const insets = useSafeAreaInsets();
 
   const [phase, setPhase] = useState<WorkoutPhase>(warmUp ? 'warm-up' : 'main');
@@ -100,6 +128,12 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
   const totalElapsedSecondsRef = useRef(0);
   const elapsedTimeIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // New state for main phase UI
+  const [reps, setReps] = useState(10);
+  const [weight, setWeight] = useState(0);
+  const [rpe, setRpe] = useState(7);
+  const [restSeconds, setRestSeconds] = useState(0);
 
   // Load exercise data
   useEffect(() => {
@@ -150,6 +184,61 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       setVideoUri(null);
     }
   }, [phase, currentExerciseIndex, profile?.low_sensory_mode]);
+
+  // Ref to store rest timer completion callback (avoids hook order issues)
+  const restTimerCompleteCallbackRef = useRef<(() => void) | null>(null);
+
+  // Sync reps state when exercise changes (only in main phase)
+  useEffect(() => {
+    if (phase === 'main' && exercises.length > 0 && currentExerciseIndex < exercises.length) {
+      const instance = exercises[currentExerciseIndex];
+      if (instance) {
+        setReps(instance.reps || 10);
+        setWeight(0);
+        setRpe(7);
+      }
+    }
+  }, [phase, currentExerciseIndex, exercises.length]);
+
+  // Store completion callback in ref (moved to top to avoid hook order issues)
+  // This will be updated when handleRestTimerComplete is defined
+  useEffect(() => {
+    // This effect runs on every render to keep the ref up to date
+    // handleRestTimerComplete will be defined later, but we'll update the ref there
+  });
+
+  // Update rest timer (moved to top to avoid hook order issues)
+  useEffect(() => {
+    if (phase === 'main' && showRestTimer && exercises.length > 0 && currentExerciseIndex < exercises.length) {
+      const instance = exercises[currentExerciseIndex];
+      if (instance) {
+        const initialSeconds = instance.restSeconds || 60;
+        setRestSeconds(initialSeconds);
+        
+        const interval = setInterval(() => {
+          setRestSeconds(prev => {
+            if (prev <= 1) {
+              clearInterval(interval);
+              setShowRestTimer(false);
+              // Call completion callback if available (will be set by handleRestTimerComplete)
+              setTimeout(() => {
+                if (restTimerCompleteCallbackRef.current) {
+                  restTimerCompleteCallbackRef.current();
+                }
+              }, 0);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+
+        return () => clearInterval(interval);
+      }
+    } else if (phase === 'main' && !showRestTimer && restSeconds > 0) {
+      // Reset when rest timer is hidden
+      setRestSeconds(0);
+    }
+  }, [phase, showRestTimer, currentExerciseIndex, exercises.length]);
 
   const loadExercises = async () => {
     try {
@@ -479,6 +568,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     setCurrentSetBeingCompleted(null);
   };
 
+  // Update ref with completion callback (safe to do in render since it's not a hook)
+  restTimerCompleteCallbackRef.current = handleRestTimerComplete;
+
   const handleMainWorkoutComplete = () => {
     if (coolDown) {
       setPhase('cool-down');
@@ -578,7 +670,8 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
     // Navigate to summary screen with data
     console.log('🧭 Navigating to WorkoutSummaryScreen');
-    navigation.replace('WorkoutSummary', {
+    // WorkoutSummary is now in both OnboardingNavigator and MainNavigator
+    navigation.navigate('WorkoutSummary', {
       workoutData: {
         completedSets: contextSets,
         workoutDuration: durationSeconds,
@@ -631,6 +724,43 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     }
   };
 
+  // Handle back button with confirmation
+  const handleBack = () => {
+    if (completedSets.length > 0) {
+      Alert.alert('End Workout?', 'Progress will be saved but workout incomplete.', [
+        { text: 'Keep Going', style: 'cancel' },
+        { text: 'End Workout', style: 'destructive', onPress: () => navigation.goBack() },
+      ]);
+    } else {
+      navigation.goBack();
+    }
+  };
+
+  // Handle video play
+  const handlePlayVideo = () => {
+    if (videoUri) {
+      setShowCuesModal(true);
+    }
+  };
+
+  // Handle skip set
+  const handleSkipSet = () => {
+    // Move to next set or exercise
+    const completedSetsForExercise = completedSets.filter(
+      set => set.exerciseId === currentExercise.id
+    );
+    if (completedSetsForExercise.length >= totalSets) {
+      // Move to next exercise
+      if (currentExerciseIndex < exercises.length - 1) {
+        setCurrentExerciseIndex(prev => prev + 1);
+        setCurrentRPE(null);
+      } else {
+        handleMainWorkoutComplete();
+      }
+    }
+  };
+
+
   // Note: Navigation now happens directly in handleWorkoutComplete
   // This useEffect is no longer needed but kept for backwards compatibility
 
@@ -645,6 +775,349 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     );
   }
 
+  // Calculate progress
+  const progress = ((currentExerciseIndex + 1) / exercises.length) * 100;
+  const totalElapsedSeconds = totalElapsedSecondsRef.current;
+
+  // Render main phase with new design
+  if (phase === 'main') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <SafetyCheckpointModal
+          visible={showSafetyCheckpoint}
+          message={safetyCheckpoints[0]?.message || 'Time for a binder break'}
+          breakDurationMinutes={10}
+          onStartBreak={handleStartBreak}
+          onTakeBreakLater={handleTakeBreakLater}
+        />
+        
+        {/* Header */}
+        <View style={[styles.newHeader, { paddingTop: insets.top + 8 }]}>
+          <TouchableOpacity onPress={handleBack}>
+            <Ionicons name="arrow-back" size={24} color={palette.white} />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.workoutTimer}>{formatTime(totalElapsedSeconds)}</Text>
+            <Text style={styles.timerLabel}>Total Time</Text>
+          </View>
+          <TouchableOpacity style={styles.menuButton}>
+            <Ionicons name="ellipsis-horizontal" size={24} color={palette.white} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressInfoRow}>
+            <Text style={styles.progressText}>
+              {currentExerciseIndex + 1} / {exercises.length} exercises
+            </Text>
+            <Text style={styles.progressText}>{Math.round(progress)}%</Text>
+          </View>
+          <View style={styles.progressBarTrack}>
+            <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+          </View>
+        </View>
+
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {/* Exercise Card */}
+          <View style={styles.exerciseCard}>
+            <Text style={styles.exerciseName}>{currentExercise.name}</Text>
+            
+            {currentExercise.target_muscle && (
+              <View style={styles.targetBadge}>
+                <Text style={styles.targetBadgeText}>{currentExercise.target_muscle}</Text>
+              </View>
+            )}
+
+            {/* Video Thumbnail */}
+            {!profile?.low_sensory_mode && (
+              <TouchableOpacity style={styles.videoContainer} onPress={handlePlayVideo}>
+                {loadingVideo ? (
+                  <View style={styles.videoThumbnail}>
+                    <ActivityIndicator size="large" color={palette.tealPrimary} />
+                  </View>
+                ) : videoUri ? (
+                  <Video
+                    source={{ uri: videoUri }}
+                    style={styles.video}
+                    useNativeControls={false}
+                    resizeMode={ResizeMode.COVER}
+                    isLooping
+                    shouldPlay
+                    isMuted
+                  />
+                ) : (currentExercise.videoUrl || currentExercise.video_url) ? (
+                  <View style={styles.videoThumbnail}>
+                    <View style={styles.videoPlaceholder}>
+                      <Ionicons name="videocam-outline" size={48} color="#6B7280" />
+                      <Text style={styles.videoPlaceholderText}>Loading video...</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.videoThumbnail}>
+                    <View style={styles.videoPlaceholder}>
+                      <Ionicons name="videocam-off-outline" size={48} color="#6B7280" />
+                      <Text style={styles.videoPlaceholderText}>No video available</Text>
+                    </View>
+                  </View>
+                )}
+                {videoUri && (
+                  <View style={styles.playOverlay}>
+                    <View style={styles.playButtonCircle}>
+                      <PlayIconSVG />
+                    </View>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Set Info */}
+            <Text style={styles.setInfoText}>
+              Set {currentExerciseSets.length + 1} of {totalSets}
+            </Text>
+          </View>
+
+          {/* Input Controls */}
+          <View style={styles.controlsContainer}>
+            {/* Reps */}
+            <View style={styles.inputSection}>
+              <Text style={styles.inputLabel}>Reps Completed</Text>
+              <View style={styles.numberInputContainer}>
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() => setReps(Math.max(1, reps - 1))}
+                >
+                  <Text style={styles.numberButtonText}>−</Text>
+                </TouchableOpacity>
+                <View style={styles.numberDisplay}>
+                  <Text style={styles.numberText}>{reps}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() => setReps(reps + 1)}
+                >
+                  <Text style={styles.numberButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Weight */}
+            <View style={styles.inputSection}>
+              <Text style={styles.inputLabel}>Weight (lbs)</Text>
+              <View style={styles.numberInputContainer}>
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() => setWeight(Math.max(0, weight - 5))}
+                >
+                  <Text style={styles.numberButtonText}>−5</Text>
+                </TouchableOpacity>
+                <View style={styles.numberDisplay}>
+                  <Text style={styles.numberText}>{weight}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.numberButton}
+                  onPress={() => setWeight(weight + 5)}
+                >
+                  <Text style={styles.numberButtonText}>+5</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* RPE Slider */}
+            <View style={styles.rpeContainer}>
+              <Text style={styles.inputLabel}>How Hard Was It?</Text>
+              <View style={styles.rpeValueContainer}>
+                <Text style={styles.rpeValueText}>{rpe}</Text>
+              </View>
+              <Slider
+                value={rpe}
+                onValueChange={setRpe}
+                minimumValue={1}
+                maximumValue={10}
+                step={1}
+                minimumTrackTintColor="#00D9C0"
+                maximumTrackTintColor="#2A2F36"
+                thumbTintColor="#00D9C0"
+                style={styles.rpeSlider}
+              />
+              <View style={styles.rpeLabelsRow}>
+                <Text style={styles.rpeLabel}>Easy</Text>
+                <Text style={styles.rpeLabel}>Moderate</Text>
+                <Text style={styles.rpeLabel}>Max Effort</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Previous Sets */}
+          {currentExerciseSets.length > 0 && (
+            <View style={styles.previousSetsContainer}>
+              <Text style={styles.previousSetsTitle}>Previous Sets</Text>
+              {currentExerciseSets.map((set, index) => (
+                <View key={index} style={styles.setHistoryCard}>
+                  <Text style={styles.setHistoryText}>
+                    Set {set.setNumber}: {set.reps} reps × {set.weight} lbs • RPE {set.rpe}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Actions Row */}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.secondaryButton} onPress={handleSkipSet}>
+            <Text style={styles.secondaryButtonText}>Skip Set</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => setShowCuesModal(true)}
+          >
+            <Text style={styles.secondaryButtonText}>View Cues</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Complete Button */}
+        <View style={styles.completeButtonContainer}>
+          <TouchableOpacity
+            style={styles.completeButton}
+            onPress={() => handleSetComplete(reps, weight, rpe)}
+          >
+            <LinearGradient
+              colors={['#00D9C0', '#00B39D']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.completeButtonGradient}
+            >
+              <CheckmarkSVG />
+              <Text style={styles.completeButtonText}>Complete Set</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+
+        {/* Rest Timer Overlay */}
+        {showRestTimer && (
+          <View style={styles.restOverlay}>
+            <View style={styles.restCard}>
+              <Text style={styles.restTitle}>Rest</Text>
+              <Text style={styles.restTimerText}>{formatTime(restSeconds)}</Text>
+              <TouchableOpacity
+                style={styles.skipRestButton}
+                onPress={handleRestTimerComplete}
+              >
+                <Text style={styles.skipRestButtonText}>Skip Rest</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {/* Swap Drawer */}
+        <SwapDrawer
+          visible={showSwapDrawer}
+          onDismiss={() => setShowSwapDrawer(false)}
+          exercise={currentExercise}
+          onSwapSelect={handleSwapSelect}
+        />
+
+        {/* Skip Exercise Confirmation Modal */}
+        <Portal>
+          <Modal
+            visible={showSkipExerciseModal}
+            onDismiss={cancelSkipExercise}
+            contentContainerStyle={styles.modalContainer}
+          >
+            <Card style={styles.modalCard}>
+              <Card.Title
+                title="Skip Exercise?"
+                titleStyle={styles.modalTitle}
+              />
+              <Card.Content>
+                <Text style={styles.modalText}>
+                  Are you sure you want to skip <Text style={styles.modalBold}>{currentExercise?.name}</Text>?
+                </Text>
+                <Text style={styles.modalSubtext}>
+                  You can always come back to this exercise later. Your progress will be saved.
+                </Text>
+              </Card.Content>
+              <Card.Actions>
+                <Button onPress={cancelSkipExercise}>Cancel</Button>
+                <Button
+                  mode="contained"
+                  onPress={confirmSkipExercise}
+                  buttonColor={palette.error}
+                >
+                  Skip Exercise
+                </Button>
+              </Card.Actions>
+            </Card>
+          </Modal>
+        </Portal>
+
+        {/* Cues Modal */}
+        <Portal>
+          <Modal
+            visible={showCuesModal}
+            onDismiss={() => setShowCuesModal(false)}
+            contentContainerStyle={styles.modalContainer}
+          >
+            <Card style={styles.modalCard}>
+              <Card.Title
+                title={currentExercise.name}
+                titleStyle={styles.modalTitle}
+              />
+              <Card.Content>
+                <ScrollView style={styles.modalScrollView}>
+                  {currentExercise.neutral_cues && currentExercise.neutral_cues.length > 0 && (
+                    <View style={styles.modalSection}>
+                      <Text style={styles.modalSectionTitle}>Neutral Cues</Text>
+                      {currentExercise.neutral_cues.map((cue: string, index: number) => (
+                        <Text key={index} style={styles.modalListItem}>
+                          • {cue}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+
+                  {currentExercise.breathing_cues && currentExercise.breathing_cues.length > 0 && (
+                    <View style={styles.modalSection}>
+                      <Text style={styles.modalSectionTitle}>Breathing Cues</Text>
+                      {currentExercise.breathing_cues.map((cue: string, index: number) => (
+                        <Text key={index} style={styles.modalListItem}>
+                          • {cue}
+                        </Text>
+                      ))}
+                    </View>
+                  )}
+
+                  {(currentExercise.trans_notes?.binder || currentExercise.trans_notes?.pelvic_floor) && (
+                    <View style={styles.modalTransNotes}>
+                      <Text style={styles.modalTransNotesTitle}>Trans-Specific Notes</Text>
+                      {currentExercise.trans_notes?.binder && (
+                        <Text style={styles.modalTransNotesItem}>
+                          <Text style={styles.modalTransNoteLabel}>Binder:</Text>{' '}
+                          {currentExercise.trans_notes.binder}
+                        </Text>
+                      )}
+                      {currentExercise.trans_notes?.pelvic_floor && (
+                        <Text style={styles.modalTransNotesItem}>
+                          <Text style={styles.modalTransNoteLabel}>Pelvic Floor:</Text>{' '}
+                          {currentExercise.trans_notes.pelvic_floor}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+                </ScrollView>
+              </Card.Content>
+              <Card.Actions>
+                <Button onPress={() => setShowCuesModal(false)}>Close</Button>
+              </Card.Actions>
+            </Card>
+          </Modal>
+        </Portal>
+      </SafeAreaView>
+    );
+  }
+
+  // Original rendering for non-main phases (warm-up, cool-down)
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, spacing.l) }]}>
       <SafetyCheckpointModal
@@ -895,8 +1368,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.l,
-    paddingVertical: spacing.m,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    backgroundColor: palette.deepBlack,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1F26',
     borderBottomWidth: 1,
     borderBottomColor: palette.border,
   },
@@ -1094,6 +1570,408 @@ const styles = StyleSheet.create({
   errorText: {
     color: palette.error,
     marginBottom: spacing.m,
+  },
+  // New styles for redesigned main phase
+  newHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  workoutTimer: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: palette.white,
+  },
+  timerLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  menuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#1A1F26',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+    backgroundColor: palette.deepBlack,
+  },
+  progressInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#E0E4E8',
+    letterSpacing: 0.2,
+  },
+  progressBarTrack: {
+    height: 10,
+    backgroundColor: '#1A1F26',
+    borderRadius: 5,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#2A2F36',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#00D9C0',
+    borderRadius: 5,
+    shadowColor: '#00D9C0',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+  },
+  exerciseCard: {
+    backgroundColor: '#1A1F26',
+    borderRadius: 20,
+    padding: 24,
+    marginHorizontal: 20,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: '#2A2F36',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  exerciseName: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: palette.white,
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  targetBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(167, 139, 250, 0.15)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(167, 139, 250, 0.3)',
+  },
+  targetBadgeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#A78BFA',
+    letterSpacing: 0.3,
+  },
+  videoContainer: {
+    width: '100%',
+    height: 220,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#0F1419',
+    marginBottom: 20,
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#1A1F26',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+  },
+  videoThumbnail: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0F1419',
+  },
+  videoPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  videoPlaceholderText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 8,
+  },
+  playOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  playButtonCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(0, 217, 192, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#00D9C0',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  setInfoText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  controlsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  inputSection: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#E0E4E8',
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
+  numberInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  numberButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#1A1F26',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A2F36',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  numberButtonText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: palette.white,
+  },
+  numberDisplay: {
+    minWidth: 110,
+    height: 72,
+    backgroundColor: '#0F1419',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A2F36',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  numberText: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: palette.white,
+    letterSpacing: -0.5,
+  },
+  rpeContainer: {
+    marginBottom: 32,
+    backgroundColor: '#1A1F26',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#2A2F36',
+  },
+  rpeValueContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingVertical: 4,
+  },
+  rpeValueText: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: '#00D9C0',
+    letterSpacing: -1,
+    textShadowColor: 'rgba(0, 217, 192, 0.2)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  rpeSlider: {
+    width: '100%',
+    height: 40,
+    marginBottom: 10,
+  },
+  rpeLabelsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+  },
+  rpeLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+    letterSpacing: 0.2,
+  },
+  previousSetsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  previousSetsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: palette.white,
+    marginBottom: 16,
+    letterSpacing: 0.3,
+  },
+  setHistoryCard: {
+    backgroundColor: '#1A1F26',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2A2F36',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  setHistoryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#E0E4E8',
+    letterSpacing: 0.2,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 12,
+  },
+  secondaryButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#1A1F26',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2A2F36',
+  },
+  secondaryButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: palette.white,
+  },
+  completeButtonContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 24,
+    backgroundColor: palette.deepBlack,
+    borderTopWidth: 1,
+    borderTopColor: '#1A1F26',
+  },
+  completeButton: {
+    height: 64,
+    borderRadius: 32,
+    overflow: 'hidden',
+    shadowColor: '#00D9C0',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  completeButtonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  completeButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F1419',
+  },
+  restOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 20, 25, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  restCard: {
+    backgroundColor: '#1A1F26',
+    borderRadius: 24,
+    padding: 40,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    minWidth: 300,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  restTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#E0E4E8',
+    marginBottom: 24,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  restTimerText: {
+    fontSize: 72,
+    fontWeight: '800',
+    color: '#00D9C0',
+    marginBottom: 32,
+    letterSpacing: -2,
+    textShadowColor: 'rgba(0, 217, 192, 0.4)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 12,
+  },
+  skipRestButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: '#2A2F36',
+    borderWidth: 1,
+    borderColor: '#3A3F46',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  skipRestButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: palette.white,
+    letterSpacing: 0.3,
   },
 });
 

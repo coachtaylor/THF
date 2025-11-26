@@ -1,124 +1,163 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path, Circle } from 'react-native-svg';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
-import { palette, spacing, typography } from '../../../theme';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import PrimaryButton from '../../../components/ui/PrimaryButton';
 
-type FitnessExperience = 'beginner' | 'intermediate' | 'advanced';
-type WorkoutFrequency = 3 | 4 | 5 | 6;
-type SessionDuration = 30 | 45 | 60 | 90;
-
-interface ExperienceOption {
-  value: FitnessExperience;
-  title: string;
-  description: string;
-}
-
-const EXPERIENCE_OPTIONS: ExperienceOption[] = [
-  {
-    value: 'beginner',
-    title: 'Beginner',
-    description: 'New to structured fitness or returning after a long break',
-  },
-  {
-    value: 'intermediate',
-    title: 'Intermediate',
-    description: '6+ months of consistent training',
-  },
-  {
-    value: 'advanced',
-    title: 'Advanced',
-    description: '2+ years of structured training experience',
-  },
+// Experience options
+const EXPERIENCE_OPTIONS = [
+  { value: 'beginner', title: 'Beginner', description: 'New to fitness or returning after a break' },
+  { value: 'intermediate', title: 'Intermediate', description: '6+ months of consistent training' },
+  { value: 'advanced', title: 'Advanced', description: '2+ years of structured training' },
 ];
 
+// Equipment options (display names)
 const EQUIPMENT_OPTIONS = [
-  'bodyweight',
-  'dumbbells',
-  'barbell',
-  'kettlebell',
-  'bands',
-  'pull_up_bar',
-  'bench',
-  'step',
-  'wall',
-  'chair',
-  'mat',
-  'other',
+  'Bodyweight',
+  'Dumbbells',
+  'Barbell',
+  'Kettlebell',
+  'Resistance Bands',
+  'Pull-up Bar',
+  'Bench',
+  'Yoga Mat',
+  'Step',
+  'Wall',
+  'Chair',
 ];
 
-const EQUIPMENT_LABELS: Record<string, string> = {
-  bodyweight: 'Bodyweight',
-  dumbbells: 'Dumbbells',
-  barbell: 'Barbell',
-  kettlebell: 'Kettlebell',
-  bands: 'Resistance Bands',
-  pull_up_bar: 'Pull-up Bar',
-  bench: 'Bench',
-  step: 'Step',
-  wall: 'Wall',
-  chair: 'Chair',
-  mat: 'Mat',
-  other: 'Other',
+// Map display names to internal values
+const EQUIPMENT_MAP: Record<string, string> = {
+  'Bodyweight': 'bodyweight',
+  'Dumbbells': 'dumbbells',
+  'Barbell': 'barbell',
+  'Kettlebell': 'kettlebell',
+  'Resistance Bands': 'bands',
+  'Pull-up Bar': 'pull_up_bar',
+  'Bench': 'bench',
+  'Yoga Mat': 'mat',
+  'Step': 'step',
+  'Wall': 'wall',
+  'Chair': 'chair',
 };
 
-const FREQUENCY_OPTIONS: WorkoutFrequency[] = [3, 4, 5, 6];
-const DURATION_OPTIONS: SessionDuration[] = [30, 45, 60, 90];
+// Reverse map: internal value to display name
+const EQUIPMENT_REVERSE_MAP: Record<string, string> = {
+  'bodyweight': 'Bodyweight',
+  'dumbbells': 'Dumbbells',
+  'barbell': 'Barbell',
+  'kettlebell': 'Kettlebell',
+  'bands': 'Resistance Bands',
+  'pull_up_bar': 'Pull-up Bar',
+  'bench': 'Bench',
+  'mat': 'Yoga Mat',
+  'step': 'Step',
+  'wall': 'Wall',
+  'chair': 'Chair',
+};
+
+// Frequency options
+const FREQUENCY_OPTIONS = [3, 4, 5, 6];
+
+// Duration options
+const DURATION_OPTIONS = [
+  { value: 30, label: '30 min' },
+  { value: 45, label: '45 min' },
+  { value: 60, label: '60 min' },
+  { value: 90, label: '90 min' },
+];
+
+// SVG Components
+const CheckmarkSVG = () => (
+  <Svg width={14} height={14} viewBox="0 0 14 14" fill="none">
+    <Path
+      d="M2 7 L5.5 10.5 L12 4"
+      stroke="#0F1419"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const InfoIcon = () => (
+  <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+    <Circle cx="10" cy="10" r="8" stroke="#5B9FFF" strokeWidth="2" />
+    <Path d="M10 6 L10 7 M10 9 L10 14" stroke="#5B9FFF" strokeWidth="2" strokeLinecap="round" />
+  </Svg>
+);
 
 export default function Experience({ navigation }: OnboardingScreenProps<'Experience'>) {
   const { profile, updateProfile } = useProfile();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const isSmall = width < 375;
+  
+  // Calculate widths for two-column grids
+  // Container padding: 24px each side = 48px total
+  // Gap between items: 8px
+  // Formula: (screenWidth - 48 - 8) / 2
+  const twoColumnItemWidth = (width - 48 - 8) / 2;
 
-  const [fitnessExperience, setFitnessExperience] = useState<FitnessExperience | null>(
-    (profile?.fitness_experience as FitnessExperience) || null
-  );
+  // State
+  const [fitnessExperience, setFitnessExperience] = useState<'beginner' | 'intermediate' | 'advanced' | null>(null);
+  const [equipment, setEquipment] = useState<string[]>(['Bodyweight']); // Display names
+  const [workoutFrequency, setWorkoutFrequency] = useState<3 | 4 | 5 | 6 | null>(null);
+  const [sessionDuration, setSessionDuration] = useState<30 | 45 | 60 | 90 | null>(null);
 
-  const [equipment, setEquipment] = useState<string[]>(
-    profile?.equipment && profile.equipment.length > 0
-      ? profile.equipment
-      : ['bodyweight'] // Default to bodyweight
-  );
-
-  const [workoutFrequency, setWorkoutFrequency] = useState<WorkoutFrequency | null>(
-    (profile?.workout_frequency as WorkoutFrequency) || null
-  );
-
-  const [sessionDuration, setSessionDuration] = useState<SessionDuration | null>(
-    (profile?.session_duration as SessionDuration) || null
-  );
-
-  // Ensure bodyweight is always selected
+  // Load from profile
   useEffect(() => {
-    if (!equipment.includes('bodyweight')) {
-      setEquipment([...equipment, 'bodyweight']);
+    if (profile?.fitness_experience) {
+      setFitnessExperience(profile.fitness_experience as 'beginner' | 'intermediate' | 'advanced');
+    }
+    if (profile?.equipment && profile.equipment.length > 0) {
+      // Convert internal values to display names
+      const displayNames = profile.equipment
+        .map((val) => EQUIPMENT_REVERSE_MAP[val] || val)
+        .filter((name) => name);
+      setEquipment(displayNames.length > 0 ? displayNames : ['Bodyweight']);
+    }
+    if (profile?.workout_frequency) {
+      setWorkoutFrequency(profile.workout_frequency as 3 | 4 | 5 | 6);
+    }
+    if (profile?.session_duration) {
+      setSessionDuration(profile.session_duration as 30 | 45 | 60 | 90);
+    }
+  }, [profile]);
+
+  // Ensure Bodyweight is always selected
+  useEffect(() => {
+    if (!equipment.includes('Bodyweight')) {
+      setEquipment(['Bodyweight', ...equipment]);
     }
   }, [equipment]);
 
+  // Equipment toggle logic
   const toggleEquipment = (item: string) => {
-    // Bodyweight cannot be unselected
-    if (item === 'bodyweight') return;
+    if (item === 'Bodyweight') return; // Cannot unselect Bodyweight
 
     if (equipment.includes(item)) {
-      setEquipment(equipment.filter(e => e !== item));
+      setEquipment(equipment.filter((e) => e !== item));
     } else {
       setEquipment([...equipment, item]);
     }
   };
 
+  // Continue handler
   const handleContinue = async () => {
     if (!fitnessExperience || equipment.length === 0 || !workoutFrequency || !sessionDuration) {
       return;
     }
 
+    // Convert display names to internal values
+    const equipmentValues = equipment.map((name) => EQUIPMENT_MAP[name] || name.toLowerCase().replace(/\s+/g, '_'));
+
     try {
       await updateProfile({
         fitness_experience: fitnessExperience,
-        equipment: equipment,
+        equipment: equipmentValues,
         workout_frequency: workoutFrequency,
         session_duration: sessionDuration,
       });
@@ -135,99 +174,75 @@ export default function Experience({ navigation }: OnboardingScreenProps<'Experi
     sessionDuration !== null;
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.m),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
-    >
-      <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>
-          Tell us about your fitness background
-        </Text>
-        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          This helps us set appropriate intensity and exercise selection.
-        </Text>
-      </View>
-
-      <ProgressIndicator
-        currentStep={6}
-        totalSteps={8}
-        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
-      />
-
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* SECTION A: Fitness Experience */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What's your experience level?</Text>
-          <View style={styles.experienceContainer}>
-            {EXPERIENCE_OPTIONS.map((option) => {
-              const isSelected = fitnessExperience === option.value;
-              return (
-                <TouchableOpacity
-                  key={option.value}
-                  onPress={() => setFitnessExperience(option.value)}
-                  activeOpacity={0.7}
-                  style={[
-                    styles.experienceCard,
-                    isSelected && styles.experienceCardSelected,
-                  ]}
-                >
-                  {isSelected && (
-                    <View style={styles.checkmarkContainer}>
-                      <Text style={styles.checkmark}>✓</Text>
-                    </View>
-                  )}
-                  <View style={styles.experienceCardContent}>
-                    <Text style={[styles.experienceCardTitle, isSelected && styles.experienceCardTitleSelected]}>
-                      {option.title}
-                    </Text>
-                    <Text style={[styles.experienceCardDescription, isSelected && styles.experienceCardDescriptionSelected]}>
-                      {option.description}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+        {/* HEADER */}
+        <View style={styles.header}>
+          <ProgressIndicator currentStep={6} totalSteps={8} />
+          <Text style={styles.headline}>Tell us about your fitness background</Text>
+          <Text style={styles.subheadline}>
+            This helps us match you with the right program
+          </Text>
         </View>
 
-        <View style={styles.divider} />
+        {/* SECTION A: EXPERIENCE LEVEL */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionLabel}>EXPERIENCE LEVEL</Text>
 
-        {/* SECTION B: Equipment Access */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What equipment do you have access to? (Select all that apply)</Text>
+          {EXPERIENCE_OPTIONS.map((option) => {
+            const isSelected = fitnessExperience === option.value;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[styles.experienceCard, isSelected && styles.experienceCardSelected]}
+                onPress={() => setFitnessExperience(option.value)}
+              >
+                <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
+                  {isSelected && <View style={styles.radioDot} />}
+                </View>
+                <View style={styles.textContainer}>
+                  <Text style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
+                    {option.title}
+                  </Text>
+                  <Text style={[styles.cardDescription, isSelected && styles.cardDescriptionSelected]}>
+                    {option.description}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* SECTION B: EQUIPMENT */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionLabel}>AVAILABLE EQUIPMENT</Text>
+          <Text style={styles.sectionDescription}>Select all that apply</Text>
+
           <View style={styles.equipmentGrid}>
             {EQUIPMENT_OPTIONS.map((item) => {
               const isSelected = equipment.includes(item);
-              const isBodyweight = item === 'bodyweight';
+              const isBodyweight = item === 'Bodyweight';
               return (
                 <TouchableOpacity
                   key={item}
+                  style={[
+                    styles.equipmentCheckbox,
+                    { width: twoColumnItemWidth },
+                    isSelected && styles.checkboxSelected,
+                    isBodyweight && styles.checkboxBodyweight,
+                  ]}
                   onPress={() => toggleEquipment(item)}
-                  activeOpacity={isBodyweight ? 1 : 0.7}
                   disabled={isBodyweight}
-                  style={[
-                    styles.equipmentChip,
-                    isSelected && styles.equipmentChipSelected,
-                    isBodyweight && styles.equipmentChipBodyweight,
-                  ]}
                 >
-                  <Text
-                    style={[
-                      styles.equipmentChipText,
-                      isSelected && styles.equipmentChipTextSelected,
-                      isBodyweight && styles.equipmentChipTextBodyweight,
-                    ]}
-                  >
-                    {EQUIPMENT_LABELS[item]}
+                  <View style={[styles.checkboxSquare, isSelected && styles.squareSelected]}>
+                    {isSelected && <CheckmarkSVG />}
+                  </View>
+                  <Text style={[styles.checkboxLabel, isSelected && styles.checkboxLabelSelected]}>
+                    {item}
                   </Text>
                 </TouchableOpacity>
               );
@@ -235,331 +250,398 @@ export default function Experience({ navigation }: OnboardingScreenProps<'Experi
           </View>
         </View>
 
-        <View style={styles.divider} />
+        {/* SECTION C: WORKOUT FREQUENCY */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionLabel}>WORKOUT FREQUENCY</Text>
 
-        {/* SECTION C: Workout Frequency */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How many days per week can you train?</Text>
-          <View style={styles.frequencyGrid}>
-            {FREQUENCY_OPTIONS.map((freq) => {
-              const isSelected = workoutFrequency === freq;
+          <View style={styles.frequencySelector}>
+            {FREQUENCY_OPTIONS.map((days) => {
+              const isSelected = workoutFrequency === days;
               return (
                 <TouchableOpacity
-                  key={freq}
-                  onPress={() => setWorkoutFrequency(freq)}
-                  activeOpacity={0.7}
-                  style={[
-                    styles.frequencyButton,
-                    isSelected && styles.frequencyButtonSelected,
-                  ]}
+                  key={days}
+                  style={[styles.frequencyButton, isSelected && styles.buttonSelected]}
+                  onPress={() => setWorkoutFrequency(days)}
                 >
-                  <Text
-                    style={[
-                      styles.frequencyButtonText,
-                      isSelected && styles.frequencyButtonTextSelected,
-                    ]}
-                  >
-                    {freq} days/week
+                  <Text style={[styles.frequencyNumber, isSelected && styles.frequencyNumberSelected]}>
+                    {days}
+                  </Text>
+                  <Text style={[styles.frequencyLabel, isSelected && styles.frequencyLabelSelected]}>
+                    days
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <View style={styles.guidanceBox}>
-            <Text style={styles.guidanceIcon}>💡</Text>
-            <Text style={styles.guidanceText}>
-              We recommend 3-5 days/week for most people
-            </Text>
+
+          <View style={styles.infoBadgeContainer}>
+            <View style={styles.infoBadge}>
+              <InfoIcon />
+              <Text style={styles.infoText}>
+                We recommend 3-5 days per week for most people
+              </Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.divider} />
+        {/* SECTION D: SESSION DURATION */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionLabel}>SESSION DURATION</Text>
 
-        {/* SECTION D: Session Duration */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How long is each workout session?</Text>
-          <View style={styles.durationGrid}>
-            {DURATION_OPTIONS.map((duration) => {
-              const isSelected = sessionDuration === duration;
+          <View style={styles.durationOptions}>
+            {DURATION_OPTIONS.map((option) => {
+              const isSelected = sessionDuration === option.value;
               return (
                 <TouchableOpacity
-                  key={duration}
-                  onPress={() => setSessionDuration(duration)}
-                  activeOpacity={0.7}
+                  key={option.value}
                   style={[
-                    styles.durationButton,
-                    isSelected && styles.durationButtonSelected,
+                    styles.durationRadio,
+                    { width: twoColumnItemWidth },
+                    isSelected && styles.radioSelected,
                   ]}
+                  onPress={() => setSessionDuration(option.value)}
                 >
-                  <Text
-                    style={[
-                      styles.durationButtonText,
-                      isSelected && styles.durationButtonTextSelected,
-                    ]}
-                  >
-                    {duration} minutes
+                  <View style={[styles.durationRadioCircle, isSelected && styles.durationRadioCircleSelected]}>
+                    {isSelected && <View style={styles.durationRadioDot} />}
+                  </View>
+                  <Text style={[styles.durationText, isSelected && styles.durationTextSelected]}>
+                    {option.label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <View style={styles.guidanceBox}>
-            <Text style={styles.guidanceIcon}>💡</Text>
-            <Text style={styles.guidanceText}>
-              Longer sessions aren't always better - quality over quantity!
-            </Text>
-          </View>
+        </View>
+
+        {/* FOOTER (SCROLLS WITH CONTENT) */}
+        <View style={styles.footerContainer}>
+          <TouchableOpacity
+            disabled={!canContinue}
+            onPress={handleContinue}
+            style={styles.primaryButton}
+          >
+            <LinearGradient
+              colors={canContinue ? ['#00D9C0', '#00B39D'] : ['#2A2F36', '#1A1F26']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.buttonGradient}
+            >
+              <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
+                Continue
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+          <Text style={styles.hintText}>
+            All fields are required
+          </Text>
         </View>
       </ScrollView>
-
-      <View style={styles.ctaContainer}>
-        <PrimaryButton
-          onPress={handleContinue}
-          label="Continue"
-          disabled={!canContinue}
-        />
-        {!canContinue && (
-          <Text style={styles.hintText}>
-            Please complete all sections before continuing
-          </Text>
-        )}
-      </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
+    backgroundColor: '#0F1419',
   },
-  header: {
-    marginBottom: spacing.l,
-    paddingTop: spacing.s,
-  },
-  headline: {
-    ...typography.h1,
-    textAlign: 'left',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.8,
-  },
-  headlineSmall: {
-    fontSize: 28,
-  },
-  subheadline: {
-    ...typography.bodyLarge,
-    textAlign: 'left',
-    color: palette.midGray,
-    lineHeight: 24,
-  },
-  subheadlineSmall: {
-    fontSize: 15,
-  },
-  scroll: {
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: 0,
   },
-  section: {
-    marginBottom: spacing.xl,
+  header: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
   },
-  sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.m,
+  headline: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 34,
+    letterSpacing: -0.4,
+    marginBottom: 8,
+    textAlign: 'left',
   },
-  divider: {
-    height: 1,
-    backgroundColor: palette.border,
-    marginVertical: spacing.l,
+  subheadline: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#9CA3AF',
+    lineHeight: 22,
+    textAlign: 'left',
+  },
+  sectionContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'left',
+  },
+  sectionDescription: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#6B7280',
+    marginBottom: 12,
+    lineHeight: 19,
+    textAlign: 'left',
   },
   // Experience Cards
-  experienceContainer: {
-    gap: spacing.m,
-  },
   experienceCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
+    backgroundColor: '#1A1F26',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 2,
-    borderColor: palette.border,
+    borderColor: '#2A2F36',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.m,
-    minHeight: 100,
+    minHeight: 72,
   },
   experienceCardSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.darkerCard,
+    borderColor: '#00D9C0',
+    backgroundColor: 'rgba(0, 217, 192, 0.08)',
   },
-  checkmarkContainer: {
+  radioCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: palette.tealPrimary,
-    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    marginRight: 16,
     justifyContent: 'center',
-    flexShrink: 0,
+    alignItems: 'center',
   },
-  checkmark: {
-    color: palette.deepBlack,
-    fontSize: 16,
-    fontWeight: '700',
+  radioCircleSelected: {
+    borderColor: '#00D9C0',
   },
-  experienceCardContent: {
+  radioDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#00D9C0',
+  },
+  textContainer: {
     flex: 1,
   },
-  experienceCardTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.xs,
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    lineHeight: 22,
+    marginBottom: 2,
+    textAlign: 'left',
   },
-  experienceCardTitleSelected: {
-    color: palette.tealPrimary,
+  cardTitleSelected: {
+    color: '#00D9C0',
   },
-  experienceCardDescription: {
-    ...typography.body,
-    color: palette.midGray,
+  cardDescription: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#9CA3AF',
     lineHeight: 20,
+    textAlign: 'left',
   },
-  experienceCardDescriptionSelected: {
-    color: palette.lightGray,
+  cardDescriptionSelected: {
+    color: '#B8C5C5',
   },
-  // Equipment Chips
+  // Equipment Grid
   equipmentGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.s,
+    marginLeft: -8,
+    marginTop: 0,
   },
-  equipmentChip: {
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    borderRadius: 20,
-    backgroundColor: palette.darkCard,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    minWidth: 100,
-  },
-  equipmentChipSelected: {
-    backgroundColor: palette.tealPrimary,
-    borderColor: palette.tealPrimary,
-  },
-  equipmentChipBodyweight: {
-    backgroundColor: palette.tealPrimary,
-    borderColor: palette.tealPrimary,
-  },
-  equipmentChipText: {
-    ...typography.bodySmall,
-    color: palette.white,
-    textAlign: 'center',
-  },
-  equipmentChipTextSelected: {
-    color: palette.deepBlack,
-    fontWeight: '600',
-  },
-  equipmentChipTextBodyweight: {
-    color: palette.deepBlack,
-    fontWeight: '600',
-  },
-  // Frequency Buttons
-  frequencyGrid: {
+  equipmentCheckbox: {
+    marginLeft: 8,
+    marginBottom: 8,
+    backgroundColor: '#1A1F26',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 2,
+    borderColor: '#2A2F36',
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.m,
-    marginBottom: spacing.m,
+    alignItems: 'center',
+    minHeight: 48,
+  },
+  checkboxSelected: {
+    borderColor: '#00D9C0',
+    backgroundColor: 'rgba(0, 217, 192, 0.08)',
+  },
+  checkboxBodyweight: {
+    borderColor: '#00D9C0',
+    backgroundColor: 'rgba(0, 217, 192, 0.08)',
+    opacity: 1,
+  },
+  checkboxSquare: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  squareSelected: {
+    borderColor: '#00D9C0',
+    backgroundColor: '#00D9C0',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#E0E4E8',
+    flex: 1,
+    textAlign: 'left',
+  },
+  checkboxLabelSelected: {
+    fontWeight: '600',
+    color: '#00D9C0',
+  },
+  // Frequency Selector
+  frequencySelector: {
+    flexDirection: 'row',
+    gap: 8,
   },
   frequencyButton: {
     flex: 1,
-    minWidth: '45%',
-    backgroundColor: palette.darkCard,
+    backgroundColor: '#1A1F26',
     borderRadius: 12,
-    padding: spacing.m,
+    padding: 16,
     borderWidth: 2,
-    borderColor: palette.border,
-    alignItems: 'center',
+    borderColor: '#2A2F36',
     justifyContent: 'center',
+    alignItems: 'center',
     minHeight: 64,
   },
-  frequencyButtonSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
+  buttonSelected: {
+    borderColor: '#00D9C0',
+    backgroundColor: 'rgba(0, 217, 192, 0.08)',
   },
-  frequencyButtonText: {
-    ...typography.h3,
-    color: palette.white,
+  frequencyNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
   },
-  frequencyButtonTextSelected: {
-    color: palette.tealPrimary,
-    fontWeight: '600',
+  frequencyNumberSelected: {
+    color: '#00D9C0',
   },
-  // Duration Buttons
-  durationGrid: {
+  frequencyLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9CA3AF',
+  },
+  frequencyLabelSelected: {
+    color: '#B8C5C5',
+  },
+  // Info Badge
+  infoBadgeContainer: {
+    marginTop: 16,
+  },
+  infoBadge: {
+    backgroundColor: 'rgba(91, 159, 255, 0.1)',
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  infoText: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#B8C5C5',
+    lineHeight: 18,
+    flex: 1,
+    marginLeft: 10,
+    textAlign: 'left',
+  },
+  // Duration Options
+  durationOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.m,
-    marginBottom: spacing.m,
+    gap: 8,
   },
-  durationButton: {
+  durationRadio: {
     flex: 1,
-    minWidth: '45%',
-    backgroundColor: palette.darkCard,
+    backgroundColor: '#1A1F26',
     borderRadius: 12,
-    padding: spacing.m,
+    padding: 14,
     borderWidth: 2,
-    borderColor: palette.border,
+    borderColor: '#2A2F36',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 64,
+    minHeight: 56,
   },
-  durationButtonSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
+  radioSelected: {
+    borderColor: '#00D9C0',
+    backgroundColor: 'rgba(0, 217, 192, 0.08)',
   },
-  durationButtonText: {
-    ...typography.h3,
-    color: palette.white,
+  durationRadioCircle: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  durationButtonTextSelected: {
-    color: palette.tealPrimary,
+  durationRadioCircleSelected: {
+    borderColor: '#00D9C0',
+  },
+  durationRadioDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00D9C0',
+  },
+  durationText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#E0E4E8',
+    textAlign: 'left',
+  },
+  durationTextSelected: {
     fontWeight: '600',
+    color: '#00D9C0',
   },
-  // Guidance Box
-  guidanceBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.s,
-    backgroundColor: 'rgba(0, 204, 204, 0.1)',
-    borderRadius: 12,
-    padding: spacing.m,
-    marginTop: spacing.s,
+  // Footer
+  footerContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 0,
   },
-  guidanceIcon: {
-    fontSize: 20,
-    flexShrink: 0,
+  primaryButton: {
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 16,
   },
-  guidanceText: {
-    ...typography.body,
-    color: palette.tealPrimary,
+  buttonGradient: {
     flex: 1,
-    lineHeight: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  // CTA
-  ctaContainer: {
-    marginTop: spacing.s,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
+  buttonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F1419',
+  },
+  buttonTextDisabled: {
+    color: '#6B7280',
   },
   hintText: {
-    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#6B7280',
     textAlign: 'center',
-    color: palette.midGray,
-    marginTop: spacing.xs,
+    lineHeight: 18,
   },
 });
-

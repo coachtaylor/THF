@@ -162,47 +162,47 @@ export default function Disclaimer({ navigation }: OnboardingScreenProps<'Discla
             By continuing, you acknowledge this is a fitness education tool designed to empower your training journey.
           </Text>
         </View>
-      </ScrollView>
 
-      {/* FOOTER - Fixed at bottom */}
-      <View style={[styles.footerContainer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-        {/* Primary CTA */}
-        <TouchableOpacity
-          onPress={handleContinue}
-          disabled={!checked}
-          style={[styles.primaryButton, !checked && styles.disabledButton]}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !checked }}
-          accessibilityHint="Continue to profile setup after acknowledging the disclaimer"
-        >
-          <LinearGradient
-            colors={checked ? ['#00D9C0', '#00B39D'] : ['#2A2F36', '#1A1F26']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.buttonGradient}
+        {/* FOOTER - Inside ScrollView */}
+        <View style={[styles.footerContainer, { paddingBottom: insets.bottom + 16 }]}>
+          {/* Primary CTA */}
+          <TouchableOpacity
+            onPress={handleContinue}
+            disabled={!checked}
+            style={[styles.primaryButton, !checked && styles.disabledButton]}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !checked }}
+            accessibilityHint="Continue to profile setup after acknowledging the disclaimer"
           >
-            <Text style={[styles.primaryButtonText, !checked && styles.disabledButtonText]}>
-              Continue to Profile Setup
-            </Text>
-          </LinearGradient>
-        </TouchableOpacity>
+            <LinearGradient
+              colors={checked ? ['#00D9C0', '#00B39D'] : ['#2A2F36', '#1A1F26']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
+            >
+              <Text style={[styles.primaryButtonText, !checked && styles.disabledButtonText]}>
+                Continue to Profile Setup
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
 
-        {/* Secondary option */}
-        <TouchableOpacity
-          onPress={handleQuickStart}
-          disabled={!checked}
-          style={styles.secondaryButton}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !checked }}
-          accessibilityHint="Skip profile setup and start a quick workout"
-        >
-          <Text style={[styles.secondaryButtonText, !checked && styles.disabledSecondaryText]}>
-            Quick Start Workout
-          </Text>
-        </TouchableOpacity>
-      </View>
+          {/* Secondary option */}
+          <TouchableOpacity
+            onPress={handleQuickStart}
+            disabled={!checked}
+            style={styles.secondaryButton}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !checked }}
+            accessibilityHint="Skip profile setup and start a quick workout"
+          >
+            <Text style={[styles.secondaryButtonText, !checked && styles.disabledSecondaryText]}>
+              Quick Start Workout
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingHorizontal: spacing.l,
-    paddingBottom: spacing.l,
+    paddingBottom: spacing.s,
     alignItems: 'center',
   },
   iconBadge: {
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 217, 192, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.m,
+    marginBottom: spacing.s,
     borderWidth: 2,
     borderColor: 'rgba(0, 217, 192, 0.3)',
   },
@@ -247,7 +247,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: 0,
+    paddingTop: spacing.xs,
   },
   infoCard: {
     backgroundColor: '#1A1F26',
@@ -311,10 +312,10 @@ const styles = StyleSheet.create({
   },
   footerContainer: {
     paddingHorizontal: spacing.l,
-    paddingTop: spacing.m,
+    paddingTop: 24,
+    marginTop: 24,
     borderTopWidth: 1,
     borderTopColor: '#2A2F36',
-    backgroundColor: '#0F1419',
   },
   primaryButton: {
     height: 56,

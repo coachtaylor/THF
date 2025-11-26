@@ -81,7 +81,7 @@ export async function generateQuickStartPlan(): Promise<Plan> {
 /**
  * Generate a complete workout plan for a user
  * Creates 7 days (1 week) or 28 days (4 weeks) based on profile.preferences.blockLength
- * Each day has 4 workout variants (5, 15, 30, 45 minutes)
+ * Each day has 4 workout variants (30, 45, 60, 90 minutes)
  */
 export async function generatePlan(profile: Profile): Promise<Plan> {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -142,19 +142,15 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     // Generate all 4 workout variants for this day
     const variants: Day['variants'] = {
       5: null,   // Will be set if user has 5-min in their preferences
-      15: generateWorkout(profile, 15, exercisesToUse, dayTemplate),
       30: generateWorkout(profile, 30, exercisesToUse, dayTemplate),
       45: generateWorkout(profile, 45, exercisesToUse, dayTemplate),
+      60: generateWorkout(profile, 60, exercisesToUse, dayTemplate),
+      90: generateWorkout(profile, 90, exercisesToUse, dayTemplate),
     };
-
-    // Only generate 5-minute workout if user wants it
-    if (profile.preferred_minutes?.includes(5)) {
-      variants[5] = generateWorkout(profile, 5, exercisesToUse, dayTemplate);
-    }
 
     // Track exercises used today
     const exercisesUsedToday = new Set<string>();
-    [variants[5], variants[15], variants[30], variants[45]].forEach(workout => {
+    [variants[30], variants[45], variants[60], variants[90]].forEach(workout => {
       if (workout) {
         workout.exercises.forEach(ex => {
           usedExerciseIds.add(ex.exerciseId);
@@ -176,10 +172,10 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
 
     // Validate all workouts generated
     const variantResults = [
-      variants[5] ? '✅ 5min' : '⏭️  5min (skipped)',
-      variants[15] ? '✅ 15min' : '❌ 15min (failed)',
       variants[30] ? '✅ 30min' : '❌ 30min (failed)',
       variants[45] ? '✅ 45min' : '❌ 45min (failed)',
+      variants[60] ? '✅ 60min' : '❌ 60min (failed)',
+      variants[90] ? '✅ 90min' : '❌ 90min (failed)',
     ];
     console.log(`Variants: ${variantResults.join(', ')}`);
 
@@ -253,7 +249,7 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
     };
 
     // Mark exercises as used
-    [variants[5], variants[15], variants[30], variants[45]].forEach(workout => {
+    [variants[30], variants[45], variants[60], variants[90]].forEach(workout => {
       if (workout) {
         workout.exercises.forEach(ex => {
           usedExerciseIds.add(ex.exerciseId);
@@ -317,7 +313,7 @@ export async function regenerateDay(
 export function getWorkoutFromPlan(
   plan: Plan,
   dayNumber: number,
-  duration: 5 | 15 | 30 | 45
+  duration: 30 | 45 | 60 | 90
 ): Workout | null {
   const day = plan.days.find(d => d.dayNumber === dayNumber);
   if (!day) {
@@ -357,14 +353,17 @@ export function validatePlan(plan: Plan): {
 
   // Check each day has required workouts
   plan.days.forEach((day, index) => {
-    if (!day.variants[15]) {
-      errors.push(`Day ${index + 1} missing 15-minute workout`);
-    }
     if (!day.variants[30]) {
       errors.push(`Day ${index + 1} missing 30-minute workout`);
     }
     if (!day.variants[45]) {
       errors.push(`Day ${index + 1} missing 45-minute workout`);
+    }
+    if (!day.variants[60]) {
+      errors.push(`Day ${index + 1} missing 60-minute workout`);
+    }
+    if (!day.variants[90]) {
+      errors.push(`Day ${index + 1} missing 90-minute workout`);
     }
 
     // Validate each workout has exercises
@@ -397,10 +396,10 @@ export function printPlanSummary(plan: Plan): void {
   
   plan.days.slice(0, 3).forEach(day => {
     console.log(`\n  Day ${day.dayNumber} (${day.date.toLocaleDateString()}):`);
-    console.log(`    5min:  ${day.variants[5] ? `${day.variants[5].exercises.length} exercises` : 'N/A'}`);
-    console.log(`    15min: ${day.variants[15] ? `${day.variants[15].exercises.length} exercises` : 'N/A'}`);
     console.log(`    30min: ${day.variants[30] ? `${day.variants[30].exercises.length} exercises` : 'N/A'}`);
     console.log(`    45min: ${day.variants[45] ? `${day.variants[45].exercises.length} exercises` : 'N/A'}`);
+    console.log(`    60min: ${day.variants[60] ? `${day.variants[60].exercises.length} exercises` : 'N/A'}`);
+    console.log(`    90min: ${day.variants[90] ? `${day.variants[90].exercises.length} exercises` : 'N/A'}`);
   });
 
   if (plan.days.length > 3) {

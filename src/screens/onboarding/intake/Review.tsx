@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
-import { Button } from 'react-native-paper';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
 import { generatePlan } from '../../../services/planGenerator';
 import { savePlan } from '../../../services/storage/plan';
-import { Plan, Profile } from '../../../types';
-import { palette, spacing, typography } from '../../../theme';
+import { Profile } from '../../../types';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
 import { formatEquipmentLabel } from '../../../utils/equipment';
 import { filterExercisesByConstraints } from '../../../services/data/exerciseFilters';
 import { fetchAllExercises } from '../../../services/exerciseService';
-import type { Exercise } from '../../../types';
 
+// Label mappings
 const GENDER_IDENTITY_LABELS: Record<string, string> = {
   mtf: 'Trans Woman (MTF)',
   ftm: 'Trans Man (FTM)',
@@ -26,7 +26,7 @@ const DYSPHORIA_TRIGGER_LABELS: Record<string, string> = {
   looking_at_chest: 'Looking at chest in mirror',
   tight_clothing: 'Tight or form-fitting clothing',
   mirrors: 'Mirrors / reflective surfaces',
-  body_contact: 'Body contact (spotting, partner exercises)',
+  body_contact: 'Body contact (spotting, partner work)',
   crowded_spaces: 'Crowded workout spaces',
   locker_rooms: 'Locker rooms / changing areas',
   voice: 'Voice (grunting, heavy breathing)',
@@ -75,37 +75,54 @@ const SURGERY_TYPE_LABELS: Record<string, string> = {
   other: 'Other surgery',
 };
 
-const formatDate = (date: Date): string => {
+// Date formatting functions
+const formatDate = (date: Date | string | null | undefined): string => {
+  if (!date) return 'Not specified';
+  
+  const dateObj = date instanceof Date ? date : new Date(date);
+  
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid date';
+  }
+  
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const month = months[date.getMonth()];
-  const day = date.getDate();
-  const year = date.getFullYear();
+  const month = months[dateObj.getMonth()];
+  const day = dateObj.getDate();
+  const year = dateObj.getFullYear();
   return `${month} ${day}, ${year}`;
 };
 
-const formatHRTStartDate = (date: Date): string => {
+const formatHRTStartDate = (date: Date | string | null | undefined): string => {
+  if (!date) return 'Not specified';
+  
+  const dateObj = date instanceof Date ? date : new Date(date);
+  
+  if (isNaN(dateObj.getTime())) {
+    return 'Invalid date';
+  }
+  
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
+  const month = months[dateObj.getMonth()];
+  const year = dateObj.getFullYear();
   return `${month} ${year}`;
 };
 
-const formatMonths = (months: number): string => {
-  if (months === 0) return '0 months';
-  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'}`;
-  const years = Math.floor(months / 12);
-  const remainingMonths = months % 12;
-  if (remainingMonths === 0) {
-    return `${years} ${years === 1 ? 'year' : 'years'}`;
-  }
-  return `${years} ${years === 1 ? 'year' : 'years'}, ${remainingMonths} ${remainingMonths === 1 ? 'month' : 'months'}`;
-};
+// SVG Components
+const SuccessCheckmarkSVG = () => (
+  <Svg width={18} height={18} viewBox="0 0 18 18" fill="none">
+    <Path
+      d="M3 9 L7 13 L15 5"
+      stroke="#0F1419"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 export default function Review({ navigation }: OnboardingScreenProps<'Review'>) {
   const { profile, refreshProfile } = useProfile();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 375;
 
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,10 +137,9 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
       return filtered.length;
     } catch (error) {
       console.error('Error calculating exercises:', error);
-      // Fallback estimate
       const exercisesPerSession = profile.fitness_experience === 'beginner' ? 8 : 
                                    profile.fitness_experience === 'intermediate' ? 10 : 12;
-      return exercisesPerSession * profile.workout_frequency;
+      return exercisesPerSession * (profile.workout_frequency || 3);
     }
   };
 
@@ -142,8 +158,7 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
   useFocusEffect(
     React.useCallback(() => {
       refreshProfile();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [refreshProfile])
   );
 
   // Calculate counts when profile changes
@@ -166,672 +181,661 @@ export default function Review({ navigation }: OnboardingScreenProps<'Review'>) 
     navigation.navigate(screen);
   };
 
-  const handleGeneratePlan = async () => {
+  const handleGenerate = async () => {
     try {
       setGenerating(true);
       setError(null);
 
-      // Ensure block_length is set to 4 for 4-week program
       const profileWithBlockLength = {
         ...profile,
         block_length: 4,
       };
 
-      // Call Phase 2 workout generation
       const plan = await generatePlan(profileWithBlockLength);
-
-      console.log('✅ Plan generated:', plan);
-
-      // Save plan to storage
       await savePlan(plan);
-
-      // Navigate to PlanView
+      
       setGenerating(false);
       navigation.navigate('PlanView');
     } catch (err) {
-      console.error('❌ Failed to generate plan:', err);
+      console.error('Failed to generate plan:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate plan');
       setGenerating(false);
     }
   };
 
-  // Helper function to format equipment
   const formatEquipment = (): string => {
     const equipment = profile.equipment || [];
     if (equipment.length === 0) return 'No equipment selected';
     return equipment.map((e) => formatEquipmentLabel(e)).join(', ');
   };
 
-
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.m),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
-    >
-      <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Review Your Profile</Text>
-        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          Review your selections and generate your plan
-        </Text>
-      </View>
-
-      <ProgressIndicator
-        currentStep={8}
-        totalSteps={8}
-        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
-      />
-
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Summary Panel */}
-        <View style={styles.summaryPanel}>
-          <View style={styles.summaryHeader}>
-            <Text style={styles.checkmarkIcon}>✅</Text>
-            <Text style={styles.summaryTitle}>Profile Complete</Text>
-          </View>
-          <Text style={styles.summarySubtitle}>
-            Your personalized program will include:
+        {/* HEADER */}
+        <View style={styles.header}>
+          <ProgressIndicator currentStep={8} totalSteps={8} />
+          <Text style={styles.headline}>Review Your Profile</Text>
+          <Text style={styles.subheadline}>
+            Everything looks good? Generate your program
           </Text>
-          <View style={styles.summaryList}>
-            <View style={styles.summaryListItem}>
-              <Text style={styles.summaryBullet}>•</Text>
-              <Text style={styles.summaryText}>
-                {exerciseCount || '...'} exercises tailored to your equipment
-              </Text>
-            </View>
-            <View style={styles.summaryListItem}>
-              <Text style={styles.summaryBullet}>•</Text>
-              <Text style={styles.summaryText}>
-                {safetyRulesCount} safety {safetyRulesCount === 1 ? 'rule' : 'rules'} applied
-              </Text>
-            </View>
-            <View style={styles.summaryListItem}>
-              <Text style={styles.summaryBullet}>•</Text>
-              <Text style={styles.summaryText}>
-                {profile.workout_frequency}-day training split
-              </Text>
-            </View>
-            <View style={styles.summaryListItem}>
-              <Text style={styles.summaryBullet}>•</Text>
-              <Text style={styles.summaryText}>
-                {profile.session_duration}-minute sessions
-              </Text>
-            </View>
-          </View>
         </View>
 
-        {/* SECTION 1: Identity */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Identity</Text>
-            <TouchableOpacity onPress={() => handleEdit('GenderIdentity')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
+        {/* SUCCESS SUMMARY */}
+        <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Gender Identity: </Text>
-                {GENDER_IDENTITY_LABELS[profile.gender_identity] || profile.gender_identity}
-              </Text>
+            <View style={styles.successBadge}>
+              <View style={styles.successIconContainer}>
+                <SuccessCheckmarkSVG />
+              </View>
+              <Text style={styles.successTitle}>Profile Complete!</Text>
             </View>
-            {profile.pronouns && (
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.summaryBullet}>
-                  <Text style={styles.label}>Pronouns: </Text>
-                  {profile.pronouns}
+            
+            <Text style={styles.summaryDescription}>
+              Your personalized program will include:
+            </Text>
+            
+            <View style={styles.highlightList}>
+              <View style={styles.highlightItem}>
+                <View style={styles.highlightDot} />
+                <Text style={styles.highlightText}>
+                  {exerciseCount || '...'} exercises tailored to your equipment
                 </Text>
               </View>
-            )}
+              <View style={styles.highlightItem}>
+                <View style={styles.highlightDot} />
+                <Text style={styles.highlightText}>
+                  {safetyRulesCount} safety {safetyRulesCount === 1 ? 'rule' : 'rules'} for your needs
+                </Text>
+              </View>
+              <View style={styles.highlightItem}>
+                <View style={styles.highlightDot} />
+                <Text style={styles.highlightText}>
+                  {profile.workout_frequency || 3}-day training split
+                </Text>
+              </View>
+              <View style={styles.highlightItem}>
+                <View style={styles.highlightDot} />
+                <Text style={styles.highlightText}>
+                  {profile.session_duration || 30}-minute sessions
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* SECTION 2: HRT Status (only if on_hrt = true) */}
-        {profile.on_hrt && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>HRT Status</Text>
-              <TouchableOpacity onPress={() => handleEdit('HRTStatus')} style={styles.editButton}>
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.summaryCard}>
-              {profile.hrt_type && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Type: </Text>
-                    {HRT_TYPE_LABELS[profile.hrt_type] || profile.hrt_type}
-                  </Text>
-                </View>
-              )}
-              {profile.hrt_start_date && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Started: </Text>
-                    {formatHRTStartDate(new Date(profile.hrt_start_date))}
-                  </Text>
-                </View>
-              )}
-              {profile.hrt_months_duration !== undefined && profile.hrt_months_duration > 0 && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Duration: </Text>
-                    {profile.hrt_months_duration} {profile.hrt_months_duration === 1 ? 'month' : 'months'}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.impactBox}>
-                <Text style={styles.impactIcon}>💡</Text>
-                <Text style={styles.impactText}>
-                  Impact: Workout volume reduced by 15% for recovery
-                </Text>
+        {/* IDENTITY SECTION */}
+        {(profile.gender_identity || profile.pronouns) && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Identity</Text>
+                <TouchableOpacity style={styles.editButton} onPress={() => handleEdit('GenderIdentity')}>
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
               </View>
-            </View>
-          </View>
-        )}
-
-        {/* SECTION 3: Binding Information (only if binds_chest = true) */}
-        {profile.binds_chest && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Binding Information</Text>
-              <TouchableOpacity onPress={() => handleEdit('BindingInfo')} style={styles.editButton}>
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.summaryCard}>
-              {profile.binding_frequency && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Frequency: </Text>
-                    {BINDING_FREQUENCY_LABELS[profile.binding_frequency] || profile.binding_frequency}
-                  </Text>
-                </View>
-              )}
-              {profile.binding_duration_hours !== undefined && profile.binding_duration_hours > 0 && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Duration: </Text>
-                    {profile.binding_duration_hours} {profile.binding_duration_hours === 1 ? 'hour' : 'hours'} per session
-                  </Text>
-                </View>
-              )}
-              {profile.binder_type && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Binder Type: </Text>
-                    {BINDER_TYPE_LABELS[profile.binder_type] || profile.binder_type}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.impactBox}>
-                <Text style={styles.impactIcon}>💡</Text>
-                <Text style={styles.impactText}>
-                  Impact: Chest compression exercises excluded, breathing breaks added
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* SECTION 4: Surgery History (only if surgeries.length > 0) */}
-        {profile.surgeries && profile.surgeries.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Surgery History</Text>
-              <TouchableOpacity onPress={() => handleEdit('Surgery')} style={styles.editButton}>
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.summaryCard}>
-              {profile.surgeries.map((surgery, index) => {
-                const status = surgery.fully_healed 
-                  ? 'Fully healed'
-                  : surgery.weeks_post_op !== undefined 
-                    ? `${surgery.weeks_post_op} ${surgery.weeks_post_op === 1 ? 'week' : 'weeks'} post-op`
-                    : 'Status unknown';
-                return (
-                  <View key={index} style={styles.surgeryItem}>
-                    <View style={styles.bulletItem}>
-                      <View style={styles.bullet} />
-                      <Text style={styles.summaryBullet}>
-                        <Text style={styles.label}>Type: </Text>
-                        {SURGERY_TYPE_LABELS[surgery.type] || surgery.type}
-                      </Text>
-                    </View>
-                    <View style={styles.bulletItem}>
-                      <View style={styles.bullet} />
-                      <Text style={styles.summaryBullet}>
-                        <Text style={styles.label}>Date: </Text>
-                        {formatDate(surgery.date)}
-                      </Text>
-                    </View>
-                    <View style={styles.bulletItem}>
-                      <View style={styles.bullet} />
-                      <Text style={styles.summaryBullet}>
-                        <Text style={styles.label}>Status: </Text>
-                        {status}
-                      </Text>
-                    </View>
-                    <View style={styles.impactBox}>
-                      <Text style={styles.impactIcon}>💡</Text>
-                      <Text style={styles.impactText}>
-                        Impact: Conservative upper body exercise selection
-                      </Text>
-                    </View>
-                    {index < profile.surgeries!.length - 1 && <View style={styles.surgerySeparator} />}
+              <View style={styles.sectionContent}>
+                {profile.gender_identity && (
+                  <View style={styles.dataItem}>
+                    <View style={styles.dataDot} />
+                    <Text style={styles.dataValue}>
+                      <Text style={styles.dataLabel}>Gender: </Text>
+                      {GENDER_IDENTITY_LABELS[profile.gender_identity] || profile.gender_identity}
+                    </Text>
                   </View>
-                );
-              })}
+                )}
+                {profile.pronouns && (
+                  <View style={styles.dataItem}>
+                    <View style={styles.dataDot} />
+                    <Text style={styles.dataValue}>
+                      <Text style={styles.dataLabel}>Pronouns: </Text>
+                      {profile.pronouns}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         )}
 
-        {/* SECTION 5: Goals */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Goals</Text>
-            <TouchableOpacity onPress={() => handleEdit('Goals')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryCard}>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Primary Goal: </Text>
-                {PRIMARY_GOAL_LABELS[profile.primary_goal] || profile.primary_goal}
-              </Text>
-            </View>
-            {profile.secondary_goals && profile.secondary_goals.length > 0 && (
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.summaryBullet}>
-                  <Text style={styles.label}>Secondary Goals: </Text>
-                  {profile.secondary_goals.map(g => PRIMARY_GOAL_LABELS[g] || g).join(', ')}
-                </Text>
+        {/* HRT STATUS SECTION */}
+        {profile.on_hrt && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>HRT Status</Text>
+                <TouchableOpacity style={styles.editButton} onPress={() => handleEdit('HRTStatus')}>
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
               </View>
-            )}
-            <View style={styles.impactBox}>
-              <Text style={styles.impactIcon}>💡</Text>
-              <Text style={styles.impactText}>
-                Impact: {profile.gender_identity === 'mtf' 
-                  ? 'Lower body exercises emphasized (60-70% volume)'
-                  : profile.gender_identity === 'ftm'
-                  ? 'Upper body exercises emphasized (60-70% volume)'
-                  : 'Balanced exercise selection'}
-              </Text>
+              <View style={styles.sectionContent}>
+                {profile.hrt_type && (
+                  <View style={styles.dataItem}>
+                    <View style={styles.dataDot} />
+                    <Text style={styles.dataValue}>
+                      <Text style={styles.dataLabel}>Type: </Text>
+                      {HRT_TYPE_LABELS[profile.hrt_type] || profile.hrt_type}
+                    </Text>
+                  </View>
+                )}
+                {profile.hrt_start_date && (
+                  <View style={styles.dataItem}>
+                    <View style={styles.dataDot} />
+                    <Text style={styles.dataValue}>
+                      <Text style={styles.dataLabel}>Started: </Text>
+                      {formatHRTStartDate(profile.hrt_start_date)}
+                    </Text>
+                  </View>
+                )}
+                {profile.hrt_months_duration !== undefined && profile.hrt_months_duration > 0 && (
+                  <View style={styles.dataItem}>
+                    <View style={styles.dataDot} />
+                    <Text style={styles.dataValue}>
+                      <Text style={styles.dataLabel}>Duration: </Text>
+                      {profile.hrt_months_duration} {profile.hrt_months_duration === 1 ? 'month' : 'months'}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
-        {/* SECTION 6: Training Details */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Training Details</Text>
-            <TouchableOpacity onPress={() => handleEdit('Experience')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryCard}>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Experience Level: </Text>
-                {FITNESS_EXPERIENCE_LABELS[profile.fitness_experience] || profile.fitness_experience}
-              </Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Equipment: </Text>
-                {formatEquipment()}
-              </Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Frequency: </Text>
-                {profile.workout_frequency} {profile.workout_frequency === 1 ? 'day' : 'days'} per week
-              </Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Session Duration: </Text>
-                {profile.session_duration} minutes
-              </Text>
-            </View>
-            <View style={styles.impactBox}>
-              <Text style={styles.impactIcon}>💡</Text>
-              <Text style={styles.impactText}>
-                Impact: {profile.workout_frequency}-day split with {profile.fitness_experience} sets/reps
-              </Text>
+        {/* BINDING SECTION */}
+        {profile.binds_chest && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Binding Information</Text>
+                <TouchableOpacity style={styles.editButton} onPress={() => handleEdit('BindingInfo')}>
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.sectionContent}>
+                {profile.binding_frequency && (
+                  <View style={styles.dataItem}>
+                    <View style={styles.dataDot} />
+                    <Text style={styles.dataValue}>
+                      <Text style={styles.dataLabel}>Frequency: </Text>
+                      {BINDING_FREQUENCY_LABELS[profile.binding_frequency] || profile.binding_frequency}
+                    </Text>
+                  </View>
+                )}
+                {profile.binding_duration_hours !== undefined && profile.binding_duration_hours > 0 && (
+                  <View style={styles.dataItem}>
+                    <View style={styles.dataDot} />
+                    <Text style={styles.dataValue}>
+                      <Text style={styles.dataLabel}>Duration: </Text>
+                      {profile.binding_duration_hours} {profile.binding_duration_hours === 1 ? 'hour' : 'hours'} per session
+                    </Text>
+                  </View>
+                )}
+                {profile.binder_type && (
+                  <View style={styles.dataItem}>
+                    <View style={styles.dataDot} />
+                    <Text style={styles.dataValue}>
+                      <Text style={styles.dataLabel}>Binder Type: </Text>
+                      {BINDER_TYPE_LABELS[profile.binder_type] || profile.binder_type}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
-        {/* SECTION 7: Dysphoria Considerations (only if dysphoria_triggers.length > 0) */}
-        {profile.dysphoria_triggers && profile.dysphoria_triggers.length > 0 && (
-          <View style={styles.section}>
+        {/* SURGERY SECTION */}
+        {profile.surgeries && profile.surgeries.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Surgery History</Text>
+                <TouchableOpacity style={styles.editButton} onPress={() => handleEdit('Surgery')}>
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.sectionContent}>
+                {profile.surgeries.map((surgery, index) => {
+                  const status = surgery.fully_healed 
+                    ? 'Fully healed'
+                    : surgery.weeks_post_op !== undefined 
+                      ? `${surgery.weeks_post_op} ${surgery.weeks_post_op === 1 ? 'week' : 'weeks'} post-op`
+                      : 'Status unknown';
+                  return (
+                    <View key={index} style={[styles.dataItem, index < profile.surgeries!.length - 1 && styles.dataItemWithMargin]}>
+                      <View style={styles.dataDot} />
+                      <View style={styles.dataValueContainer}>
+                        <Text style={styles.dataValue}>
+                          <Text style={styles.dataLabel}>Type: </Text>
+                          {SURGERY_TYPE_LABELS[surgery.type] || surgery.type}
+                        </Text>
+                        {surgery.date && (
+                          <Text style={styles.dataValue}>
+                            <Text style={styles.dataLabel}>Date: </Text>
+                            {formatDate(surgery.date)}
+                          </Text>
+                        )}
+                        <Text style={styles.dataValue}>
+                          <Text style={styles.dataLabel}>Status: </Text>
+                          {status}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* GOALS SECTION */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Dysphoria Considerations</Text>
-              <TouchableOpacity onPress={() => handleEdit('DysphoriaTriggers')} style={styles.editButton}>
+              <Text style={styles.sectionTitle}>Goals</Text>
+              <TouchableOpacity style={styles.editButton} onPress={() => handleEdit('Goals')}>
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.summaryCard}>
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.summaryBullet}>
-                  <Text style={styles.label}>Triggers: </Text>
-                  {profile.dysphoria_triggers
-                    .map(t => DYSPHORIA_TRIGGER_LABELS[t] || t)
-                    .join(', ')}
-                </Text>
-              </View>
-              {profile.dysphoria_notes && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Notes: </Text>
-                    {profile.dysphoria_notes.length > 50 
-                      ? `${profile.dysphoria_notes.substring(0, 50)}...`
-                      : profile.dysphoria_notes}
+            <View style={styles.sectionContent}>
+              {profile.primary_goal && (
+                <View style={styles.dataItem}>
+                  <View style={styles.dataDot} />
+                  <Text style={styles.dataValue}>
+                    <Text style={styles.dataLabel}>Primary Goal: </Text>
+                    {PRIMARY_GOAL_LABELS[profile.primary_goal] || profile.primary_goal}
                   </Text>
                 </View>
               )}
-              <View style={styles.impactBox}>
-                <Text style={styles.impactIcon}>💡</Text>
-                <Text style={styles.impactText}>
-                  Impact: Mirror-free exercises suggested, home workout options prioritized
-                </Text>
+              {profile.secondary_goals && profile.secondary_goals.length > 0 && (
+                <View style={styles.dataItem}>
+                  <View style={styles.dataDot} />
+                  <Text style={styles.dataValue}>
+                    <Text style={styles.dataLabel}>Secondary Goals: </Text>
+                    {profile.secondary_goals.map(g => PRIMARY_GOAL_LABELS[g] || g).join(', ')}
+                  </Text>
+                </View>
+              )}
+              {profile.body_focus_prefer && profile.body_focus_prefer.length > 0 && (
+                <View style={styles.dataItem}>
+                  <View style={styles.dataDot} />
+                  <Text style={styles.dataValue}>
+                    <Text style={styles.dataLabel}>Focus More On: </Text>
+                    {profile.body_focus_prefer.join(', ')}
+                  </Text>
+                </View>
+              )}
+              {profile.body_focus_soft_avoid && profile.body_focus_soft_avoid.length > 0 && (
+                <View style={styles.dataItem}>
+                  <View style={styles.dataDot} />
+                  <Text style={styles.dataValue}>
+                    <Text style={styles.dataLabel}>Go Gently With: </Text>
+                    {profile.body_focus_soft_avoid.join(', ')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* EXPERIENCE & TRAINING SECTION */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Experience & Training</Text>
+              <TouchableOpacity style={styles.editButton} onPress={() => handleEdit('Experience')}>
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.sectionContent}>
+              {profile.fitness_experience && (
+                <View style={styles.dataItem}>
+                  <View style={styles.dataDot} />
+                  <Text style={styles.dataValue}>
+                    <Text style={styles.dataLabel}>Experience Level: </Text>
+                    {FITNESS_EXPERIENCE_LABELS[profile.fitness_experience] || profile.fitness_experience}
+                  </Text>
+                </View>
+              )}
+              {profile.equipment && profile.equipment.length > 0 && (
+                <View style={styles.dataItem}>
+                  <View style={styles.dataDot} />
+                  <Text style={styles.dataValue}>
+                    <Text style={styles.dataLabel}>Equipment: </Text>
+                    {formatEquipment()}
+                  </Text>
+                </View>
+              )}
+              {profile.workout_frequency && (
+                <View style={styles.dataItem}>
+                  <View style={styles.dataDot} />
+                  <Text style={styles.dataValue}>
+                    <Text style={styles.dataLabel}>Frequency: </Text>
+                    {profile.workout_frequency} {profile.workout_frequency === 1 ? 'day' : 'days'} per week
+                  </Text>
+                </View>
+              )}
+              {profile.session_duration && (
+                <View style={styles.dataItem}>
+                  <View style={styles.dataDot} />
+                  <Text style={styles.dataValue}>
+                    <Text style={styles.dataLabel}>Session Duration: </Text>
+                    {profile.session_duration} minutes
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* DYSPHORIA SECTION */}
+        {profile.dysphoria_triggers && profile.dysphoria_triggers.length > 0 && (
+          <View style={styles.sectionContainer}>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Dysphoria Triggers</Text>
+                <TouchableOpacity style={styles.editButton} onPress={() => handleEdit('DysphoriaTriggers')}>
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.sectionContent}>
+                <View style={styles.dataItem}>
+                  <View style={styles.dataDot} />
+                  <Text style={styles.dataValue}>
+                    <Text style={styles.dataLabel}>Triggers: </Text>
+                    {profile.dysphoria_triggers.map(t => DYSPHORIA_TRIGGER_LABELS[t] || t).join(', ')}
+                  </Text>
+                </View>
+                {profile.dysphoria_notes && (
+                  <View style={styles.dataItem}>
+                    <View style={styles.dataDot} />
+                    <Text style={styles.dataValue}>
+                      <Text style={styles.dataLabel}>Notes: </Text>
+                      {profile.dysphoria_notes.length > 100 
+                        ? `${profile.dysphoria_notes.substring(0, 100)}...` 
+                        : profile.dysphoria_notes}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
         )}
-      </ScrollView>
 
-      <View style={styles.ctaContainer}>
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorIcon}>❌</Text>
-            <View style={styles.errorContent}>
-              <Text style={styles.errorTitle}>Plan generation failed: {error}</Text>
-              <Text style={styles.errorMessage}>
-                Please check your internet connection and try again.
-              </Text>
-            </View>
-          </View>
-        )}
-        <TouchableOpacity
-          onPress={handleGeneratePlan}
-          disabled={generating}
-          style={[
-            styles.generateButton,
-            generating && styles.generateButtonDisabled,
-          ]}
-          activeOpacity={0.8}
-        >
-          {generating ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={palette.deepBlack} style={styles.loadingSpinner} />
-              <Text style={styles.generateButtonLabel}>Generating Your Program...</Text>
-            </View>
-          ) : (
-            <Text style={styles.generateButtonLabel}>Generate My Program →</Text>
+        {/* FOOTER (SCROLLS WITH CONTENT) */}
+        <View style={styles.footerContainer}>
+          <TouchableOpacity
+            style={[styles.generateButton, generating && styles.generateButtonDisabled]}
+            onPress={handleGenerate}
+            disabled={generating}
+          >
+            <LinearGradient
+              colors={['#00D9C0', '#00B39D']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
+            >
+              {generating ? (
+                <View style={styles.buttonContentContainer}>
+                  <ActivityIndicator color="#0F1419" size="small" />
+                  <Text style={styles.loadingText}>Generating Your Program...</Text>
+                </View>
+              ) : (
+                <View style={styles.buttonContentContainer}>
+                  <Text style={styles.buttonMainText}>Generate Your Program</Text>
+                  <Text style={styles.buttonSubText}>Personalized for your needs</Text>
+                </View>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+          
+          {error && (
+            <Text style={styles.errorText}>{error}</Text>
           )}
-        </TouchableOpacity>
-      </View>
-    </View>
+          
+          <Text style={styles.hintText}>
+            This will take about 10 seconds
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
+    backgroundColor: '#0F1419',
   },
-  header: {
-    marginBottom: spacing.l,
-    paddingTop: spacing.s,
-  },
-  headline: {
-    ...typography.h1,
-    textAlign: 'left',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.5,
-  },
-  headlineSmall: {
-    fontSize: 24,
-  },
-  subheadline: {
-    ...typography.body,
-    textAlign: 'left',
-    color: palette.midGray,
-    lineHeight: 20,
-  },
-  subheadlineSmall: {
-    fontSize: 14,
-  },
-  scroll: {
+  scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: 0,
   },
-  section: {
-    marginBottom: spacing.xl,
+  header: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  headline: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 34,
+    letterSpacing: -0.4,
+    marginBottom: 8,
+    textAlign: 'left',
+  },
+  subheadline: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#9CA3AF',
+    lineHeight: 22,
+    textAlign: 'left',
+  },
+  summaryContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  summaryCard: {
+    backgroundColor: 'rgba(0, 217, 192, 0.08)',
+    borderRadius: 14,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#00D9C0',
+    borderLeftWidth: 4,
+  },
+  successBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  successIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#00D9C0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  successTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#00D9C0',
+    textAlign: 'left',
+  },
+  summaryDescription: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#B8C5C5',
+    lineHeight: 21,
+    marginBottom: 16,
+    textAlign: 'left',
+  },
+  highlightList: {
+    // No bullets, clean list
+  },
+  highlightItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  highlightDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#00D9C0',
+    marginRight: 12,
+    marginTop: 7,
+  },
+  highlightText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#E0E4E8',
+    flex: 1,
+    lineHeight: 21,
+    textAlign: 'left',
+  },
+  sectionContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 20,
+  },
+  sectionCard: {
+    backgroundColor: '#1A1F26',
+    borderRadius: 12,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#2A2F36',
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.l,
-    paddingBottom: spacing.m,
+    marginBottom: 14,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+    borderBottomColor: '#2A2F36',
   },
   sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
-    letterSpacing: -0.3,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'left',
   },
   editButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.s,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 217, 192, 0.12)',
+    borderWidth: 1,
+    borderColor: '#00D9C0',
+    minHeight: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   editButtonText: {
-    ...typography.bodySmall,
-    color: palette.tealPrimary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
+    color: '#00D9C0',
   },
-  summaryCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.l,
-    borderWidth: 1.5,
-    borderColor: palette.border,
+  sectionContent: {
+    // List of data items
   },
-  bulletItem: {
+  dataItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: spacing.m,
+    marginBottom: 10,
   },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: palette.tealPrimary,
-    marginTop: 8,
-    marginRight: spacing.m,
+  dataItemWithMargin: {
+    marginBottom: 16,
+  },
+  dataDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#00D9C0',
+    marginRight: 12,
+    marginTop: 7,
     flexShrink: 0,
   },
-  label: {
-    fontWeight: '600',
-    color: palette.white,
-  },
-  surgeryItem: {
-    marginBottom: spacing.m,
-  },
-  surgerySeparator: {
-    height: 1,
-    backgroundColor: palette.border,
-    marginTop: spacing.m,
-    marginBottom: spacing.m,
-  },
-  ctaContainer: {
-    marginTop: spacing.s,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 107, 107, 0.15)',
-    borderRadius: 12,
-    padding: spacing.m,
-    marginBottom: spacing.m,
-    borderWidth: 1.5,
-    borderColor: palette.error,
-    gap: spacing.s,
-  },
-  errorIcon: {
-    fontSize: 20,
-    flexShrink: 0,
-  },
-  errorContent: {
+  dataValueContainer: {
     flex: 1,
   },
-  errorTitle: {
-    ...typography.body,
-    color: palette.error,
+  dataLabel: {
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: spacing.xs,
+    color: '#9CA3AF',
   },
-  errorMessage: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
+  dataValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#E0E4E8',
+    flex: 1,
+    lineHeight: 21,
+    textAlign: 'left',
+  },
+  footerContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 0,
+  },
+  generateButton: {
+    height: 64,
+    borderRadius: 32,
+    overflow: 'hidden',
+    marginBottom: 16,
+    shadowColor: '#00D9C0',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  generateButtonDisabled: {
+    opacity: 0.7,
+  },
+  buttonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonContentContainer: {
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  buttonMainText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F1419',
+    marginBottom: 2,
+  },
+  buttonSubText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(15, 20, 25, 0.7)',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0F1419',
+    marginTop: 8,
+  },
+  hintText: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#6B7280',
+    textAlign: 'center',
     lineHeight: 18,
   },
   errorText: {
-    ...typography.body,
-    color: palette.midGray,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#EF4444',
     textAlign: 'center',
-    padding: spacing.l,
-  },
-  generateButton: {
-    backgroundColor: palette.tealPrimary,
-    borderRadius: 12,
-    paddingVertical: spacing.m,
-    paddingHorizontal: spacing.l,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
-  },
-  generateButtonDisabled: {
-    opacity: 0.6,
-  },
-  generateButtonLabel: {
-    ...typography.h3,
-    fontSize: 16,
-    fontWeight: '700',
-    color: palette.deepBlack,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.s,
-  },
-  loadingSpinner: {
-    marginRight: 0,
-  },
-  impactBox: {
-    marginTop: spacing.l,
-    padding: spacing.m,
-    backgroundColor: 'rgba(0, 204, 204, 0.1)',
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: palette.tealPrimary,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.xs,
-  },
-  impactText: {
-    ...typography.bodySmall,
-    color: palette.tealPrimary,
-    lineHeight: 18,
-    flex: 1,
-  },
-  impactIcon: {
-    fontSize: 16,
-    marginTop: 2,
-  },
-  summaryPanel: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.l,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    marginBottom: spacing.xl,
-  },
-  summaryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s,
-    marginBottom: spacing.m,
-  },
-  checkmarkIcon: {
-    fontSize: 24,
-  },
-  summaryTitle: {
-    ...typography.h3,
-    color: palette.white,
-    fontWeight: '600',
-  },
-  summarySubtitle: {
-    ...typography.body,
-    color: palette.lightGray,
-    marginBottom: spacing.m,
-    lineHeight: 22,
-  },
-  summaryList: {
-    gap: spacing.s,
-  },
-  summaryListItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.s,
-  },
-  summaryBullet: {
-    ...typography.body,
-    color: palette.tealPrimary,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  summaryText: {
-    ...typography.body,
-    color: palette.lightGray,
-    flex: 1,
-    lineHeight: 22,
+    marginBottom: 8,
   },
 });
