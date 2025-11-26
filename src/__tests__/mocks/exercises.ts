@@ -1,4 +1,7 @@
+// src/__tests__/mocks/exercises.ts
+// Mock exercise data for testing
 // Manual mock for exercises.ts - avoids JSON import issues
+
 export const exerciseLibrary = [
   {
     id: '1',
@@ -68,3 +71,4 @@ export function filterByConstraints(constraints: string[]) {
     return true;
   });
 }
+

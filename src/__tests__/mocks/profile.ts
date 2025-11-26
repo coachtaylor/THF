@@ -1,20 +1,7 @@
-import { Profile } from '../services/storage/profile';
+// src/__tests__/mocks/profile.ts
+// Mock profile data for testing
 
-// Mock navigation
-export const mockNavigation = {
-  navigate: jest.fn(),
-  goBack: jest.fn(),
-  reset: jest.fn(),
-  setParams: jest.fn(),
-  dispatch: jest.fn(),
-  addListener: jest.fn(() => jest.fn()),
-  removeListener: jest.fn(),
-  canGoBack: jest.fn(() => true),
-  getParent: jest.fn(),
-  getState: jest.fn(),
-  isFocused: jest.fn(() => true),
-  getId: jest.fn(() => 'test-id'),
-} as any; // Use 'as any' to bypass strict typing in tests
+import { Profile } from '../../services/storage/profile';
 
 // Mock profile data with NEW Profile structure
 export const mockProfile: Profile = {

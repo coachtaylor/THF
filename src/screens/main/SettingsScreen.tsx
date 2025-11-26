@@ -7,6 +7,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useProfile } from '../../hooks/useProfile';
 import { logout } from '../../services/auth/auth';
 import { clearSession } from '../../services/auth/session';
+import { deleteProfile } from '../../services/storage/profile';
 import { palette, spacing, typography } from '../../theme';
 
 type MainTabParamList = {
@@ -91,6 +92,36 @@ export default function SettingsScreen() {
             } catch (error) {
               console.error('Logout error:', error);
               Alert.alert('Error', 'Failed to log out. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleResetOnboarding = () => {
+    Alert.alert(
+      'Reset Onboarding',
+      'This will delete your profile and reset onboarding. You\'ll need to restart the app to see the onboarding screens again. Continue?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteProfile();
+              Alert.alert(
+                'Profile Deleted',
+                'Your profile has been deleted. Please restart the app to see the onboarding screens again.',
+                [{ text: 'OK' }]
+              );
+            } catch (error) {
+              console.error('Reset onboarding error:', error);
+              Alert.alert('Error', 'Failed to reset onboarding. Please try again.');
             }
           },
         },
@@ -309,6 +340,17 @@ export default function SettingsScreen() {
           <TouchableOpacity style={styles.settingItem}>
             <Text style={styles.settingText}>Privacy policy</Text>
             <Ionicons name="open-outline" size={20} color={palette.white} />
+          </TouchableOpacity>
+        </View>
+
+        {/* DEBUG: Reset Onboarding - TEMPORARY */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: palette.warning || palette.error }]}>
+            🧪 DEBUG: Reset Onboarding
+          </Text>
+          <TouchableOpacity style={[styles.settingItem, { borderColor: palette.error + '40' }]} onPress={handleResetOnboarding}>
+            <Text style={[styles.settingText, styles.dangerText]}>Reset Onboarding (Delete Profile)</Text>
+            <Ionicons name="refresh-outline" size={20} color={palette.error} />
           </TouchableOpacity>
         </View>
 

@@ -1,226 +1,248 @@
-import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, useWindowDimensions, LayoutChangeEvent } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button } from 'react-native-paper';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  withSpring,
+  Easing,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 
-import type { OnboardingScreenProps, WhyTransFitnessContent } from '../../types/onboarding';
-import { useProfile } from '../../hooks/useProfile';
-import { palette, spacing, typography } from '../../theme';
+import type { OnboardingScreenProps } from '../../types/onboarding';
+import AnimatedGradientHero from '../../components/onboarding/AnimatedGradientHero';
+import ValueCard from '../../components/onboarding/ValueCard';
+import { palette, spacing, typography } from '../../theme/theme';
 
-const CONTENT: WhyTransFitnessContent = {
-  headline: 'Safety-first workouts for trans bodies',
-  bullets: [
-    'Binder-aware exercises with safe alternatives',
-    '5-45 minute options for any energy level',
-    'Privacy-first: your data stays on your device',
-  ],
-  ctaText: 'Get Started',
-  skipText: 'Skip',
-};
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 export default function WhyTransFitness({ navigation }: OnboardingScreenProps<'WhyTransFitness'>) {
-  const { profile } = useProfile();
-  const lowSensoryMode = profile?.low_sensory_mode ?? false;
-  const { height: windowHeight } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+  // Animation values for entrance animations
+  const headlineOpacity = useSharedValue(0);
+  const headlineTranslateY = useSharedValue(20);
+  const subheadlineOpacity = useSharedValue(0);
+  const subheadlineTranslateY = useSharedValue(20);
 
-  const [contentHeight, setContentHeight] = useState(0);
-  const onContentLayout = useCallback((e: LayoutChangeEvent) => {
-    setContentHeight(e.nativeEvent.layout.height);
+  // Button press animation
+  const primaryButtonScale = useSharedValue(1);
+  const secondaryButtonScale = useSharedValue(1);
+
+  useEffect(() => {
+    // Headline animation
+    headlineOpacity.value = withDelay(
+      200,
+      withTiming(1, { duration: 600, easing: Easing.out(Easing.ease) })
+    );
+    headlineTranslateY.value = withDelay(
+      200,
+      withTiming(0, { duration: 600, easing: Easing.out(Easing.ease) })
+    );
+
+    // Subheadline animation
+    subheadlineOpacity.value = withDelay(
+      400,
+      withTiming(1, { duration: 600, easing: Easing.out(Easing.ease) })
+    );
+    subheadlineTranslateY.value = withDelay(
+      400,
+      withTiming(0, { duration: 600, easing: Easing.out(Easing.ease) })
+    );
   }, []);
 
-  // Compute responsive dimensions so the screen fits without scrolling
-  const layout = useMemo(() => {
-    const paddingTop = Math.max(insets.top, spacing.m);
-    const paddingBottom = Math.max(insets.bottom + spacing.s, spacing.l); // extra comfort above home indicator
-    const isSmallScreen = windowHeight < 720;
-    const headlineSize = isSmallScreen ? 24 : 28;
+  const headlineAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: headlineOpacity.value,
+    transform: [{ translateY: headlineTranslateY.value }],
+  }));
 
-    // Reserve space for CTA cluster (button + skip)
-    const reservedCta = (isSmallScreen ? 48 : 56) + spacing.m /* gap */ + 22 + spacing.s /* extra buffer */;
-    const reserved = paddingTop + paddingBottom + contentHeight + reservedCta + spacing.m;
-    const heroAvailable = windowHeight - reserved;
-    // Clamp hero height to keep composition while ensuring everything fits
-    const hero = Math.max(140, Math.min(320, Math.round(heroAvailable)));
+  const subheadlineAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: subheadlineOpacity.value,
+    transform: [{ translateY: subheadlineTranslateY.value }],
+  }));
 
-    return { hero, isSmallScreen, headlineSize, paddingTop, paddingBottom };
-  }, [windowHeight, insets.top, insets.bottom, contentHeight]);
+  const primaryButtonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: primaryButtonScale.value }],
+  }));
 
-  const handleContinue = () => {
+  const secondaryButtonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: secondaryButtonScale.value }],
+  }));
+
+  const handlePrimaryPress = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     navigation.navigate('Disclaimer');
   };
 
+  const handlePrimaryPressIn = () => {
+    primaryButtonScale.value = withTiming(0.96, { duration: 100 });
+  };
+
+  const handlePrimaryPressOut = () => {
+    primaryButtonScale.value = withSpring(1, { damping: 10, stiffness: 300 });
+  };
+
+  const handleSecondaryPress = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    navigation.navigate('QuickStart');
+  };
+
+  const handleSecondaryPressIn = () => {
+    secondaryButtonScale.value = withTiming(0.96, { duration: 100 });
+  };
+
+  const handleSecondaryPressOut = () => {
+    secondaryButtonScale.value = withSpring(1, { damping: 10, stiffness: 300 });
+  };
+
   return (
-    <View style={[styles.container, { paddingTop: layout.paddingTop, paddingBottom: layout.paddingBottom }]}>
-      {!lowSensoryMode && (
-        <View style={styles.heroContainer}>
-          <Image
-            source={require('../../../assets/onboarding-hero.png')}
-            style={[styles.heroImage, { height: layout.hero }]}
-            resizeMode="cover"
-          />
-          <LinearGradient
-            colors={['transparent', 'rgba(10, 14, 14, 0.6)', palette.deepBlack]}
-            style={styles.heroGradient}
-          />
-        </View>
-      )}
-      <View style={styles.content}>
-        <View onLayout={onContentLayout}>
-          <Text style={[styles.headline, { fontSize: layout.headlineSize }]}>{CONTENT.headline}</Text>
-
-          <View style={styles.bulletsContainer}>
-            {CONTENT.bullets.map((bullet, index) => (
-              <View
-                key={bullet}
-                style={[
-                  styles.bulletRow,
-                  layout.isSmallScreen && styles.bulletRowSmall,
-                  index !== CONTENT.bullets.length - 1 && styles.bulletRowSpacing,
-                ]}
-              >
-                <View style={styles.bulletIcon}>
-                  <Text style={styles.bulletIconText}>✓</Text>
-                </View>
-                <Text style={[styles.bulletText, layout.isSmallScreen && styles.bulletTextSmall]}>{bullet}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <Button
-          mode="contained"
-          onPress={handleContinue}
-          style={styles.ctaButton}
-          contentStyle={[styles.ctaContent, layout.isSmallScreen && styles.ctaContentSmall]}
-          labelStyle={styles.ctaLabel}
-        >
-          {CONTENT.ctaText}
-        </Button>
-
-        <Button mode="text" onPress={handleContinue} labelStyle={styles.skipLabel}>
-          {CONTENT.skipText}
-        </Button>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* HERO SECTION */}
+      <View style={styles.heroSection}>
+        <AnimatedGradientHero height={240} />
+        <LinearGradient
+          colors={['transparent', 'rgba(15, 20, 25, 0.9)']}
+          style={StyleSheet.absoluteFill}
+        />
       </View>
-    </View>
+
+      {/* CONTENT SECTION */}
+      <View style={styles.contentSection}>
+          {/* HEADLINE */}
+          <Animated.View style={headlineAnimatedStyle}>
+            <Text style={styles.headline}>
+              You shouldn't have to mentally translate your workout app
+            </Text>
+          </Animated.View>
+
+          {/* SUBHEADLINE */}
+          <Animated.View style={subheadlineAnimatedStyle}>
+            <Text style={styles.subheadline}>
+              TransFitness speaks your language—with programming that accounts for binding, HRT, surgery recovery, and dysphoria.
+            </Text>
+          </Animated.View>
+
+          {/* VALUE CARDS */}
+          <ValueCard
+            delay={600}
+            problem="I'm worried about exercises that compress my chest"
+            solution="137 binding-safe exercises with video demos and alternatives"
+          />
+
+          <ValueCard
+            delay={700}
+            problem="My app doesn't account for how HRT affects my recovery"
+            solution="Hormone-adjusted training volumes that adapt to your cycle"
+          />
+
+          <ValueCard
+            delay={800}
+            problem="I'm tired of 'ladies' this, 'guys' that in every app"
+            solution="Body-neutral cues focused on movement mechanics, not looks"
+          />
+
+          {/* PRIMARY CTA */}
+          <AnimatedTouchableOpacity
+            onPress={handlePrimaryPress}
+            onPressIn={handlePrimaryPressIn}
+            onPressOut={handlePrimaryPressOut}
+            style={[styles.primaryButton, primaryButtonAnimatedStyle]}
+            activeOpacity={1}
+          >
+            <LinearGradient
+              colors={['#00D9C0', '#00B39D']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
+            >
+              <Text style={styles.primaryButtonText}>Start Training Safely</Text>
+            </LinearGradient>
+          </AnimatedTouchableOpacity>
+
+          {/* SECONDARY OPTION */}
+          <AnimatedTouchableOpacity
+            onPress={handleSecondaryPress}
+            onPressIn={handleSecondaryPressIn}
+            onPressOut={handleSecondaryPressOut}
+            style={[styles.secondaryButton, secondaryButtonAnimatedStyle]}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.secondaryButtonText}>I need help right now →</Text>
+          </AnimatedTouchableOpacity>
+        </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
-    paddingTop: spacing.m,
-    paddingBottom: spacing.l,
+    backgroundColor: '#0F1419',
   },
-  content: {
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  heroContainer: {
-    marginHorizontal: -spacing.l, // Break out of container padding for full width
-    marginTop: 0,
+  heroSection: {
+    height: 240,
     position: 'relative',
+    overflow: 'hidden',
   },
-  heroImage: {
-    width: '100%',
-    marginBottom: spacing.l,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-  },
-  heroGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 200,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+  contentSection: {
+    flex: 1,
+    paddingHorizontal: spacing.l,
+    marginTop: -60,
+    paddingTop: spacing.s,
+    paddingBottom: spacing.m,
   },
   headline: {
-    ...typography.h1,
-    textAlign: 'center',
-    lineHeight: typography.h1.fontSize * 1.2,
-    marginBottom: spacing.m,
-    color: palette.white,
-  },
-  bulletsContainer: {
-    marginBottom: spacing.m,
-  },
-  bulletRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.darkCard,
-    borderRadius: 20,
-    padding: spacing.m,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  bulletRowSpacing: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    lineHeight: 34,
+    letterSpacing: -0.5,
     marginBottom: spacing.s,
+    textAlign: 'left',
   },
-  bulletRowSmall: {
-    paddingVertical: spacing.s,
-    paddingHorizontal: spacing.m,
-  },
-  bulletIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: palette.tealPrimary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.m,
-    shadowColor: palette.tealPrimary,
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
-  },
-  bulletIconText: {
-    color: palette.deepBlack,
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  bulletText: {
-    flex: 1,
-    fontSize: typography.bodyLarge.fontSize,
-    color: typography.bodyLarge.color,
-    lineHeight: typography.bodyLarge.fontSize * 1.5,
-  },
-  bulletTextSmall: {
+  subheadline: {
     fontSize: 15,
-    lineHeight: 15 * 1.5,
-  },
-  ctaButton: {
-    borderRadius: 16,
+    fontWeight: '400',
+    color: '#B8C5C5',
+    lineHeight: 22,
     marginBottom: spacing.m,
-    shadowColor: palette.tealPrimary,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
+    textAlign: 'left',
+  },
+  primaryButton: {
+    height: 52,
+    borderRadius: 26,
+    marginTop: spacing.m,
+    marginBottom: spacing.s,
+    overflow: 'hidden',
+    shadowColor: '#00D9C0',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
     elevation: 6,
   },
-  ctaContent: {
-    paddingVertical: spacing.m,
-    backgroundColor: palette.tealPrimary,
+  buttonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  ctaContentSmall: {
+  primaryButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F1419',
+  },
+  secondaryButton: {
+    alignItems: 'center',
     paddingVertical: spacing.s,
+    marginBottom: spacing.xs,
   },
-  ctaLabel: {
-    ...typography.button,
-    color: palette.deepBlack,
-  },
-  skipLabel: {
-    ...typography.button,
-    color: palette.tealPrimary,
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#9CA3AF',
   },
 });
