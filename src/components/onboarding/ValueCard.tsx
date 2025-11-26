@@ -57,11 +57,11 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: '#151920',
     borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: '#2A2F36',
-    marginBottom: 8,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
@@ -77,18 +77,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   problem: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '500',
     color: '#9CA3AF',
     fontStyle: 'italic',
-    lineHeight: 18,
+    lineHeight: 20,
     marginBottom: 4,
   },
   solution: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: '#00D9C0',
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });
 

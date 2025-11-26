@@ -104,7 +104,7 @@ export default function WhyTransFitness({ navigation }: OnboardingScreenProps<'W
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* HERO SECTION */}
       <View style={styles.heroSection}>
-        <AnimatedGradientHero height={240} />
+        <AnimatedGradientHero height={180} />
         <LinearGradient
           colors={['transparent', 'rgba(15, 20, 25, 0.9)']}
           style={StyleSheet.absoluteFill}
@@ -185,16 +185,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F1419',
   },
   heroSection: {
-    height: 240,
+    height: 180,
     position: 'relative',
     overflow: 'hidden',
   },
   contentSection: {
     flex: 1,
     paddingHorizontal: spacing.l,
-    marginTop: -60,
+    marginTop: -40,
     paddingTop: spacing.s,
-    paddingBottom: spacing.m,
+    paddingBottom: 0,
   },
   headline: {
     fontSize: 28,
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     lineHeight: 34,
     letterSpacing: -0.5,
-    marginBottom: spacing.s,
+    marginBottom: 12,
     textAlign: 'left',
   },
   subheadline: {
@@ -210,14 +210,14 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: '#B8C5C5',
     lineHeight: 22,
-    marginBottom: spacing.m,
+    marginBottom: 16,
     textAlign: 'left',
   },
   primaryButton: {
     height: 52,
     borderRadius: 26,
-    marginTop: spacing.m,
-    marginBottom: spacing.s,
+    marginTop: 16,
+    marginBottom: 8,
     overflow: 'hidden',
     shadowColor: '#00D9C0',
     shadowOffset: { width: 0, height: 6 },
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     alignItems: 'center',
     paddingVertical: spacing.s,
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   secondaryButtonText: {
     fontSize: 16,

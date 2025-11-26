@@ -1,38 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, Modal, FlatList } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Platform } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import Svg, { Path } from 'react-native-svg';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
-import { palette, spacing, typography } from '../../../theme';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import PrimaryButton from '../../../components/ui/PrimaryButton';
 
-type HRTAnswer = 'yes' | 'no';
-type HRTType = 'estrogen_blockers' | 'testosterone';
+type HRTAnswer = 'yes' | 'no' | null;
+type HRTType = 'estrogen_blockers' | 'testosterone' | null;
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+const HRT_TYPE_OPTIONS = [
+  {
+    value: 'estrogen_blockers' as const,
+    title: 'Estrogen + Anti-androgens',
+    description: 'Estradiol, Spironolactone, Cypro, etc.',
+  },
+  {
+    value: 'testosterone' as const,
+    title: 'Testosterone',
+    description: 'Injectable, gel, patch, pellet',
+  },
 ];
 
-const generateYears = (): number[] => {
-  const currentYear = new Date().getFullYear();
-  const years: number[] = [];
-  for (let i = 0; i <= 15; i++) {
-    years.push(currentYear - i);
-  }
-  return years;
+// Helper: Format date as "January 2023"
+const formatDate = (date: Date): string => {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return `${months[date.getMonth()]} ${date.getFullYear()}`;
 };
 
-const calculateDuration = (startDate: Date | null): number => {
-  if (!startDate) return 0;
-  const now = new Date();
-  const months = 
-    (now.getFullYear() - startDate.getFullYear()) * 12 +
-    (now.getMonth() - startDate.getMonth());
+// Helper: Calculate duration in months
+const calculateDuration = (startDate: Date): number => {
+  const today = new Date();
+  const months = (today.getFullYear() - startDate.getFullYear()) * 12 + 
+                 (today.getMonth() - startDate.getMonth());
   return Math.max(0, months);
 };
 
+// Helper: Format duration as "X months" or "X years, Y months"
 const formatDuration = (months: number): string => {
   if (months === 0) return '0 months';
   if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'}`;
@@ -44,634 +53,745 @@ const formatDuration = (months: number): string => {
   return `${years} ${years === 1 ? 'year' : 'years'}, ${remainingMonths} ${remainingMonths === 1 ? 'month' : 'months'}`;
 };
 
-interface HRTTypeOption {
-  value: HRTType;
-  title: string;
-  description: string;
-}
+// Helper: Get date 15 years ago
+const getFifteenYearsAgo = (): Date => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 15);
+  return date;
+};
 
-const HRT_TYPE_OPTIONS: HRTTypeOption[] = [
-  {
-    value: 'estrogen_blockers',
-    title: 'Estrogen + Anti-androgens',
-    description: '(e.g., Estradiol, Spironolactone, Cypro)',
-  },
-  {
-    value: 'testosterone',
-    title: 'Testosterone',
-    description: '(e.g., Injectable, gel, patch)',
-  },
-];
+// Calendar Icon Component
+const CalendarIcon = () => (
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M16 2V6"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M8 2V6"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M3 10H21"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Info Icon Component
+const InfoIcon = () => (
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 16V12"
+      stroke="#00D9C0"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 8H12.01"
+      stroke="#00D9C0"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+      stroke="#00D9C0"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Close Icon Component
+const CloseIcon = () => (
+  <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 6L6 18"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M6 6L18 18"
+      stroke="#9CA3AF"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 export default function HRTStatus({ navigation }: OnboardingScreenProps<'HRTStatus'>) {
   const { profile, updateProfile } = useProfile();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 375;
 
-  const [hrtAnswer, setHrtAnswer] = useState<HRTAnswer | null>(
+  const [hrtAnswer, setHrtAnswer] = useState<HRTAnswer>(
     profile?.on_hrt === true ? 'yes' : profile?.on_hrt === false ? 'no' : null
   );
-
-  const [hrtType, setHrtType] = useState<HRTType | null>(
+  const [hrtType, setHrtType] = useState<HRTType>(
     (profile?.hrt_type as HRTType) || null
   );
+  const [startDate, setStartDate] = useState<Date | null>(
+    profile?.hrt_start_date ? new Date(profile.hrt_start_date) : null
+  );
+  const [tempDate, setTempDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
 
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [showYearPicker, setShowYearPicker] = useState(false);
-
-  const [validationError, setValidationError] = useState<string | null>(null);
-
-  // Initialize from profile
+  // Initialize tempDate when opening picker
   useEffect(() => {
-    if (profile?.hrt_start_date) {
-      const date = new Date(profile.hrt_start_date);
-      setSelectedMonth(date.getMonth());
-      setSelectedYear(date.getFullYear());
+    if (showDatePicker) {
+      setTempDate(startDate || new Date());
     }
-  }, [profile]);
+  }, [showDatePicker, startDate]);
 
-  const getStartDate = (): Date | null => {
-    if (selectedMonth === null || selectedYear === null) return null;
-    return new Date(selectedYear, selectedMonth, 1);
-  };
+  const handleDateConfirm = () => {
+    const today = new Date();
+    const fifteenYearsAgo = getFifteenYearsAgo();
 
-  const validateDate = (date: Date | null): boolean => {
-    if (!date) return false;
-    const now = new Date();
-    const fifteenYearsAgo = new Date();
-    fifteenYearsAgo.setFullYear(now.getFullYear() - 15);
-
-    if (date > now) {
-      setValidationError('Start date cannot be in the future');
-      return false;
+    if (tempDate > today) {
+      // Date in future - don't set
+      setShowDatePicker(false);
+      return;
     }
-    if (date < fifteenYearsAgo) {
-      setValidationError('Start date cannot be more than 15 years ago');
-      return false;
+
+    if (tempDate < fifteenYearsAgo) {
+      // Date too old - don't set
+      setShowDatePicker(false);
+      return;
     }
-    setValidationError(null);
-    return true;
+
+    setStartDate(tempDate);
+    setShowDatePicker(false);
   };
 
   const handleContinue = async () => {
     if (hrtAnswer === null) return;
 
-    if (hrtAnswer === 'yes') {
-      // Validate required fields
-      if (!hrtType) {
-        setValidationError('Please select an HRT type');
-        return;
-      }
+    try {
+      if (hrtAnswer === 'yes') {
+        if (!hrtType || !startDate) return;
 
-      const startDate = getStartDate();
-      if (!startDate) {
-        setValidationError('Please select a start date');
-        return;
-      }
+        const monthsDuration = calculateDuration(startDate);
 
-      if (!validateDate(startDate)) {
-        return;
-      }
-
-      const monthsDuration = calculateDuration(startDate);
-
-      try {
         await updateProfile({
           on_hrt: true,
           hrt_type: hrtType,
           hrt_start_date: startDate,
           hrt_months_duration: monthsDuration,
         });
-        navigation.navigate('BindingInfo');
-      } catch (error) {
-        console.error('Error saving HRT status:', error);
-      }
-    } else {
-      try {
+      } else {
         await updateProfile({
           on_hrt: false,
           hrt_type: undefined,
           hrt_start_date: undefined,
           hrt_months_duration: undefined,
         });
-        navigation.navigate('BindingInfo');
-      } catch (error) {
-        console.error('Error saving HRT status:', error);
       }
+
+      navigation.navigate('BindingInfo');
+    } catch (error) {
+      console.error('Error saving HRT status:', error);
     }
   };
 
   const canContinue = hrtAnswer !== null && 
-    (hrtAnswer === 'no' || (hrtAnswer === 'yes' && hrtType !== null && selectedMonth !== null && selectedYear !== null && !validationError));
+    (hrtAnswer === 'no' || (hrtType !== null && startDate !== null));
 
-  const startDate = getStartDate();
-  const durationMonths = calculateDuration(startDate);
-  const durationText = formatDuration(durationMonths);
-
-  const years = generateYears();
+  const durationMonths = startDate ? calculateDuration(startDate) : 0;
+  const fifteenYearsAgo = getFifteenYearsAgo();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.m),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
-    >
-      <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>
-          Are you currently on Hormone Replacement Therapy?
-        </Text>
-        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          This helps us adjust workout volume and recovery time to match your hormonal profile.
-        </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View
+        style={[
+          styles.container,
+          {
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 16,
+          },
+        ]}
+      >
+        <View style={styles.header}>
+          <View style={styles.progressWrapper}>
+            <ProgressIndicator currentStep={2} totalSteps={8} />
+          </View>
+          <Text style={styles.headline}>
+            Are you currently on Hormone Replacement Therapy?
+          </Text>
+          <Text style={styles.subheadline}>
+            This helps us adjust workout volume and recovery
+          </Text>
+        </View>
+
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Segmented Control */}
+          <View style={styles.segmentedContainer}>
+            <View style={styles.segmentControl}>
+              <TouchableOpacity
+                style={[
+                  styles.segment,
+                  hrtAnswer === 'yes' && styles.segmentActive,
+                ]}
+                onPress={() => {
+                  setHrtAnswer('yes');
+                  if (hrtAnswer === 'no') {
+                    setHrtType(null);
+                    setStartDate(null);
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.segmentText,
+                    hrtAnswer === 'yes' && styles.segmentTextActive,
+                  ]}
+                >
+                  Yes, I'm on HRT
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.segment,
+                  hrtAnswer === 'no' && styles.segmentActive,
+                ]}
+                onPress={() => {
+                  setHrtAnswer('no');
+                  setHrtType(null);
+                  setStartDate(null);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.segmentText,
+                    hrtAnswer === 'no' && styles.segmentTextActive,
+                  ]}
+                >
+                  No HRT
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Conditional: HRT Type Cards */}
+          {hrtAnswer === 'yes' && (
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionLabel}>What type of HRT?</Text>
+              {HRT_TYPE_OPTIONS.map((option, index) => {
+                const isSelected = hrtType === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.hrtTypeCard,
+                      isSelected && styles.hrtTypeCardSelected,
+                      index === HRT_TYPE_OPTIONS.length - 1 && styles.lastCard,
+                    ]}
+                    onPress={() => setHrtType(option.value)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.radioCircle, isSelected && styles.radioCircleSelected]}>
+                      {isSelected && <View style={styles.radioDot} />}
+                    </View>
+                    <View style={styles.textContainer}>
+                      <Text style={[styles.cardTitle, isSelected && styles.cardTitleSelected]}>
+                        {option.title}
+                      </Text>
+                      <Text style={[styles.cardDescription, isSelected && styles.cardDescriptionSelected]}>
+                        {option.description}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Conditional: Date Selection */}
+          {hrtAnswer === 'yes' && hrtType && (
+            <View style={styles.dateSection}>
+              <Text style={styles.sectionLabel}>When did you start?</Text>
+              <TouchableOpacity
+                style={[
+                  styles.dateButton,
+                  startDate && styles.dateButtonWithValue,
+                ]}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.dateButtonLeft}>
+                  <Text style={styles.dateLabel}>Start Date</Text>
+                  <Text style={[styles.dateValue, !startDate && styles.dateValuePlaceholder]}>
+                    {startDate ? formatDate(startDate) : 'Select date'}
+                  </Text>
+                </View>
+                <CalendarIcon />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Conditional: Duration Badge */}
+          {startDate && (
+            <View style={styles.infoBadgeContainer}>
+              <View style={styles.infoBadge}>
+                <View style={styles.iconContainer}>
+                  <InfoIcon />
+                </View>
+                <View style={styles.badgeTextContainer}>
+                  <Text style={styles.badgeTitle}>HRT Duration</Text>
+                  <Text style={styles.badgeDescription}>
+                    Approximately {formatDuration(durationMonths)} on HRT
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[
+              styles.primaryButton,
+              canContinue && styles.buttonShadow,
+              !canContinue && styles.primaryButtonDisabled,
+            ]}
+            onPress={handleContinue}
+            disabled={!canContinue}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={canContinue ? ['#00D9C0', '#00B39D'] : ['#2A2F36', '#1A1F26']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.buttonGradient}
+            >
+              <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
+                Continue
+              </Text>
+            </LinearGradient>
+          </TouchableOpacity>
+          <Text style={styles.hintText}>
+            This information helps personalize your training
+          </Text>
+        </View>
       </View>
 
-      <ProgressIndicator
-        currentStep={2}
-        totalSteps={8}
-        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
-      />
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      {/* Date Picker Modal */}
+      <Modal
+        visible={showDatePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDatePicker(false)}
       >
-        {/* Initial Question */}
-        <View style={styles.section}>
-          <View style={styles.buttonGroup}>
-            <TouchableOpacity
-              onPress={() => {
-                setHrtAnswer('yes');
-                setValidationError(null);
-              }}
-              activeOpacity={0.7}
-              style={[
-                styles.largeButton,
-                hrtAnswer === 'yes' && styles.largeButtonSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.largeButtonText,
-                  hrtAnswer === 'yes' && styles.largeButtonTextSelected,
-                ]}
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowDatePicker(false)}
+          />
+          <View
+            style={[
+              styles.modalContainer,
+              { paddingBottom: insets.bottom + 24 },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Start Date</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(false)}
+                activeOpacity={0.7}
               >
-                Yes, I'm on HRT
-              </Text>
-            </TouchableOpacity>
+                <CloseIcon />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                value={tempDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                maximumDate={new Date()}
+                minimumDate={fifteenYearsAgo}
+                textColor="#FFFFFF"
+                themeVariant="dark"
+                onChange={(event, date) => {
+                  if (Platform.OS === 'android') {
+                    if (event.type === 'set' && date) {
+                      setTempDate(date);
+                      setShowDatePicker(false);
+                    } else if (event.type === 'dismissed') {
+                      setShowDatePicker(false);
+                    }
+                  } else {
+                    // iOS - update date as user scrolls
+                    if (date) {
+                      setTempDate(date);
+                    }
+                  }
+                }}
+              />
+            </View>
 
             <TouchableOpacity
-              onPress={() => {
-                setHrtAnswer('no');
-                setHrtType(null);
-                setSelectedMonth(null);
-                setSelectedYear(null);
-                setValidationError(null);
-              }}
-              activeOpacity={0.7}
-              style={[
-                styles.largeButton,
-                hrtAnswer === 'no' && styles.largeButtonSelected,
-              ]}
+              style={styles.confirmButton}
+              onPress={handleDateConfirm}
+              activeOpacity={0.8}
             >
-              <Text
-                style={[
-                  styles.largeButtonText,
-                  hrtAnswer === 'no' && styles.largeButtonTextSelected,
-                ]}
-              >
-                No, I'm not on HRT
-              </Text>
+              <Text style={styles.confirmButtonText}>Confirm</Text>
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Conditional Sections - Only show if Yes */}
-        {hrtAnswer === 'yes' && (
-          <>
-            {/* Section A: HRT Type */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What type of HRT are you taking?</Text>
-              <View style={styles.hrtTypeContainer}>
-                {HRT_TYPE_OPTIONS.map((option) => {
-                  const isSelected = hrtType === option.value;
-                  return (
-                    <TouchableOpacity
-                      key={option.value}
-                      onPress={() => {
-                        setHrtType(option.value);
-                        setValidationError(null);
-                      }}
-                      activeOpacity={0.7}
-                      style={[
-                        styles.hrtTypeCard,
-                        isSelected && styles.hrtTypeCardSelected,
-                      ]}
-                    >
-                      {isSelected && (
-                        <View style={styles.checkmarkContainer}>
-                          <Text style={styles.checkmark}>✓</Text>
-                        </View>
-                      )}
-                      <View style={styles.hrtTypeTextContainer}>
-                        <Text style={[styles.hrtTypeTitle, isSelected && styles.hrtTypeTitleSelected]}>
-                          {option.title}
-                        </Text>
-                        <Text style={[styles.hrtTypeDescription, isSelected && styles.hrtTypeDescriptionSelected]}>
-                          {option.description}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Section B: HRT Start Date */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>When did you start HRT?</Text>
-              <View style={styles.dateSelectorContainer}>
-                <View style={styles.dateSelectorRow}>
-                  <TouchableOpacity
-                    onPress={() => setShowMonthPicker(true)}
-                    style={styles.dateDropdown}
-                  >
-                    <Text style={[styles.dateDropdownText, selectedMonth === null && styles.dateDropdownPlaceholder]}>
-                      {selectedMonth !== null ? MONTHS[selectedMonth] : 'Month'}
-                    </Text>
-                    <Text style={styles.dateDropdownArrow}>▼</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => setShowYearPicker(true)}
-                    style={styles.dateDropdown}
-                  >
-                    <Text style={[styles.dateDropdownText, selectedYear === null && styles.dateDropdownPlaceholder]}>
-                      {selectedYear !== null ? selectedYear.toString() : 'Year'}
-                    </Text>
-                    <Text style={styles.dateDropdownArrow}>▼</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {startDate && durationMonths > 0 && (
-                  <View style={styles.durationIndicator}>
-                    <Text style={styles.durationIcon}>💡</Text>
-                    <Text style={styles.durationText}>
-                      You've been on HRT for approximately {durationText}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            {/* Validation Error Banner */}
-            {validationError && (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorText}>⚠️ {validationError}</Text>
-              </View>
-            )}
-          </>
-        )}
-      </ScrollView>
-
-      <View style={styles.ctaContainer}>
-        <PrimaryButton
-          onPress={handleContinue}
-          label="Continue"
-          disabled={!canContinue}
-        />
-        {!canContinue && hrtAnswer === 'yes' && (
-          <Text style={styles.hintText}>
-            Please select HRT type and start date to continue
-          </Text>
-        )}
-      </View>
-
-      {/* Month Picker Modal */}
-      <Modal
-        visible={showMonthPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowMonthPicker(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowMonthPicker(false)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Month</Text>
-            <FlatList
-              data={MONTHS}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    selectedMonth === index && styles.modalItemSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedMonth(index);
-                    setShowMonthPicker(false);
-                    if (selectedYear !== null) {
-                      const date = new Date(selectedYear, index, 1);
-                      validateDate(date);
-                    }
-                  }}
-                >
-                  <Text style={[styles.modalItemText, selectedMonth === index && styles.modalItemTextSelected]}>
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </TouchableOpacity>
       </Modal>
-
-      {/* Year Picker Modal */}
-      <Modal
-        visible={showYearPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowYearPicker(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowYearPicker(false)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Year</Text>
-            <FlatList
-              data={years}
-              keyExtractor={(item) => item.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    selectedYear === item && styles.modalItemSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedYear(item);
-                    setShowYearPicker(false);
-                    if (selectedMonth !== null) {
-                      const date = new Date(item, selectedMonth, 1);
-                      validateDate(date);
-                    }
-                  }}
-                >
-                  <Text style={[styles.modalItemText, selectedYear === item && styles.modalItemTextSelected]}>
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#0F1419',
+  },
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
+    backgroundColor: '#0F1419',
+    paddingHorizontal: 0,
   },
   header: {
-    marginBottom: spacing.l,
-    paddingTop: spacing.s,
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  progressWrapper: {
+    marginBottom: 8,
   },
   headline: {
-    ...typography.h1,
-    textAlign: 'left',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.8,
-  },
-  headlineSmall: {
     fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 34,
+    letterSpacing: -0.4,
+    marginBottom: 8,
+    textAlign: 'left',
   },
   subheadline: {
-    ...typography.bodyLarge,
-    textAlign: 'left',
-    color: palette.midGray,
-    lineHeight: 24,
-  },
-  subheadlineSmall: {
     fontSize: 15,
+    fontWeight: '400',
+    color: '#9CA3AF',
+    lineHeight: 22,
+    textAlign: 'left',
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: 32,
   },
-  section: {
-    marginBottom: spacing.xl,
+  segmentedContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
   },
-  sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.m,
+  segmentControl: {
+    flexDirection: 'row',
+    backgroundColor: '#1A1F26',
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: '#2A2F36',
   },
-  buttonGroup: {
-    gap: spacing.m,
-  },
-  largeButton: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
-    borderWidth: 2,
-    borderColor: palette.border,
-    alignItems: 'center',
-    minHeight: 64,
+  segment: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
     justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 44,
   },
-  largeButtonSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
-    borderWidth: 3,
+  segmentActive: {
+    backgroundColor: '#00D9C0',
   },
-  largeButtonText: {
-    ...typography.h3,
-    color: palette.white,
+  segmentText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#9CA3AF',
   },
-  largeButtonTextSelected: {
-    color: palette.tealPrimary,
+  segmentTextActive: {
+    color: '#0F1419',
   },
-  hrtTypeContainer: {
-    gap: spacing.m,
+  sectionContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  sectionLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'left',
   },
   hrtTypeCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
+    backgroundColor: '#1A1F26',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 2,
-    borderColor: palette.border,
-    minHeight: 80,
+    borderColor: '#2A2F36',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.m,
+    minHeight: 72,
   },
   hrtTypeCardSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.darkerCard,
+    borderColor: '#00D9C0',
+    backgroundColor: 'rgba(0, 217, 192, 0.08)',
   },
-  checkmarkContainer: {
+  lastCard: {
+    marginBottom: 0,
+  },
+  radioCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: palette.tealPrimary,
-    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    marginRight: 16,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radioCircleSelected: {
+    borderColor: '#00D9C0',
+  },
+  radioDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#00D9C0',
+  },
+  textContainer: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    lineHeight: 22,
+    marginBottom: 4,
+    textAlign: 'left',
+  },
+  cardTitleSelected: {
+    color: '#00D9C0',
+  },
+  cardDescription: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#9CA3AF',
+    lineHeight: 18,
+    textAlign: 'left',
+  },
+  cardDescriptionSelected: {
+    color: '#B8C5C5',
+  },
+  dateSection: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  dateButton: {
+    backgroundColor: '#1A1F26',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#2A2F36',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 56,
+  },
+  dateButtonWithValue: {
+    borderColor: '#00D9C0',
+  },
+  dateButtonLeft: {
+    flex: 1,
+  },
+  dateLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    marginBottom: 2,
+    textAlign: 'left',
+  },
+  dateValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
+  },
+  dateValuePlaceholder: {
+    color: '#6B7280',
+    fontWeight: '400',
+  },
+  infoBadgeContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+  },
+  infoBadge: {
+    backgroundColor: 'rgba(0, 217, 192, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#00D9C0',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  iconContainer: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
     flexShrink: 0,
   },
-  checkmark: {
-    color: palette.deepBlack,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  hrtTypeTextContainer: {
+  badgeTextContainer: {
     flex: 1,
   },
-  hrtTypeTitle: {
-    ...typography.h3,
-    marginBottom: spacing.xs,
-    color: palette.white,
+  badgeTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#00D9C0',
+    marginBottom: 4,
+    textAlign: 'left',
   },
-  hrtTypeTitleSelected: {
-    color: palette.tealPrimary,
-  },
-  hrtTypeDescription: {
-    ...typography.body,
-    color: palette.midGray,
+  badgeDescription: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#B8C5C5',
     lineHeight: 20,
+    textAlign: 'left',
   },
-  hrtTypeDescriptionSelected: {
-    color: palette.lightGray,
-  },
-  dateSelectorContainer: {
-    gap: spacing.m,
-  },
-  dateSelectorRow: {
-    flexDirection: 'row',
-    gap: spacing.m,
-  },
-  dateDropdown: {
-    flex: 1,
-    backgroundColor: palette.darkCard,
-    borderWidth: 2,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: spacing.m,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 52,
-  },
-  dateDropdownText: {
-    ...typography.body,
-    color: palette.white,
-    flex: 1,
-  },
-  dateDropdownPlaceholder: {
-    color: palette.midGray,
-  },
-  dateDropdownArrow: {
-    ...typography.body,
-    color: palette.midGray,
-    fontSize: 12,
-  },
-  durationIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.darkerCard,
-    borderRadius: 12,
-    padding: spacing.m,
-    borderWidth: 1,
-    borderColor: palette.border,
-    gap: spacing.s,
-  },
-  durationIcon: {
-    fontSize: 20,
-  },
-  durationText: {
-    ...typography.body,
-    color: palette.tealPrimary,
-    flex: 1,
-    lineHeight: 20,
-  },
-  errorBanner: {
-    backgroundColor: 'rgba(255, 107, 107, 0.15)',
-    borderLeftWidth: 4,
-    borderLeftColor: palette.error,
-    borderRadius: 12,
-    padding: spacing.m,
-    marginTop: spacing.m,
-  },
-  errorText: {
-    ...typography.bodySmall,
-    color: palette.error,
-    lineHeight: 18,
-  },
-  ctaContainer: {
-    marginTop: spacing.s,
-    paddingTop: spacing.m,
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: palette.border,
+    borderTopColor: '#2A2F36',
+    backgroundColor: '#0F1419',
+  },
+  primaryButton: {
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.4,
+  },
+  buttonShadow: {
+    shadowColor: '#00D9C0',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  buttonGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 28,
+  },
+  buttonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F1419',
+  },
+  buttonTextDisabled: {
+    color: '#6B7280',
   },
   hintText: {
-    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#6B7280',
     textAlign: 'center',
-    color: palette.midGray,
-    marginTop: spacing.xs,
+    marginTop: 8,
+    lineHeight: 18,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(15, 20, 25, 0.9)',
+    justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 20,
-    padding: spacing.m,
-    width: '80%',
-    maxHeight: '60%',
-    borderWidth: 2,
-    borderColor: palette.border,
+  modalBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  modalContainer: {
+    backgroundColor: '#1A1F26',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 24,
+    paddingHorizontal: 24,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.m,
-    textAlign: 'center',
-  },
-  modalItem: {
-    padding: spacing.m,
-    borderRadius: 12,
-    marginBottom: spacing.xs,
-  },
-  modalItemSelected: {
-    backgroundColor: palette.tealGlow,
-  },
-  modalItemText: {
-    ...typography.body,
-    color: palette.lightGray,
-  },
-  modalItemTextSelected: {
-    color: palette.tealPrimary,
+    fontSize: 18,
     fontWeight: '600',
+    color: '#FFFFFF',
+    textAlign: 'left',
+  },
+  datePickerContainer: {
+    marginVertical: 16,
+    width: '100%',
+    alignItems: 'center',
+    ...(Platform.OS === 'ios' && {
+      height: 216,
+      justifyContent: 'center',
+      backgroundColor: '#1A1F26',
+      borderRadius: 12,
+      overflow: 'hidden',
+    }),
+  },
+  confirmButton: {
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#00D9C0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  confirmButtonText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F1419',
   },
 });
-
