@@ -1,463 +1,390 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
-import type { OnboardingScreenProps } from '../../../types/onboarding';
-import { useProfile } from '../../../hooks/useProfile';
-import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, TextInput } from "react-native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
+import { OnboardingStackParamList } from "../../../types/onboarding";
+import { DysphoriaTrigger } from "../../../types";
+import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { colors, spacing, borderRadius } from "../../../theme/theme";
+import { glassStyles, textStyles, inputStyles } from "../../../theme/components";
+import { useProfile } from "../../../hooks/useProfile";
+import { updateProfile } from "../../../services/storage/profile";
 
-// Trigger options
+type DysphoriaNavigationProp = StackNavigationProp<OnboardingStackParamList, "DysphoriaTriggers">;
+
+interface DysphoriaTriggersProps {
+  navigation: DysphoriaNavigationProp;
+}
+
+// Map UI-friendly trigger IDs to profile types
+const TRIGGER_MAPPING: Record<string, DysphoriaTrigger> = {
+  mirrors: "mirrors",
+  public_spaces: "crowded_spaces",
+  photos: "other", // Photos tracking maps to 'other'
+  changing_rooms: "locker_rooms",
+  swimming: "other", // Swimming maps to 'other'
+  form_focused: "other", // Form-focused maps to 'other'
+};
+
 const TRIGGER_OPTIONS = [
-  { value: 'looking_at_chest', label: 'Looking at chest in mirror' },
-  { value: 'tight_clothing', label: 'Tight or form-fitting clothing' },
-  { value: 'mirrors', label: 'Mirrors / reflective surfaces' },
-  { value: 'body_contact', label: 'Body contact (spotting, partner work)' },
-  { value: 'crowded_spaces', label: 'Crowded workout spaces' },
-  { value: 'locker_rooms', label: 'Locker rooms / changing areas' },
-  { value: 'voice', label: 'Voice (grunting, heavy breathing)' },
-  { value: 'other', label: 'Other (please specify)' },
+  {
+    id: "mirrors",
+    icon: "eye-outline" as keyof typeof Ionicons.glyphMap,
+    label: "Mirrors in Gym",
+    description: "I prefer to avoid mirror-facing exercises"
+  },
+  {
+    id: "public_spaces",
+    icon: "people-outline" as keyof typeof Ionicons.glyphMap,
+    label: "Crowded Spaces",
+    description: "I'm more comfortable with home workouts or quiet times"
+  },
+  {
+    id: "photos",
+    icon: "camera-outline" as keyof typeof Ionicons.glyphMap,
+    label: "Progress Photos",
+    description: "I'd rather skip photo-based tracking"
+  },
+  {
+    id: "changing_rooms",
+    icon: "shirt-outline" as keyof typeof Ionicons.glyphMap,
+    label: "Changing Rooms",
+    description: "I prefer workouts I can do without changing"
+  },
+  {
+    id: "swimming",
+    icon: "water-outline" as keyof typeof Ionicons.glyphMap,
+    label: "Swimming/Water Activities",
+    description: "I want to avoid aquatic exercises"
+  },
+  {
+    id: "form_focused",
+    icon: "heart-outline" as keyof typeof Ionicons.glyphMap,
+    label: "Body-Focused Movements",
+    description: "I prefer functional exercises over aesthetic ones"
+  }
 ];
 
-// SVG Components
-const CheckmarkSVG = () => (
-  <Svg width={14} height={14} viewBox="0 0 14 14" fill="none">
-    <Path
-      d="M2 7 L5.5 10.5 L12 4"
-      stroke="#0F1419"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
+export default function DysphoriaTriggers({ navigation }: DysphoriaTriggersProps) {
+  const { profile } = useProfile();
+  const [triggers, setTriggers] = useState<Set<string>>(new Set());
+  const [notes, setNotes] = useState<string>("");
+  const [isFocused, setIsFocused] = useState(false);
 
-export default function DysphoriaTriggers({ navigation }: OnboardingScreenProps<'DysphoriaTriggers'>) {
-  const { profile, updateProfile } = useProfile();
-  const insets = useSafeAreaInsets();
-
-  // State
-  const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
-  const [otherText, setOtherText] = useState<string>('');
-  const [notesText, setNotesText] = useState<string>('');
-
-  // Load from profile
+  // Load initial data from profile
   useEffect(() => {
-    if (profile?.dysphoria_triggers) {
-      setSelectedTriggers(profile.dysphoria_triggers);
-    }
-    if (profile?.dysphoria_notes) {
-      // Check if notes contain "Other:" prefix
-      if (profile.dysphoria_notes.includes('Other:')) {
-        const parts = profile.dysphoria_notes.split('Other:');
-        if (parts.length > 1) {
-          setOtherText(parts[1].trim());
-          setNotesText(parts[0].trim());
-        } else {
-          setNotesText(profile.dysphoria_notes);
-        }
-      } else {
-        setNotesText(profile.dysphoria_notes);
+    if (profile) {
+      if (profile.dysphoria_triggers && profile.dysphoria_triggers.length > 0) {
+        // Map profile triggers back to UI IDs
+        const uiTriggers = new Set<string>();
+        profile.dysphoria_triggers.forEach((trigger) => {
+          // Find the UI ID that maps to this profile trigger
+          const uiId = Object.keys(TRIGGER_MAPPING).find(
+            (key) => TRIGGER_MAPPING[key] === trigger
+          );
+          if (uiId) {
+            uiTriggers.add(uiId);
+          }
+        });
+        setTriggers(uiTriggers);
+      }
+      if (profile.dysphoria_notes) {
+        setNotes(profile.dysphoria_notes);
       }
     }
   }, [profile]);
 
-  // Toggle trigger selection
-  const toggleTrigger = (value: string) => {
-    if (selectedTriggers.includes(value)) {
-      setSelectedTriggers(selectedTriggers.filter((t) => t !== value));
-      // Clear other text if "other" is deselected
-      if (value === 'other') {
-        setOtherText('');
-      }
+  const toggleTrigger = (id: string) => {
+    const newTriggers = new Set(triggers);
+    if (newTriggers.has(id)) {
+      newTriggers.delete(id);
     } else {
-      setSelectedTriggers([...selectedTriggers, value]);
+      newTriggers.add(id);
     }
+    setTriggers(newTriggers);
   };
 
-  // Handle continue
   const handleContinue = async () => {
     try {
-      // Combine other trigger text with notes if both exist
-      let finalNotes = notesText.trim();
-      if (selectedTriggers.includes('other') && otherText.trim()) {
-        const otherNote = `Other: ${otherText.trim()}`;
-        finalNotes = finalNotes ? `${finalNotes}\n\n${otherNote}` : otherNote;
-      }
-
-      const hasData = selectedTriggers.length > 0 || finalNotes.length > 0;
+      // Map UI trigger IDs to profile trigger types
+      const profileTriggers: DysphoriaTrigger[] = Array.from(triggers)
+        .map((uiId) => TRIGGER_MAPPING[uiId])
+        .filter((trigger): trigger is DysphoriaTrigger => trigger !== undefined);
 
       await updateProfile({
-        dysphoria_triggers: hasData && selectedTriggers.length > 0 ? selectedTriggers : undefined,
-        dysphoria_notes: hasData && finalNotes.length > 0 ? finalNotes : undefined,
+        dysphoria_triggers: profileTriggers,
+        dysphoria_notes: notes.trim() || undefined,
       });
-      navigation.navigate('Review');
+      navigation.navigate("Review");
     } catch (error) {
-      console.error('Error saving dysphoria information:', error);
-      // Navigate even if save fails
-      navigation.navigate('Review');
+      console.error("Error saving dysphoria triggers:", error);
     }
   };
 
-  // Handle skip
   const handleSkip = async () => {
     try {
-      // Clear all data
       await updateProfile({
-        dysphoria_triggers: undefined,
+        dysphoria_triggers: [],
         dysphoria_notes: undefined,
       });
+      navigation.navigate("Review");
     } catch (error) {
-      console.error('Error clearing dysphoria information:', error);
+      console.error("Error skipping dysphoria triggers:", error);
     }
-    // Navigate to Review regardless
-    navigation.navigate('Review');
   };
 
-  const showOtherInput = selectedTriggers.includes('other');
+  const handleBack = () => {
+    navigation.goBack();
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* HEADER */}
-        <View style={styles.header}>
-          <ProgressIndicator currentStep={7} totalSteps={8} />
-          <Text style={styles.headline}>Dysphoria Triggers</Text>
-          <View style={styles.optionalBadge}>
-            <Text style={styles.optionalBadgeText}>OPTIONAL</Text>
-          </View>
-          <Text style={styles.subheadline}>
-            Help us create a more comfortable experience
-          </Text>
-        </View>
-
-        {/* INTRO CARD */}
-        <View style={styles.introContainer}>
-          <View style={styles.introCard}>
-            <Text style={styles.introText}>
-              This information is entirely optional and private. You can skip this step or share only what feels comfortable. It helps us:
+    <OnboardingLayout
+      currentStep={7}
+      totalSteps={8}
+      title="Dysphoria Considerations"
+      subtitle="Help us create a comfortable, affirming experience. This is completely optional and private."
+      onBack={handleBack}
+      onContinue={handleContinue}
+      canContinue={true}
+    >
+      <View style={styles.container}>
+        {/* Privacy Notice */}
+        <View style={styles.privacyCard}>
+          <Ionicons 
+            name="lock-closed" 
+            size={24} 
+            color={colors.cyan[500]} 
+            style={styles.privacyIcon}
+          />
+          <View style={styles.privacyContent}>
+            <Text style={styles.privacyTitle}>
+              Your Privacy Matters
             </Text>
-            <View style={styles.bulletList}>
-              <Text style={styles.bulletPoint}>• Suggest clothing alternatives</Text>
-              <Text style={styles.bulletPoint}>• Offer mirror-free exercise options</Text>
-              <Text style={styles.bulletPoint}>• Provide alternative cues and modifications</Text>
-            </View>
+            <Text style={styles.privacyText}>
+              This information stays on your device and is only used to customize your workout recommendations. You can skip this entirely.
+            </Text>
           </View>
         </View>
 
-        {/* TRIGGER SELECTION */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionLabel}>Do any of these trigger dysphoria? (Optional)</Text>
+        {/* Trigger Checkboxes */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Select any that apply</Text>
+          <Text style={styles.sectionSubtitle}>
+            We'll adjust your program to respect these preferences
+          </Text>
+          <View style={styles.triggersContainer}>
+            {TRIGGER_OPTIONS.map((option) => {
+              const isSelected = triggers.has(option.id);
+              return (
+                <TouchableOpacity
+                  key={option.id}
+                  onPress={() => toggleTrigger(option.id)}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.triggerCard,
+                    isSelected && styles.triggerCardSelected
+                  ]}
+                >
+                  <View style={[
+                    styles.triggerCheckbox,
+                    isSelected && styles.triggerCheckboxSelected
+                  ]}>
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={18} color={colors.text.primary} />
+                    )}
+                  </View>
 
-          {TRIGGER_OPTIONS.map((option, index) => {
-            const isSelected = selectedTriggers.includes(option.value);
-            const isLast = index === TRIGGER_OPTIONS.length - 1;
-            return (
-              <TouchableOpacity
-                key={option.value}
-                style={[styles.triggerCard, isSelected && styles.triggerCardSelected, isLast && styles.triggerCardLast]}
-                onPress={() => toggleTrigger(option.value)}
-              >
-                <View style={[styles.checkboxSquare, isSelected && styles.checkboxSquareSelected]}>
-                  {isSelected && <CheckmarkSVG />}
-                </View>
-                <Text style={[styles.cardText, isSelected && styles.cardTextSelected]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* OTHER INPUT (conditional) */}
-          {showOtherInput && (
-            <View style={styles.otherInputContainer}>
-              <Text style={styles.inputLabel}>Please describe: (Optional)</Text>
-              <TextInput
-                style={styles.textInput}
-                value={otherText}
-                onChangeText={(text) => setOtherText(text.slice(0, 500))}
-                placeholder="Describe your trigger..."
-                placeholderTextColor="#6B7280"
-                multiline
-                textAlignVertical="top"
-                maxLength={500}
-              />
-              <Text style={styles.characterCounter}>{otherText.length}/500</Text>
-            </View>
-          )}
+                  <View style={styles.triggerContent}>
+                    <View style={styles.triggerHeader}>
+                      <Ionicons 
+                        name={option.icon} 
+                        size={20} 
+                        color={colors.cyan[500]} 
+                      />
+                      <Text style={styles.triggerLabel}>{option.label}</Text>
+                    </View>
+                    <Text style={styles.triggerDescription}>
+                      {option.description}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
-        {/* ADDITIONAL NOTES */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionLabel}>Anything else? (Optional)</Text>
-          <Text style={styles.sectionDescription}>
-            Any additional context that would help us support you
+        {/* Additional Notes */}
+        <View style={styles.section}>
+          <Text style={styles.inputLabel}>
+            Additional Notes <Text style={styles.optionalText}>(Optional)</Text>
+          </Text>
+          <Text style={styles.inputHint}>
+            Any other preferences or considerations we should know about?
           </Text>
           <TextInput
-            style={styles.notesInput}
-            value={notesText}
-            onChangeText={(text) => setNotesText(text.slice(0, 500))}
-            placeholder="Additional notes..."
-            placeholderTextColor="#6B7280"
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="e.g., I prefer gender-neutral language in instructions..."
+            placeholderTextColor={colors.text.tertiary}
             multiline
-            textAlignVertical="top"
-            maxLength={500}
+            numberOfLines={3}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            style={[
+              styles.notesInput,
+              isFocused && inputStyles.textInputFocused
+            ]}
           />
-          <Text style={styles.characterCounter}>{notesText.length}/500</Text>
         </View>
 
-        {/* FOOTER (SCROLLS WITH CONTENT) */}
-        <View style={styles.footerContainer}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleContinue}
-          >
-            <LinearGradient
-              colors={['#00D9C0', '#00B39D']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.buttonGradient}
-            >
-              <Text style={styles.buttonText}>Continue to Review</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.skipButton}
-            onPress={handleSkip}
-          >
-            <Text style={styles.skipButtonText}>Skip this step</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.hintText}>
-            This information is private and helps us personalize
-          </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        {/* Skip Button */}
+        <TouchableOpacity
+          onPress={handleSkip}
+          activeOpacity={0.7}
+          style={styles.skipButton}
+        >
+          <Text style={styles.skipButtonText}>Skip This Step</Text>
+        </TouchableOpacity>
+      </View>
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    gap: spacing.xl,
+  },
+  section: {
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    ...textStyles.h3,
+    fontSize: 18,
+    marginBottom: spacing.xs,
+  },
+  sectionSubtitle: {
+    ...textStyles.bodySmall,
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: spacing.base,
+  },
+  privacyCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: borderRadius.xl,
+    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+  },
+  privacyIcon: {
+    marginTop: 2,
+  },
+  privacyContent: {
     flex: 1,
-    backgroundColor: '#0F1419',
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 0,
-  },
-  header: {
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  headline: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    lineHeight: 34,
-    letterSpacing: -0.4,
-    marginBottom: 8,
-    textAlign: 'left',
-  },
-  optionalBadge: {
-    backgroundColor: 'rgba(91, 159, 255, 0.15)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-  },
-  optionalBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#5B9FFF',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  subheadline: {
+  privacyTitle: {
+    ...textStyles.label,
     fontSize: 15,
-    fontWeight: '400',
-    color: '#9CA3AF',
-    lineHeight: 22,
-    textAlign: 'left',
-  },
-  introContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  introCard: {
-    backgroundColor: 'rgba(91, 159, 255, 0.08)',
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: '#5B9FFF',
-  },
-  introText: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#B8C5C5',
-    lineHeight: 21,
-    marginBottom: 12,
-    textAlign: 'left',
-  },
-  bulletList: {
-    marginTop: 8,
-  },
-  bulletPoint: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#9CA3AF',
-    lineHeight: 20,
-    marginBottom: 6,
-    textAlign: 'left',
-  },
-  sectionContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  sectionLabel: {
-    fontSize: 14,
     fontWeight: '600',
-    color: '#9CA3AF',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    textAlign: 'left',
+    color: colors.cyan[500],
+    marginBottom: spacing.xs,
   },
-  sectionDescription: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#6B7280',
-    marginBottom: 12,
-    lineHeight: 19,
-    textAlign: 'left',
+  privacyText: {
+    ...textStyles.bodySmall,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
+  },
+  triggersContainer: {
+    gap: spacing.md,
   },
   triggerCard: {
-    backgroundColor: '#1A1F26',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: '#2A2F36',
     flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 56,
+    alignItems: 'flex-start',
+    gap: spacing.base,
+    padding: spacing.lg,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
   },
   triggerCardSelected: {
-    borderColor: '#00D9C0',
-    backgroundColor: 'rgba(0, 217, 192, 0.08)',
-  },
-  triggerCardLast: {
-    marginBottom: 0,
-  },
-  checkboxSquare: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    backgroundColor: colors.glass.bgHero,
     borderWidth: 2,
-    borderColor: '#2A2F36',
-    marginRight: 12,
-    justifyContent: 'center',
+    borderColor: colors.cyan[500],
+  },
+  triggerCheckbox: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
+    borderWidth: 2,
+    borderColor: colors.glass.border,
+    backgroundColor: 'transparent',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
   },
-  checkboxSquareSelected: {
-    borderColor: '#00D9C0',
-    backgroundColor: '#00D9C0',
+  triggerCheckboxSelected: {
+    backgroundColor: colors.cyan[500],
+    borderColor: colors.cyan[500],
   },
-  cardText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#E0E4E8',
+  triggerContent: {
     flex: 1,
-    textAlign: 'left',
   },
-  cardTextSelected: {
+  triggerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  triggerLabel: {
+    ...textStyles.label,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#00D9C0',
+    color: colors.text.primary,
   },
-  otherInputContainer: {
-    marginTop: 16,
+  triggerDescription: {
+    ...textStyles.bodySmall,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    marginBottom: 8,
-    textAlign: 'left',
+    ...textStyles.label,
+    fontSize: 14,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
   },
-  textInput: {
-    backgroundColor: '#1A1F26',
-    borderWidth: 2,
-    borderColor: '#2A2F36',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    color: '#FFFFFF',
-    minHeight: 80,
-    textAlignVertical: 'top',
+  optionalText: {
+    color: colors.text.tertiary,
+  },
+  inputHint: {
+    ...textStyles.bodySmall,
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginBottom: spacing.md,
   },
   notesInput: {
-    backgroundColor: '#1A1F26',
-    borderWidth: 2,
-    borderColor: '#2A2F36',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    color: '#FFFFFF',
-    minHeight: 100,
+    ...inputStyles.textInput,
+    height: 100,
+    paddingTop: spacing.base,
     textAlignVertical: 'top',
   },
-  characterCounter: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#6B7280',
-    marginTop: 6,
-    textAlign: 'right',
-  },
-  footerContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 0,
-  },
-  primaryButton: {
-    height: 56,
-    borderRadius: 28,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  buttonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#0F1419',
-  },
   skipButton: {
-    height: 48,
-    justifyContent: 'center',
+    height: 56,
+    borderRadius: borderRadius.base,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: colors.glass.border,
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'center',
   },
   skipButtonText: {
+    ...textStyles.label,
     fontSize: 16,
     fontWeight: '600',
-    color: '#9CA3AF',
-  },
-  hintText: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 18,
+    color: colors.text.secondary,
   },
 });

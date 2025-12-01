@@ -20,6 +20,7 @@ interface OnboardingLayoutProps {
   onContinue: () => void;
   canContinue: boolean;
   children: React.ReactNode;
+  continueButtonText?: string;
 }
 
 export default function OnboardingLayout({
@@ -31,6 +32,7 @@ export default function OnboardingLayout({
   onContinue,
   canContinue,
   children,
+  continueButtonText = 'Continue',
 }: OnboardingLayoutProps) {
   return (
     <SafeAreaView style={layoutStyles.screen}>
@@ -89,7 +91,7 @@ export default function OnboardingLayout({
           ]}
           activeOpacity={0.8}
         >
-          <Text style={buttonStyles.primaryText}>Continue</Text>
+          <Text style={buttonStyles.primaryText}>{continueButtonText}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

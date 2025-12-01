@@ -271,8 +271,10 @@ export type OnboardingStackParamList = {
   Experience: undefined;
   DysphoriaTriggers: undefined;
   Review: undefined;
+  ProgramSetup: undefined;
   QuickStart: undefined;
   PlanView: undefined;
+  Home: undefined;
   TimerTest: undefined;
   ExerciseDisplayTest: undefined;
   SessionPlayer: {
