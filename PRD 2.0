@@ -1,0 +1,1531 @@
+# TransFitness - Complete Product Requirements Document
+## Comprehensive Design System & Implementation Guide
+
+**Version:** 3.0  
+**Date:** November 28, 2025  
+**Status:** Active Development - Design System Implementation Phase
+
+---
+
+## EXECUTIVE SUMMARY
+
+**TransFitness** is a specialized mobile fitness app for transgender and non-binary athletes providing personalized workout programming that accounts for:
+- Chest binding safety during exercise
+- HRT effects on training capacity and recovery
+- Post-surgical recovery protocols for gender-affirming surgeries
+- Gender-specific training goals (feminization vs masculinization)
+- Dysphoria-aware exercise selection
+
+**Core Value Proposition:** The only fitness app that understands trans athlete needs, providing safe, effective, affirming programming.
+
+**Current Phase:** Design system implementation and UI redesign  
+**Target Launch:** Q1 2026
+
+---
+
+
+## TECHNICAL STACK
+
+**Frontend:**
+- React Native 0.72+ with TypeScript 5.0+
+- Expo 49+ for development
+- React Navigation 6.x
+- expo-linear-gradient (gradients)
+- react-native-svg (icons)
+- react-native-reanimated v3 (animations)
+
+**Backend:**
+- expo-sqlite (local database)
+- Supabase (cloud database, optional sync)
+
+**Fonts:**
+- Gotham (headers/display): Bold 700, Medium 500
+- Poppins (body/UI): Semibold 600, Medium 500, Regular 400
+
+---
+
+## COLOR SYSTEM
+
+### Primary (Cyan/Turquoise)
+```
+50:  #ecfeff (lightest)
+100: #cffafe
+200: #a5f3fc
+300: #67e8f9 (light accent)
+400: #22d3ee (active states)
+500: #06b6d4 (MAIN BRAND - CTAs, progress, links)
+600: #0891b2 (gradient end, hover)
+700: #0e7490 (pressed states)
+800: #155e75 (borders)
+900: #164e63 (darkest)
+```
+
+**Usage:**
+- 500: Primary buttons, active states, progress
+- 500→600: Gradient backgrounds
+- 400: Stats, highlighted text
+- 300: Badges, secondary highlights
+
+### Secondary (Red/Rose)
+```
+50:  #fff1f2
+100: #ffe4e6
+200: #fecdd3
+300: #fda4af
+400: #fb7185
+500: #f43f5e (ACCENT - celebrations, achievements)
+600: #e11d48
+700: #be123c
+800: #9f1239
+900: #881337
+```
+
+### Backgrounds (Dark Theme)
+```
+deep:    #0a0f14 (app background)
+mid:     #151b23 (cards level 1)
+raised:  #1f2937 (cards level 2, inputs)
+surface: #2d3748 (modals, overlays)
+```
+
+### Text
+```
+primary:   #ffffff (headings, high emphasis)
+secondary: #d1d5db (body, medium emphasis)
+tertiary:  #9ca3af (captions, low emphasis)
+disabled:  #6b7280
+```
+
+### Borders
+```
+subtle:  rgba(255, 255, 255, 0.05)
+medium:  rgba(255, 255, 255, 0.1)
+strong:  rgba(255, 255, 255, 0.2)
+```
+
+### Semantic
+```
+success: #22c55e (green)
+warning: #f59e0b (orange)
+error:   #ef4444 (red)
+info:    #3b82f6 (blue)
+```
+
+---
+
+## TYPOGRAPHY
+
+### Display (Hero Text)
+```
+Display 1: Gotham 36px / -1.5 / 700
+Display 2: Gotham 32px / -1 / 700
+```
+
+### Headings
+```
+H1: Gotham 28px / -0.8 / 700
+H2: Gotham 24px / -0.5 / 700
+H3: Gotham 20px / -0.3 / 700
+```
+
+### Body
+```
+Body Large: Poppins 17px / 0 / 400 / 26lh
+Body:       Poppins 15px / 0 / 400 / 22lh
+Body Small: Poppins 13px / 0 / 400 / 20lh
+```
+
+### Labels
+```
+Label Large: Poppins 15px / 0 / 600
+Label:       Poppins 13px / 0 / 600
+Caption:     Poppins 11px / 0.5 / 500 / UPPERCASE
+```
+
+### Stats
+```
+Stat Hero:   Gotham 48px / -2 / 700
+Stat Large:  Gotham 32px / -1 / 700
+Stat Medium: Gotham 24px / -0.5 / 600
+```
+
+---
+
+## SPACING (8px Grid)
+```
+1: 4px    (xxs)
+2: 8px    (xs)
+3: 12px   (s)
+4: 16px   (m - standard)
+5: 20px   (l - card padding)
+6: 24px   (xl - section margins)
+8: 32px   (xxl)
+10: 40px  (xxxl)
+12: 48px  (xxxxl)
+16: 64px  (xxxxxl)
+```
+
+**Common Usage:**
+- Card padding: 20px
+- Section margins: 24px bottom
+- Button padding: 24px horizontal
+- Input padding: 16px
+- Stack gap: 12-16px
+- Inline gap: 8-12px
+
+---
+
+## CORNER RADIUS
+```
+xs:   4px   (badges)
+sm:   8px   (small elements)
+md:   12px  (buttons, inputs)
+lg:   16px  (cards)
+xl:   20px  (modals)
+xxl:  24px  (hero elements)
+full: 9999px (pills, avatars)
+```
+
+---
+
+## SHADOWS
+```
+xs: offset(0,1) / opacity 0.05 / blur 2 / elevation 1
+sm: offset(0,2) / opacity 0.1  / blur 4 / elevation 2
+md: offset(0,4) / opacity 0.15 / blur 8 / elevation 4
+lg: offset(0,8) / opacity 0.2  / blur 16 / elevation 8
+xl: offset(0,12) / opacity 0.25 / blur 24 / elevation 12
+```
+
+**Colored Glows:**
+```
+Primary glow: shadowColor #06b6d4 / opacity 0.3 / blur 12
+Secondary glow: shadowColor #f43f5e / opacity 0.3 / blur 12
+```
+
+---
+
+## COMPONENT LIBRARY
+
+### Buttons
+
+**Primary Button:**
+- Height: 56px
+- Border radius: 12px
+- Background: Linear gradient cyan.500 → cyan.600
+- Text: Label Large, white, Poppins 600
+- Shadow: md with cyan glow
+- States: hover (90% opacity), pressed (scale 0.98), disabled (50% opacity)
+
+**Secondary Button:**
+- Height: 56px
+- Border radius: 12px
+- Background: transparent
+- Border: 2px solid border.medium
+- Text: Label Large, text.primary
+- States: hover (border strong), pressed (scale 0.98)
+
+**Icon Button:**
+- Size: 44x44
+- Border radius: 12px
+- Background: background.raised
+- Icon: 24x24, text.secondary
+
+### Cards
+
+**Elevated Card:**
+- Background: background.mid
+- Border radius: 16px
+- Padding: 20px
+- Border: 1px solid border.subtle
+- Shadow: md
+
+**Glass Card:**
+- Background: rgba(background.mid, 0.8) + backdrop blur
+- Border radius: 16px
+- Padding: 20px
+- Border: 1px solid border.medium
+- Shadow: lg
+
+**Gradient Card:**
+- Gradient: cyan.500 (15% opacity) → transparent
+- Overlay: background.mid at 80%
+- Border radius: 16px
+- Border: 1px cyan (20% opacity)
+- Shadow: lg with cyan glow
+
+### Badges
+
+**Status Badge:**
+- Height: 24px
+- Padding: 6-10px horizontal
+- Border radius: 6px
+- Text: Caption
+- Variants: primary, success, warning, error, info (10% bg opacity)
+
+**Count Badge:**
+- Min size: 20x20
+- Border radius: full
+- Background: secondary.500
+- Text: 11px, 700 weight, white
+
+### Inputs
+
+**Text Input:**
+- Height: 56px
+- Border radius: 12px
+- Background: background.raised
+- Border: 2px solid border.subtle
+- Padding: 16px
+- Focus: border cyan.500 with glow
+
+**Number Input:**
+- Decrement/Increment buttons: 48x48
+- Display: flex 1, height 56px
+- Number: Stat Medium, cyan.500
+
+**Slider:**
+- Track: 8px height, background.raised
+- Fill: cyan.500 gradient
+- Thumb: 32x32 circle, white, shadow with glow
+
+---
+
+## SCREEN SPECIFICATIONS
+
+### 1. HOME DASHBOARD
+
+**Layout Elements:**
+- Header: avatar (44x44) | "TransFitness" | notification icon
+- Welcome: time-based greeting + name
+- Streak card: glass effect, large number + fire icon
+- HRT tracker (conditional if on_hrt)
+- Surgery recovery (conditional if active recovery)
+- Today's workout card
+- Weekly stats: 3 cards (workouts, volume, RPE)
+- Quick actions (optional)
+
+**HRT Tracker - Show IF:**
+`profile.on_hrt === true && hrt_type && hrt_start_date`
+
+Display:
+- HRT type (Testosterone, Estrogen, etc)
+- Duration in months (calculated from start_date)
+- Medication icon
+- Cyan accent color
+
+**Surgery Recovery - Show IF:**
+`surgeries.length > 0 && any surgery.fully_healed === false`
+
+Display for EACH active recovery:
+- Surgery type
+- Weeks post-op (calculated from date)
+- Recovery phase:
+  - < 6 weeks: "🛑 Early Recovery"
+  - 6-12 weeks: "⚠️ Active Recovery"
+  - ≥ 12 weeks: "✅ Late Recovery"
+- Progress bar (weeks/12 * 100%)
+- Warning colors
+
+**Today's Workout - Show IF workout exists:**
+- 4px cyan accent bar top
+- Workout name (H3)
+- Duration badge
+- Stats row: exercises, sets, duration
+- Safety badges conditional:
+  - IF binds_chest: "Binding-safe"
+  - IF surgery < 12 weeks: "Post-op modified"
+- Primary button: "Start Workout"
+
+**Empty State (no workout):**
+- "No workout scheduled today"
+- "Browse Workouts" button
+- "Generate New Plan" button
+
+### 2. ONBOARDING FLOW (8 Screens)
+
+**Common Pattern:**
+- Progress indicator: "Step X of 8" + dots
+- Back button (except first screen)
+- Screen title (H1)
+- Subtitle (Body)
+- Content area (screen-specific)
+- Continue button (primary, bottom)
+- Validation before Continue enabled
+
+**Screen 1: Gender Identity**
+- Select one: MTF / FTM / Non-binary / Questioning
+- Optional pronouns (multiple selection)
+- Save: gender_identity, pronouns
+
+**Screen 2: HRT Status**
+- Yes/No question
+- IF YES:
+  - HRT type: Estrogen/Testosterone (filtered by gender)
+  - Start date: month + year dropdowns
+  - Auto-calculate duration display
+- Save: on_hrt, hrt_type, hrt_start_date, hrt_months_duration
+
+**Screen 3: Binding Info**
+- Yes/No question
+- IF YES:
+  - Frequency: Daily/Sometimes/Rarely/Never
+  - Duration: number input (hours)
+  - Warning if > 8 hours
+  - Binder type (optional): dropdown
+- Save: binds_chest, binding_frequency, binding_duration_hours, binder_type
+
+**Screen 4: Surgery History**
+- Yes/No question
+- IF YES:
+  - Checkboxes: Top/Bottom/FFS/Orchiectomy/Other
+  - FOR EACH checked:
+    - Date picker
+    - Auto-calculate weeks post-op
+    - Show recovery phase
+  - Warning banner if any < 12 weeks
+  - Optional notes field
+- Save: surgeries[] (type, date, weeks_post_op, fully_healed, notes)
+
+**Screen 5: Goals**
+- Select primary goal (filtered by gender):
+  - Feminization (if MTF/NB)
+  - Masculinization (if FTM/NB)
+  - General Fitness
+  - Strength
+  - Endurance
+- Info box showing program details
+- Save: primary_goal
+
+**Screen 6: Experience & Preferences**
+- Experience level: Beginner/Intermediate/Advanced
+- Workout frequency: 2-6 days/week (picker)
+- Session duration: 30/45/60/90 min (buttons)
+- Equipment: multi-select checkboxes (min 1 required)
+- Save: fitness_experience, workout_frequency, session_duration, equipment[]
+
+**Screen 7: Dysphoria Triggers (Optional)**
+- ALL optional, prominent Skip button
+- Trigger checklist: mirrors, tight clothing, body contact, etc
+- Optional notes textarea (500 char max)
+- Save: dysphoria_triggers[], dysphoria_notes
+
+**Screen 8: Review & Generate**
+- Collapsible sections showing all data
+- Edit button on each section (navigates back)
+- Conditional sections (show only if data exists)
+- Warning banners if surgery < 12 weeks or heavy binding
+- "Generate My Program" button
+- Loading state: "Generating Your Program..."
+- On success: navigate to Home
+
+### 3. WORKOUT OVERVIEW (Pre-Workout)
+
+**Layout:**
+- Header: back button + workout name + menu
+- Hero stats: 3 cards (duration, exercises, sets)
+- Warm-up: expandable section, simple list
+- Main workout: exercise cards with thumbnails
+  - Exercise name, target muscle
+  - Sets × reps prescription
+  - Safety badges (conditional)
+  - Chevron for details
+- Cool-down: expandable section
+- Safety checkpoints: warning card (conditional)
+- "Start Workout" button (primary, gradient)
+
+**Data:**
+- Load from: `getWorkout(workoutId)`
+- Exercises with full details
+- Safety checkpoints (if applicable)
+
+**Navigation:**
+- Start Workout → SessionPlayer
+
+### 4. SESSION PLAYER (Active Workout)
+
+**Phase Management:**
+`warm-up → main → cool-down → completion`
+
+**Warm-up Phase:**
+- Simple checklist
+- "Start Main Workout" button
+
+**Main Phase:**
+- Header: back (with confirmation) | timer | menu
+- Progress bar: "Exercise X / Y" + percentage
+- Exercise card:
+  - Name, target muscle
+  - Video thumbnail (200px) with play overlay
+  - "Set X of Y" counter
+- Input controls:
+  - Reps: number input with +/-
+  - Weight: number input with +/-
+  - RPE: slider 1-10 with labels
+- "Complete Set" button (64px, gradient)
+- Secondary actions: "View Cues", "Skip Set"
+- Previous sets history (collapsible)
+
+**Rest Timer Overlay:**
+- Full screen (bg.deep 95% opacity)
+- Circular progress ring
+- Countdown timer (Stat Hero)
+- Next exercise preview
+- "Skip Rest" button
+
+**Business Logic:**
+```
+On Complete Set:
+1. Log set data (reps, weight, RPE)
+2. Check: more sets for this exercise?
+   - YES: Show rest timer
+   - NO: Move to next exercise
+3. Check: more exercises?
+   - YES: Continue
+   - NO: Move to cool-down phase
+```
+
+**Cool-down Phase:**
+- Simple checklist
+- "Complete Workout" button
+- Save session data
+- Navigate to CompletionScreen
+
+### 5. COMPLETION SCREEN (Celebration)
+
+**Layout:**
+- Hero: trophy icon (100x100, gradient)
+- "Workout Complete!" (Display 1)
+- Encouragement text
+- Stats grid (2 columns):
+  - Duration (gradient card)
+  - Exercises count
+  - Sets count
+  - Avg RPE
+  - Total volume (if > 0)
+- Achievements (conditional badges)
+- Summary checklist:
+  - ✓ Warm-up completed
+  - ✓ X exercises completed
+  - ✓ Cool-down completed
+- Feedback (optional):
+  - Mood selector (5 emoji buttons)
+  - Notes textarea
+- "Save & Continue" button (primary, gradient)
+
+**Data Calculations:**
+- duration = completedAt - startedAt
+- totalSets = completedSets.length
+- avgRPE = average of all RPEs
+- totalVolume = sum(reps × weight)
+
+**Navigation:**
+- Save & Continue → PlanView
+- Update streak
+- Update weekly stats
+
+### 6. PLAN VIEW (Workouts Tab)
+
+**Layout:**
+- Header: back + "My Plan" + settings
+- Weekly calendar: 7 day cards
+  - Day name + number
+  - Workout dot indicator
+  - Today: cyan border
+  - Selected: glow effect
+- Workout cards for selected day:
+  - Workout name
+  - Duration badge
+  - Stats (exercises, sets, minutes)
+  - Exercise preview (3-4 items)
+  - "Start Workout" button
+- Empty state (no plan):
+  - "No plan yet"
+  - "Generate Plan" button
+
+**Navigation:**
+- Tap day → show workouts
+- Tap workout → WorkoutOverview
+- Generate Plan → call planGenerator
+
+### 7. PROGRESS TAB
+
+**Layout:**
+- Streak display:
+  - Current streak (large)
+  - Longest streak
+  - Streak calendar (optional)
+- Weekly stats:
+  - Workouts completed
+  - Total volume
+  - Avg RPE
+  - Total minutes
+- Session history:
+  - Recent sessions list
+  - Tap → SessionDetail
+- Filter options: This Week / This Month / All Time
+
+### 8. SETTINGS TAB
+
+**Sections:**
+1. Profile: Edit/View profile
+2. Preferences: duration, frequency, equipment
+3. Workout Settings: auto-rest, rest duration, videos
+4. Data & Sync: cloud sync, export, clear data
+5. Plan Management: generate new, view current
+6. About: version, privacy, terms, support
+7. Account: logout, delete account
+
+---
+
+# TransFitness App - Complete Flowchart & Decision Tree
+
+## 🎯 APP ENTRY POINTS
+
+```
+┌─────────────────┐
+│   APP LAUNCH    │
+└────────┬────────┘
+         │
+         ▼
+    ┌─────────┐
+    │ Has User │ ◄─── Check: Profile exists in local storage?
+    │ Profile? │
+    └────┬────┘
+         │
+    ┌────┴────┐
+    │         │
+   NO        YES
+    │         │
+    ▼         ▼
+┌────────┐  ┌──────────┐
+│WELCOME │  │HOME DASH │
+│ SCREEN │  │  BOARD   │
+└────────┘  └──────────┘
+```
+
+---
+
+## 📋 ONBOARDING FLOW (8 Steps)
+
+```
+┌──────────────┐
+│WELCOME SCREEN│
+│ "Why Trans-  │
+│  Fitness?"   │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│  DISCLAIMER  │
+│ "Acknowledge │
+│   & Agree"   │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────────────────────────────────────────────────┐
+│                    ONBOARDING WORKFLOW                        │
+│                     (8-Step Process)                          │
+└──────────────────────────────────────────────────────────────┘
+
+STEP 1: Gender Identity
+┌──────────────────┐
+│ Select Gender    │
+│ Identity:        │
+│ • Trans woman    │
+│ • Trans man      │
+│ • Non-binary     │
+│ • Questioning    │
+└────────┬─────────┘
+         │
+         ├─── Optional: Select pronouns
+         │
+         ▼
+    Save: gender_identity, pronouns
+         │
+         ▼
+
+STEP 2: HRT Status
+┌──────────────────┐
+│  On HRT?         │
+└────────┬─────────┘
+         │
+    ┌────┴────┐
+    │         │
+   NO        YES
+    │         │
+    │         ├─── Select HRT Type:
+    │         │    • Estrogen + Anti-androgens (if MTF/NB)
+    │         │    • Testosterone (if FTM/NB)
+    │         │
+    │         ├─── Enter Start Date:
+    │         │    • Month dropdown
+    │         │    • Year dropdown
+    │         │    • Auto-calculate duration
+    │         │
+    │         ▼
+    └────────►Save: on_hrt, hrt_type, hrt_start_date, hrt_months_duration
+              │
+              ▼
+
+STEP 3: Binding Info
+┌──────────────────┐
+│ Bind chest?      │
+└────────┬─────────┘
+         │
+    ┌────┴────┐
+    │         │
+   NO        YES
+    │         │
+    │         ├─── Select Frequency:
+    │         │    • Daily / Sometimes / Rarely / Never
+    │         │
+    │         ├─── Enter Duration:
+    │         │    • Hours per session
+    │         │    • Warning if > 8 hours
+    │         │
+    │         ├─── Select Binder Type (optional):
+    │         │    • Commercial / Sports bra / Other
+    │         │
+    │         ▼
+    └────────►Save: binds_chest, binding_frequency, binding_duration_hours, binder_type
+              │
+              ▼
+
+STEP 4: Surgery History
+┌──────────────────┐
+│ Had surgery?     │
+└────────┬─────────┘
+         │
+    ┌────┴────┐
+    │         │
+   NO        YES
+    │         │
+    │         ├─── Check surgeries (multiple):
+    │         │    □ Top surgery
+    │         │    □ Bottom surgery
+    │         │    □ FFS
+    │         │    □ Orchiectomy
+    │         │    □ Other
+    │         │
+    │         ├─── FOR EACH surgery:
+    │         │    • Enter date
+    │         │    • Auto-calculate weeks post-op
+    │         │    • Show recovery phase:
+    │         │      ─ < 6 weeks: "🛑 Early Recovery"
+    │         │      ─ 6-12 weeks: "⚠️ Active Recovery"
+    │         │      ─ ≥ 12 weeks: "✅ Late Recovery"
+    │         │    • Optional notes
+    │         │
+    │         ├─── Warning if any < 12 weeks:
+    │         │    "⚠️ Workouts will be modified"
+    │         │
+    │         ▼
+    └────────►Save: surgeries[] (type, date, weeks_post_op, fully_healed, notes)
+              │
+              ▼
+
+STEP 5: Goals
+┌──────────────────┐
+│ Primary Goal:    │
+│ (filtered by     │
+│ gender_identity) │
+└────────┬─────────┘
+         │
+         ├─── Options:
+         │    • Feminization (if MTF/NB)
+         │    • Masculinization (if FTM/NB)
+         │    • General Fitness
+         │    • Strength
+         │    • Endurance
+         │
+         ├─── Show impact info box
+         │
+         ▼
+    Save: primary_goal, secondary_goals
+         │
+         ▼
+
+STEP 6: Experience & Preferences
+┌──────────────────┐
+│ 4 Sections:      │
+└────────┬─────────┘
+         │
+         ├─── 1. Experience Level:
+         │    • Beginner / Intermediate / Advanced
+         │
+         ├─── 2. Workout Frequency:
+         │    • 2-6 days per week (picker)
+         │
+         ├─── 3. Session Duration:
+         │    • 30 / 45 / 60 / 90 minutes
+         │
+         ├─── 4. Equipment (multiple):
+         │    □ Bodyweight
+         │    □ Dumbbells
+         │    □ Resistance Bands
+         │    □ Barbell
+         │    □ Kettlebell
+         │    □ Pull-up Bar
+         │    □ Other
+         │    (at least 1 required)
+         │
+         ▼
+    Save: fitness_experience, workout_frequency, session_duration, equipment[]
+         │
+         ▼
+
+STEP 7: Dysphoria Triggers (Optional)
+┌──────────────────┐
+│ Select triggers  │
+│ (all optional):  │
+└────────┬─────────┘
+         │
+         ├─── Trigger checklist:
+         │    □ Looking at chest
+         │    □ Tight clothing
+         │    □ Mirrors
+         │    □ Body contact
+         │    □ Crowded spaces
+         │    □ Locker rooms
+         │    □ Voice sounds
+         │    □ Other
+         │
+         ├─── Optional notes field
+         │
+         ├─── "Skip" button always available
+         │
+         ▼
+    Save: dysphoria_triggers[], dysphoria_notes
+         │
+         ▼
+
+STEP 8: Review & Generate
+┌──────────────────────────┐
+│ Review all sections:     │
+│ 1. Gender Identity       │
+│ 2. HRT Status (if on_hrt)│
+│ 3. Binding (if binds)    │
+│ 4. Surgery (if any)      │
+│ 5. Goals                 │
+│ 6. Experience            │
+│ 7. Dysphoria (if any)    │
+│                          │
+│ Each section has Edit    │
+│ button to go back        │
+└────────┬─────────────────┘
+         │
+         ├─── Show warnings if applicable:
+         │    • Surgery < 12 weeks
+         │    • Heavy binding
+         │
+         ├─── "Generate My Program" button
+         │
+         ▼
+┌────────────────────┐
+│ GENERATE PLAN      │
+│ (Loading state)    │
+└────────┬───────────┘
+         │
+         ├─── Call: generatePlan(profile)
+         │    • Filter exercises by:
+         │      - equipment
+         │      - experience level
+         │      - binding safety
+         │      - surgery recovery
+         │      - dysphoria triggers
+         │    • Apply gender emphasis
+         │    • Create workout schedule
+         │    • Generate warm-up/cool-down
+         │
+         ▼
+    ┌─────────┐
+    │ SUCCESS │
+    └────┬────┘
+         │
+         ▼
+┌────────────────┐
+│  HOME SCREEN   │
+│  (with plan)   │
+└────────────────┘
+```
+
+---
+
+## 🏠 MAIN APP NAVIGATION
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    BOTTOM TAB BAR                         │
+│  [Home]  [Workouts]  [Progress]  [Settings]             │
+└──────────────────────────────────────────────────────────┘
+    │         │           │            │
+    ▼         ▼           ▼            ▼
+```
+
+---
+
+## 🏠 HOME SCREEN DECISION TREE
+
+```
+┌─────────────────┐
+│  HOME SCREEN    │
+└────────┬────────┘
+         │
+         ├─── ALWAYS SHOW:
+         │    • Header (avatar, wordmark, notifications)
+         │    • Welcome message (time-based greeting)
+         │    • Current streak card (glass effect)
+         │    • Weekly stats (3 cards)
+         │
+         ├─── CONDITIONAL: HRT Tracker
+         │    └─── IF profile.on_hrt === true:
+         │         • Show HRT card
+         │         • Display: HRT type
+         │         • Display: Duration (months from start_date)
+         │         • Icon: medication
+         │
+         ├─── CONDITIONAL: Surgery Recovery
+         │    └─── IF surgeries.length > 0 AND any surgery.fully_healed === false:
+         │         • FOR EACH active recovery:
+         │           - Surgery type
+         │           - Weeks post-op
+         │           - Recovery phase indicator
+         │           - Progress bar
+         │
+         ├─── CONDITIONAL: Today's Workout
+         │    │
+         │    ├─── IF todaysWorkout exists:
+         │    │    • Show workout card
+         │    │    • 4px cyan accent bar
+         │    │    • Workout name
+         │    │    • Stats (exercises, sets, duration)
+         │    │    • Safety badges (conditional):
+         │    │      - IF binds_chest: show "Binding-safe"
+         │    │      - IF any surgery < 12 weeks: show "Post-op modified"
+         │    │    • "Start Workout" button
+         │    │    │
+         │    │    └─── ON TAP: Navigate to WorkoutOverview
+         │    │
+         │    └─── ELSE (no workout):
+         │         • Show empty state card
+         │         • "No workout scheduled"
+         │         • "Browse Workouts" button
+         │         • "Generate New Plan" button
+         │         │
+         │         └─── ON TAP "Generate": Call generatePlan()
+         │
+         └─── Quick Actions (optional)
+              • "Track Progress"
+              • "View Exercises"
+              • "Settings"
+```
+
+---
+
+## 💪 WORKOUT FLOW DECISION TREE
+
+```
+┌────────────────────┐
+│ WORKOUTS TAB       │
+│ (PlanView)         │
+└────────┬───────────┘
+         │
+         ├─── CONDITIONAL: Has active plan?
+         │    │
+         │    ├─── YES: Show Plan
+         │    │    • Weekly calendar (7 days)
+         │    │    • Highlight today
+         │    │    • Show workouts for each day
+         │    │    • Tap day → show workout detail
+         │    │    │
+         │    │    └─── Tap workout card:
+         │    │         └─── Navigate to WorkoutOverview
+         │    │
+         │    └─── NO: Show empty state
+         │         • "No plan yet"
+         │         • "Generate Plan" button
+         │         │
+         │         └─── ON TAP: Call generatePlan()
+         │
+         └─── Top actions:
+              • "Generate New Plan" (regenerate)
+              • "Edit Profile" (adjust preferences)
+
+┌────────────────────┐
+│ WORKOUT OVERVIEW   │
+│ (Pre-workout)      │
+└────────┬───────────┘
+         │
+         ├─── Load workout data: getWorkout(workoutId)
+         │
+         ├─── DISPLAY:
+         │    • Hero stats (duration, exercises, sets)
+         │    • Warm-up section (expandable)
+         │    • Main workout (exercise cards):
+         │      - Exercise thumbnail
+         │      - Name, target muscle
+         │      - Sets x Reps prescription
+         │      - Safety tags (conditional)
+         │      - Chevron for details
+         │    • Cool-down section (expandable)
+         │    • Safety checkpoints (conditional):
+         │      - IF workout.safety_checkpoints.length > 0:
+         │        Show warning card
+         │
+         ├─── VALIDATION:
+         │    • Check all data loaded
+         │    • Verify exercise data exists
+         │
+         └─── "Start Workout" button
+              │
+              └─── ON TAP:
+                   • Convert workout format
+                   • Navigate to SessionPlayer
+
+┌────────────────────┐
+│  SESSION PLAYER    │
+│  (Active workout)  │
+└────────┬───────────┘
+         │
+         ├─── PHASE MANAGEMENT:
+         │    └─── Current phase:
+         │         • warm-up
+         │         • main
+         │         • cool-down
+         │
+         ├─── IF phase === 'warm-up':
+         │    • Show warm-up exercises
+         │    • Simple list with checkboxes
+         │    • Duration display
+         │    • "Start Main Workout" button
+         │    │
+         │    └─── ON TAP: setPhase('main')
+         │
+         ├─── IF phase === 'main':
+         │    │
+         │    ├─── DISPLAY:
+         │    │    • Header: timer, back, menu
+         │    │    • Progress bar (X/Y exercises)
+         │    │    • Exercise card:
+         │    │      - Name, target muscle
+         │    │      - Video thumbnail
+         │    │      - Set counter (Set X of Y)
+         │    │    • Input controls:
+         │    │      - Reps (number input with +/-)
+         │    │      - Weight (number input with +/-)
+         │    │      - RPE (slider 1-10)
+         │    │    • "Complete Set" button
+         │    │
+         │    ├─── ON "Complete Set":
+         │    │    │
+         │    │    ├─── Log set data:
+         │    │    │    • exerciseId
+         │    │    │    • setNumber
+         │    │    │    • reps
+         │    │    │    • weight
+         │    │    │    • rpe
+         │    │    │    • completedAt
+         │    │    │
+         │    │    ├─── DECISION: More sets?
+         │    │    │    │
+         │    │    │    ├─── YES (setNumber < totalSets):
+         │    │    │    │    • Show rest timer overlay
+         │    │    │    │    • Countdown from rest_seconds
+         │    │    │    │    • "Skip Rest" button
+         │    │    │    │    └─── After rest: back to same exercise
+         │    │    │    │
+         │    │    │    └─── NO (all sets done):
+         │    │    │         • Move to next exercise
+         │    │    │         • currentExerciseIndex++
+         │    │    │
+         │    │    └─── DECISION: More exercises?
+         │    │         │
+         │    │         ├─── YES: Show next exercise
+         │    │         │
+         │    │         └─── NO (all exercises done):
+         │    │              • setPhase('cool-down')
+         │    │
+         │    ├─── Secondary actions:
+         │    │    • "Skip Set" (ghost button)
+         │    │    • "View Cues" (show modal)
+         │    │    • "See Video" (play video)
+         │    │
+         │    └─── Back button (with confirmation):
+         │         └─── IF completedSets.length > 0:
+         │              • Show Alert: "Exit workout?"
+         │              • Options: "Exit" / "Continue"
+         │
+         └─── IF phase === 'cool-down':
+              • Show cool-down exercises
+              • Simple list with checkboxes
+              • "Complete Workout" button
+              │
+              └─── ON TAP:
+                   • Save session data
+                   • Navigate to CompletionScreen
+
+┌────────────────────┐
+│ COMPLETION SCREEN  │
+│ (Celebration)      │
+└────────┬───────────┘
+         │
+         ├─── DISPLAY:
+         │    • Hero: Trophy icon (gradient)
+         │    • Title: "Workout Complete!"
+         │    • Encouragement message
+         │    • Stats grid (2 columns):
+         │      - Duration (gradient card)
+         │      - Exercises count
+         │      - Sets count
+         │      - Avg RPE
+         │      - Total volume (if > 0)
+         │    • Achievements (conditional)
+         │    • Summary checklist:
+         │      ✓ Warm-up completed
+         │      ✓ X exercises completed
+         │      ✓ Cool-down completed
+         │    • Feedback (optional):
+         │      - Mood selector (5 options)
+         │      - Notes textarea
+         │
+         ├─── Calculate stats:
+         │    • duration = completedAt - startedAt
+         │    • totalSets = completedSets.length
+         │    • avgRPE = average of all set RPEs
+         │    • totalVolume = sum(reps × weight)
+         │    • uniqueExercises = unique exerciseIds
+         │
+         ├─── "Save & Continue" button
+         │    │
+         │    └─── ON TAP:
+         │         • Haptic feedback
+         │         • Call onSaveSession()
+         │         • Update streak
+         │         • Update weekly stats
+         │         • Navigate back to PlanView
+         │
+         └─── "Share" button (optional)
+              └─── ON TAP: Share workout summary
+```
+
+---
+
+## 📊 PROGRESS TAB DECISION TREE
+
+```
+┌────────────────────┐
+│  PROGRESS TAB      │
+└────────┬───────────┘
+         │
+         ├─── Load data:
+         │    • getCurrentStreak()
+         │    • getWeeklyStats()
+         │    • getRecentSessions()
+         │
+         ├─── DISPLAY:
+         │    • Streak display:
+         │      - Current streak number (large)
+         │      - Longest streak
+         │      - Streak calendar (optional)
+         │    • Weekly stats:
+         │      - Workouts completed
+         │      - Total volume
+         │      - Avg RPE
+         │      - Total minutes
+         │    • Session history:
+         │      - List of recent sessions
+         │      - Tap session → SessionDetail
+         │
+         └─── Filter options:
+              • "This Week"
+              • "This Month"
+              • "All Time"
+
+┌────────────────────┐
+│  SESSION DETAIL    │
+└────────┬───────────┘
+         │
+         ├─── Load session: getSession(sessionId)
+         │
+         ├─── DISPLAY:
+         │    • Session date/time
+         │    • Duration
+         │    • Workout name
+         │    • Exercise list:
+         │      - Exercise name
+         │      - Sets x Reps performed
+         │      - Weight used
+         │      - RPE for each set
+         │    • Session notes (if any)
+         │
+         └─── Actions:
+              • "View Workout" (go to WorkoutOverview)
+              • "Repeat Workout" (start same workout)
+```
+
+---
+
+## ⚙️ SETTINGS TAB DECISION TREE
+
+```
+┌────────────────────┐
+│   SETTINGS TAB     │
+└────────┬───────────┘
+         │
+         ├─── SECTIONS:
+         │
+         ├─── 1. PROFILE:
+         │    • "Edit Profile" → Navigate to onboarding
+         │    • "View Profile" → Show current profile data
+         │
+         ├─── 2. PREFERENCES:
+         │    • Session duration (30/45/60/90 min)
+         │    • Workout frequency (2-6 days)
+         │    • Equipment available
+         │    • Low sensory mode (toggle)
+         │    • Save changes → updateProfile()
+         │
+         ├─── 3. WORKOUT SETTINGS:
+         │    • Auto-rest timer (toggle)
+         │    • Rest duration (30-180 seconds)
+         │    • Show exercise videos (toggle)
+         │    • Show trans tips (toggle)
+         │
+         ├─── 4. DATA & SYNC:
+         │    • Cloud sync (toggle)
+         │    • Last synced: [timestamp]
+         │    • "Sync Now" button
+         │    • Export data (CSV/JSON)
+         │    • Clear local data (with confirmation)
+         │
+         ├─── 5. PLAN MANAGEMENT:
+         │    • "Generate New Plan"
+         │    • "View Current Plan"
+         │    • Plan history
+         │
+         ├─── 6. ABOUT:
+         │    • App version
+         │    • Privacy policy
+         │    • Terms of service
+         │    • Contact support
+         │    • Disclaimer
+         │
+         └─── 7. ACCOUNT:
+              • Log out (with confirmation)
+              • Delete account (with confirmation)
+```
+
+---
+
+## 🔄 DATA FLOW & STORAGE
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    DATA ARCHITECTURE                      │
+└──────────────────────────────────────────────────────────┘
+
+LOCAL STORAGE (SQLite)
+┌────────────────────┐
+│ profiles_storage   │ ← User profile data (JSON)
+│ plans_storage      │ ← Generated workout plans
+│ sessions           │ ← Completed workout sessions
+│ streaks            │ ← Streak tracking
+│ weekly_aggregates  │ ← Stats rollups
+└────────────────────┘
+
+CLOUD STORAGE (Supabase)
+┌────────────────────┐
+│ profiles           │ ← Synced profile (if enabled)
+│ exercises          │ ← Exercise library (read-only)
+│ trans_tips         │ ← Trans-specific tips (read-only)
+└────────────────────┘
+
+DATA SYNC FLOW:
+1. User completes onboarding → Save to local SQLite
+2. IF cloud_sync_enabled:
+   • Upload profile to Supabase
+   • Store synced_at timestamp
+3. On app launch:
+   • Load profile from SQLite
+   • IF cloud_sync_enabled AND needs sync:
+     - Download latest from Supabase
+     - Merge conflicts (last-write-wins)
+4. Workout generation:
+   • Fetch exercises from Supabase (cached)
+   • Generate plan with local profile
+   • Save plan to SQLite
+5. Session completion:
+   • Save to local SQLite immediately
+   • IF cloud_sync_enabled:
+     - Queue for upload
+     - Sync on next connection
+```
+
+---
+
+## 🚨 ERROR HANDLING & EDGE CASES
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    ERROR SCENARIOS                        │
+└──────────────────────────────────────────────────────────┘
+
+NO INTERNET CONNECTION
+└─── During onboarding:
+     • Allow profile creation (local only)
+     • Warn: "Saved locally, will sync when connected"
+     • Continue to plan generation
+     
+└─── During workout:
+     • Continue normally (all data local)
+     • Queue sync for later
+
+└─── During plan generation:
+     • FAIL if exercises not cached
+     • Show: "Connection required for first plan"
+     • Retry button
+
+CORRUPTED DATA
+└─── Profile load fails:
+     • Try to recover from backup
+     • If fails: restart onboarding
+     • Preserve workout history if possible
+
+└─── Plan load fails:
+     • Generate new plan
+     • Log error for debugging
+
+VALIDATION FAILURES
+└─── Onboarding:
+     • Block continue until valid
+     • Show inline error messages
+     • Highlight invalid fields
+
+└─── Workout generation:
+     • Check: equipment available
+     • Check: at least 3 exercises match criteria
+     • If fails: relax constraints progressively
+     • Last resort: show error + edit profile
+
+APP CRASHES
+└─── During workout:
+     • Auto-save progress every set
+     • On restart: offer "Resume workout"
+     • Restore from last saved state
+
+└─── During onboarding:
+     • Resume from last completed step
+     • Pre-fill previous answers
+```
+
+---
+
+## 🎯 DECISION CRITERIA SUMMARY
+
+**Profile Completeness:**
+- Minimal viable: gender_identity, primary_goal, fitness_experience, equipment
+- Full profile: + HRT, binding, surgeries, dysphoria
+
+**Workout Generation:**
+- MUST HAVE: equipment, experience level
+- FILTERS: binding safety, surgery recovery, dysphoria triggers
+- EMPHASIS: gender goals (feminization/masculinization)
+
+**Safety Checks:**
+- IF binds_chest AND binding_frequency === 'daily': prioritize binder-safe exercises
+- IF any surgery < 12 weeks: exclude high-impact, filter by contraindications
+- IF heavy_binding: exclude exercises flagged as heavy_binding_unsafe
+
+**UI Conditionals:**
+- Show HRT tracker: profile.on_hrt === true
+- Show surgery recovery: surgeries.length > 0 AND any fully_healed === false
+- Show binding badges: profile.binds_chest === true
+- Show dysphoria considerations: dysphoria_triggers.length > 0
+
+---
+
+**END OF FLOWCHART**
+
+## DATA MODELS
+
+### Profile
+```typescript
+{
+  // Required
+  user_id: string
+  gender_identity: 'mtf' | 'ftm' | 'nonbinary' | 'questioning'
+  primary_goal: 'feminization' | 'masculinization' | 'general_fitness' | 'strength' | 'endurance'
+  on_hrt: boolean
+  binds_chest: boolean
+  surgeries: Surgery[]
+  fitness_experience: 'beginner' | 'intermediate' | 'advanced'
+  workout_frequency: number // 2-6
+  session_duration: number // 30, 45, 60, 90
+  equipment: string[]
+  created_at: Date
+  updated_at: Date
+  
+  // Optional
+  pronouns?: string
+  hrt_type?: 'estrogen_blockers' | 'testosterone' | 'none'
+  hrt_start_date?: Date
+  hrt_months_duration?: number
+  binding_frequency?: 'daily' | 'sometimes' | 'rarely' | 'never'
+  binding_duration_hours?: number
+  binder_type?: string
+  dysphoria_triggers?: DysphoriaTrigger[]
+  dysphoria_notes?: string
+}
+```
+
+### Surgery
+```typescript
+{
+  type: 'top_surgery' | 'bottom_surgery' | 'ffs' | 'orchiectomy' | 'other'
+  date: Date
+  weeks_post_op?: number // calculated
+  fully_healed?: boolean // weeks_post_op >= 12
+  notes?: string
+}
+```
+
+### Workout
+```typescript
+{
+  id: string
+  name: string
+  duration_minutes: number
+  exercises: Exercise[]
+  warm_up: Exercise[]
+  cool_down: Exercise[]
+  safety_checkpoints?: SafetyCheckpoint[]
+}
+```
+
+---
+
+## BUSINESS LOGIC
+
+### Workout Generation
+
+**Input:** Profile data  
+**Output:** Workout plan
+
+**Steps:**
+1. Filter exercises by equipment
+2. Filter by safety (binding, surgery, HRT)
+3. Apply gender emphasis scoring
+4. Select template by experience level
+5. Adjust volume for HRT/recovery
+6. Generate warm-up and cool-down
+7. Add safety checkpoints
+8. Save to database
+
+### Safety Rules
+
+**IF binds_chest && binding_frequency === 'daily':**
+- Filter: only binder_aware === true
+- Prioritize: heavy_binding_safe === true
+- Exclude: exercises requiring deep breathing
+
+**IF any surgery with weeks_post_op < 12:**
+- Filter: check contraindications array
+- Exclude: exercises affecting surgery site
+- Reduce: upper body volume if top surgery
+
+**IF on_hrt:**
+- Adjust: volume based on hrt_months_duration
+- Reduce: recovery time if estrogen
+- Increase: recovery time if testosterone < 6 months
+
+---
+
+## IMPLEMENTATION ROADMAP
+
+### Week 1: Design System Setup
+- Duplicate UI kits in Figma
+- Change fonts to Gotham + Poppins
+- Design 3-5 key screens
+- Create tokens.ts with exact values
+- Build core components (Button, Card, Badge, Input)
+
+### Week 2: Simple Screens
+- Welcome/Splash
+- Settings
+- About/Legal screens
+
+### Week 3: Medium Screens
+- Home Dashboard (with conditional sections)
+- Plan View
+- Workout Overview
+
+### Week 4: Complex Screens
+- Session Player
+- Completion Screen
+- Onboarding Flow (8 screens)
+
+### Migration Process Per Screen:
+1. Reference Figma design
+2. Replace inline styles with design system
+3. Update colors to tokens.colors.*
+4. Update spacing to tokens.spacing.*
+5. Update typography to tokens.typography.*
+6. Test functionality (MUST still work)
+7. Commit with message: "refactor: migrate [Screen] to design system"
+
+---
+
+## SUCCESS METRICS
+
+**Design Quality:**
+- 95%+ match to Figma designs
+- 100% design system usage (no inline colors/spacing)
+- Professional appearance (user testing)
+
+**Technical:**
+- All features functional
+- 8px grid compliance
+- Proper typography hierarchy
+- Consistent spacing
+
+**User Experience:**
+- 44x44 minimum touch targets
+- WCAG AA contrast
+- Smooth animations (60fps)
+- Intuitive navigation
+
+---
+
+## APPENDICES
+
+### A. Key Decisions Log
+- Cyan/red color scheme chosen over purple for energy and distinction
+- Gotham + Poppins for premium feel
+- Dark theme primary for modern aesthetic
+- Local-first architecture for privacy
+- 8px spacing grid for consistency
+
+### B. Future Enhancements
+- Social features (share workouts)
+- Workout history analytics
+- Exercise video library
+- Nutrition tracking
+- Community challenges
+- Premium tier features
+
+### C. Technical Constraints
+- React Native limitations (no CSS backdrop-filter)
+- SQLite for local storage
+- Supabase for cloud (optional)
+- Expo managed workflow
+- iOS/Android cross-platform
+
+---
+
+**END OF PRD**
+EOFPRD
+echo "✅ PRD created successfully"
+Output
+
+✅ PRD created successfully

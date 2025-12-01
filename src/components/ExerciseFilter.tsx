@@ -1,7 +1,7 @@
 // src/components/ExerciseFilter.tsx
 
 import React, { useState, useEffect } from 'react';
-import { loadExercises as fetchExercises } from '../services/exercises';
+import { fetchAllExercises as fetchExercises } from '../services/exerciseService';
 import { Exercise } from '../types/plan';
 
 export const ExerciseFilter: React.FC = () => {

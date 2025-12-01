@@ -1,572 +1,899 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button } from 'react-native-paper';
-import type { OnboardingScreenProps } from '../../../types/onboarding';
-import { useProfile } from '../../../hooks/useProfile';
-import { palette, spacing, typography } from '../../../theme';
-import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import { getEquipmentOptions, EquipmentOption, CanonicalEquipment } from '../../../utils/equipment';
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { CommonActions } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
+import { OnboardingStackParamList } from "../../../types/onboarding";
+import { Plan, Day, Workout } from "../../../types/plan";
+import { Exercise } from "../../../types";
+import { colors, spacing, borderRadius } from "../../../theme/theme";
+import { glassStyles, textStyles, buttonStyles } from "../../../theme/components";
+import { useProfile } from "../../../hooks/useProfile";
+import { getPlan } from "../../../services/storage/plan";
+import { getExerciseLibrary } from "../../../data/exercises";
+import { Platform } from "react-native";
 
-// Block length options
-const BLOCK_LENGTH_OPTIONS = [
-  { value: 1, label: '1 Week', description: 'Short-term plan' },
-  { value: 4, label: '4 Weeks', description: 'Monthly program' },
-];
+type ProgramSetupNavigationProp = StackNavigationProp<OnboardingStackParamList>;
 
-// Fitness level options
-const FITNESS_LEVEL_OPTIONS = [
-  { value: 'beginner' as const, label: 'Beginner', description: 'New to fitness or returning after a break' },
-  { value: 'intermediate' as const, label: 'Intermediate', description: 'Regular exercise experience' },
-  { value: 'advanced' as const, label: 'Advanced', description: 'Extensive fitness background' },
-];
+interface ProgramSetupProps {
+  navigation: ProgramSetupNavigationProp;
+}
 
-export default function ProgramSetup({ navigation }: OnboardingScreenProps<'ProgramSetup'>) {
-  const { profile, updateProfile } = useProfile();
-  const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 375;
+const GOAL_LABELS: Record<string, string> = {
+  feminization: "Feminization",
+  masculinization: "Masculinization",
+  general_fitness: "General Fitness",
+  strength: "Strength",
+  endurance: "Endurance"
+};
 
-  // Equipment options loaded from Supabase
-  const [equipmentOptions, setEquipmentOptions] = useState<EquipmentOption[]>([]);
-  const [loadingEquipment, setLoadingEquipment] = useState<boolean>(true);
-  
-  // Selected equipment (stored as canonical equipment)
-  const [selectedEquipment, setSelectedEquipment] = useState<CanonicalEquipment[]>([]);
-
-  // Initialize from profile if available
-  const [fitnessLevel, setFitnessLevel] = useState<'beginner' | 'intermediate' | 'advanced' | undefined>(
-    profile?.fitness_level
-  );
-  const [blockLength, setBlockLength] = useState<number>(profile?.block_length || 1);
-  const [lowSensoryMode, setLowSensoryMode] = useState<boolean>(profile?.low_sensory_mode || false);
-
-  // Load equipment options from Supabase on mount
-  useEffect(() => {
-    const loadEquipment = async () => {
-      try {
-        setLoadingEquipment(true);
-        const options = await getEquipmentOptions();
-        setEquipmentOptions(options);
-        
-        // Initialize selected equipment from profile
-        if (profile?.equipment && profile.equipment.length > 0) {
-          setSelectedEquipment(profile.equipment as CanonicalEquipment[]);
-        } else {
-          // Default to bodyweight
-          setSelectedEquipment(['bodyweight']);
-        }
-      } catch (error) {
-        console.error('Error loading equipment options:', error);
-        // Fallback to default options (only bodyweight on error)
-        setEquipmentOptions([
-          { raw: 'bodyweight', canonical: 'bodyweight', label: 'Bodyweight', description: 'No equipment needed', value: 'bodyweight' },
-        ]);
-        setSelectedEquipment(['bodyweight']);
-      } finally {
-        setLoadingEquipment(false);
-      }
-    };
-
-    loadEquipment();
-  }, []);
+export default function ProgramSetup({ navigation }: ProgramSetupProps) {
+  const { profile } = useProfile();
+  const [loading, setLoading] = useState(true);
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [exerciseMap, setExerciseMap] = useState<Record<string, Exercise>>({});
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (profile) {
-      setFitnessLevel(profile.fitness_level);
-      setBlockLength(profile.block_length || 1);
-      setLowSensoryMode(profile.low_sensory_mode || false);
-      
-      if (profile.equipment && profile.equipment.length > 0) {
-        setSelectedEquipment(profile.equipment as CanonicalEquipment[]);
-      }
+      loadProgram();
     }
   }, [profile]);
 
-  const toggleEquipment = (canonical: CanonicalEquipment) => {
-    setSelectedEquipment((prev) => {
-      if (prev.includes(canonical)) {
-        if (prev.length === 1) {
-          return prev;
-        }
-        return prev.filter((e) => e !== canonical);
+  const loadProgram = async () => {
+    if (!profile) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Load the plan from storage (already generated in Review screen)
+      const savedPlan = await getPlan(profile.user_id);
+      
+      if (!savedPlan) {
+        throw new Error("No plan found. Please generate a plan first.");
       }
-      return [...prev, canonical];
+
+      // Load exercise library to map exercise IDs to names
+      const exercises = await getExerciseLibrary();
+      const exerciseMap: Record<string, Exercise> = {};
+      
+      // Build exercise map from all workouts
+      savedPlan.days.forEach(day => {
+        Object.values(day.variants).forEach(workout => {
+          if (workout) {
+            workout.exercises.forEach(exerciseInstance => {
+              if (!exerciseMap[exerciseInstance.exerciseId]) {
+                const exercise = exercises.find(
+                  ex => ex.id === exerciseInstance.exerciseId || 
+                  String(ex.id) === String(exerciseInstance.exerciseId)
+                );
+                if (exercise) {
+                  exerciseMap[exerciseInstance.exerciseId] = exercise;
+                }
+              }
+            });
+          }
+        });
+      });
+
+      setExerciseMap(exerciseMap);
+      setPlan(savedPlan as any);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error loading program:", err);
+      setError(err instanceof Error ? err.message : "Failed to load program");
+      setLoading(false);
+    }
+  };
+
+  const getProgramName = (): string => {
+    if (!profile) return "Your Program";
+    
+    const primary = profile.primary_goal;
+    const secondary = profile.secondary_goals?.[0];
+    
+    if (primary === "strength" && secondary === "masculinization") return "Power Build";
+    if (primary === "strength") return "Strength Foundation";
+    if (primary === "masculinization") return "Masculine Build";
+    if (primary === "feminization") return "Feminine Sculpt";
+    if (primary === "endurance") return "Endurance Boost";
+    return "Balanced Fitness";
+  };
+
+  const getWelcomeMessage = (): string => {
+    const name = profile?.pronouns || "there";
+    return `Welcome! Your personalized program is ready.`;
+  };
+
+  const getWorkoutForDay = (day: Day): Workout | null => {
+    if (!profile) return null;
+    const duration = profile.session_duration;
+    
+    // Find the closest matching duration variant
+    if (duration <= 30 && day.variants[30]) return day.variants[30];
+    if (duration <= 45 && day.variants[45]) return day.variants[45];
+    if (duration <= 60 && day.variants[60]) return day.variants[60];
+    if (day.variants[90]) return day.variants[90];
+    
+    // Fallback to first available
+    return day.variants[30] || day.variants[45] || day.variants[60] || day.variants[90];
+  };
+
+  const getWorkoutBadges = (workout: Workout, day: Day): Array<{ label: string; color: 'cyan' | 'green' | 'blue' }> => {
+    const badges: Array<{ label: string; color: 'cyan' | 'green' | 'blue' }> = [];
+    
+    if (!profile) return badges;
+    
+    // Primary goal badge (cyan)
+    if (profile.primary_goal === "strength") {
+      badges.push({ label: "STRENGTH FOCUS", color: 'cyan' });
+    } else if (profile.primary_goal === "masculinization") {
+      badges.push({ label: "MASCULINIZATION FOCUS", color: 'cyan' });
+    } else if (profile.primary_goal === "feminization") {
+      badges.push({ label: "FEMINIZATION FOCUS", color: 'cyan' });
+    } else if (profile.primary_goal === "endurance") {
+      badges.push({ label: "ENDURANCE FOCUS", color: 'cyan' });
+    }
+
+    // Safety badges (green)
+    if (profile.binds_chest) {
+      badges.push({ label: "BINDING-SAFE", color: 'green' });
+    }
+
+    // Check if workout has lower body focus (for pelvic floor safe badge)
+    const hasLowerBodyFocus = workout.exercises.some(exerciseInstance => {
+      const exercise = exerciseMap[exerciseInstance.exerciseId];
+      if (!exercise) return false;
+      const tags = exercise.tags || [];
+      const pattern = exercise.pattern?.toLowerCase() || '';
+      return tags.some(tag => tag.includes('lower') || tag.includes('leg') || tag.includes('glute')) ||
+             pattern.includes('lower') || pattern.includes('leg') || pattern.includes('squat') || pattern.includes('deadlift');
+    });
+    
+    if (hasLowerBodyFocus) {
+      badges.push({ label: "PELVIC FLOOR SAFE", color: 'green' });
+    }
+    
+    // HRT badge (blue)
+    if (profile.on_hrt) {
+      badges.push({ label: "HRT-OPTIMIZED", color: 'blue' });
+    }
+
+    return badges;
+  };
+
+  const getExerciseBadges = (exercise: Exercise | undefined): { type: 'secondary' | 'caution'; label: string }[] => {
+    const badges: { type: 'secondary' | 'caution'; label: string }[] = [];
+    
+    if (!exercise || !profile) return badges;
+
+    // Check if exercise matches secondary goal
+    if (profile.secondary_goals && profile.secondary_goals.length > 0) {
+      const secondaryGoal = profile.secondary_goals[0];
+      const genderEmphasis = exercise.gender_goal_emphasis;
+      const goal = exercise.goal?.toLowerCase() || '';
+      const tags = exercise.tags || [];
+
+      // Check for masculinization match
+      if (secondaryGoal === "masculinization" && genderEmphasis && genderEmphasis.startsWith('masc_')) {
+        badges.push({ type: 'secondary', label: 'MASCULINE' });
+      }
+      // Check for feminization match
+      else if (secondaryGoal === "feminization" && genderEmphasis && genderEmphasis.startsWith('fem_')) {
+        badges.push({ type: 'secondary', label: 'FEMININE' });
+      }
+      // Check for strength match
+      else if (secondaryGoal === "strength" && (goal === 'strength' || tags.some(t => t.toLowerCase().includes('strength')))) {
+        badges.push({ type: 'secondary', label: 'STRENGTH' });
+      }
+      // Check for endurance match
+      else if (secondaryGoal === "endurance" && (goal === 'endurance' || goal === 'conditioning' || tags.some(t => t.toLowerCase().includes('cardio') || t.toLowerCase().includes('endurance')))) {
+        badges.push({ type: 'secondary', label: 'CARDIO' });
+      }
+    }
+
+    // Check for binding safety
+    if (profile.binds_chest && !exercise.binder_aware) {
+      badges.push({ type: 'caution', label: 'CAUTION' });
+    }
+
+    return badges;
+  };
+
+  const handleGetStarted = () => {
+    if (!plan || !profile) return;
+    
+    // Get the first workout from the first day
+    const firstDay = plan.days[0];
+    if (!firstDay) return;
+    
+    const workout = getWorkoutForDay(firstDay);
+    if (!workout) return;
+    
+    // Navigate to SessionPlayer with the first workout
+    navigation.navigate("SessionPlayer", {
+      workout: workout as any,
+      planId: plan.id,
     });
   };
 
-  const handleContinue = async () => {
-    if (!fitnessLevel) return;
-
-    // Ensure at least one equipment is selected
-    if (selectedEquipment.length === 0) {
-      setSelectedEquipment(['bodyweight']);
-    }
-
-    const finalEquipment = selectedEquipment.length > 0 ? selectedEquipment : ['bodyweight'];
-
-    try {
-      await updateProfile({
-        fitness_level: fitnessLevel,
-        block_length: blockLength,
-        equipment: finalEquipment,
-        low_sensory_mode: lowSensoryMode,
-      });
-      // Navigate to Constraints screen
-      navigation.navigate('Constraints');
-    } catch (error) {
-      console.error('Error saving program setup:', error);
-    }
+  const handleGoToDashboard = () => {
+    // Navigate to the Home screen (dashboard)
+    navigation.navigate("Home");
   };
 
-  const canContinue = fitnessLevel !== undefined && selectedEquipment.length > 0;
-
-  return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.m),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
-    >
-      <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Program Setup</Text>
-        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          Set your fitness level and program duration
-        </Text>
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={colors.cyan[500]} />
+        <Text style={styles.loadingText}>Loading your program...</Text>
       </View>
+    );
+  }
 
-      <ProgressIndicator
-        currentStep={2}
-        totalSteps={4}
-        stepLabels={['Goals & Preferences', 'Program Setup', 'Constraints', 'Review']}
-      />
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Fitness Level */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Fitness Level</Text>
-            <Text style={styles.sectionDescription}>Select your current fitness level</Text>
-          </View>
-          <View style={styles.fitnessLevelContainer}>
-            {FITNESS_LEVEL_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => setFitnessLevel(option.value)}
-                activeOpacity={0.7}
-                style={[
-                  styles.fitnessLevelCard,
-                  fitnessLevel === option.value && styles.fitnessLevelCardSelected,
-                ]}
-              >
-                <Text style={[styles.fitnessLevelLabel, fitnessLevel === option.value && styles.fitnessLevelLabelSelected]}>
-                  {option.label}
-                </Text>
-                <Text
-                  style={[
-                    styles.fitnessLevelDescription,
-                    fitnessLevel === option.value && styles.fitnessLevelDescriptionSelected,
-                  ]}
-                >
-                  {option.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Program Length */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Program Length</Text>
-            <Text style={styles.sectionDescription}>Choose your preferred program duration</Text>
-          </View>
-          <View style={styles.blockLengthContainer}>
-            {BLOCK_LENGTH_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                onPress={() => setBlockLength(option.value)}
-                activeOpacity={0.7}
-                style={[
-                  styles.blockLengthCard,
-                  blockLength === option.value && styles.blockLengthCardSelected,
-                ]}
-              >
-                <Text style={[styles.blockLengthLabel, blockLength === option.value && styles.blockLengthLabelSelected]}>
-                  {option.label}
-                </Text>
-                <Text
-                  style={[
-                    styles.blockLengthDescription,
-                    blockLength === option.value && styles.blockLengthDescriptionSelected,
-                  ]}
-                >
-                  {option.description}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Available Equipment */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Equipment</Text>
-            <Text style={styles.sectionDescription}>
-              Select all equipment you have access to. You can choose multiple options.
-            </Text>
-          </View>
-          {loadingEquipment ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={palette.tealPrimary} />
-              <Text style={styles.loadingText}>Loading equipment options...</Text>
-            </View>
-          ) : (
-            <>
-              <View style={styles.equipmentGrid}>
-                {equipmentOptions.map((option) => {
-                  const isSelected = selectedEquipment.includes(option.canonical);
-                  return (
-                    <TouchableOpacity
-                      key={option.canonical}
-                      onPress={() => toggleEquipment(option.canonical)}
-                      activeOpacity={0.8}
-                      style={[
-                        styles.equipmentCard,
-                        isSelected && styles.equipmentCardSelected,
-                      ]}
-                    >
-                      <View style={styles.equipmentCardContent}>
-                        <View style={styles.equipmentHeader}>
-                          <Text style={[styles.equipmentLabel, isSelected && styles.equipmentLabelSelected]}>
-                            {option.label}
-                          </Text>
-                          <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                            {isSelected && (
-                              <Text style={styles.checkmark}>✓</Text>
-                            )}
-                          </View>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              {selectedEquipment.length > 0 && (
-                <View style={styles.selectionCount}>
-                  <Text style={styles.selectionCountText}>
-                    {selectedEquipment.length} {selectedEquipment.length === 1 ? 'equipment' : 'equipment'} selected
-                  </Text>
-                </View>
-              )}
-            </>
-          )}
-        </View>
-
-        {/* Low Sensory Mode */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Accessibility</Text>
-            <Text style={styles.sectionDescription}>Optional settings for your comfort</Text>
-          </View>
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle" size={48} color={colors.semantic.error} />
+          <Text style={styles.errorTitle}>Error Generating Program</Text>
+          <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
-            onPress={() => setLowSensoryMode((prev) => !prev)}
-            activeOpacity={0.7}
-            style={[
-              styles.equipmentCard,
-              lowSensoryMode && styles.equipmentCardSelected,
-            ]}
+            onPress={loadProgram}
+            style={buttonStyles.primary}
           >
-            <View style={[styles.checkbox, lowSensoryMode && styles.checkboxSelected]}>
-              {lowSensoryMode && (
-                <Text style={styles.checkmark}>✓</Text>
-              )}
-            </View>
-            <View style={styles.equipmentCardContent}>
-              <Text style={[styles.equipmentLabel, lowSensoryMode && styles.equipmentLabelSelected]}>
-                Low Sensory Mode
-              </Text>
-              <Text style={[styles.equipmentDescription, lowSensoryMode && styles.equipmentDescriptionSelected]}>
-                Reduce visual and audio stimulation during workouts
-              </Text>
-            </View>
+            <Text style={buttonStyles.primaryText}>Try Again</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
-
-      <View style={styles.ctaContainer}>
-        <Button
-          mode="contained"
-          onPress={handleContinue}
-          disabled={!canContinue}
-          style={styles.continueButton}
-          contentStyle={styles.continueButtonContent}
-          labelStyle={styles.continueButtonLabel}
-        >
-          Continue
-        </Button>
-        {!canContinue && (
-          <Text style={styles.hintText}>
-            {!fitnessLevel ? 'Please select your fitness level' : 'Please select at least one equipment option'}
-          </Text>
-        )}
       </View>
-    </View>
+    );
+  }
+
+  if (!plan || !profile) {
+    return null;
+  }
+
+  // Get first week of workouts (up to 7 days)
+  const weeklyWorkouts = plan.days.slice(0, Math.min(7, plan.days.length));
+
+  return (
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      {/* Success Animation */}
+      <View style={styles.successContainer}>
+        <View style={styles.successIconContainer}>
+          <Ionicons name="checkmark-circle" size={56} color={colors.cyan[500]} />
+        </View>
+      </View>
+
+      {/* Welcome Message */}
+      <View style={styles.welcomeContainer}>
+        <Text style={styles.welcomeTitle}>Program Ready!</Text>
+        <Text style={styles.welcomeText}>{getWelcomeMessage()}</Text>
+      </View>
+
+      {/* Program Card */}
+      <View style={styles.programCard}>
+        <View style={styles.programHeader}>
+          <Ionicons name="sparkles" size={28} color={colors.cyan[500]} />
+          <Text style={styles.programName}>{getProgramName()}</Text>
+        </View>
+
+        <Text style={styles.programDescription}>
+          A {profile.workout_frequency}-day per week program designed specifically for your goals, experience level, and safety needs.
+        </Text>
+
+        {/* Program Stats */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Ionicons name="calendar-outline" size={24} color={colors.cyan[500]} />
+            <Text style={styles.statLabel}>FREQUENCY</Text>
+            <Text style={styles.statValue}>{profile.workout_frequency} Days/Week</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <Ionicons name="barbell-outline" size={24} color={colors.cyan[500]} />
+            <Text style={styles.statLabel}>DURATION</Text>
+            <Text style={styles.statValue}>{profile.session_duration} Minutes</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Key Features */}
+      <View style={styles.featuresCard}>
+        <Text style={styles.featuresTitle}>Your Program Includes</Text>
+        <View style={styles.featuresList}>
+          {[
+            { icon: "heart-outline", text: "Exercises tailored to your body and goals" },
+            { 
+              icon: "shield-checkmark-outline", 
+              text: profile.binds_chest 
+                ? "Binding-safe exercise selection" 
+                : profile.surgeries && profile.surgeries.length > 0
+                ? "Post-surgical recovery protocols"
+                : "Safety-first exercise selection"
+            },
+            { 
+              icon: "calendar-outline", 
+              text: profile.on_hrt 
+                ? "HRT-aware programming and recovery" 
+                : "Optimized recovery protocols"
+            },
+            { icon: "sparkles", text: "Progressive overload for sustainable results" }
+          ].map((item, index) => (
+            <View key={index} style={styles.featureItem}>
+              <Ionicons name={item.icon as any} size={20} color={colors.cyan[500]} />
+              <Text style={styles.featureText}>{item.text}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Your Weekly Workouts */}
+      <View style={styles.workoutsSection}>
+        <Text style={styles.workoutsTitle}>Your Weekly Workouts</Text>
+        
+        <View style={styles.workoutsList}>
+          {weeklyWorkouts.map((day, index) => {
+            const workout = getWorkoutForDay(day);
+            if (!workout) return null;
+
+            const badges = getWorkoutBadges(workout, day);
+            
+            // Determine workout name based on exercise patterns
+            const workoutName = (() => {
+              const exercises = workout.exercises.map(ei => exerciseMap[ei.exerciseId]).filter(Boolean);
+              const hasLowerBody = exercises.some(ex => {
+                const tags = ex?.tags || [];
+                const pattern = ex?.pattern?.toLowerCase() || '';
+                return tags.some(t => t.includes('lower') || t.includes('leg') || t.includes('glute') || t.includes('squat') || t.includes('deadlift')) ||
+                       pattern.includes('lower') || pattern.includes('leg') || pattern.includes('squat') || pattern.includes('deadlift');
+              });
+              const hasUpperBody = exercises.some(ex => {
+                const tags = ex?.tags || [];
+                const pattern = ex?.pattern?.toLowerCase() || '';
+                return tags.some(t => t.includes('upper') || t.includes('push') || t.includes('pull') || t.includes('chest') || t.includes('shoulder')) ||
+                       pattern.includes('upper') || pattern.includes('push') || pattern.includes('pull');
+              });
+              
+              if (hasLowerBody && !hasUpperBody) return "Lower Body & Core";
+              if (hasUpperBody && !hasLowerBody) return "Upper Body";
+              if (index === 0) return "Full Body A";
+              if (index === 2) return "Full Body B";
+              return "Full Body";
+            })();
+
+            return (
+              <View key={index} style={styles.workoutCard}>
+                {/* Workout Header */}
+                <View style={styles.workoutHeader}>
+                  <View style={styles.workoutHeaderLeft}>
+                    <Text style={styles.workoutDay}>DAY {day.dayNumber}</Text>
+                    <Text style={styles.workoutName}>{workoutName}</Text>
+                    <View style={styles.workoutMeta}>
+                      <Ionicons name="time-outline" size={14} color={colors.text.tertiary} />
+                      <Text style={styles.workoutMetaText}>{workout.duration} min</Text>
+                      <Ionicons name="barbell-outline" size={14} color={colors.text.tertiary} style={styles.workoutMetaIcon} />
+                      <Text style={styles.workoutMetaText}>{workout.exercises.length} exercises</Text>
+                    </View>
+
+                    {/* Workout Badges */}
+                    {badges.length > 0 && (
+                      <View style={styles.badgesContainer}>
+                        {badges.map((badge, badgeIndex) => {
+                          const badgeStyle = badge.color === 'cyan' 
+                            ? styles.badgeCyan 
+                            : badge.color === 'green' 
+                            ? styles.badgeGreen 
+                            : styles.badgeBlue;
+                          const badgeTextStyle = badge.color === 'cyan'
+                            ? styles.badgeTextCyan
+                            : badge.color === 'green'
+                            ? styles.badgeTextGreen
+                            : styles.badgeTextBlue;
+                          return (
+                            <View key={badgeIndex} style={[styles.badge, badgeStyle]}>
+                              <Text style={[styles.badgeText, badgeTextStyle]}>{badge.label}</Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+                </View>
+
+                {/* Exercise List */}
+                <View style={styles.exercisesList}>
+                  {workout.exercises.map((exerciseInstance, exerciseIndex) => {
+                    const exercise = exerciseMap[exerciseInstance.exerciseId];
+                    const exerciseName = exercise?.name || `Exercise ${exerciseInstance.exerciseId}`;
+                    const exerciseBadges = getExerciseBadges(exercise);
+
+                    return (
+                      <View key={exerciseIndex} style={styles.exerciseRow}>
+                        <View style={styles.exerciseLeft}>
+                          <Text style={styles.exerciseName}>{exerciseName}</Text>
+                          {exerciseBadges.map((badge, badgeIndex) => (
+                            <View 
+                              key={badgeIndex} 
+                              style={badge.type === 'secondary' ? styles.exerciseBadge : styles.cautionBadge}
+                            >
+                              <Text style={badge.type === 'secondary' ? styles.exerciseBadgeText : styles.cautionBadgeText}>
+                                {badge.label}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                        <Text style={styles.exerciseSets}>
+                          {exerciseInstance.sets} × {exerciseInstance.reps}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* CTA Buttons */}
+      <View style={styles.ctaButtonsContainer}>
+        <TouchableOpacity
+          onPress={handleGoToDashboard}
+          style={styles.dashboardButton}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.dashboardButtonText}>Go to Dashboard</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          onPress={handleGetStarted}
+          style={styles.ctaButton}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.ctaButtonText}>Start Your First Workout</Text>
+          <Ionicons name="arrow-forward" size={20} color={colors.text.primary} />
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
+    backgroundColor: colors.bg.deep,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
   },
-  header: {
-    marginBottom: spacing.l,
-    paddingTop: spacing.s,
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: colors.bg.raised,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing['2xl'],
+    gap: spacing.xl,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
-  headline: {
-    ...typography.h1,
-    textAlign: 'left',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.8,
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.xl,
+    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
-  headlineSmall: {
-    fontSize: 28,
+  modalTitle: {
+    ...textStyles.h2,
+    fontSize: 32,
+    textAlign: 'center',
+    color: colors.text.primary,
   },
-  subheadline: {
-    ...typography.bodyLarge,
-    textAlign: 'left',
-    color: palette.midGray,
+  modalSubtitle: {
+    ...textStyles.body,
+    textAlign: 'center',
+    color: colors.text.secondary,
+    fontSize: 16,
     lineHeight: 24,
   },
-  subheadlineSmall: {
-    fontSize: 15,
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
   },
-  scroll: {
-    flex: 1,
+  progressBar: {
+    height: '100%',
+    backgroundColor: colors.cyan[500],
+    borderRadius: borderRadius.full,
   },
-  scrollContent: {
-    paddingBottom: spacing.xl,
-  },
-  section: {
-    marginBottom: spacing.l,
-  },
-  sectionHeader: {
-    marginBottom: spacing.s,
-  },
-  sectionTitle: {
-    ...typography.h2,
-    marginBottom: spacing.xxs,
-    color: palette.white,
-    letterSpacing: -0.5,
-  },
-  sectionDescription: {
-    ...typography.body,
-    color: palette.midGray,
-    lineHeight: 22,
-  },
-  fitnessLevelContainer: {
-    gap: spacing.xs,
-    marginBottom: spacing.m,
-  },
-  fitnessLevelCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-  },
-  fitnessLevelCardSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
-    borderWidth: 2,
-  },
-  fitnessLevelLabel: {
-    fontSize: 15,
-    marginBottom: spacing.xxs,
-    fontWeight: '600',
-    color: palette.white,
-  },
-  fitnessLevelLabelSelected: {
-    color: palette.tealPrimary,
-  },
-  fitnessLevelDescription: {
-    ...typography.bodySmall,
-    color: palette.midGray,
-    lineHeight: 18,
-  },
-  fitnessLevelDescriptionSelected: {
-    color: palette.lightGray,
-  },
-  blockLengthContainer: {
-    flexDirection: 'row',
-    gap: spacing.s,
-  },
-  blockLengthCard: {
-    flex: 1,
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    alignItems: 'center',
-    minHeight: 70,
-    justifyContent: 'center',
-  },
-  blockLengthCardSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
-    borderWidth: 2,
-  },
-  blockLengthLabel: {
-    fontSize: 15,
-    marginBottom: spacing.xxs,
+  progressText: {
+    ...textStyles.label,
+    fontSize: 24,
     textAlign: 'center',
-    fontWeight: '600',
-    color: palette.white,
-  },
-  blockLengthLabelSelected: {
-    color: palette.tealPrimary,
-  },
-  blockLengthDescription: {
-    ...typography.bodySmall,
-    textAlign: 'center',
-    color: palette.midGray,
-    lineHeight: 18,
-  },
-  blockLengthDescriptionSelected: {
-    color: palette.lightGray,
-  },
-  ctaContainer: {
-    marginTop: spacing.s,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-  },
-  continueButton: {
-    borderRadius: 12,
-    marginBottom: spacing.xs,
-    shadowColor: palette.tealPrimary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  continueButtonContent: {
-    paddingVertical: spacing.s,
-    backgroundColor: palette.tealPrimary,
-  },
-  continueButtonLabel: {
-    fontSize: 15,
+    color: colors.cyan[500],
     fontWeight: '700',
-    color: palette.deepBlack,
   },
-  hintText: {
-    ...typography.caption,
-    textAlign: 'center',
-    color: palette.midGray,
-    marginTop: spacing.xs,
+  checklist: {
+    gap: spacing.md,
   },
-  loadingContainer: {
+  checklistItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.l,
-    gap: spacing.s,
+    gap: spacing.md,
+  },
+  checklistText: {
+    ...textStyles.body,
+    fontSize: 14,
+    color: colors.text.tertiary,
+  },
+  checklistTextComplete: {
+    color: colors.text.secondary,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    gap: spacing.lg,
+    padding: spacing.xl,
+  },
+  errorTitle: {
+    ...textStyles.h2,
+    color: colors.semantic.error,
+  },
+  errorText: {
+    ...textStyles.body,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   loadingText: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    ...textStyles.body,
+    color: colors.text.secondary,
+    marginTop: spacing.lg,
   },
-  equipmentGrid: {
+  scrollView: {
+    flex: 1,
+    backgroundColor: colors.bg.deep,
+  },
+  scrollContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing['3xl'],
+    gap: spacing.xl,
+  },
+  successContainer: {
+    alignItems: 'center',
+    marginBottom: spacing['2xl'],
+  },
+  successIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: borderRadius['3xl'],
+    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  welcomeContainer: {
+    alignItems: 'center',
+    marginBottom: spacing['2xl'],
+    gap: spacing.md,
+  },
+  welcomeTitle: {
+    ...textStyles.h1,
+    fontSize: 36,
+    textAlign: 'center',
+    color: colors.text.primary,
+  },
+  welcomeText: {
+    ...textStyles.body,
+    fontSize: 18,
+    textAlign: 'center',
+    color: colors.text.secondary,
+    lineHeight: 26,
+  },
+  programCard: {
+    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    padding: spacing['2xl'],
+    borderRadius: borderRadius['3xl'],
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.15)',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 32,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
+  },
+  programHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  programName: {
+    ...textStyles.h2,
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.cyan[500],
+  },
+  programDescription: {
+    ...textStyles.body,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text.secondary,
+    marginBottom: spacing.xl,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  statCard: {
+    flex: 1,
+    padding: spacing.base,
+    borderRadius: borderRadius.xl,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    gap: spacing.xs,
+  },
+  statLabel: {
+    ...textStyles.caption,
+    fontSize: 11,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: colors.text.tertiary,
+  },
+  statValue: {
+    ...textStyles.h3,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  featuresCard: {
+    ...glassStyles.card,
+    padding: spacing.xl,
+    borderRadius: borderRadius['2xl'],
+  },
+  featuresTitle: {
+    ...textStyles.h3,
+    fontSize: 18,
+    marginBottom: spacing.base,
+  },
+  featuresList: {
+    gap: spacing.md,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  featureText: {
+    ...textStyles.body,
+    fontSize: 15,
+    lineHeight: 22,
+    flex: 1,
+    color: colors.text.secondary,
+  },
+  workoutsSection: {
+    gap: spacing.base,
+  },
+  workoutsTitle: {
+    ...textStyles.h2,
+    fontSize: 22,
+    marginBottom: spacing.base,
+  },
+  workoutsList: {
+    gap: spacing.base,
+  },
+  workoutCard: {
+    ...glassStyles.card,
+    padding: spacing.xl,
+    borderRadius: borderRadius['2xl'],
+    marginBottom: spacing.base,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: spacing.base,
+  },
+  workoutHeaderLeft: {
+    flex: 1,
+  },
+  workoutDay: {
+    ...textStyles.caption,
+    fontSize: 11,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: colors.text.tertiary,
+    marginBottom: spacing.xs,
+  },
+  workoutName: {
+    ...textStyles.h3,
+    fontSize: 18,
+    marginBottom: spacing.sm,
+  },
+  workoutMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  workoutMetaIcon: {
+    marginLeft: spacing.sm,
+  },
+  workoutMetaText: {
+    ...textStyles.bodySmall,
+    fontSize: 13,
+    color: colors.text.tertiary,
+  },
+  badgesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.m,
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
-  equipmentCard: {
-    flex: 1,
-    minWidth: '47%',
-    maxWidth: '47%',
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.s,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    minHeight: 56,
+  badge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
   },
-  equipmentCardSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
-    borderWidth: 2,
+  badgeCyan: {
+    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.3)',
   },
-  equipmentCardContent: {
-    flex: 1,
-    gap: spacing.xxs,
+  badgeGreen: {
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
   },
-  equipmentHeader: {
+  badgeBlue: {
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+  },
+  badgeText: {
+    ...textStyles.caption,
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  badgeTextCyan: {
+    color: colors.cyan[500],
+  },
+  badgeTextGreen: {
+    color: colors.semantic.success,
+  },
+  badgeTextBlue: {
+    color: '#3b82f6',
+  },
+  exercisesList: {
+    gap: spacing.sm,
+  },
+  exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 2,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.base,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    marginBottom: spacing.xs,
   },
-  equipmentLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: palette.white,
+  exerciseLeft: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+    marginRight: spacing.sm,
   },
-  equipmentLabelSelected: {
-    color: palette.tealPrimary,
+  exerciseName: {
+    ...textStyles.body,
+    fontSize: 15,
+    color: colors.text.primary,
   },
-  equipmentDescription: {
-    ...typography.bodySmall,
-    color: palette.midGray,
-    lineHeight: 18,
-    fontWeight: '400',
-    paddingRight: spacing.s,
+  exerciseBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(244, 63, 94, 0.4)',
   },
-  equipmentDescriptionSelected: {
-    color: palette.lightGray,
+  exerciseBadgeText: {
+    ...textStyles.caption,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: '#f43f5e',
+    fontWeight: '600',
   },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
+  cautionBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+  },
+  cautionBadgeText: {
+    ...textStyles.caption,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    color: '#f59e0b',
+    fontWeight: '600',
+  },
+  exerciseSets: {
+    ...textStyles.bodySmall,
+    fontSize: 13,
+    color: colors.text.tertiary,
+  },
+  ctaButtonsContainer: {
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  dashboardButton: {
+    height: 56,
+    borderRadius: borderRadius.base,
+    backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: palette.border,
+    borderColor: colors.glass.border,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
-    backgroundColor: palette.darkCard,
   },
-  checkboxSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealPrimary,
-  },
-  checkmark: {
-    color: palette.deepBlack,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  selectionCount: {
-    marginTop: spacing.m,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-  },
-  selectionCountText: {
-    ...typography.caption,
-    color: palette.tealPrimary,
+  dashboardButtonText: {
+    ...textStyles.label,
+    fontSize: 16,
     fontWeight: '600',
-    textAlign: 'center',
+    color: colors.text.secondary,
+  },
+  ctaButton: {
+    ...buttonStyles.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    height: 60,
+  },
+  ctaButtonText: {
+    ...buttonStyles.primaryText,
+    fontSize: 16,
   },
 });
-

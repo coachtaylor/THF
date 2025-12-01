@@ -1,332 +1,420 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button } from 'react-native-paper';
-import type { OnboardingScreenProps } from '../../../types/onboarding';
-import { useProfile } from '../../../hooks/useProfile';
-import { palette, spacing, typography } from '../../../theme';
-import GoalCard, { Goal } from '../../../components/onboarding/GoalCard';
-import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import BodyRegionChip from '../../../components/onboarding/BodyRegionChip';
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
+import { OnboardingStackParamList } from "../../../types/onboarding";
+import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { colors, spacing, borderRadius } from "../../../theme/theme";
+import { glassStyles, textStyles } from "../../../theme/components";
+import { useProfile } from "../../../hooks/useProfile";
+import { updateProfile } from "../../../services/storage/profile";
+import { Platform } from "react-native";
 
-const GOAL_OPTIONS: Goal[] = ['strength', 'cardio', 'flexibility', 'custom'];
+type Goal = "feminization" | "masculinization" | "general_fitness" | "strength" | "endurance";
 
-// Body region options for focus areas
-const BODY_FOCUS_PREFER_OPTIONS = [
-  { value: 'legs', label: 'Legs' },
-  { value: 'glutes', label: 'Glutes' },
-  { value: 'back', label: 'Back' },
-  { value: 'core', label: 'Core' },
-  { value: 'shoulders', label: 'Shoulders' },
-  { value: 'arms', label: 'Arms' },
-  { value: 'chest', label: 'Chest' },
-];
+type GoalsNavigationProp = StackNavigationProp<OnboardingStackParamList, "Goals">;
 
-// Body region options for soft avoid areas
-const BODY_FOCUS_SOFT_AVOID_OPTIONS = [
-  { value: 'chest', label: 'Chest' },
-  { value: 'hips', label: 'Hips' },
-  { value: 'glutes', label: 'Glutes' },
-  { value: 'abdomen', label: 'Abdomen' },
-  { value: 'shoulders', label: 'Shoulders' },
-];
+interface GoalsProps {
+  navigation: GoalsNavigationProp;
+}
 
-export default function Goals({ navigation }: OnboardingScreenProps<'Goals'>) {
-  const { profile, updateProfile } = useProfile();
-  const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 375;
+interface GoalCardProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+  selected: "primary" | "secondary" | null;
+  onPress: () => void;
+}
 
-  // Initialize from profile if available
+function GoalCard({ icon, title, description, selected, onPress }: GoalCardProps) {
+  const borderColor = selected === "primary" 
+    ? colors.cyan[500] 
+    : selected === "secondary"
+    ? colors.red[500]
+    : colors.glass.border;
+  
+  const backgroundColor = selected === "primary"
+    ? colors.glass.bgHero
+    : selected === "secondary"
+    ? "rgba(244, 63, 94, 0.08)"
+    : colors.glass.bg;
+
+  const iconColor = selected === "primary"
+    ? colors.cyan[500]
+    : selected === "secondary"
+    ? colors.red[500]
+    : colors.text.primary;
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={[
+        styles.goalCard,
+        {
+          backgroundColor,
+          borderColor,
+          borderWidth: selected ? 2 : 1,
+        },
+        selected && styles.goalCardSelected
+      ]}
+    >
+      {/* Badge indicator */}
+      {selected && (
+        <View style={[
+          styles.badge,
+          {
+            backgroundColor: selected === "primary" ? colors.cyan[500] : colors.red[500],
+          }
+        ]}>
+          <Text style={styles.badgeText}>
+            {selected === "primary" ? "PRIMARY" : "SECONDARY"}
+          </Text>
+        </View>
+      )}
+
+      {/* Icon */}
+      <View style={styles.iconContainer}>
+        <Ionicons 
+          name={icon} 
+          size={32} 
+          color={iconColor}
+          style={{ opacity: selected ? 1 : 0.7 }}
+        />
+      </View>
+
+      {/* Content */}
+      <Text style={styles.goalTitle}>{title}</Text>
+      <Text style={styles.goalDescription}>{description}</Text>
+    </TouchableOpacity>
+  );
+}
+
+export default function Goals({ navigation }: GoalsProps) {
+  const { profile } = useProfile();
   const [primaryGoal, setPrimaryGoal] = useState<Goal | null>(null);
   const [secondaryGoal, setSecondaryGoal] = useState<Goal | null>(null);
-  const [bodyFocusPrefer, setBodyFocusPrefer] = useState<string[]>(profile?.body_focus_prefer || []);
-  const [bodyFocusSoftAvoid, setBodyFocusSoftAvoid] = useState<string[]>(profile?.body_focus_soft_avoid || []);
 
+  // Load initial data from profile
   useEffect(() => {
-    // Load from new primary_goal field first, fallback to old goals field
-    if (profile?.primary_goal) {
-      setPrimaryGoal(profile.primary_goal as Goal);
-    } else if (profile?.goals && profile.goals.length > 0) {
-      const goals = profile.goals as Goal[];
-      setPrimaryGoal(goals[0] || null);
-    }
-    if (profile?.secondary_goals && profile.secondary_goals.length > 0) {
-      setSecondaryGoal(profile.secondary_goals[0] as Goal);
-    } else if (profile?.goals && profile.goals.length > 1) {
-      setSecondaryGoal(profile.goals[1] as Goal);
-    }
-    if (profile?.body_focus_prefer) {
-      setBodyFocusPrefer(profile.body_focus_prefer);
-    }
-    if (profile?.body_focus_soft_avoid) {
-      setBodyFocusSoftAvoid(profile.body_focus_soft_avoid);
+    if (profile) {
+      if (profile.primary_goal) {
+        setPrimaryGoal(profile.primary_goal);
+      }
+      if (profile.secondary_goals && profile.secondary_goals.length > 0) {
+        setSecondaryGoal(profile.secondary_goals[0] as Goal);
+      }
     }
   }, [profile]);
 
-  const handleGoalPress = (goal: Goal) => {
-    if (primaryGoal === goal) {
-      // Deselect if already primary
-      setPrimaryGoal(null);
-      if (secondaryGoal === goal) {
-        setSecondaryGoal(null);
-      }
-    } else if (secondaryGoal === goal) {
-      // Deselect if already secondary
-      setSecondaryGoal(null);
-    } else if (!primaryGoal) {
-      // Set as primary if no primary selected
-      setPrimaryGoal(goal);
-    } else if (!secondaryGoal) {
-      // Set as secondary if primary exists
-      setSecondaryGoal(goal);
-    } else {
-      // Replace primary, move old primary to secondary
-      setPrimaryGoal(goal);
-      setSecondaryGoal(primaryGoal);
+  const goalInfo: Record<Goal, { description: string; focus: string[] }> = {
+    feminization: {
+      description: "Build a curvier, more feminine physique through strategic muscle development",
+      focus: ["Lower body emphasis (glutes, legs)", "Core strength and definition", "Lighter upper body work", "Flexibility and mobility"]
+    },
+    masculinization: {
+      description: "Develop a broader, more masculine build through upper body development",
+      focus: ["Upper body emphasis (chest, shoulders, back)", "Core and arm strength", "Compound movements", "Progressive strength gains"]
+    },
+    general_fitness: {
+      description: "Overall health, energy, and well-being with balanced training",
+      focus: ["Full-body workouts", "Cardiovascular health", "Functional movement", "Sustainable habits"]
+    },
+    strength: {
+      description: "Build maximum strength and power across all major movements",
+      focus: ["Heavy compound lifts", "Progressive overload", "Lower rep ranges", "Adequate recovery"]
+    },
+    endurance: {
+      description: "Improve cardiovascular fitness and muscular endurance",
+      focus: ["Higher rep ranges", "Circuit training", "Cardio conditioning", "Active recovery"]
     }
   };
 
-  const getSelectionType = (goal: Goal): 'primary' | 'secondary' | null => {
-    if (primaryGoal === goal) return 'primary';
-    if (secondaryGoal === goal) return 'secondary';
+  const getAvailableGoals = () => {
+    const genderIdentity = profile?.gender_identity || "nonbinary";
+    const baseGoals: Array<{ id: Goal; icon: keyof typeof Ionicons.glyphMap; title: string }> = [
+      { id: "general_fitness", icon: "heart-outline", title: "General Fitness" },
+      { id: "strength", icon: "flash", title: "Strength" },
+      { id: "endurance", icon: "trending-up", title: "Endurance" }
+    ];
+
+    if (genderIdentity === "mtf" || genderIdentity === "nonbinary" || genderIdentity === "questioning") {
+      baseGoals.unshift({ id: "feminization", icon: "sparkles", title: "Feminization" });
+    }
+
+    if (genderIdentity === "ftm" || genderIdentity === "nonbinary" || genderIdentity === "questioning") {
+      baseGoals.unshift({ id: "masculinization", icon: "pulse-outline", title: "Masculinization" });
+    }
+
+    return baseGoals;
+  };
+
+  const handleGoalPress = (goalId: Goal) => {
+    if (primaryGoal === goalId) {
+      // Clicking primary goal - remove it and promote secondary if exists
+      setPrimaryGoal(secondaryGoal);
+      setSecondaryGoal(null);
+    } else if (secondaryGoal === goalId) {
+      // Clicking secondary goal - remove it
+      setSecondaryGoal(null);
+    } else if (!primaryGoal) {
+      // No primary yet - set as primary
+      setPrimaryGoal(goalId);
+    } else if (!secondaryGoal) {
+      // Primary exists but no secondary - set as secondary
+      setSecondaryGoal(goalId);
+    } else {
+      // Both exist - replace secondary
+      setSecondaryGoal(goalId);
+    }
+  };
+
+  const getGoalSelection = (goalId: Goal): "primary" | "secondary" | null => {
+    if (primaryGoal === goalId) return "primary";
+    if (secondaryGoal === goalId) return "secondary";
     return null;
   };
 
-  const toggleBodyFocusPrefer = (value: string) => {
-    setBodyFocusPrefer((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-    );
-  };
-
-  const toggleBodyFocusSoftAvoid = (value: string) => {
-    setBodyFocusSoftAvoid((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
-    );
-  };
-
-  const handleNoPreference = () => {
-    setBodyFocusSoftAvoid([]);
-  };
-
   const handleContinue = async () => {
-    if (!primaryGoal) return; // Primary goal is required
-
-    const secondaryGoals: string[] = secondaryGoal ? [secondaryGoal] : [];
-
     try {
-      await updateProfile({
-        primary_goal: primaryGoal as 'feminization' | 'masculinization' | 'general_fitness' | 'strength' | 'endurance',
-        secondary_goals: secondaryGoals.length > 0 ? secondaryGoals : undefined,
-        // Keep old fields for backward compatibility
-        goals: [primaryGoal, ...secondaryGoals],
-        goal_weighting: secondaryGoal
-          ? { primary: 70, secondary: 30 }
-          : { primary: 100, secondary: 0 },
-        body_focus_prefer: bodyFocusPrefer.length > 0 ? bodyFocusPrefer : undefined,
-        body_focus_soft_avoid: bodyFocusSoftAvoid.length > 0 ? bodyFocusSoftAvoid : undefined,
+      const secondaryGoals = secondaryGoal ? [secondaryGoal] : undefined;
+      await updateProfile({ 
+        primary_goal: primaryGoal!,
+        secondary_goals: secondaryGoals,
       });
-      // Navigate to Experience screen
-      navigation.navigate('Experience');
+      navigation.navigate("Experience");
     } catch (error) {
-      console.error('Error saving goals:', error);
-      // TODO: Show error toast
+      console.error("Error saving goals:", error);
     }
   };
 
-  const canContinue = primaryGoal !== null;
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
+  const availableGoals = getAvailableGoals();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.l),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
+    <OnboardingLayout
+      currentStep={5}
+      totalSteps={8}
+      title="Your Fitness Goals"
+      subtitle="Select your primary goal and optionally a secondary focus to blend training styles."
+      onBack={handleBack}
+      onContinue={handleContinue}
+      canContinue={primaryGoal !== null}
     >
-      <Text style={[styles.headline, isSmall && styles.headlineSmall]}>What are your goals?</Text>
-      <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-        Select your primary goal. You can optionally add a secondary goal.
-      </Text>
-
-      <ProgressIndicator
-        currentStep={5}
-        totalSteps={8}
-        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
-      />
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.goalsGrid}>
-          {GOAL_OPTIONS.map((goal) => (
-            <View key={goal} style={styles.goalCardWrapper}>
-              <GoalCard
-                goal={goal}
-                isSelected={primaryGoal === goal || secondaryGoal === goal}
-                selectionType={getSelectionType(goal)}
-                onPress={() => handleGoalPress(goal)}
-              />
-            </View>
+      <View style={styles.container}>
+        {/* Goal Selection Cards */}
+        <View style={styles.goalsContainer}>
+          {availableGoals.map((goal) => (
+            <GoalCard
+              key={goal.id}
+              icon={goal.icon}
+              title={goal.title}
+              description={goalInfo[goal.id].description}
+              selected={getGoalSelection(goal.id)}
+              onPress={() => handleGoalPress(goal.id)}
+            />
           ))}
         </View>
 
-        {/* Body Region Preferences Section */}
-        <View style={styles.bodyFocusSection}>
-          <Text style={styles.bodyFocusTitle}>Where do you want to focus?</Text>
-          <Text style={styles.bodyFocusDescription}>
-            Optional: Help us customize your workouts to your preferences.
-          </Text>
-
-          {/* Areas to focus on more */}
-          <View style={styles.bodyFocusGroup}>
-            <Text style={styles.bodyFocusGroupTitle}>
-              Areas you would like to focus on more
-            </Text>
-            <View style={styles.chipContainer}>
-              {BODY_FOCUS_PREFER_OPTIONS.map((option) => (
-                <BodyRegionChip
-                  key={option.value}
-                  label={option.label}
-                  selected={bodyFocusPrefer.includes(option.value)}
-                  onPress={() => toggleBodyFocusPrefer(option.value)}
-                />
+        {/* Impact Info Box - Primary */}
+        {primaryGoal && (
+          <View style={styles.focusCard}>
+            <View style={styles.focusHeader}>
+              <View style={[styles.focusIconContainer, { backgroundColor: "rgba(6, 182, 212, 0.15)", borderColor: "rgba(6, 182, 212, 0.3)" }]}>
+                <Ionicons name="information-circle" size={20} color={colors.cyan[500]} />
+              </View>
+              <Text style={[styles.focusTitle, { color: colors.cyan[500] }]}>
+                Primary Focus:
+              </Text>
+            </View>
+            <View style={styles.focusList}>
+              {goalInfo[primaryGoal].focus.map((item, index) => (
+                <View key={index} style={styles.focusItem}>
+                  <Ionicons name="checkmark" size={20} color={colors.cyan[500]} style={styles.checkmark} />
+                  <Text style={styles.focusItemText}>{item}</Text>
+                </View>
               ))}
             </View>
           </View>
+        )}
 
-          {/* Areas to go gently with */}
-          <View style={styles.bodyFocusGroup}>
-            <Text style={styles.bodyFocusGroupTitle}>
-              Areas you would like to go more gently with
-            </Text>
-            <View style={styles.chipContainer}>
-              {BODY_FOCUS_SOFT_AVOID_OPTIONS.map((option) => (
-                <BodyRegionChip
-                  key={option.value}
-                  label={option.label}
-                  selected={bodyFocusSoftAvoid.includes(option.value)}
-                  onPress={() => toggleBodyFocusSoftAvoid(option.value)}
-                />
+        {/* Impact Info Box - Secondary */}
+        {secondaryGoal && (
+          <View style={[styles.focusCard, styles.focusCardSecondary]}>
+            <View style={styles.focusHeader}>
+              <View style={[styles.focusIconContainer, { backgroundColor: "rgba(244, 63, 94, 0.15)", borderColor: "rgba(244, 63, 94, 0.3)" }]}>
+                <Ionicons name="information-circle" size={20} color={colors.red[500]} />
+              </View>
+              <Text style={[styles.focusTitle, { color: colors.red[500] }]}>
+                Secondary Focus:
+              </Text>
+            </View>
+            <View style={styles.focusList}>
+              {goalInfo[secondaryGoal].focus.map((item, index) => (
+                <View key={index} style={styles.focusItem}>
+                  <Ionicons name="checkmark" size={20} color={colors.red[500]} style={styles.checkmark} />
+                  <Text style={styles.focusItemText}>{item}</Text>
+                </View>
               ))}
-              <BodyRegionChip
-                label="No preference"
-                selected={bodyFocusSoftAvoid.length === 0}
-                onPress={handleNoPreference}
-              />
             </View>
           </View>
-        </View>
-      </ScrollView>
-
-      <View style={styles.ctaContainer}>
-        <Button
-          mode="contained"
-          onPress={handleContinue}
-          disabled={!canContinue}
-          style={styles.continueButton}
-          contentStyle={styles.continueButtonContent}
-          labelStyle={styles.continueButtonLabel}
-        >
-          Continue
-        </Button>
-        {!canContinue && (
-          <Text style={styles.hintText}>Please select at least one goal to continue</Text>
         )}
       </View>
-    </View>
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
+    gap: spacing.xl,
   },
-  headline: {
-    ...typography.h1,
-    textAlign: 'center',
-    marginBottom: spacing.s,
+  goalsContainer: {
+    gap: spacing.base,
   },
-  headlineSmall: {
-    fontSize: 24,
+  goalCard: {
+    ...glassStyles.card,
+    padding: spacing['2xl'],
+    borderRadius: borderRadius['2xl'],
+    position: 'relative',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
-  subheadline: {
-    ...typography.body,
-    textAlign: 'center',
-    marginBottom: spacing.l,
-    color: palette.midGray,
+  goalCardSelected: {
+    ...Platform.select({
+      ios: {
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
   },
-  subheadlineSmall: {
+  badge: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  badgeText: {
+    ...textStyles.caption,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    color: colors.text.primary,
+    textTransform: 'uppercase',
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.base,
+  },
+  goalTitle: {
+    ...textStyles.h2,
+    fontSize: 22,
+    marginBottom: spacing.sm,
+    color: colors.text.primary,
+  },
+  goalDescription: {
+    ...textStyles.body,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text.secondary,
+  },
+  focusCard: {
+    ...glassStyles.cardHero,
+    padding: spacing.xl,
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+    borderColor: colors.cyan[500],
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  focusCardSecondary: {
+    backgroundColor: "rgba(244, 63, 94, 0.08)",
+    borderColor: colors.red[500],
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.red[500],
+        shadowOpacity: 0.3,
+      },
+    }),
+  },
+  focusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.base,
+  },
+  focusIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusTitle: {
+    ...textStyles.h3,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  focusList: {
+    gap: spacing.sm,
+  },
+  focusItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  checkmark: {
+    marginTop: 2,
+  },
+  focusItemText: {
+    ...textStyles.bodySmall,
     fontSize: 14,
-  },
-  scroll: {
+    lineHeight: 20,
     flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: spacing.m,
-  },
-  goalsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  goalCardWrapper: {
-    width: '48%',
-    marginBottom: spacing.m,
-  },
-  ctaContainer: {
-    marginTop: spacing.m,
-  },
-  continueButton: {
-    borderRadius: 16,
-    marginBottom: spacing.xs,
-  },
-  continueButtonContent: {
-    paddingVertical: spacing.m,
-    backgroundColor: palette.tealPrimary,
-  },
-  continueButtonLabel: {
-    ...typography.button,
-    color: palette.deepBlack,
-  },
-  hintText: {
-    ...typography.caption,
-    textAlign: 'center',
-    color: palette.midGray,
-    marginTop: spacing.xs,
-  },
-  bodyFocusSection: {
-    marginTop: spacing.xl,
-    paddingTop: spacing.l,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-  },
-  bodyFocusTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.xs,
-  },
-  bodyFocusDescription: {
-    ...typography.bodySmall,
-    color: palette.midGray,
-    marginBottom: spacing.l,
-  },
-  bodyFocusGroup: {
-    marginBottom: spacing.l,
-  },
-  bodyFocusGroupTitle: {
-    ...typography.bodyLarge,
-    color: palette.lightGray,
-    marginBottom: spacing.m,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    color: colors.text.secondary,
   },
 });

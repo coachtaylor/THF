@@ -18,7 +18,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     // Handle asset imports (images, fonts, etc.) - Expo's Metro config handles these
-    '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/jest.json.mock.js',
+    '\\.(jpg|jpeg|png|gif|webp|svg)$': '<rootDir>/src/__tests__/mocks/json.ts',
   },
   // Use source extensions from Metro config
   moduleFileExtensions: [...sourceExts, 'json'],

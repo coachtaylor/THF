@@ -264,20 +264,31 @@ export type OnboardingStackParamList = {
   WhyTransFitness: undefined;
   Disclaimer: undefined;
   GenderIdentity: undefined;
-  HRTStatus: undefined;
+  HRTStatus: { genderIdentity: string };
   BindingInfo: undefined;
   Surgery: undefined;
   Goals: undefined;
   Experience: undefined;
   DysphoriaTriggers: undefined;
   Review: undefined;
+  ProgramSetup: undefined;
   QuickStart: undefined;
   PlanView: undefined;
+  Home: undefined;
   TimerTest: undefined;
   ExerciseDisplayTest: undefined;
   SessionPlayer: {
     workout: Workout;
     planId?: string;
+  };
+  WorkoutSummary: {
+    workoutData?: {
+      completedSets: any[];
+      workoutDuration: number;
+      totalExercises: number;
+      exercisesCompleted: number;
+      workoutName?: string;
+    };
   };
 };
 
