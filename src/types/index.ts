@@ -23,6 +23,9 @@ export interface Profile {
   hrt_type?: 'estrogen_blockers' | 'testosterone' | 'none';
   hrt_start_date?: Date; // When user started HRT
   hrt_months_duration?: number; // Computed field (calculated from hrt_start_date)
+  hrt_method?: 'pills' | 'patches' | 'injections' | 'gel'; // Method of HRT administration
+  hrt_frequency?: 'daily' | 'weekly' | 'biweekly' | 'monthly'; // How often HRT is taken
+  hrt_days?: string[]; // Days of week HRT is taken (e.g., ['mon', 'wed', 'fri'])
   
   // OPTIONAL FIELDS - Binding Information
   binding_frequency?: 'daily' | 'sometimes' | 'rarely' | 'never';
