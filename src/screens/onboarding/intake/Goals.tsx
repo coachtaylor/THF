@@ -1,558 +1,420 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import type { OnboardingScreenProps } from '../../../types/onboarding';
-import { useProfile } from '../../../hooks/useProfile';
-import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
+import { OnboardingStackParamList } from "../../../types/onboarding";
+import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { colors, spacing, borderRadius } from "../../../theme/theme";
+import { glassStyles, textStyles } from "../../../theme/components";
+import { useProfile } from "../../../hooks/useProfile";
+import { updateProfile } from "../../../services/storage/profile";
+import { Platform } from "react-native";
 
-// Base goal options
-const BASE_GOALS = [
-  { value: 'strength', title: 'Build Strength', description: 'Increase muscle mass and power' },
-  { value: 'endurance', title: 'Improve Endurance', description: 'Boost cardiovascular fitness' },
-  { value: 'general_fitness', title: 'General Fitness', description: 'Balanced approach to health' },
-];
+type Goal = "feminization" | "masculinization" | "general_fitness" | "strength" | "endurance";
 
-// Gender-specific goals
-const FEMINIZATION_GOAL = {
-  value: 'feminization',
-  title: 'Feminizing Focus',
-  description: 'Emphasize lower body and curves',
-};
+type GoalsNavigationProp = StackNavigationProp<OnboardingStackParamList, "Goals">;
 
-const MASCULINIZATION_GOAL = {
-  value: 'masculinization',
-  title: 'Masculinizing Focus',
-  description: 'Build upper body and shoulders',
-};
+interface GoalsProps {
+  navigation: GoalsNavigationProp;
+}
 
-// Body focus options
-const BODY_FOCUS_PREFER = ['Legs', 'Glutes', 'Back', 'Core', 'Shoulders', 'Arms', 'Chest'];
-const BODY_FOCUS_SOFT_AVOID = ['Chest', 'Hips', 'Glutes', 'Abdomen', 'Shoulders', 'No preference'];
+interface GoalCardProps {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+  selected: "primary" | "secondary" | null;
+  onPress: () => void;
+}
 
-// Get goal options based on gender identity
-const getGoalOptions = (genderIdentity: string | undefined) => {
-  if (genderIdentity === 'mtf') {
-    return [FEMINIZATION_GOAL, ...BASE_GOALS];
-  }
-  if (genderIdentity === 'ftm') {
-    return [MASCULINIZATION_GOAL, ...BASE_GOALS];
-  }
-  return BASE_GOALS; // nonbinary, questioning, or undefined
-};
+function GoalCard({ icon, title, description, selected, onPress }: GoalCardProps) {
+  const borderColor = selected === "primary" 
+    ? colors.cyan[500] 
+    : selected === "secondary"
+    ? colors.red[500]
+    : colors.glass.border;
+  
+  const backgroundColor = selected === "primary"
+    ? colors.glass.bgHero
+    : selected === "secondary"
+    ? "rgba(244, 63, 94, 0.08)"
+    : colors.glass.bg;
 
-export default function Goals({ navigation }: OnboardingScreenProps<'Goals'>) {
-  const { profile, updateProfile } = useProfile();
-  const insets = useSafeAreaInsets();
+  const iconColor = selected === "primary"
+    ? colors.cyan[500]
+    : selected === "secondary"
+    ? colors.red[500]
+    : colors.text.primary;
 
-  // State
-  const [primaryGoal, setPrimaryGoal] = useState<string | null>(null);
-  const [secondaryGoal, setSecondaryGoal] = useState<string | null>(null);
-  const [bodyFocusPrefer, setBodyFocusPrefer] = useState<string[]>([]);
-  const [bodyFocusSoftAvoid, setBodyFocusSoftAvoid] = useState<string[]>([]);
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={[
+        styles.goalCard,
+        {
+          backgroundColor,
+          borderColor,
+          borderWidth: selected ? 2 : 1,
+        },
+        selected && styles.goalCardSelected
+      ]}
+    >
+      {/* Badge indicator */}
+      {selected && (
+        <View style={[
+          styles.badge,
+          {
+            backgroundColor: selected === "primary" ? colors.cyan[500] : colors.red[500],
+          }
+        ]}>
+          <Text style={styles.badgeText}>
+            {selected === "primary" ? "PRIMARY" : "SECONDARY"}
+          </Text>
+        </View>
+      )}
 
-  // Load from profile
+      {/* Icon */}
+      <View style={styles.iconContainer}>
+        <Ionicons 
+          name={icon} 
+          size={32} 
+          color={iconColor}
+          style={{ opacity: selected ? 1 : 0.7 }}
+        />
+      </View>
+
+      {/* Content */}
+      <Text style={styles.goalTitle}>{title}</Text>
+      <Text style={styles.goalDescription}>{description}</Text>
+    </TouchableOpacity>
+  );
+}
+
+export default function Goals({ navigation }: GoalsProps) {
+  const { profile } = useProfile();
+  const [primaryGoal, setPrimaryGoal] = useState<Goal | null>(null);
+  const [secondaryGoal, setSecondaryGoal] = useState<Goal | null>(null);
+
+  // Load initial data from profile
   useEffect(() => {
-    if (profile?.primary_goal) {
-      setPrimaryGoal(profile.primary_goal);
-    }
-    if (profile?.secondary_goals && profile.secondary_goals.length > 0) {
-      setSecondaryGoal(profile.secondary_goals[0]);
-    }
-    if (profile?.body_focus_prefer) {
-      setBodyFocusPrefer(profile.body_focus_prefer);
-    }
-    if (profile?.body_focus_soft_avoid) {
-      setBodyFocusSoftAvoid(profile.body_focus_soft_avoid);
+    if (profile) {
+      if (profile.primary_goal) {
+        setPrimaryGoal(profile.primary_goal);
+      }
+      if (profile.secondary_goals && profile.secondary_goals.length > 0) {
+        setSecondaryGoal(profile.secondary_goals[0] as Goal);
+      }
     }
   }, [profile]);
 
-  // Get goal options based on gender identity
-  const goalOptions = getGoalOptions(profile?.gender_identity);
+  const goalInfo: Record<Goal, { description: string; focus: string[] }> = {
+    feminization: {
+      description: "Build a curvier, more feminine physique through strategic muscle development",
+      focus: ["Lower body emphasis (glutes, legs)", "Core strength and definition", "Lighter upper body work", "Flexibility and mobility"]
+    },
+    masculinization: {
+      description: "Develop a broader, more masculine build through upper body development",
+      focus: ["Upper body emphasis (chest, shoulders, back)", "Core and arm strength", "Compound movements", "Progressive strength gains"]
+    },
+    general_fitness: {
+      description: "Overall health, energy, and well-being with balanced training",
+      focus: ["Full-body workouts", "Cardiovascular health", "Functional movement", "Sustainable habits"]
+    },
+    strength: {
+      description: "Build maximum strength and power across all major movements",
+      focus: ["Heavy compound lifts", "Progressive overload", "Lower rep ranges", "Adequate recovery"]
+    },
+    endurance: {
+      description: "Improve cardiovascular fitness and muscular endurance",
+      focus: ["Higher rep ranges", "Circuit training", "Cardio conditioning", "Active recovery"]
+    }
+  };
 
-  // Goal selection logic
-  const handleGoalPress = (goalValue: string) => {
-    if (primaryGoal === goalValue) {
-      // Deselect primary
-      setPrimaryGoal(null);
-      if (secondaryGoal) {
-        // Promote secondary to primary
-        setPrimaryGoal(secondaryGoal);
-        setSecondaryGoal(null);
-      }
-    } else if (secondaryGoal === goalValue) {
-      // Deselect secondary
+  const getAvailableGoals = () => {
+    const genderIdentity = profile?.gender_identity || "nonbinary";
+    const baseGoals: Array<{ id: Goal; icon: keyof typeof Ionicons.glyphMap; title: string }> = [
+      { id: "general_fitness", icon: "heart-outline", title: "General Fitness" },
+      { id: "strength", icon: "flash", title: "Strength" },
+      { id: "endurance", icon: "trending-up", title: "Endurance" }
+    ];
+
+    if (genderIdentity === "mtf" || genderIdentity === "nonbinary" || genderIdentity === "questioning") {
+      baseGoals.unshift({ id: "feminization", icon: "sparkles", title: "Feminization" });
+    }
+
+    if (genderIdentity === "ftm" || genderIdentity === "nonbinary" || genderIdentity === "questioning") {
+      baseGoals.unshift({ id: "masculinization", icon: "pulse-outline", title: "Masculinization" });
+    }
+
+    return baseGoals;
+  };
+
+  const handleGoalPress = (goalId: Goal) => {
+    if (primaryGoal === goalId) {
+      // Clicking primary goal - remove it and promote secondary if exists
+      setPrimaryGoal(secondaryGoal);
+      setSecondaryGoal(null);
+    } else if (secondaryGoal === goalId) {
+      // Clicking secondary goal - remove it
       setSecondaryGoal(null);
     } else if (!primaryGoal) {
-      // Set as primary
-      setPrimaryGoal(goalValue);
+      // No primary yet - set as primary
+      setPrimaryGoal(goalId);
     } else if (!secondaryGoal) {
-      // Set as secondary
-      setSecondaryGoal(goalValue);
+      // Primary exists but no secondary - set as secondary
+      setSecondaryGoal(goalId);
     } else {
-      // Has both: replace primary, old primary becomes secondary
-      setSecondaryGoal(primaryGoal);
-      setPrimaryGoal(goalValue);
+      // Both exist - replace secondary
+      setSecondaryGoal(goalId);
     }
   };
 
-  // Body focus toggle functions
-  const toggleBodyFocusPrefer = (region: string) => {
-    setBodyFocusPrefer((prev) =>
-      prev.includes(region) ? prev.filter((v) => v !== region) : [...prev, region]
-    );
+  const getGoalSelection = (goalId: Goal): "primary" | "secondary" | null => {
+    if (primaryGoal === goalId) return "primary";
+    if (secondaryGoal === goalId) return "secondary";
+    return null;
   };
 
-  const toggleBodyFocusSoftAvoid = (region: string) => {
-    if (region === 'No preference') {
-      setBodyFocusSoftAvoid([]);
-    } else {
-      setBodyFocusSoftAvoid((prev) =>
-        prev.includes(region) ? prev.filter((v) => v !== region) : [...prev, region]
-      );
-    }
-  };
-
-  // Continue handler
   const handleContinue = async () => {
-    if (!primaryGoal) return;
-
-    const secondaryGoals: string[] = secondaryGoal ? [secondaryGoal] : [];
-
     try {
-      await updateProfile({
-        primary_goal: primaryGoal as any,
-        secondary_goals: secondaryGoals.length > 0 ? secondaryGoals : undefined,
-        body_focus_prefer: bodyFocusPrefer.length > 0 ? bodyFocusPrefer : undefined,
-        body_focus_soft_avoid: bodyFocusSoftAvoid.length > 0 ? bodyFocusSoftAvoid : undefined,
+      const secondaryGoals = secondaryGoal ? [secondaryGoal] : undefined;
+      await updateProfile({ 
+        primary_goal: primaryGoal!,
+        secondary_goals: secondaryGoals,
       });
-      navigation.navigate('Experience');
+      navigation.navigate("Experience");
     } catch (error) {
-      console.error('Error saving goals:', error);
+      console.error("Error saving goals:", error);
     }
   };
 
-  const canContinue = primaryGoal !== null;
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
+  const availableGoals = getAvailableGoals();
 
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* HEADER */}
-        <View style={styles.header}>
-          <ProgressIndicator currentStep={5} totalSteps={8} />
-          <Text style={styles.headline}>What are your fitness goals?</Text>
-          <Text style={styles.subheadline}>
-            Select your main focus. You can add a secondary goal too.
-          </Text>
+    <OnboardingLayout
+      currentStep={5}
+      totalSteps={8}
+      title="Your Fitness Goals"
+      subtitle="Select your primary goal and optionally a secondary focus to blend training styles."
+      onBack={handleBack}
+      onContinue={handleContinue}
+      canContinue={primaryGoal !== null}
+    >
+      <View style={styles.container}>
+        {/* Goal Selection Cards */}
+        <View style={styles.goalsContainer}>
+          {availableGoals.map((goal) => (
+            <GoalCard
+              key={goal.id}
+              icon={goal.icon}
+              title={goal.title}
+              description={goalInfo[goal.id].description}
+              selected={getGoalSelection(goal.id)}
+              onPress={() => handleGoalPress(goal.id)}
+            />
+          ))}
         </View>
 
-        {/* GOAL CARDS */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionLabel}>YOUR GOALS</Text>
-          <Text style={styles.sectionDescription}>
-            Tap to select primary, tap again for secondary
-          </Text>
-
-          {goalOptions.map((goal) => {
-            const isPrimary = primaryGoal === goal.value;
-            const isSecondary = secondaryGoal === goal.value;
-
-            return (
-              <TouchableOpacity
-                key={goal.value}
-                style={[
-                  styles.goalCard,
-                  isPrimary && styles.goalCardPrimary,
-                  isSecondary && styles.goalCardSecondary,
-                ]}
-                onPress={() => handleGoalPress(goal.value)}
-              >
-                <View style={styles.cardLeft}>
-                  {/* Color Indicator */}
-                  <View
-                    style={[
-                      styles.colorIndicator,
-                      isPrimary && styles.indicatorPrimary,
-                      isSecondary && styles.indicatorSecondary,
-                    ]}
-                  />
-
-                  <View style={styles.textContainer}>
-                    <Text
-                      style={[
-                        styles.cardTitle,
-                        isPrimary && styles.titlePrimary,
-                        isSecondary && styles.titleSecondary,
-                      ]}
-                    >
-                      {goal.title}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.cardDescription,
-                        isPrimary && styles.descriptionPrimary,
-                        isSecondary && styles.descriptionSecondary,
-                      ]}
-                    >
-                      {goal.description}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Badge */}
-                {isPrimary && (
-                  <View style={[styles.selectionBadge, styles.badgePrimary]}>
-                    <Text style={styles.badgeText}>PRIMARY</Text>
-                  </View>
-                )}
-                {isSecondary && (
-                  <View style={[styles.selectionBadge, styles.badgeSecondary]}>
-                    <Text style={styles.badgeText}>SECONDARY</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* BODY FOCUS (OPTIONAL) */}
-        <View style={styles.bodyFocusContainer}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.titleRow}>
-              <Text style={styles.sectionTitle}>Body Focus</Text>
-              <View style={styles.optionalBadge}>
-                <Text style={styles.optionalBadgeText}>OPTIONAL</Text>
+        {/* Impact Info Box - Primary */}
+        {primaryGoal && (
+          <View style={styles.focusCard}>
+            <View style={styles.focusHeader}>
+              <View style={[styles.focusIconContainer, { backgroundColor: "rgba(6, 182, 212, 0.15)", borderColor: "rgba(6, 182, 212, 0.3)" }]}>
+                <Ionicons name="information-circle" size={20} color={colors.cyan[500]} />
               </View>
-            </View>
-            <Text style={styles.sectionSubtitle}>
-              Customize which areas get more attention
-            </Text>
-          </View>
-
-          {/* Focus More On */}
-          <View style={styles.subsection}>
-            <Text style={styles.subsectionLabel}>Focus more on</Text>
-            <View style={styles.pillsContainer}>
-              {BODY_FOCUS_PREFER.map((region) => {
-                const isSelected = bodyFocusPrefer.includes(region);
-                return (
-                  <TouchableOpacity
-                    key={region}
-                    style={[styles.bodyPill, isSelected && styles.pillSelected]}
-                    onPress={() => toggleBodyFocusPrefer(region)}
-                  >
-                    <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
-                      {region}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Go Gently With */}
-          <View style={styles.subsection}>
-            <Text style={styles.subsectionLabel}>Go gently with</Text>
-            <View style={styles.pillsContainer}>
-              {BODY_FOCUS_SOFT_AVOID.map((region) => {
-                const isSelected = region === 'No preference'
-                  ? bodyFocusSoftAvoid.length === 0
-                  : bodyFocusSoftAvoid.includes(region);
-                return (
-                  <TouchableOpacity
-                    key={region}
-                    style={[styles.bodyPill, isSelected && styles.pillSelected]}
-                    onPress={() => toggleBodyFocusSoftAvoid(region)}
-                  >
-                    <Text style={[styles.pillText, isSelected && styles.pillTextSelected]}>
-                      {region}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        </View>
-
-        {/* FOOTER (SCROLLS WITH CONTENT) */}
-        <View style={styles.footerContainer}>
-          <TouchableOpacity
-            disabled={!canContinue}
-            onPress={handleContinue}
-            style={styles.primaryButton}
-          >
-            <LinearGradient
-              colors={canContinue ? ['#00D9C0', '#00B39D'] : ['#2A2F36', '#1A1F26']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.buttonGradient}
-            >
-              <Text style={[styles.buttonText, !canContinue && styles.buttonTextDisabled]}>
-                Continue
+              <Text style={[styles.focusTitle, { color: colors.cyan[500] }]}>
+                Primary Focus:
               </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <Text style={styles.hintText}>
-            Secondary goal and body focus are optional
-          </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+            </View>
+            <View style={styles.focusList}>
+              {goalInfo[primaryGoal].focus.map((item, index) => (
+                <View key={index} style={styles.focusItem}>
+                  <Ionicons name="checkmark" size={20} color={colors.cyan[500]} style={styles.checkmark} />
+                  <Text style={styles.focusItemText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Impact Info Box - Secondary */}
+        {secondaryGoal && (
+          <View style={[styles.focusCard, styles.focusCardSecondary]}>
+            <View style={styles.focusHeader}>
+              <View style={[styles.focusIconContainer, { backgroundColor: "rgba(244, 63, 94, 0.15)", borderColor: "rgba(244, 63, 94, 0.3)" }]}>
+                <Ionicons name="information-circle" size={20} color={colors.red[500]} />
+              </View>
+              <Text style={[styles.focusTitle, { color: colors.red[500] }]}>
+                Secondary Focus:
+              </Text>
+            </View>
+            <View style={styles.focusList}>
+              {goalInfo[secondaryGoal].focus.map((item, index) => (
+                <View key={index} style={styles.focusItem}>
+                  <Ionicons name="checkmark" size={20} color={colors.red[500]} style={styles.checkmark} />
+                  <Text style={styles.focusItemText}>{item}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+      </View>
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#0F1419',
+    gap: spacing.xl,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 0,
-  },
-  header: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  headline: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    lineHeight: 34,
-    letterSpacing: -0.4,
-    marginBottom: 8,
-    textAlign: 'left',
-  },
-  subheadline: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: '#9CA3AF',
-    lineHeight: 22,
-    textAlign: 'left',
-  },
-  sectionContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    textAlign: 'left',
-  },
-  sectionDescription: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: '#6B7280',
-    marginBottom: 16,
-    lineHeight: 19,
-    textAlign: 'left',
+  goalsContainer: {
+    gap: spacing.base,
   },
   goalCard: {
-    backgroundColor: '#1A1F26',
-    borderRadius: 14,
-    padding: 20,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#2A2F36',
-    minHeight: 88,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    ...glassStyles.card,
+    padding: spacing['2xl'],
+    borderRadius: borderRadius['2xl'],
+    position: 'relative',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
-  goalCardPrimary: {
-    borderColor: '#00D9C0',
-    backgroundColor: 'rgba(0, 217, 192, 0.1)',
+  goalCardSelected: {
+    ...Platform.select({
+      ios: {
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
   },
-  goalCardSecondary: {
-    borderColor: '#A78BFA',
-    backgroundColor: 'rgba(167, 139, 250, 0.1)',
-  },
-  cardLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  colorIndicator: {
-    width: 4,
-    height: 48,
-    borderRadius: 2,
-    marginRight: 16,
-    backgroundColor: '#2A2F36',
-  },
-  indicatorPrimary: {
-    backgroundColor: '#00D9C0',
-  },
-  indicatorSecondary: {
-    backgroundColor: '#A78BFA',
-  },
-  textContainer: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    lineHeight: 24,
-    marginBottom: 4,
-    textAlign: 'left',
-  },
-  titlePrimary: {
-    color: '#00D9C0',
-  },
-  titleSecondary: {
-    color: '#A78BFA',
-  },
-  cardDescription: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#9CA3AF',
-    lineHeight: 20,
-    textAlign: 'left',
-  },
-  descriptionPrimary: {
-    color: '#B8C5C5',
-  },
-  descriptionSecondary: {
-    color: '#D4C9FF',
-  },
-  selectionBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginLeft: 12,
-  },
-  badgePrimary: {
-    backgroundColor: '#00D9C0',
-  },
-  badgeSecondary: {
-    backgroundColor: '#A78BFA',
+  badge: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   badgeText: {
+    ...textStyles.caption,
     fontSize: 11,
-    fontWeight: '700',
-    color: '#0F1419',
-    textTransform: 'uppercase',
+    fontWeight: '600',
     letterSpacing: 0.5,
-  },
-  bodyFocusContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
-  },
-  sectionHeader: {
-    marginBottom: 20,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'left',
-  },
-  optionalBadge: {
-    backgroundColor: 'rgba(91, 159, 255, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 8,
-    alignSelf: 'flex-start',
-  },
-  optionalBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#5B9FFF',
+    color: colors.text.primary,
     textTransform: 'uppercase',
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#6B7280',
-    lineHeight: 20,
-    textAlign: 'left',
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.base,
   },
-  subsection: {
-    marginBottom: 24,
+  goalTitle: {
+    ...textStyles.h2,
+    fontSize: 22,
+    marginBottom: spacing.sm,
+    color: colors.text.primary,
   },
-  subsectionLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#E0E4E8',
-    marginBottom: 12,
-    textAlign: 'left',
+  goalDescription: {
+    ...textStyles.body,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text.secondary,
   },
-  pillsContainer: {
+  focusCard: {
+    ...glassStyles.cardHero,
+    padding: spacing.xl,
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+    borderColor: colors.cyan[500],
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  focusCardSecondary: {
+    backgroundColor: "rgba(244, 63, 94, 0.08)",
+    borderColor: colors.red[500],
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.red[500],
+        shadowOpacity: 0.3,
+      },
+    }),
+  },
+  focusHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginLeft: -8,
-  },
-  bodyPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: '#1A1F26',
-    borderWidth: 2,
-    borderColor: '#2A2F36',
-    marginLeft: 8,
-    marginBottom: 8,
-    minHeight: 40,
-    justifyContent: 'center',
     alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.base,
   },
-  pillSelected: {
-    backgroundColor: 'rgba(0, 217, 192, 0.12)',
-    borderColor: '#00D9C0',
+  focusIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  pillText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#E0E4E8',
-  },
-  pillTextSelected: {
+  focusTitle: {
+    ...textStyles.h3,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#00D9C0',
   },
-  footerContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 0,
+  focusList: {
+    gap: spacing.sm,
   },
-  primaryButton: {
-    height: 56,
-    borderRadius: 28,
-    overflow: 'hidden',
-    marginBottom: 16,
+  focusItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
   },
-  buttonGradient: {
+  checkmark: {
+    marginTop: 2,
+  },
+  focusItemText: {
+    ...textStyles.bodySmall,
+    fontSize: 14,
+    lineHeight: 20,
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#0F1419',
-  },
-  buttonTextDisabled: {
-    color: '#6B7280',
-  },
-  hintText: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 18,
+    color: colors.text.secondary,
   },
 });
