@@ -103,12 +103,12 @@ export async function getTodaysWorkout(userId: string = 'default'): Promise<Toda
     
     if (todaysDay.variants[preferredDuration]) {
       workout = todaysDay.variants[preferredDuration];
-    } else if (todaysDay.variants[15]) {
-      workout = todaysDay.variants[15];
     } else if (todaysDay.variants[45]) {
       workout = todaysDay.variants[45];
-    } else if (todaysDay.variants[5]) {
-      workout = todaysDay.variants[5];
+    } else if (todaysDay.variants[60]) {
+      workout = todaysDay.variants[60];
+    } else if (todaysDay.variants[90]) {
+      workout = todaysDay.variants[90];
     }
 
     if (!workout) {
@@ -182,15 +182,15 @@ export async function getWorkout(workoutId: string, userId: string = 'default'):
     if (day.variants[30]) {
       workout = day.variants[30];
       duration = 30;
-    } else if (day.variants[15]) {
-      workout = day.variants[15];
-      duration = 15;
     } else if (day.variants[45]) {
       workout = day.variants[45];
       duration = 45;
-    } else if (day.variants[5]) {
-      workout = day.variants[5];
-      duration = 5;
+    } else if (day.variants[60]) {
+      workout = day.variants[60];
+      duration = 60;
+    } else if (day.variants[90]) {
+      workout = day.variants[90];
+      duration = 90;
     }
 
     if (!workout) {

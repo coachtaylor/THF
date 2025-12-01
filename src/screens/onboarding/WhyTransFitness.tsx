@@ -1,226 +1,204 @@
-import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, useWindowDimensions, LayoutChangeEvent } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+} from 'react-native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { OnboardingStackParamList } from '../../types/onboarding';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing } from '../../theme/theme';
+import {
+  glassStyles,
+  buttonStyles,
+  textStyles,
+  layoutStyles,
+} from '../../theme/components';
 
-import type { OnboardingScreenProps, WhyTransFitnessContent } from '../../types/onboarding';
-import { useProfile } from '../../hooks/useProfile';
-import { palette, spacing, typography } from '../../theme';
+type WhyTransFitnessNavigationProp = StackNavigationProp<OnboardingStackParamList, 'WhyTransFitness'>;
 
-const CONTENT: WhyTransFitnessContent = {
-  headline: 'Safety-first workouts for trans bodies',
-  bullets: [
-    'Binder-aware exercises with safe alternatives',
-    '5-45 minute options for any energy level',
-    'Privacy-first: your data stays on your device',
-  ],
-  ctaText: 'Get Started',
-  skipText: 'Skip',
-};
+interface WhyTransFitnessProps {
+  navigation: WhyTransFitnessNavigationProp;
+}
 
-export default function WhyTransFitness({ navigation }: OnboardingScreenProps<'WhyTransFitness'>) {
-  const { profile } = useProfile();
-  const lowSensoryMode = profile?.low_sensory_mode ?? false;
-  const { height: windowHeight } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+interface Feature {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+}
 
-  const [contentHeight, setContentHeight] = useState(0);
-  const onContentLayout = useCallback((e: LayoutChangeEvent) => {
-    setContentHeight(e.nativeEvent.layout.height);
-  }, []);
-
-  // Compute responsive dimensions so the screen fits without scrolling
-  const layout = useMemo(() => {
-    const paddingTop = Math.max(insets.top, spacing.m);
-    const paddingBottom = Math.max(insets.bottom + spacing.s, spacing.l); // extra comfort above home indicator
-    const isSmallScreen = windowHeight < 720;
-    const headlineSize = isSmallScreen ? 24 : 28;
-
-    // Reserve space for CTA cluster (button + skip)
-    const reservedCta = (isSmallScreen ? 48 : 56) + spacing.m /* gap */ + 22 + spacing.s /* extra buffer */;
-    const reserved = paddingTop + paddingBottom + contentHeight + reservedCta + spacing.m;
-    const heroAvailable = windowHeight - reserved;
-    // Clamp hero height to keep composition while ensuring everything fits
-    const hero = Math.max(140, Math.min(320, Math.round(heroAvailable)));
-
-    return { hero, isSmallScreen, headlineSize, paddingTop, paddingBottom };
-  }, [windowHeight, insets.top, insets.bottom, contentHeight]);
+export default function WhyTransFitness({ navigation }: WhyTransFitnessProps) {
+  const features: Feature[] = [
+    {
+      icon: 'shield-checkmark',
+      title: 'Safety First',
+      description: 'Binding-aware exercises and post-surgical recovery protocols designed specifically for trans athletes',
+    },
+    {
+      icon: 'heart',
+      title: 'Gender-Affirming',
+      description: 'Personalized programs that respect your goals, whether feminization, masculinization, or general fitness',
+    },
+    {
+      icon: 'barbell',
+      title: 'HRT-Aware',
+      description: 'Programming that adapts to hormone therapy effects on strength, recovery, and training capacity',
+    },
+    {
+      icon: 'sparkles',
+      title: 'Dysphoria-Sensitive',
+      description: 'Exercise selection that respects your comfort zones and helps you feel confident in your body',
+    },
+  ];
 
   const handleContinue = () => {
     navigation.navigate('Disclaimer');
   };
 
   return (
-    <View style={[styles.container, { paddingTop: layout.paddingTop, paddingBottom: layout.paddingBottom }]}>
-      {!lowSensoryMode && (
-        <View style={styles.heroContainer}>
-          <Image
-            source={require('../../../assets/onboarding-hero.png')}
-            style={[styles.heroImage, { height: layout.hero }]}
-            resizeMode="cover"
-          />
-          <LinearGradient
-            colors={['transparent', 'rgba(10, 14, 14, 0.6)', palette.deepBlack]}
-            style={styles.heroGradient}
-          />
-        </View>
-      )}
-      <View style={styles.content}>
-        <View onLayout={onContentLayout}>
-          <Text style={[styles.headline, { fontSize: layout.headlineSize }]}>{CONTENT.headline}</Text>
-
-          <View style={styles.bulletsContainer}>
-            {CONTENT.bullets.map((bullet, index) => (
-              <View
-                key={bullet}
-                style={[
-                  styles.bulletRow,
-                  layout.isSmallScreen && styles.bulletRowSmall,
-                  index !== CONTENT.bullets.length - 1 && styles.bulletRowSpacing,
-                ]}
-              >
-                <View style={styles.bulletIcon}>
-                  <Text style={styles.bulletIconText}>✓</Text>
-                </View>
-                <Text style={[styles.bulletText, layout.isSmallScreen && styles.bulletTextSmall]}>{bullet}</Text>
-              </View>
-            ))}
+    <SafeAreaView style={layoutStyles.screen}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Hero Section */}
+        <View style={styles.heroSection}>
+          {/* Logo Badge */}
+          <View style={[glassStyles.card, styles.logoBadge]}>
+            <Ionicons name="barbell" size={32} color={colors.cyan[500]} />
+            <Text style={[textStyles.display2, styles.logoText]}>
+              TransFitness
+            </Text>
           </View>
+
+          {/* Hero Title */}
+          <View style={styles.titleContainer}>
+            <Text style={textStyles.display2}>
+              Fitness That{' '}
+            </Text>
+            <Text style={[textStyles.display2, styles.highlightText]}>
+              Understands You
+            </Text>
+          </View>
+
+          {/* Subtitle */}
+          <Text style={[textStyles.body, styles.subtitle]}>
+            The only fitness app designed specifically for transgender and non-binary athletes. Safe, effective, and affirming.
+          </Text>
         </View>
 
-        <Button
-          mode="contained"
-          onPress={handleContinue}
-          style={styles.ctaButton}
-          contentStyle={[styles.ctaContent, layout.isSmallScreen && styles.ctaContentSmall]}
-          labelStyle={styles.ctaLabel}
-        >
-          {CONTENT.ctaText}
-        </Button>
+        {/* Features List */}
+        <View style={styles.featuresContainer}>
+          {features.map((feature, index) => (
+            <View key={index} style={glassStyles.card}>
+              <View style={styles.featureContent}>
+                <View style={[glassStyles.circle, styles.iconCircle]}>
+                  <Ionicons 
+                    name={feature.icon} 
+                    size={24} 
+                    color={colors.cyan[500]} 
+                  />
+                </View>
+                <View style={styles.featureText}>
+                  <Text style={textStyles.h3}>{feature.title}</Text>
+                  <Text style={textStyles.bodySmall}>{feature.description}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </View>
 
-        <Button mode="text" onPress={handleContinue} labelStyle={styles.skipLabel}>
-          {CONTENT.skipText}
-        </Button>
-      </View>
-    </View>
+        {/* CTA Button */}
+        <View style={styles.ctaContainer}>
+          <TouchableOpacity
+            onPress={handleContinue}
+            style={buttonStyles.primary}
+            activeOpacity={0.8}
+          >
+            <Text style={buttonStyles.primaryText}>Get Started</Text>
+          </TouchableOpacity>
+
+          {/* Privacy Note */}
+          <Text style={[textStyles.caption, styles.privacyNote]}>
+            Your data stays private and secure on your device
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
+// Only screen-specific layout styles
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
-    paddingTop: spacing.m,
-    paddingBottom: spacing.l,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'space-between',
+  scrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing['4xl'],
+    alignItems: 'center',
   },
-  heroContainer: {
-    marginHorizontal: -spacing.l, // Break out of container padding for full width
-    marginTop: 0,
-    position: 'relative',
-  },
-  heroImage: {
+  heroSection: {
     width: '100%',
-    marginBottom: spacing.l,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
+    maxWidth: 480,
+    alignItems: 'center',
+    marginBottom: spacing['4xl'],
   },
-  heroGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 200,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-  },
-  headline: {
-    ...typography.h1,
-    textAlign: 'center',
-    lineHeight: typography.h1.fontSize * 1.2,
-    marginBottom: spacing.m,
-    color: palette.white,
-  },
-  bulletsContainer: {
-    marginBottom: spacing.m,
-  },
-  bulletRow: {
+  logoBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: palette.darkCard,
-    borderRadius: 20,
-    padding: spacing.m,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: palette.border,
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.xl,
   },
-  bulletRowSpacing: {
-    marginBottom: spacing.s,
+  logoText: {
+    color: colors.cyan[500],
   },
-  bulletRowSmall: {
-    paddingVertical: spacing.s,
-    paddingHorizontal: spacing.m,
-  },
-  bulletIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: palette.tealPrimary,
-    justifyContent: 'center',
+  titleContainer: {
     alignItems: 'center',
-    marginRight: spacing.m,
-    shadowColor: palette.tealPrimary,
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 4,
+    marginBottom: spacing.base,
   },
-  bulletIconText: {
-    color: palette.deepBlack,
-    fontSize: 18,
-    fontWeight: '700',
+  highlightText: {
+    color: colors.cyan[500],
   },
-  bulletText: {
+  subtitle: {
+    textAlign: 'center',
+    marginBottom: spacing['4xl'],
+  },
+  featuresContainer: {
+    width: '100%',
+    maxWidth: 480,
+    gap: spacing.base,
+    marginBottom: spacing['4xl'],
+  },
+  featureContent: {
+    flexDirection: 'row',
+    gap: spacing.base,
+    padding: spacing.xl,
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureText: {
     flex: 1,
-    fontSize: typography.bodyLarge.fontSize,
-    color: typography.bodyLarge.color,
-    lineHeight: typography.bodyLarge.fontSize * 1.5,
+    gap: spacing.sm,
   },
-  bulletTextSmall: {
-    fontSize: 15,
-    lineHeight: 15 * 1.5,
+  ctaContainer: {
+    width: '100%',
+    maxWidth: 480,
+    gap: spacing.base,
   },
-  ctaButton: {
-    borderRadius: 16,
-    marginBottom: spacing.m,
-    shadowColor: palette.tealPrimary,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
-  },
-  ctaContent: {
-    paddingVertical: spacing.m,
-    backgroundColor: palette.tealPrimary,
-  },
-  ctaContentSmall: {
-    paddingVertical: spacing.s,
-  },
-  ctaLabel: {
-    ...typography.button,
-    color: palette.deepBlack,
-  },
-  skipLabel: {
-    ...typography.button,
-    color: palette.tealPrimary,
+  privacyNote: {
+    textAlign: 'center',
+    color: colors.text.tertiary,
   },
 });

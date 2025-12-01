@@ -12,6 +12,8 @@ import ProgressScreen from '../screens/main/ProgressScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
 import WorkoutOverviewScreen from '../screens/workout/WorkoutOverviewScreen';
 import SessionPlayer from '../screens/SessionPlayer';
+import ActiveWorkoutScreen from '../screens/workout/ActiveWorkoutScreen';
+import WorkoutSummaryScreen from '../screens/workout/WorkoutSummaryScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -119,6 +121,14 @@ export default function MainNavigator() {
       <Stack.Screen
         name="SessionPlayer"
         component={SessionPlayer}
+      />
+      <Stack.Screen
+        name="ActiveWorkout"
+        component={ActiveWorkoutScreen}
+      />
+      <Stack.Screen
+        name="WorkoutSummary"
+        component={WorkoutSummaryScreen}
       />
     </Stack.Navigator>
   );

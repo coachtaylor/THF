@@ -3,15 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { palette, spacing, typography } from '../../theme';
 
 interface TimeVariantSelectorProps {
-  selected: 5 | 15 | 30 | 45;
-  onSelect: (duration: 5 | 15 | 30 | 45) => void;
+  selected: 30 | 45 | 60 | 90;
+  onSelect: (duration: 30 | 45 | 60 | 90) => void;
 }
 
-const VARIANTS: Array<{ duration: 5 | 15 | 30 | 45; label: string }> = [
-  { duration: 5, label: '5 min' },
-  { duration: 15, label: '15 min' },
+const VARIANTS: Array<{ duration: 30 | 45 | 60 | 90; label: string }> = [
   { duration: 30, label: '30 min' },
   { duration: 45, label: '45 min' },
+  { duration: 60, label: '60 min' },
+  { duration: 90, label: '90 min' },
 ];
 
 export default function TimeVariantSelector({ selected, onSelect }: TimeVariantSelectorProps) {

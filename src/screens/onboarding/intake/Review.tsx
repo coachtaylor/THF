@@ -1,837 +1,612 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
-import { Button } from 'react-native-paper';
-import type { OnboardingScreenProps } from '../../../types/onboarding';
-import { useProfile } from '../../../hooks/useProfile';
-import { generatePlan } from '../../../services/planGenerator';
-import { savePlan } from '../../../services/storage/plan';
-import { Plan, Profile } from '../../../types';
-import { palette, spacing, typography } from '../../../theme';
-import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import { formatEquipmentLabel } from '../../../utils/equipment';
-import { filterExercisesByConstraints } from '../../../services/data/exerciseFilters';
-import { fetchAllExercises } from '../../../services/exerciseService';
-import type { Exercise } from '../../../types';
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from "react-native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
+import { OnboardingStackParamList } from "../../../types/onboarding";
+import { Profile } from "../../../types";
+import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { colors, spacing, borderRadius } from "../../../theme/theme";
+import { glassStyles, textStyles, cardStyles } from "../../../theme/components";
+import { useProfile } from "../../../hooks/useProfile";
+import { generatePlan } from "../../../services/planGenerator";
+import { savePlan } from "../../../services/storage/plan";
+import { formatEquipmentLabel } from "../../../utils/equipment";
+import { Platform } from "react-native";
+
+type ReviewNavigationProp = StackNavigationProp<OnboardingStackParamList, "Review">;
+
+interface ReviewProps {
+  navigation: ReviewNavigationProp;
+}
 
 const GENDER_IDENTITY_LABELS: Record<string, string> = {
-  mtf: 'Trans Woman (MTF)',
-  ftm: 'Trans Man (FTM)',
-  nonbinary: 'Non-binary',
-  questioning: 'Questioning',
+  mtf: "Trans Woman",
+  ftm: "Trans Man",
+  nonbinary: "Non-Binary",
+  questioning: "Questioning"
 };
 
-const DYSPHORIA_TRIGGER_LABELS: Record<string, string> = {
-  looking_at_chest: 'Looking at chest in mirror',
-  tight_clothing: 'Tight or form-fitting clothing',
-  mirrors: 'Mirrors / reflective surfaces',
-  body_contact: 'Body contact (spotting, partner exercises)',
-  crowded_spaces: 'Crowded workout spaces',
-  locker_rooms: 'Locker rooms / changing areas',
-  voice: 'Voice (grunting, heavy breathing)',
-  other: 'Other triggers',
+const GOAL_LABELS: Record<string, string> = {
+  feminization: "Feminization",
+  masculinization: "Masculinization",
+  general_fitness: "General Fitness",
+  strength: "Strength",
+  endurance: "Endurance"
 };
 
-const PRIMARY_GOAL_LABELS: Record<string, string> = {
-  feminization: 'Feminization',
-  masculinization: 'Masculinization',
-  general_fitness: 'General Fitness',
-  strength: 'Strength',
-  endurance: 'Endurance',
-};
-
-const FITNESS_EXPERIENCE_LABELS: Record<string, string> = {
-  beginner: 'Beginner',
-  intermediate: 'Intermediate',
-  advanced: 'Advanced',
-};
-
-const HRT_TYPE_LABELS: Record<string, string> = {
-  estrogen_blockers: 'Estrogen + Anti-androgens',
-  testosterone: 'Testosterone',
-  none: 'Other / Not specified',
+const EXPERIENCE_LABELS: Record<string, string> = {
+  beginner: "Beginner",
+  intermediate: "Intermediate",
+  advanced: "Advanced"
 };
 
 const BINDING_FREQUENCY_LABELS: Record<string, string> = {
-  daily: 'Every workout (Daily)',
-  sometimes: 'Most workouts (Sometimes)',
-  rarely: 'Occasionally (Rarely)',
-  never: 'Testing it out (Never yet)',
+  daily: "Daily",
+  sometimes: "Sometimes",
+  rarely: "Rarely",
+  never: "Never"
 };
 
-const BINDER_TYPE_LABELS: Record<string, string> = {
-  commercial: 'Commercial binder',
-  sports_bra: 'Sports bra',
-  diy: 'DIY / Makeshift',
-  other: 'Other / Prefer not to say',
+const HRT_TYPE_LABELS: Record<string, string> = {
+  estrogen_blockers: "Estrogen + Anti-androgens",
+  testosterone: "Testosterone",
+  none: "None"
 };
 
-const SURGERY_TYPE_LABELS: Record<string, string> = {
-  top_surgery: 'Top Surgery',
-  bottom_surgery: 'Bottom Surgery',
-  ffs: 'Facial Feminization Surgery (FFS)',
-  orchiectomy: 'Orchiectomy',
-  other: 'Other surgery',
-};
-
-const formatDate = (date: Date): string => {
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const month = months[date.getMonth()];
-  const day = date.getDate();
-  const year = date.getFullYear();
-  return `${month} ${day}, ${year}`;
-};
-
-const formatHRTStartDate = (date: Date): string => {
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  return `${month} ${year}`;
-};
-
-const formatMonths = (months: number): string => {
-  if (months === 0) return '0 months';
-  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'}`;
-  const years = Math.floor(months / 12);
-  const remainingMonths = months % 12;
-  if (remainingMonths === 0) {
-    return `${years} ${years === 1 ? 'year' : 'years'}`;
-  }
-  return `${years} ${years === 1 ? 'year' : 'years'}, ${remainingMonths} ${remainingMonths === 1 ? 'month' : 'months'}`;
-};
-
-export default function Review({ navigation }: OnboardingScreenProps<'Review'>) {
-  const { profile, refreshProfile } = useProfile();
-  const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 375;
-
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [exerciseCount, setExerciseCount] = useState<number>(0);
-  const [safetyRulesCount, setSafetyRulesCount] = useState<number>(0);
-
-  // Calculate available exercises and safety rules
-  const calculateAvailableExercises = async (profile: Profile): Promise<number> => {
-    try {
-      const allExercises = await fetchAllExercises();
-      const filtered = filterExercisesByConstraints(allExercises, profile);
-      return filtered.length;
-    } catch (error) {
-      console.error('Error calculating exercises:', error);
-      // Fallback estimate
-      const exercisesPerSession = profile.fitness_experience === 'beginner' ? 8 : 
-                                   profile.fitness_experience === 'intermediate' ? 10 : 12;
-      return exercisesPerSession * profile.workout_frequency;
-    }
-  };
-
-  const calculateApplicableRules = (profile: Profile): number => {
-    let count = 0;
-    if (profile.on_hrt) count++;
-    if (profile.binds_chest) count++;
-    if (profile.surgeries && profile.surgeries.length > 0) {
-      count += profile.surgeries.length;
-    }
-    if (profile.dysphoria_triggers && profile.dysphoria_triggers.length > 0) count++;
-    return count;
-  };
-
-  // Refresh profile when screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      refreshProfile();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-  );
-
-  // Calculate counts when profile changes
-  useEffect(() => {
-    if (profile) {
-      calculateAvailableExercises(profile).then(setExerciseCount);
-      setSafetyRulesCount(calculateApplicableRules(profile));
-    }
-  }, [profile]);
+export default function Review({ navigation }: ReviewProps) {
+  const { profile } = useProfile();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [currentStep, setCurrentStep] = useState<string>("");
 
   if (!profile) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>No profile data found. Please complete onboarding.</Text>
-      </View>
-    );
+    return null;
   }
 
-  const handleEdit = (screen: 'GenderIdentity' | 'HRTStatus' | 'BindingInfo' | 'Surgery' | 'Goals' | 'Experience' | 'DysphoriaTriggers') => {
-    navigation.navigate(screen);
+  const getHRTStatus = (): string => {
+    if (!profile.on_hrt) return "No";
+    if (profile.hrt_type) {
+      return `Yes - ${HRT_TYPE_LABELS[profile.hrt_type] || profile.hrt_type}`;
+    }
+    return "Yes";
   };
 
-  const handleGeneratePlan = async () => {
-    try {
-      setGenerating(true);
-      setError(null);
+  const getBindingStatus = (): string => {
+    if (!profile.binds_chest) return "No";
+    if (profile.binding_frequency) {
+      return `Yes - ${BINDING_FREQUENCY_LABELS[profile.binding_frequency] || profile.binding_frequency}`;
+    }
+    return "Yes";
+  };
 
-      // Ensure block_length is set to 4 for 4-week program
-      const profileWithBlockLength = {
-        ...profile,
-        block_length: 4,
-      };
+  const getSurgeriesStatus = (): string => {
+    if (!profile.surgeries || profile.surgeries.length === 0) return "None";
+    const count = profile.surgeries.length;
+    return `${count} ${count === 1 ? "surgery" : "surgeries"}`;
+  };
 
-      // Call Phase 2 workout generation
-      const plan = await generatePlan(profileWithBlockLength);
+  const getSecondaryGoal = (): string => {
+    if (!profile.secondary_goals || profile.secondary_goals.length === 0) return "None";
+    const goal = profile.secondary_goals[0];
+    return GOAL_LABELS[goal] || goal;
+  };
 
-      console.log('✅ Plan generated:', plan);
+  const getEquipmentCount = (): string => {
+    if (!profile.equipment || profile.equipment.length === 0) return "0 types available";
+    return `${profile.equipment.length} ${profile.equipment.length === 1 ? "type" : "types"} available`;
+  };
 
-      // Save plan to storage
-      await savePlan(plan);
+  const getDysphoriaTriggersCount = (): string => {
+    if (!profile.dysphoria_triggers || profile.dysphoria_triggers.length === 0) {
+      return "0 preferences";
+    }
+    const count = profile.dysphoria_triggers.length;
+    return `${count} ${count === 1 ? "preference" : "preferences"}`;
+  };
 
-      // Navigate to PlanView
-      setGenerating(false);
-      navigation.navigate('PlanView');
-    } catch (err) {
-      console.error('❌ Failed to generate plan:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate plan');
-      setGenerating(false);
+  const sections = [
+    {
+      id: "identity",
+      title: "Identity & Medical",
+      icon: "person-outline" as keyof typeof Ionicons.glyphMap,
+      items: [
+        { label: "Gender Identity", value: GENDER_IDENTITY_LABELS[profile.gender_identity] || profile.gender_identity },
+        { label: "Pronouns", value: profile.pronouns || "Not specified" },
+        { label: "HRT Status", value: getHRTStatus() },
+        { label: "Chest Binding", value: getBindingStatus() },
+        { label: "Surgeries", value: getSurgeriesStatus() }
+      ]
+    },
+    {
+      id: "goals",
+      title: "Goals & Experience",
+      icon: "sparkles" as keyof typeof Ionicons.glyphMap,
+      items: [
+        { label: "Primary Goal", value: GOAL_LABELS[profile.primary_goal] || profile.primary_goal },
+        { label: "Secondary Goal", value: getSecondaryGoal() },
+        { label: "Experience Level", value: EXPERIENCE_LABELS[profile.fitness_experience] || profile.fitness_experience }
+      ]
+    },
+    {
+      id: "preferences",
+      title: "Workout Preferences",
+      icon: "barbell-outline" as keyof typeof Ionicons.glyphMap,
+      items: [
+        { label: "Frequency", value: `${profile.workout_frequency} days/week` },
+        { label: "Duration", value: `${profile.session_duration} minutes` },
+        { label: "Equipment", value: getEquipmentCount() }
+      ]
+    },
+    {
+      id: "dysphoria",
+      title: "Dysphoria Considerations",
+      icon: "heart-outline" as keyof typeof Ionicons.glyphMap,
+      items: [
+        { label: "Triggers Selected", value: getDysphoriaTriggersCount() },
+        { label: "Additional Notes", value: profile.dysphoria_notes ? "Provided" : "None" }
+      ]
+    }
+  ];
+
+  const handleEdit = (sectionId: string) => {
+    // Map section IDs to navigation routes
+    switch (sectionId) {
+      case "identity":
+        navigation.navigate("GenderIdentity");
+        break;
+      case "goals":
+        navigation.navigate("Goals");
+        break;
+      case "preferences":
+        navigation.navigate("Experience");
+        break;
+      case "dysphoria":
+        navigation.navigate("DysphoriaTriggers");
+        break;
     }
   };
 
-  // Helper function to format equipment
-  const formatEquipment = (): string => {
-    const equipment = profile.equipment || [];
-    if (equipment.length === 0) return 'No equipment selected';
-    return equipment.map((e) => formatEquipmentLabel(e)).join(', ');
+  const handleGenerate = async () => {
+    try {
+      setIsGenerating(true);
+      setGenerationProgress(0);
+      setCurrentStep("Analyzing your profile");
+
+      // Simulate progress steps
+      const steps = [
+        "Analyzing your profile",
+        "Selecting exercises",
+        "Creating workout schedule",
+        "Applying safety protocols",
+        "Finalizing your program"
+      ];
+
+      for (let i = 0; i < steps.length; i++) {
+        setCurrentStep(steps[i]);
+        setGenerationProgress(((i + 1) / steps.length) * 100);
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Generate the plan
+      const plan = await generatePlan(profile);
+      
+      // Save the plan (type assertion needed due to Plan type differences)
+      await savePlan(plan as any, profile.user_id);
+
+      setIsGenerating(false);
+      
+      // Navigate to ProgramSetup to show the generated program
+      navigation.navigate("ProgramSetup");
+    } catch (error) {
+      console.error("Error generating plan:", error);
+      setIsGenerating(false);
+      // TODO: Show error message to user
+    }
   };
 
+  const handleBack = () => {
+    navigation.goBack();
+  };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.m),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
-    >
-      <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>Review Your Profile</Text>
-        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          Review your selections and generate your plan
-        </Text>
-      </View>
-
-      <ProgressIndicator
+    <>
+      <OnboardingLayout
         currentStep={8}
         totalSteps={8}
-        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
-      />
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+        title="Review & Generate"
+        subtitle="Review your profile and generate your personalized program."
+        onBack={handleBack}
+        onContinue={handleGenerate}
+        canContinue={true}
+        continueButtonText="Generate Program"
       >
-        {/* Summary Panel */}
-        <View style={styles.summaryPanel}>
-          <View style={styles.summaryHeader}>
-            <Text style={styles.checkmarkIcon}>✅</Text>
-            <Text style={styles.summaryTitle}>Profile Complete</Text>
+        <View style={styles.container}>
+          {/* Summary Cards */}
+          {sections.map((section) => (
+            <View key={section.id} style={styles.sectionCard}>
+              {/* Section Header */}
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionHeaderLeft}>
+                  <View style={styles.sectionIconContainer}>
+                    <Ionicons name={section.icon} size={24} color={colors.cyan[500]} />
+                  </View>
+                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleEdit(section.id)}
+                  activeOpacity={0.7}
+                  style={styles.editButton}
+                >
+                  <Ionicons name="create-outline" size={18} color={colors.text.secondary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Section Items */}
+              <View style={styles.sectionItems}>
+                {section.items.map((item, index) => (
+                  <View key={index} style={styles.sectionItem}>
+                    <Text style={styles.itemLabel}>{item.label}</Text>
+                    <Text style={styles.itemValue}>{item.value}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))}
+
+          {/* What's Next Card */}
+          <View style={styles.whatsNextCard}>
+            <View style={styles.whatsNextHeader}>
+              <Ionicons name="sparkles" size={28} color={colors.cyan[500]} />
+              <Text style={styles.whatsNextTitle}>What's Next?</Text>
+            </View>
+            <View style={styles.whatsNextList}>
+              {[
+                "Your personalized workout program will be generated",
+                "Exercise selection tailored to your goals and safety needs",
+                "Progress tracking with your privacy in mind",
+                "Adaptive programming that evolves with you"
+              ].map((item, index) => (
+                <View key={index} style={styles.whatsNextItem}>
+                  <Ionicons name="checkmark" size={20} color={colors.cyan[500]} style={styles.checkmark} />
+                  <Text style={styles.whatsNextItemText}>{item}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-          <Text style={styles.summarySubtitle}>
-            Your personalized program will include:
-          </Text>
-          <View style={styles.summaryList}>
-            <View style={styles.summaryListItem}>
-              <Text style={styles.summaryBullet}>•</Text>
-              <Text style={styles.summaryText}>
-                {exerciseCount || '...'} exercises tailored to your equipment
-              </Text>
-            </View>
-            <View style={styles.summaryListItem}>
-              <Text style={styles.summaryBullet}>•</Text>
-              <Text style={styles.summaryText}>
-                {safetyRulesCount} safety {safetyRulesCount === 1 ? 'rule' : 'rules'} applied
-              </Text>
-            </View>
-            <View style={styles.summaryListItem}>
-              <Text style={styles.summaryBullet}>•</Text>
-              <Text style={styles.summaryText}>
-                {profile.workout_frequency}-day training split
-              </Text>
-            </View>
-            <View style={styles.summaryListItem}>
-              <Text style={styles.summaryBullet}>•</Text>
-              <Text style={styles.summaryText}>
-                {profile.session_duration}-minute sessions
-              </Text>
-            </View>
+
+          {/* Privacy Reminder */}
+          <View style={cardStyles.success}>
+            <Ionicons 
+              name="shield-checkmark" 
+              size={20} 
+              color={colors.semantic.success} 
+              style={styles.privacyIcon}
+            />
+            <Text style={styles.privacyText}>
+              All your data stays on your device. Nothing is sent to external servers.
+            </Text>
           </View>
         </View>
+      </OnboardingLayout>
 
-        {/* SECTION 1: Identity */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Identity</Text>
-            <TouchableOpacity onPress={() => handleEdit('GenderIdentity')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryCard}>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Gender Identity: </Text>
-                {GENDER_IDENTITY_LABELS[profile.gender_identity] || profile.gender_identity}
-              </Text>
+      {/* Generation Modal */}
+      <Modal
+        visible={isGenerating}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Icon */}
+            <View style={styles.modalIconContainer}>
+              <Ionicons name="sparkles" size={40} color={colors.cyan[500]} />
             </View>
-            {profile.pronouns && (
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.summaryBullet}>
-                  <Text style={styles.label}>Pronouns: </Text>
-                  {profile.pronouns}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
 
-        {/* SECTION 2: HRT Status (only if on_hrt = true) */}
-        {profile.on_hrt && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>HRT Status</Text>
-              <TouchableOpacity onPress={() => handleEdit('HRTStatus')} style={styles.editButton}>
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
+            {/* Title */}
+            <Text style={styles.modalTitle}>Generating Your Program</Text>
+            
+            {/* Subtitle */}
+            <Text style={styles.modalSubtitle}>
+              Creating a personalized workout program tailored to your unique needs and goals
+            </Text>
+            
+            {/* Progress Bar */}
+            <View style={styles.progressBarContainer}>
+              <View style={[styles.progressBar, { width: `${generationProgress}%` }]} />
             </View>
-            <View style={styles.summaryCard}>
-              {profile.hrt_type && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Type: </Text>
-                    {HRT_TYPE_LABELS[profile.hrt_type] || profile.hrt_type}
-                  </Text>
-                </View>
-              )}
-              {profile.hrt_start_date && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Started: </Text>
-                    {formatHRTStartDate(new Date(profile.hrt_start_date))}
-                  </Text>
-                </View>
-              )}
-              {profile.hrt_months_duration !== undefined && profile.hrt_months_duration > 0 && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Duration: </Text>
-                    {profile.hrt_months_duration} {profile.hrt_months_duration === 1 ? 'month' : 'months'}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.impactBox}>
-                <Text style={styles.impactIcon}>💡</Text>
-                <Text style={styles.impactText}>
-                  Impact: Workout volume reduced by 15% for recovery
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
+            
+            {/* Percentage */}
+            <Text style={styles.progressText}>{Math.round(generationProgress)}%</Text>
 
-        {/* SECTION 3: Binding Information (only if binds_chest = true) */}
-        {profile.binds_chest && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Binding Information</Text>
-              <TouchableOpacity onPress={() => handleEdit('BindingInfo')} style={styles.editButton}>
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.summaryCard}>
-              {profile.binding_frequency && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Frequency: </Text>
-                    {BINDING_FREQUENCY_LABELS[profile.binding_frequency] || profile.binding_frequency}
-                  </Text>
-                </View>
-              )}
-              {profile.binding_duration_hours !== undefined && profile.binding_duration_hours > 0 && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Duration: </Text>
-                    {profile.binding_duration_hours} {profile.binding_duration_hours === 1 ? 'hour' : 'hours'} per session
-                  </Text>
-                </View>
-              )}
-              {profile.binder_type && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Binder Type: </Text>
-                    {BINDER_TYPE_LABELS[profile.binder_type] || profile.binder_type}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.impactBox}>
-                <Text style={styles.impactIcon}>💡</Text>
-                <Text style={styles.impactText}>
-                  Impact: Chest compression exercises excluded, breathing breaks added
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* SECTION 4: Surgery History (only if surgeries.length > 0) */}
-        {profile.surgeries && profile.surgeries.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Surgery History</Text>
-              <TouchableOpacity onPress={() => handleEdit('Surgery')} style={styles.editButton}>
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.summaryCard}>
-              {profile.surgeries.map((surgery, index) => {
-                const status = surgery.fully_healed 
-                  ? 'Fully healed'
-                  : surgery.weeks_post_op !== undefined 
-                    ? `${surgery.weeks_post_op} ${surgery.weeks_post_op === 1 ? 'week' : 'weeks'} post-op`
-                    : 'Status unknown';
+            {/* Checklist */}
+            <View style={styles.checklist}>
+              {[
+                "Analyzing your profile",
+                "Selecting exercises",
+                "Creating workout schedule",
+                "Applying safety protocols",
+                "Finalizing your program"
+              ].map((step, index) => {
+                const isComplete = generationProgress > (index * 20);
                 return (
-                  <View key={index} style={styles.surgeryItem}>
-                    <View style={styles.bulletItem}>
-                      <View style={styles.bullet} />
-                      <Text style={styles.summaryBullet}>
-                        <Text style={styles.label}>Type: </Text>
-                        {SURGERY_TYPE_LABELS[surgery.type] || surgery.type}
-                      </Text>
-                    </View>
-                    <View style={styles.bulletItem}>
-                      <View style={styles.bullet} />
-                      <Text style={styles.summaryBullet}>
-                        <Text style={styles.label}>Date: </Text>
-                        {formatDate(surgery.date)}
-                      </Text>
-                    </View>
-                    <View style={styles.bulletItem}>
-                      <View style={styles.bullet} />
-                      <Text style={styles.summaryBullet}>
-                        <Text style={styles.label}>Status: </Text>
-                        {status}
-                      </Text>
-                    </View>
-                    <View style={styles.impactBox}>
-                      <Text style={styles.impactIcon}>💡</Text>
-                      <Text style={styles.impactText}>
-                        Impact: Conservative upper body exercise selection
-                      </Text>
-                    </View>
-                    {index < profile.surgeries!.length - 1 && <View style={styles.surgerySeparator} />}
+                  <View key={index} style={styles.checklistItem}>
+                    <Ionicons 
+                      name={isComplete ? "checkmark-circle" : "ellipse-outline"} 
+                      size={20} 
+                      color={isComplete ? colors.cyan[500] : colors.text.tertiary} 
+                    />
+                    <Text style={[
+                      styles.checklistText,
+                      isComplete && styles.checklistTextComplete
+                    ]}>
+                      {step}
+                    </Text>
                   </View>
                 );
               })}
             </View>
           </View>
-        )}
-
-        {/* SECTION 5: Goals */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Goals</Text>
-            <TouchableOpacity onPress={() => handleEdit('Goals')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryCard}>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Primary Goal: </Text>
-                {PRIMARY_GOAL_LABELS[profile.primary_goal] || profile.primary_goal}
-              </Text>
-            </View>
-            {profile.secondary_goals && profile.secondary_goals.length > 0 && (
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.summaryBullet}>
-                  <Text style={styles.label}>Secondary Goals: </Text>
-                  {profile.secondary_goals.map(g => PRIMARY_GOAL_LABELS[g] || g).join(', ')}
-                </Text>
-              </View>
-            )}
-            <View style={styles.impactBox}>
-              <Text style={styles.impactIcon}>💡</Text>
-              <Text style={styles.impactText}>
-                Impact: {profile.gender_identity === 'mtf' 
-                  ? 'Lower body exercises emphasized (60-70% volume)'
-                  : profile.gender_identity === 'ftm'
-                  ? 'Upper body exercises emphasized (60-70% volume)'
-                  : 'Balanced exercise selection'}
-              </Text>
-            </View>
-          </View>
         </View>
-
-        {/* SECTION 6: Training Details */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Training Details</Text>
-            <TouchableOpacity onPress={() => handleEdit('Experience')} style={styles.editButton}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.summaryCard}>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Experience Level: </Text>
-                {FITNESS_EXPERIENCE_LABELS[profile.fitness_experience] || profile.fitness_experience}
-              </Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Equipment: </Text>
-                {formatEquipment()}
-              </Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Frequency: </Text>
-                {profile.workout_frequency} {profile.workout_frequency === 1 ? 'day' : 'days'} per week
-              </Text>
-            </View>
-            <View style={styles.bulletItem}>
-              <View style={styles.bullet} />
-              <Text style={styles.summaryBullet}>
-                <Text style={styles.label}>Session Duration: </Text>
-                {profile.session_duration} minutes
-              </Text>
-            </View>
-            <View style={styles.impactBox}>
-              <Text style={styles.impactIcon}>💡</Text>
-              <Text style={styles.impactText}>
-                Impact: {profile.workout_frequency}-day split with {profile.fitness_experience} sets/reps
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* SECTION 7: Dysphoria Considerations (only if dysphoria_triggers.length > 0) */}
-        {profile.dysphoria_triggers && profile.dysphoria_triggers.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Dysphoria Considerations</Text>
-              <TouchableOpacity onPress={() => handleEdit('DysphoriaTriggers')} style={styles.editButton}>
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.summaryCard}>
-              <View style={styles.bulletItem}>
-                <View style={styles.bullet} />
-                <Text style={styles.summaryBullet}>
-                  <Text style={styles.label}>Triggers: </Text>
-                  {profile.dysphoria_triggers
-                    .map(t => DYSPHORIA_TRIGGER_LABELS[t] || t)
-                    .join(', ')}
-                </Text>
-              </View>
-              {profile.dysphoria_notes && (
-                <View style={styles.bulletItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.summaryBullet}>
-                    <Text style={styles.label}>Notes: </Text>
-                    {profile.dysphoria_notes.length > 50 
-                      ? `${profile.dysphoria_notes.substring(0, 50)}...`
-                      : profile.dysphoria_notes}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.impactBox}>
-                <Text style={styles.impactIcon}>💡</Text>
-                <Text style={styles.impactText}>
-                  Impact: Mirror-free exercises suggested, home workout options prioritized
-                </Text>
-              </View>
-            </View>
-          </View>
-        )}
-      </ScrollView>
-
-      <View style={styles.ctaContainer}>
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorIcon}>❌</Text>
-            <View style={styles.errorContent}>
-              <Text style={styles.errorTitle}>Plan generation failed: {error}</Text>
-              <Text style={styles.errorMessage}>
-                Please check your internet connection and try again.
-              </Text>
-            </View>
-          </View>
-        )}
-        <TouchableOpacity
-          onPress={handleGeneratePlan}
-          disabled={generating}
-          style={[
-            styles.generateButton,
-            generating && styles.generateButtonDisabled,
-          ]}
-          activeOpacity={0.8}
-        >
-          {generating ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={palette.deepBlack} style={styles.loadingSpinner} />
-              <Text style={styles.generateButtonLabel}>Generating Your Program...</Text>
-            </View>
-          ) : (
-            <Text style={styles.generateButtonLabel}>Generate My Program →</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-    </View>
+      </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
+    gap: spacing.xl,
   },
-  header: {
-    marginBottom: spacing.l,
-    paddingTop: spacing.s,
-  },
-  headline: {
-    ...typography.h1,
-    textAlign: 'left',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.5,
-  },
-  headlineSmall: {
-    fontSize: 24,
-  },
-  subheadline: {
-    ...typography.body,
-    textAlign: 'left',
-    color: palette.midGray,
-    lineHeight: 20,
-  },
-  subheadlineSmall: {
-    fontSize: 14,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: spacing.xl,
-  },
-  section: {
-    marginBottom: spacing.xl,
+  sectionCard: {
+    ...glassStyles.card,
+    padding: spacing.xl,
+    borderRadius: borderRadius['2xl'],
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.l,
-    paddingBottom: spacing.m,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  sectionIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
-    letterSpacing: -0.3,
+    ...textStyles.h3,
+    fontSize: 18,
+    fontWeight: '600',
   },
   editButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.s,
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  editButtonText: {
-    ...typography.bodySmall,
-    color: palette.tealPrimary,
+  sectionItems: {
+    gap: spacing.md,
+  },
+  sectionItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.base,
+  },
+  itemLabel: {
+    ...textStyles.body,
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  itemValue: {
+    ...textStyles.body,
     fontSize: 14,
     fontWeight: '600',
+    color: colors.text.primary,
+    textAlign: 'right',
+    flex: 1,
   },
-  summaryCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.l,
-    borderWidth: 1.5,
-    borderColor: palette.border,
+  whatsNextCard: {
+    ...glassStyles.cardHero,
+    padding: spacing['2xl'],
+    borderRadius: borderRadius['3xl'],
+    borderWidth: 1,
+    borderColor: colors.cyan[500],
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 24,
+      },
+      android: {
+        elevation: 12,
+      },
+    }),
   },
-  bulletItem: {
+  whatsNextHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: spacing.m,
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.base,
   },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: palette.tealPrimary,
-    marginTop: 8,
-    marginRight: spacing.m,
-    flexShrink: 0,
-  },
-  label: {
-    fontWeight: '600',
-    color: palette.white,
-  },
-  surgeryItem: {
-    marginBottom: spacing.m,
-  },
-  surgerySeparator: {
-    height: 1,
-    backgroundColor: palette.border,
-    marginTop: spacing.m,
-    marginBottom: spacing.m,
-  },
-  ctaContainer: {
-    marginTop: spacing.s,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 107, 107, 0.15)',
-    borderRadius: 12,
-    padding: spacing.m,
-    marginBottom: spacing.m,
-    borderWidth: 1.5,
-    borderColor: palette.error,
-    gap: spacing.s,
-  },
-  errorIcon: {
+  whatsNextTitle: {
+    ...textStyles.h2,
     fontSize: 20,
-    flexShrink: 0,
-  },
-  errorContent: {
-    flex: 1,
-  },
-  errorTitle: {
-    ...typography.body,
-    color: palette.error,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-  },
-  errorMessage: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
-    lineHeight: 18,
-  },
-  errorText: {
-    ...typography.body,
-    color: palette.midGray,
-    textAlign: 'center',
-    padding: spacing.l,
-  },
-  generateButton: {
-    backgroundColor: palette.tealPrimary,
-    borderRadius: 12,
-    paddingVertical: spacing.m,
-    paddingHorizontal: spacing.l,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
-  },
-  generateButtonDisabled: {
-    opacity: 0.6,
-  },
-  generateButtonLabel: {
-    ...typography.h3,
-    fontSize: 16,
     fontWeight: '700',
-    color: palette.deepBlack,
+    color: colors.cyan[500],
   },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.s,
+  whatsNextList: {
+    gap: spacing.md,
   },
-  loadingSpinner: {
-    marginRight: 0,
-  },
-  impactBox: {
-    marginTop: spacing.l,
-    padding: spacing.m,
-    backgroundColor: 'rgba(0, 204, 204, 0.1)',
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: palette.tealPrimary,
+  whatsNextItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.xs,
+    gap: spacing.md,
   },
-  impactText: {
-    ...typography.bodySmall,
-    color: palette.tealPrimary,
-    lineHeight: 18,
-    flex: 1,
-  },
-  impactIcon: {
-    fontSize: 16,
+  checkmark: {
     marginTop: 2,
   },
-  summaryPanel: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.l,
-    borderWidth: 1.5,
-    borderColor: palette.border,
+  whatsNextItemText: {
+    ...textStyles.body,
+    fontSize: 15,
+    lineHeight: 22,
+    flex: 1,
+    color: colors.text.secondary,
+  },
+  privacyIcon: {
+    marginTop: 2,
+  },
+  privacyText: {
+    ...textStyles.bodySmall,
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+    color: colors.semantic.success,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: colors.bg.raised,
+    borderRadius: borderRadius['3xl'],
+    padding: spacing['3xl'],
+    gap: spacing.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.35,
+        shadowRadius: 32,
+      },
+      android: {
+        elevation: 16,
+      },
+    }),
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.xl,
+    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(6, 182, 212, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: spacing.lg,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  modalTitle: {
+    ...textStyles.h1,
+    fontSize: 32,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+  },
+  modalSubtitle: {
+    ...textStyles.body,
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    color: colors.text.secondary,
     marginBottom: spacing.xl,
   },
-  summaryHeader: {
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: colors.cyan[500],
+    borderRadius: borderRadius.full,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6,
+        shadowRadius: 20,
+      },
+    }),
+  },
+  progressText: {
+    ...textStyles.h2,
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    color: colors.cyan[500],
+    marginBottom: spacing.xl,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.cyan[500],
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+      },
+    }),
+  },
+  checklist: {
+    gap: spacing.md,
+  },
+  checklistItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.s,
-    marginBottom: spacing.m,
+    gap: spacing.md,
   },
-  checkmarkIcon: {
-    fontSize: 24,
+  checklistText: {
+    ...textStyles.body,
+    fontSize: 14,
+    color: colors.text.tertiary,
   },
-  summaryTitle: {
-    ...typography.h3,
-    color: palette.white,
-    fontWeight: '600',
-  },
-  summarySubtitle: {
-    ...typography.body,
-    color: palette.lightGray,
-    marginBottom: spacing.m,
-    lineHeight: 22,
-  },
-  summaryList: {
-    gap: spacing.s,
-  },
-  summaryListItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.s,
-  },
-  summaryBullet: {
-    ...typography.body,
-    color: palette.tealPrimary,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  summaryText: {
-    ...typography.body,
-    color: palette.lightGray,
-    flex: 1,
-    lineHeight: 22,
+  checklistTextComplete: {
+    color: colors.text.secondary,
   },
 });

@@ -11,15 +11,15 @@ export interface Day {
   dayNumber: number; // 0-6 for 1-week, 0-27 for 4-week
   date: Date;
   variants: {
-    5: Workout | null;
-    15: Workout | null;
     30: Workout | null;
     45: Workout | null;
+    60: Workout | null;
+    90: Workout | null;
   };
 }
 
 export interface Workout {
-  duration: 5 | 15 | 30 | 45;
+  duration: 30 | 45 | 60 | 90;
   exercises: ExerciseInstance[];
   totalMinutes: number;
 }

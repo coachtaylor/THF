@@ -1,677 +1,436 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, Modal, FlatList } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { OnboardingScreenProps } from '../../../types/onboarding';
-import { useProfile } from '../../../hooks/useProfile';
-import { palette, spacing, typography } from '../../../theme';
-import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import PrimaryButton from '../../../components/ui/PrimaryButton';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
+import { OnboardingStackParamList } from '../../../types/onboarding';
+import OnboardingLayout from '../../../components/onboarding/OnboardingLayout';
+import ToggleButtonGroup from '../../../components/onboarding/ToggleButtonGroup';
+import MedicationSection from '../../../components/onboarding/MedicationSection';
+import { colors, spacing, borderRadius } from '../../../theme/theme';
+import { glassStyles, textStyles } from '../../../theme/components';
+import { updateProfile } from '../../../services/storage/profile';
 
-type HRTAnswer = 'yes' | 'no';
-type HRTType = 'estrogen_blockers' | 'testosterone';
+type HRTMethod = 'pills' | 'patches' | 'injections' | 'gel';
+type HRTFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+type GenderIdentity = 'mtf' | 'ftm' | 'nonbinary' | 'questioning';
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
+type HRTStatusNavigationProp = StackNavigationProp<OnboardingStackParamList, 'HRTStatus'>;
+type HRTStatusRouteProp = RouteProp<OnboardingStackParamList, 'HRTStatus'>;
 
-const generateYears = (): number[] => {
-  const currentYear = new Date().getFullYear();
-  const years: number[] = [];
-  for (let i = 0; i <= 15; i++) {
-    years.push(currentYear - i);
-  }
-  return years;
-};
-
-const calculateDuration = (startDate: Date | null): number => {
-  if (!startDate) return 0;
-  const now = new Date();
-  const months = 
-    (now.getFullYear() - startDate.getFullYear()) * 12 +
-    (now.getMonth() - startDate.getMonth());
-  return Math.max(0, months);
-};
-
-const formatDuration = (months: number): string => {
-  if (months === 0) return '0 months';
-  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'}`;
-  const years = Math.floor(months / 12);
-  const remainingMonths = months % 12;
-  if (remainingMonths === 0) {
-    return `${years} ${years === 1 ? 'year' : 'years'}`;
-  }
-  return `${years} ${years === 1 ? 'year' : 'years'}, ${remainingMonths} ${remainingMonths === 1 ? 'month' : 'months'}`;
-};
-
-interface HRTTypeOption {
-  value: HRTType;
-  title: string;
-  description: string;
+interface HRTStatusProps {
+  navigation: HRTStatusNavigationProp;
+  route: HRTStatusRouteProp;
 }
 
-const HRT_TYPE_OPTIONS: HRTTypeOption[] = [
-  {
-    value: 'estrogen_blockers',
-    title: 'Estrogen + Anti-androgens',
-    description: '(e.g., Estradiol, Spironolactone, Cypro)',
-  },
-  {
-    value: 'testosterone',
-    title: 'Testosterone',
-    description: '(e.g., Injectable, gel, patch)',
-  },
-];
-
-export default function HRTStatus({ navigation }: OnboardingScreenProps<'HRTStatus'>) {
-  const { profile, updateProfile } = useProfile();
-  const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 375;
-
-  const [hrtAnswer, setHrtAnswer] = useState<HRTAnswer | null>(
-    profile?.on_hrt === true ? 'yes' : profile?.on_hrt === false ? 'no' : null
-  );
-
-  const [hrtType, setHrtType] = useState<HRTType | null>(
-    (profile?.hrt_type as HRTType) || null
-  );
-
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+export default function HRTStatus({ navigation, route }: HRTStatusProps) {
+  const genderIdentity = (route.params as { genderIdentity?: string })?.genderIdentity;
+  
+  const [onHRT, setOnHRT] = useState<string | null>(null);
+  
+  // Estrogen (Trans Feminine)
+  const [estrogenMethod, setEstrogenMethod] = useState<HRTMethod>('pills');
+  const [estrogenFrequency, setEstrogenFrequency] = useState<HRTFrequency>('daily');
+  const [estrogenDays, setEstrogenDays] = useState<Set<DayOfWeek>>(new Set());
+  
+  // Testosterone (Trans Masculine)
+  const [testosteroneMethod, setTestosteroneMethod] = useState<HRTMethod>('injections');
+  const [testosteroneFrequency, setTestosteroneFrequency] = useState<HRTFrequency>('weekly');
+  const [testosteroneDays, setTestosteroneDays] = useState<Set<DayOfWeek>>(new Set());
+  
+  // Start date
+  const [startMonth, setStartMonth] = useState(new Date().getMonth() + 1);
+  const [startYear, setStartYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
 
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const isMTF = genderIdentity === 'mtf';
+  const isFTM = genderIdentity === 'ftm';
 
-  // Initialize from profile
-  useEffect(() => {
-    if (profile?.hrt_start_date) {
-      const date = new Date(profile.hrt_start_date);
-      setSelectedMonth(date.getMonth());
-      setSelectedYear(date.getFullYear());
-    }
-  }, [profile]);
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 20 }, (_, i) => currentYear - i);
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
-  const getStartDate = (): Date | null => {
-    if (selectedMonth === null || selectedYear === null) return null;
-    return new Date(selectedYear, selectedMonth, 1);
-  };
-
-  const validateDate = (date: Date | null): boolean => {
-    if (!date) return false;
+  const calculateDuration = () => {
     const now = new Date();
-    const fifteenYearsAgo = new Date();
-    fifteenYearsAgo.setFullYear(now.getFullYear() - 15);
-
-    if (date > now) {
-      setValidationError('Start date cannot be in the future');
-      return false;
-    }
-    if (date < fifteenYearsAgo) {
-      setValidationError('Start date cannot be more than 15 years ago');
-      return false;
-    }
-    setValidationError(null);
-    return true;
+    const start = new Date(startYear, startMonth - 1);
+    const diffTime = now.getTime() - start.getTime();
+    const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30.44));
+    return Math.max(0, diffMonths);
   };
+
+  const toggleDay = (
+    days: Set<DayOfWeek>,
+    setDays: (days: Set<DayOfWeek>) => void,
+    day: DayOfWeek
+  ) => {
+    const newDays = new Set(days);
+    if (newDays.has(day)) {
+      newDays.delete(day);
+    } else {
+      newDays.add(day);
+    }
+    setDays(newDays);
+  };
+
+  const canContinue =
+    onHRT === 'No' ||
+    (onHRT === 'Yes' &&
+      ((isMTF && estrogenDays.size > 0) ||
+       (isFTM && testosteroneDays.size > 0)));
 
   const handleContinue = async () => {
-    if (hrtAnswer === null) return;
+    try {
+      // Calculate HRT start date
+      const hrtStartDate = onHRT === 'Yes' 
+        ? new Date(startYear, startMonth - 1, 1) 
+        : undefined;
 
-    if (hrtAnswer === 'yes') {
-      // Validate required fields
-      if (!hrtType) {
-        setValidationError('Please select an HRT type');
-        return;
+      // Determine HRT data based on gender identity
+      let hrtData: {
+        on_hrt: boolean;
+        hrt_type?: 'estrogen_blockers' | 'testosterone' | 'none';
+        hrt_method?: 'pills' | 'patches' | 'injections' | 'gel';
+        hrt_frequency?: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+        hrt_days?: string[];
+        hrt_start_date?: Date;
+        hrt_months_duration?: number;
+      } = {
+        on_hrt: onHRT === 'Yes',
+      };
+
+      if (onHRT === 'Yes') {
+        if (isMTF) {
+          hrtData = {
+            ...hrtData,
+            hrt_type: 'estrogen_blockers',
+            hrt_method: estrogenMethod,
+            hrt_frequency: estrogenFrequency,
+            hrt_days: Array.from(estrogenDays),
+            hrt_start_date: hrtStartDate,
+            hrt_months_duration: calculateDuration(),
+          };
+        } else if (isFTM) {
+          hrtData = {
+            ...hrtData,
+            hrt_type: 'testosterone',
+            hrt_method: testosteroneMethod,
+            hrt_frequency: testosteroneFrequency,
+            hrt_days: Array.from(testosteroneDays),
+            hrt_start_date: hrtStartDate,
+            hrt_months_duration: calculateDuration(),
+          };
+        }
+      } else {
+        hrtData.hrt_type = 'none';
       }
 
-      const startDate = getStartDate();
-      if (!startDate) {
-        setValidationError('Please select a start date');
-        return;
-      }
-
-      if (!validateDate(startDate)) {
-        return;
-      }
-
-      const monthsDuration = calculateDuration(startDate);
-
-      try {
-        await updateProfile({
-          on_hrt: true,
-          hrt_type: hrtType,
-          hrt_start_date: startDate,
-          hrt_months_duration: monthsDuration,
-        });
-        navigation.navigate('BindingInfo');
-      } catch (error) {
-        console.error('Error saving HRT status:', error);
-      }
-    } else {
-      try {
-        await updateProfile({
-          on_hrt: false,
-          hrt_type: undefined,
-          hrt_start_date: undefined,
-          hrt_months_duration: undefined,
-        });
-        navigation.navigate('BindingInfo');
-      } catch (error) {
-        console.error('Error saving HRT status:', error);
-      }
+      // Save to profile
+      await updateProfile(hrtData);
+      
+      navigation.navigate('BindingInfo');
+    } catch (error) {
+      console.error('Error saving HRT data:', error);
+      // Still navigate even if save fails
+      navigation.navigate('BindingInfo');
     }
   };
 
-  const canContinue = hrtAnswer !== null && 
-    (hrtAnswer === 'no' || (hrtAnswer === 'yes' && hrtType !== null && selectedMonth !== null && selectedYear !== null && !validationError));
-
-  const startDate = getStartDate();
-  const durationMonths = calculateDuration(startDate);
-  const durationText = formatDuration(durationMonths);
-
-  const years = generateYears();
+  const handleBack = () => {
+    navigation.goBack();
+  };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.m),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
+    <OnboardingLayout
+      currentStep={2}
+      totalSteps={8}
+      title="Hormone Therapy"
+      subtitle="HRT affects training capacity and recovery. This helps us provide workout advice based on your medication schedule."
+      onBack={handleBack}
+      onContinue={handleContinue}
+      canContinue={canContinue}
     >
-      <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>
-          Are you currently on Hormone Replacement Therapy?
-        </Text>
-        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          This helps us adjust workout volume and recovery time to match your hormonal profile.
-        </Text>
-      </View>
-
-      <ProgressIndicator
-        currentStep={2}
-        totalSteps={8}
-        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
-      />
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Initial Question */}
+      <View style={styles.container}>
+        {/* Are you on HRT? */}
         <View style={styles.section}>
-          <View style={styles.buttonGroup}>
-            <TouchableOpacity
-              onPress={() => {
-                setHrtAnswer('yes');
-                setValidationError(null);
-              }}
-              activeOpacity={0.7}
-              style={[
-                styles.largeButton,
-                hrtAnswer === 'yes' && styles.largeButtonSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.largeButtonText,
-                  hrtAnswer === 'yes' && styles.largeButtonTextSelected,
-                ]}
-              >
-                Yes, I'm on HRT
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setHrtAnswer('no');
-                setHrtType(null);
-                setSelectedMonth(null);
-                setSelectedYear(null);
-                setValidationError(null);
-              }}
-              activeOpacity={0.7}
-              style={[
-                styles.largeButton,
-                hrtAnswer === 'no' && styles.largeButtonSelected,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.largeButtonText,
-                  hrtAnswer === 'no' && styles.largeButtonTextSelected,
-                ]}
-              >
-                No, I'm not on HRT
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={textStyles.h3}>Are you currently on HRT?</Text>
+          <ToggleButtonGroup
+            options={['Yes', 'No']}
+            selected={onHRT}
+            onSelect={setOnHRT}
+          />
         </View>
 
-        {/* Conditional Sections - Only show if Yes */}
-        {hrtAnswer === 'yes' && (
+        {/* If Yes, show medication sections */}
+        {onHRT === 'Yes' && (
           <>
-            {/* Section A: HRT Type */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What type of HRT are you taking?</Text>
-              <View style={styles.hrtTypeContainer}>
-                {HRT_TYPE_OPTIONS.map((option) => {
-                  const isSelected = hrtType === option.value;
-                  return (
-                    <TouchableOpacity
-                      key={option.value}
-                      onPress={() => {
-                        setHrtType(option.value);
-                        setValidationError(null);
-                      }}
-                      activeOpacity={0.7}
-                      style={[
-                        styles.hrtTypeCard,
-                        isSelected && styles.hrtTypeCardSelected,
-                      ]}
-                    >
-                      {isSelected && (
-                        <View style={styles.checkmarkContainer}>
-                          <Text style={styles.checkmark}>✓</Text>
-                        </View>
-                      )}
-                      <View style={styles.hrtTypeTextContainer}>
-                        <Text style={[styles.hrtTypeTitle, isSelected && styles.hrtTypeTitleSelected]}>
-                          {option.title}
-                        </Text>
-                        <Text style={[styles.hrtTypeDescription, isSelected && styles.hrtTypeDescriptionSelected]}>
-                          {option.description}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
+            {/* Trans Feminine: Estrogen */}
+            {isMTF && (
+              <MedicationSection
+                title="Estrogen"
+                icon="water"
+                method={estrogenMethod}
+                frequency={estrogenFrequency}
+                selectedDays={estrogenDays}
+                onMethodChange={setEstrogenMethod}
+                onFrequencyChange={setEstrogenFrequency}
+                onToggleDay={(day) => toggleDay(estrogenDays, setEstrogenDays, day)}
+              />
+            )}
 
-            {/* Section B: HRT Start Date */}
+            {/* Trans Masculine: Testosterone */}
+            {isFTM && (
+              <MedicationSection
+                title="Testosterone"
+                icon="barbell"
+                method={testosteroneMethod}
+                frequency={testosteroneFrequency}
+                selectedDays={testosteroneDays}
+                onMethodChange={setTestosteroneMethod}
+                onFrequencyChange={setTestosteroneFrequency}
+                onToggleDay={(day) => toggleDay(testosteroneDays, setTestosteroneDays, day)}
+              />
+            )}
+
+            {/* Start Date */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>When did you start HRT?</Text>
-              <View style={styles.dateSelectorContainer}>
-                <View style={styles.dateSelectorRow}>
+              <Text style={textStyles.h3}>When did you start HRT?</Text>
+              
+              <View style={styles.dateRow}>
+                <View style={styles.dateColumn}>
+                  <Text style={[textStyles.label, styles.dateLabel]}>Month</Text>
                   <TouchableOpacity
+                    style={styles.pickerButton}
                     onPress={() => setShowMonthPicker(true)}
-                    style={styles.dateDropdown}
                   >
-                    <Text style={[styles.dateDropdownText, selectedMonth === null && styles.dateDropdownPlaceholder]}>
-                      {selectedMonth !== null ? MONTHS[selectedMonth] : 'Month'}
-                    </Text>
-                    <Text style={styles.dateDropdownArrow}>▼</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() => setShowYearPicker(true)}
-                    style={styles.dateDropdown}
-                  >
-                    <Text style={[styles.dateDropdownText, selectedYear === null && styles.dateDropdownPlaceholder]}>
-                      {selectedYear !== null ? selectedYear.toString() : 'Year'}
-                    </Text>
-                    <Text style={styles.dateDropdownArrow}>▼</Text>
+                    <Text style={styles.pickerButtonText}>{months[startMonth - 1]}</Text>
+                    <Ionicons name="chevron-down" size={20} color={colors.text.secondary} />
                   </TouchableOpacity>
                 </View>
 
-                {startDate && durationMonths > 0 && (
-                  <View style={styles.durationIndicator}>
-                    <Text style={styles.durationIcon}>💡</Text>
-                    <Text style={styles.durationText}>
-                      You've been on HRT for approximately {durationText}
-                    </Text>
+                <View style={styles.dateColumn}>
+                  <Text style={[textStyles.label, styles.dateLabel]}>Year</Text>
+                  <TouchableOpacity
+                    style={styles.pickerButton}
+                    onPress={() => setShowYearPicker(true)}
+                  >
+                    <Text style={styles.pickerButtonText}>{startYear}</Text>
+                    <Ionicons name="chevron-down" size={20} color={colors.text.secondary} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Month Picker Modal */}
+              <Modal
+                visible={showMonthPicker}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowMonthPicker(false)}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                      <Text style={textStyles.h3}>Select Month</Text>
+                      <TouchableOpacity onPress={() => setShowMonthPicker(false)}>
+                        <Text style={[textStyles.body, { color: colors.cyan[500] }]}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <ScrollView style={styles.pickerScrollView}>
+                      {months.map((month, index) => {
+                        const monthValue = index + 1;
+                        const isSelected = startMonth === monthValue;
+                        return (
+                          <TouchableOpacity
+                            key={index}
+                            style={[
+                              styles.pickerOption,
+                              isSelected && styles.pickerOptionSelected,
+                            ]}
+                            onPress={() => {
+                              setStartMonth(monthValue);
+                              setShowMonthPicker(false);
+                            }}
+                          >
+                            <Text
+                              style={[
+                                textStyles.body,
+                                styles.pickerOptionText,
+                                isSelected && styles.pickerOptionTextSelected,
+                              ]}
+                            >
+                              {month}
+                            </Text>
+                            {isSelected && (
+                              <Ionicons name="checkmark" size={20} color={colors.cyan[500]} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
                   </View>
-                )}
+                </View>
+              </Modal>
+
+              {/* Year Picker Modal */}
+              <Modal
+                visible={showYearPicker}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowYearPicker(false)}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                      <Text style={textStyles.h3}>Select Year</Text>
+                      <TouchableOpacity onPress={() => setShowYearPicker(false)}>
+                        <Text style={[textStyles.body, { color: colors.cyan[500] }]}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <ScrollView style={styles.pickerScrollView}>
+                      {years.map((year) => {
+                        const isSelected = startYear === year;
+                        return (
+                          <TouchableOpacity
+                            key={year}
+                            style={[
+                              styles.pickerOption,
+                              isSelected && styles.pickerOptionSelected,
+                            ]}
+                            onPress={() => {
+                              setStartYear(year);
+                              setShowYearPicker(false);
+                            }}
+                          >
+                            <Text
+                              style={[
+                                textStyles.body,
+                                styles.pickerOptionText,
+                                isSelected && styles.pickerOptionTextSelected,
+                              ]}
+                            >
+                              {year}
+                            </Text>
+                            {isSelected && (
+                              <Ionicons name="checkmark" size={20} color={colors.cyan[500]} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                </View>
+              </Modal>
+
+              {/* Duration Display */}
+              <View style={styles.durationCard}>
+                <Ionicons name="calendar" size={20} color={colors.cyan[500]} />
+                <Text style={[textStyles.bodySmall, styles.durationText]}>
+                  Duration: <Text style={styles.durationBold}>{calculateDuration()} months</Text> on HRT
+                </Text>
               </View>
             </View>
-
-            {/* Validation Error Banner */}
-            {validationError && (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorText}>⚠️ {validationError}</Text>
-              </View>
-            )}
           </>
         )}
-      </ScrollView>
-
-      <View style={styles.ctaContainer}>
-        <PrimaryButton
-          onPress={handleContinue}
-          label="Continue"
-          disabled={!canContinue}
-        />
-        {!canContinue && hrtAnswer === 'yes' && (
-          <Text style={styles.hintText}>
-            Please select HRT type and start date to continue
-          </Text>
-        )}
       </View>
-
-      {/* Month Picker Modal */}
-      <Modal
-        visible={showMonthPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowMonthPicker(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowMonthPicker(false)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Month</Text>
-            <FlatList
-              data={MONTHS}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    selectedMonth === index && styles.modalItemSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedMonth(index);
-                    setShowMonthPicker(false);
-                    if (selectedYear !== null) {
-                      const date = new Date(selectedYear, index, 1);
-                      validateDate(date);
-                    }
-                  }}
-                >
-                  <Text style={[styles.modalItemText, selectedMonth === index && styles.modalItemTextSelected]}>
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Year Picker Modal */}
-      <Modal
-        visible={showYearPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowYearPicker(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowYearPicker(false)}
-        >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Year</Text>
-            <FlatList
-              data={years}
-              keyExtractor={(item) => item.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    selectedYear === item && styles.modalItemSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedYear(item);
-                    setShowYearPicker(false);
-                    if (selectedMonth !== null) {
-                      const date = new Date(item, selectedMonth, 1);
-                      validateDate(date);
-                    }
-                  }}
-                >
-                  <Text style={[styles.modalItemText, selectedYear === item && styles.modalItemTextSelected]}>
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </View>
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
-  },
-  header: {
-    marginBottom: spacing.l,
-    paddingTop: spacing.s,
-  },
-  headline: {
-    ...typography.h1,
-    textAlign: 'left',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.8,
-  },
-  headlineSmall: {
-    fontSize: 28,
-  },
-  subheadline: {
-    ...typography.bodyLarge,
-    textAlign: 'left',
-    color: palette.midGray,
-    lineHeight: 24,
-  },
-  subheadlineSmall: {
-    fontSize: 15,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: spacing.xl,
+    gap: spacing.xl,
   },
   section: {
-    marginBottom: spacing.xl,
+    gap: spacing.base,
   },
-  sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.m,
-  },
-  buttonGroup: {
-    gap: spacing.m,
-  },
-  largeButton: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
-    borderWidth: 2,
-    borderColor: palette.border,
-    alignItems: 'center',
-    minHeight: 64,
-    justifyContent: 'center',
-  },
-  largeButtonSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
-    borderWidth: 3,
-  },
-  largeButtonText: {
-    ...typography.h3,
-    color: palette.white,
-  },
-  largeButtonTextSelected: {
-    color: palette.tealPrimary,
-  },
-  hrtTypeContainer: {
-    gap: spacing.m,
-  },
-  hrtTypeCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
-    borderWidth: 2,
-    borderColor: palette.border,
-    minHeight: 80,
+  dateRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.m,
+    gap: spacing.md,
   },
-  hrtTypeCardSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.darkerCard,
-  },
-  checkmarkContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: palette.tealPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  checkmark: {
-    color: palette.deepBlack,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  hrtTypeTextContainer: {
+  dateColumn: {
     flex: 1,
+    gap: spacing.sm,
   },
-  hrtTypeTitle: {
-    ...typography.h3,
-    marginBottom: spacing.xs,
-    color: palette.white,
+  dateLabel: {
+    marginBottom: 0,
   },
-  hrtTypeTitleSelected: {
-    color: palette.tealPrimary,
-  },
-  hrtTypeDescription: {
-    ...typography.body,
-    color: palette.midGray,
-    lineHeight: 20,
-  },
-  hrtTypeDescriptionSelected: {
-    color: palette.lightGray,
-  },
-  dateSelectorContainer: {
-    gap: spacing.m,
-  },
-  dateSelectorRow: {
-    flexDirection: 'row',
-    gap: spacing.m,
-  },
-  dateDropdown: {
-    flex: 1,
-    backgroundColor: palette.darkCard,
+  pickerButton: {
+    height: 56,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
     borderWidth: 2,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: spacing.m,
+    borderColor: colors.glass.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 52,
+    paddingHorizontal: spacing.base,
   },
-  dateDropdownText: {
-    ...typography.body,
-    color: palette.white,
-    flex: 1,
-  },
-  dateDropdownPlaceholder: {
-    color: palette.midGray,
-  },
-  dateDropdownArrow: {
-    ...typography.body,
-    color: palette.midGray,
-    fontSize: 12,
-  },
-  durationIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.darkerCard,
-    borderRadius: 12,
-    padding: spacing.m,
-    borderWidth: 1,
-    borderColor: palette.border,
-    gap: spacing.s,
-  },
-  durationIcon: {
-    fontSize: 20,
-  },
-  durationText: {
-    ...typography.body,
-    color: palette.tealPrimary,
-    flex: 1,
-    lineHeight: 20,
-  },
-  errorBanner: {
-    backgroundColor: 'rgba(255, 107, 107, 0.15)',
-    borderLeftWidth: 4,
-    borderLeftColor: palette.error,
-    borderRadius: 12,
-    padding: spacing.m,
-    marginTop: spacing.m,
-  },
-  errorText: {
-    ...typography.bodySmall,
-    color: palette.error,
-    lineHeight: 18,
-  },
-  ctaContainer: {
-    marginTop: spacing.s,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-  },
-  hintText: {
-    ...typography.caption,
-    textAlign: 'center',
-    color: palette.midGray,
-    marginTop: spacing.xs,
+  pickerButtonText: {
+    ...textStyles.body,
+    color: colors.text.primary,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 20,
-    padding: spacing.m,
-    width: '80%',
-    maxHeight: '60%',
-    borderWidth: 2,
-    borderColor: palette.border,
+    backgroundColor: colors.bg.raised,
+    borderTopLeftRadius: borderRadius['2xl'],
+    borderTopRightRadius: borderRadius['2xl'],
+    paddingTop: spacing.xl,
+    paddingBottom: spacing['4xl'],
+    maxHeight: '50%',
   },
-  modalTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.m,
-    textAlign: 'center',
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.base,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.glass.border,
   },
-  modalItem: {
-    padding: spacing.m,
-    borderRadius: 12,
-    marginBottom: spacing.xs,
+  pickerScrollView: {
+    maxHeight: 300,
   },
-  modalItemSelected: {
-    backgroundColor: palette.tealGlow,
+  pickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.base,
+    paddingHorizontal: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.glass.border,
   },
-  modalItemText: {
-    ...typography.body,
-    color: palette.lightGray,
+  pickerOptionSelected: {
+    backgroundColor: colors.glass.bgHero,
   },
-  modalItemTextSelected: {
-    color: palette.tealPrimary,
+  pickerOptionText: {
+    color: colors.text.secondary,
+  },
+  pickerOptionTextSelected: {
+    color: colors.cyan[500],
+    fontWeight: '600',
+  },
+  durationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.base,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bgHero,
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+  },
+  durationText: {
+    color: colors.cyan[500],
+  },
+  durationBold: {
     fontWeight: '600',
   },
 });
-

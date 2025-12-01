@@ -1,593 +1,486 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity, TextInput } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { OnboardingScreenProps } from '../../../types/onboarding';
-import { useProfile } from '../../../hooks/useProfile';
-import { palette, spacing, typography } from '../../../theme';
-import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import PrimaryButton from '../../../components/ui/PrimaryButton';
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from "react-native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
+import { OnboardingStackParamList } from "../../../types/onboarding";
+import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import SelectionCard from "../../../components/onboarding/SelectionCard";
+import { colors, spacing, borderRadius } from "../../../theme/theme";
+import { glassStyles, textStyles, cardStyles } from "../../../theme/components";
+import { useProfile } from "../../../hooks/useProfile";
+import { updateProfile } from "../../../services/storage/profile";
 
-type BindingAnswer = 'yes' | 'no';
-type BindingFrequency = 'daily' | 'sometimes' | 'rarely' | 'never';
-type BinderType = 'commercial' | 'sports_bra' | 'diy' | 'other';
+type BindingFrequency = "daily" | "sometimes" | "rarely" | "never";
+type BinderType = "commercial" | "sports_bra" | "compression_top" | "other";
 
-interface BindingFrequencyOption {
-  value: BindingFrequency;
-  title: string;
+type BindingInfoNavigationProp = StackNavigationProp<OnboardingStackParamList, "BindingInfo">;
+
+interface BindingInfoProps {
+  navigation: BindingInfoNavigationProp;
 }
 
-const BINDING_FREQUENCY_OPTIONS: BindingFrequencyOption[] = [
-  { value: 'daily', title: 'Every workout (Daily)' },
-  { value: 'sometimes', title: 'Most workouts (Sometimes)' },
-  { value: 'rarely', title: 'Occasionally (Rarely)' },
-  { value: 'never', title: 'Testing it out (Never yet)' },
+const BINDER_TYPE_OPTIONS = [
+  { value: "" as const, label: "Select type (optional)" },
+  { value: "commercial" as const, label: "Commercial binder (gc2b, Underworks, etc.)" },
+  { value: "sports_bra" as const, label: "Sports bra" },
+  { value: "compression_top" as const, label: "Compression top" },
+  { value: "other" as const, label: "Other" },
 ];
 
-interface BinderTypeOption {
-  value: BinderType;
-  title: string;
-  description?: string;
-}
+export default function BindingInfo({ navigation }: BindingInfoProps) {
+  const { profile } = useProfile();
+  const [bindsChest, setBindsChest] = useState<boolean | null>(null);
+  const [frequency, setFrequency] = useState<BindingFrequency | null>(null);
+  const [durationHours, setDurationHours] = useState<number>(6);
+  const [binderType, setBinderType] = useState<string>("");
+  const [showBinderTypePicker, setShowBinderTypePicker] = useState(false);
 
-const BINDER_TYPE_OPTIONS: BinderTypeOption[] = [
-  { value: 'commercial', title: 'Commercial binder', description: '(GC2B, Underworks, etc.)' },
-  { value: 'sports_bra', title: 'Sports bra' },
-  { value: 'diy', title: 'DIY / Makeshift' },
-  { value: 'other', title: 'Other / Prefer not to say' },
-];
-
-export default function BindingInfo({ navigation }: OnboardingScreenProps<'BindingInfo'>) {
-  const { profile, updateProfile } = useProfile();
-  const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 375;
-
-  const [bindingAnswer, setBindingAnswer] = useState<BindingAnswer | null>(
-    profile?.binds_chest === true ? 'yes' : profile?.binds_chest === false ? 'no' : null
-  );
-
-  const [bindingFrequency, setBindingFrequency] = useState<BindingFrequency | null>(
-    (profile?.binding_frequency as BindingFrequency) || null
-  );
-
-  const [binderType, setBinderType] = useState<BinderType | null>(
-    (profile?.binder_type as BinderType) || null
-  );
-
-  const [bindingHours, setBindingHours] = useState<string>(
-    profile?.binding_duration_hours?.toString() || '0'
-  );
-
-  const [validationError, setValidationError] = useState<string | null>(null);
-
-  const bindingHoursNum = parseFloat(bindingHours) || 0;
-  const showWarning = bindingHoursNum > 8;
-
-  const handleHoursChange = (value: string) => {
-    const num = parseFloat(value.replace(/[^0-9.]/g, ''));
-    if (!isNaN(num) && num >= 0 && num <= 12) {
-      setBindingHours(num.toString());
-      setValidationError(null);
-    } else if (value === '') {
-      setBindingHours('0');
+  // Load initial data from profile
+  useEffect(() => {
+    if (profile) {
+      if (profile.binds_chest !== undefined) {
+        setBindsChest(profile.binds_chest);
+      }
+      if (profile.binding_frequency) {
+        setFrequency(profile.binding_frequency);
+      }
+      if (profile.binding_duration_hours) {
+        setDurationHours(profile.binding_duration_hours);
+      }
+      if (profile.binder_type) {
+        // Map profile binder_type to our options
+        const mappedType = profile.binder_type === "ace_bandage" || profile.binder_type === "diy" 
+          ? "other" 
+          : profile.binder_type;
+        setBinderType(mappedType);
+      }
     }
-  };
+  }, [profile]);
+
+  const frequencyOptions = [
+    {
+      id: "daily" as BindingFrequency,
+      icon: "time" as keyof typeof Ionicons.glyphMap,
+      title: "Daily",
+      description: "I bind most days of the week"
+    },
+    {
+      id: "sometimes" as BindingFrequency,
+      icon: "time" as keyof typeof Ionicons.glyphMap,
+      title: "Sometimes",
+      description: "A few times per week"
+    },
+    {
+      id: "rarely" as BindingFrequency,
+      icon: "time" as keyof typeof Ionicons.glyphMap,
+      title: "Rarely",
+      description: "Occasionally or for special occasions"
+    },
+    {
+      id: "never" as BindingFrequency,
+      icon: "shield-checkmark" as keyof typeof Ionicons.glyphMap,
+      title: "Never",
+      description: "I don't currently bind"
+    }
+  ];
 
   const handleContinue = async () => {
-    if (bindingAnswer === null) return;
+    try {
+      const bindingData: {
+        binds_chest: boolean;
+        binding_frequency?: BindingFrequency;
+        binding_duration_hours?: number;
+        binder_type?: "commercial" | "sports_bra" | "ace_bandage" | "diy" | "other";
+      } = {
+        binds_chest: bindsChest === true,
+      };
 
-    if (bindingAnswer === 'yes') {
-      // Validate required fields
-      if (!bindingFrequency) {
-        setValidationError('Please select how often you bind during workouts');
-        return;
+      if (bindsChest === true && frequency) {
+        bindingData.binding_frequency = frequency;
+        if (frequency !== "never") {
+          bindingData.binding_duration_hours = durationHours;
+        }
+        if (binderType && binderType !== "") {
+          // Map compression_top to other for profile (or keep as is if profile supports it)
+          const profileBinderType = binderType === "compression_top" 
+            ? "other" 
+            : binderType as "commercial" | "sports_bra" | "other";
+          bindingData.binder_type = profileBinderType;
+        }
       }
 
-      const hours = parseFloat(bindingHours) || 0;
-      if (hours < 0 || hours > 12) {
-        setValidationError('Duration must be between 0 and 12 hours');
-        return;
-      }
-
-      try {
-        await updateProfile({
-          binds_chest: true,
-          binding_frequency: bindingFrequency,
-          binder_type: binderType || undefined,
-          binding_duration_hours: hours > 0 ? hours : undefined,
-        });
-        navigation.navigate('Surgery');
-      } catch (error) {
-        console.error('Error saving binding information:', error);
-      }
-    } else {
-      try {
-        await updateProfile({
-          binds_chest: false,
-          binding_frequency: undefined,
-          binder_type: undefined,
-          binding_duration_hours: undefined,
-        });
-        navigation.navigate('Surgery');
-      } catch (error) {
-        console.error('Error saving binding information:', error);
-      }
+      await updateProfile(bindingData);
+      navigation.navigate("Surgery");
+    } catch (error) {
+      console.error("Error saving binding info:", error);
     }
   };
 
-  const canContinue = bindingAnswer !== null && 
-    (bindingAnswer === 'no' || (bindingAnswer === 'yes' && bindingFrequency !== null && !validationError));
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
+  const canContinue = bindsChest === false || (bindsChest === true && frequency !== null);
+  const showWarning = durationHours > 8;
+
+  const selectedBinderTypeLabel = BINDER_TYPE_OPTIONS.find(opt => opt.value === binderType)?.label || "Select type (optional)";
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.m),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
+    <OnboardingLayout
+      currentStep={3}
+      totalSteps={8}
+      title="Chest Binding"
+      subtitle="Binding affects breathing and exercise selection. This helps us recommend safe, comfortable workouts."
+      onBack={handleBack}
+      onContinue={handleContinue}
+      canContinue={canContinue}
     >
-      <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>
-          Do you bind your chest during workouts?
-        </Text>
-        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          This helps us exclude exercises that compress your chest or restrict breathing.
-        </Text>
-      </View>
-
-      <ProgressIndicator
-        currentStep={3}
-        totalSteps={8}
-        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
-      />
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Initial Question */}
+      <View style={styles.container}>
+        {/* Yes/No Question */}
         <View style={styles.section}>
-          <View style={styles.buttonGroup}>
+          <Text style={styles.sectionTitle}>Do you bind your chest?</Text>
+          <View style={styles.buttonRow}>
             <TouchableOpacity
               onPress={() => {
-                setBindingAnswer('yes');
-                setValidationError(null);
+                setBindsChest(true);
+                if (!frequency) {
+                  setFrequency("sometimes");
+                }
               }}
               activeOpacity={0.7}
               style={[
-                styles.largeButton,
-                bindingAnswer === 'yes' && styles.largeButtonSelected,
+                styles.toggleButton,
+                bindsChest === true && styles.toggleButtonSelected
               ]}
             >
-              <Text
-                style={[
-                  styles.largeButtonText,
-                  bindingAnswer === 'yes' && styles.largeButtonTextSelected,
-                ]}
-              >
-                Yes, I bind during workouts
+              <Text style={[
+                styles.toggleButtonText,
+                bindsChest === true && styles.toggleButtonTextSelected
+              ]}>
+                Yes
               </Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               onPress={() => {
-                setBindingAnswer('no');
-                setBindingFrequency(null);
-                setBinderType(null);
-                setBindingHours('0');
-                setValidationError(null);
+                setBindsChest(false);
+                setFrequency(null);
               }}
               activeOpacity={0.7}
               style={[
-                styles.largeButton,
-                bindingAnswer === 'no' && styles.largeButtonSelected,
+                styles.toggleButton,
+                bindsChest === false && styles.toggleButtonSelected
               ]}
             >
-              <Text
-                style={[
-                  styles.largeButtonText,
-                  bindingAnswer === 'no' && styles.largeButtonTextSelected,
-                ]}
-              >
-                No / Not applicable
+              <Text style={[
+                styles.toggleButtonText,
+                bindsChest === false && styles.toggleButtonTextSelected
+              ]}>
+                No
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Conditional Sections - Only show if Yes */}
-        {bindingAnswer === 'yes' && (
+        {/* Binding Details (shown if Yes) */}
+        {bindsChest === true && (
           <>
-            {/* Section A: Binding Frequency */}
+            {/* Frequency Selection */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>How often do you bind during workouts?</Text>
+              <Text style={styles.sectionTitle}>How often do you bind?</Text>
               <View style={styles.frequencyContainer}>
-                {BINDING_FREQUENCY_OPTIONS.map((option) => {
-                  const isSelected = bindingFrequency === option.value;
-                  return (
-                    <TouchableOpacity
-                      key={option.value}
-                      onPress={() => {
-                        setBindingFrequency(option.value);
-                        setValidationError(null);
-                      }}
-                      activeOpacity={0.7}
-                      style={[
-                        styles.frequencyCard,
-                        isSelected && styles.frequencyCardSelected,
-                      ]}
-                    >
-                      {isSelected && (
-                        <View style={styles.checkmarkContainer}>
-                          <Text style={styles.checkmark}>✓</Text>
-                        </View>
-                      )}
-                      <Text style={[styles.frequencyCardText, isSelected && styles.frequencyCardTextSelected]}>
-                        {option.title}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Section B: Binder Type (Optional) */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What type of binder do you use? (Optional)</Text>
-              <View style={styles.binderTypeContainer}>
-                {BINDER_TYPE_OPTIONS.map((option) => {
-                  const isSelected = binderType === option.value;
-                  return (
-                    <TouchableOpacity
-                      key={option.value}
-                      onPress={() => setBinderType(option.value)}
-                      activeOpacity={0.7}
-                      style={[
-                        styles.binderTypeCard,
-                        isSelected && styles.binderTypeCardSelected,
-                      ]}
-                    >
-                      {isSelected && (
-                        <View style={styles.checkmarkContainer}>
-                          <Text style={styles.checkmark}>✓</Text>
-                        </View>
-                      )}
-                      <View style={styles.binderTypeTextContainer}>
-                        <Text style={[styles.binderTypeTitle, isSelected && styles.binderTypeTitleSelected]}>
-                          {option.title}
-                        </Text>
-                        {option.description && (
-                          <Text style={[styles.binderTypeDescription, isSelected && styles.binderTypeDescriptionSelected]}>
-                            {option.description}
-                          </Text>
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Section C: Binding Duration */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>How long do you typically wear a binder per session?</Text>
-              <View style={styles.sliderContainer}>
-                <View style={styles.sliderInputContainer}>
-                  <TextInput
-                    style={styles.sliderInput}
-                    value={bindingHours}
-                    onChangeText={handleHoursChange}
-                    keyboardType="decimal-pad"
-                    placeholder="0"
-                    placeholderTextColor={palette.midGray}
+                {frequencyOptions.map((option) => (
+                  <SelectionCard
+                    key={option.id}
+                    icon={option.icon}
+                    title={option.title}
+                    description={option.description}
+                    selected={frequency === option.id}
+                    onClick={() => setFrequency(option.id)}
                   />
-                  <Text style={styles.hoursLabel}>hours</Text>
-                  <View style={styles.sliderButtons}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        const newValue = Math.max(0, bindingHoursNum - 0.5);
-                        setBindingHours(newValue.toFixed(1));
-                        setValidationError(null);
-                      }}
-                      style={styles.sliderButton}
-                    >
-                      <Text style={styles.sliderButtonText}>−</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => {
-                        const newValue = Math.min(12, bindingHoursNum + 0.5);
-                        setBindingHours(newValue.toFixed(1));
-                        setValidationError(null);
-                      }}
-                      style={styles.sliderButton}
-                    >
-                      <Text style={styles.sliderButtonText}>+</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <Text style={styles.sliderValueText}>
-                  {bindingHoursNum.toFixed(1)} {bindingHoursNum === 1 ? 'hour' : 'hours'}
-                </Text>
+                ))}
               </View>
-
-              {showWarning && (
-                <View style={styles.warningBanner}>
-                  <Text style={styles.warningIcon}>⚠️</Text>
-                  <Text style={styles.warningText}>
-                    Medical guidance recommends limiting binding to 8 hours/day. We'll add extra breathing breaks to your workouts.
-                  </Text>
-                </View>
-              )}
             </View>
 
-            {/* Validation Error Banner */}
-            {validationError && (
-              <View style={styles.errorBanner}>
-                <Text style={styles.errorText}>⚠️ {validationError}</Text>
+            {/* Duration Input */}
+            {frequency && frequency !== "never" && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Typical binding duration</Text>
+                <Text style={styles.label}>HOURS PER SESSION</Text>
+                
+                {/* Number Input with +/- buttons */}
+                <View style={styles.durationContainer}>
+                  <TouchableOpacity
+                    onPress={() => setDurationHours(Math.max(1, durationHours - 1))}
+                    activeOpacity={0.7}
+                    style={styles.durationButton}
+                  >
+                    <Ionicons name="remove" size={24} color={colors.cyan[500]} />
+                  </TouchableOpacity>
+
+                  <View style={styles.durationDisplay}>
+                    <Text style={styles.durationText}>{durationHours}</Text>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={() => setDurationHours(Math.min(12, durationHours + 1))}
+                    activeOpacity={0.7}
+                    style={styles.durationButton}
+                  >
+                    <Ionicons name="add" size={24} color={colors.cyan[500]} />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Warning if > 8 hours */}
+                {showWarning && (
+                  <View style={cardStyles.warning}>
+                    <Ionicons 
+                      name="warning" 
+                      size={20} 
+                      color={colors.semantic.warning} 
+                      style={styles.warningIcon}
+                    />
+                    <Text style={styles.warningText}>
+                      Binding for more than 8 hours isn't recommended. We'll prioritize binding-safe exercises and shorter workout durations for your safety.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Binder Type (Optional) */}
+            {frequency && frequency !== "never" && (
+              <View style={styles.section}>
+                <Text style={styles.label}>
+                  Binder Type <Text style={styles.optionalText}>(Optional)</Text>
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowBinderTypePicker(true)}
+                  activeOpacity={0.7}
+                  style={styles.pickerButton}
+                >
+                  <Text style={[
+                    styles.pickerText,
+                    !binderType && styles.pickerTextPlaceholder
+                  ]}>
+                    {selectedBinderTypeLabel}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color={colors.text.primary} />
+                </TouchableOpacity>
               </View>
             )}
           </>
         )}
-      </ScrollView>
-
-      <View style={styles.ctaContainer}>
-        <PrimaryButton
-          onPress={handleContinue}
-          label="Continue"
-          disabled={!canContinue}
-        />
-        {!canContinue && bindingAnswer === 'yes' && (
-          <Text style={styles.hintText}>
-            Please select how often you bind during workouts
-          </Text>
-        )}
       </View>
-    </View>
+
+      {/* Binder Type Picker Modal */}
+      <Modal
+        visible={showBinderTypePicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowBinderTypePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Binder Type</Text>
+              <TouchableOpacity
+                onPress={() => setShowBinderTypePicker(false)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={24} color={colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScrollView}>
+              {BINDER_TYPE_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => {
+                    setBinderType(option.value);
+                    setShowBinderTypePicker(false);
+                  }}
+                  activeOpacity={0.7}
+                  style={[
+                    styles.modalOption,
+                    binderType === option.value && styles.modalOptionSelected
+                  ]}
+                >
+                  <Text style={[
+                    styles.modalOptionText,
+                    binderType === option.value && styles.modalOptionTextSelected,
+                    !option.value && styles.modalOptionTextPlaceholder
+                  ]}>
+                    {option.label}
+                  </Text>
+                  {binderType === option.value && (
+                    <Ionicons name="checkmark" size={20} color={colors.cyan[500]} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
-  },
-  header: {
-    marginBottom: spacing.l,
-    paddingTop: spacing.s,
-  },
-  headline: {
-    ...typography.h1,
-    textAlign: 'left',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.8,
-  },
-  headlineSmall: {
-    fontSize: 28,
-  },
-  subheadline: {
-    ...typography.bodyLarge,
-    textAlign: 'left',
-    color: palette.midGray,
-    lineHeight: 24,
-  },
-  subheadlineSmall: {
-    fontSize: 15,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: spacing.xl,
+    gap: spacing.xl,
   },
   section: {
-    marginBottom: spacing.xl,
+    gap: spacing.base,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.m,
+    ...textStyles.h3,
+    fontSize: 18,
+    marginBottom: spacing.base,
   },
-  buttonGroup: {
-    gap: spacing.m,
+  label: {
+    ...textStyles.label,
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
   },
-  largeButton: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
+  optionalText: {
+    color: colors.text.tertiary,
+    textTransform: 'none',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  toggleButton: {
+    flex: 1,
+    height: 56,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
     borderWidth: 2,
-    borderColor: palette.border,
+    borderColor: colors.glass.border,
     alignItems: 'center',
-    minHeight: 64,
     justifyContent: 'center',
   },
-  largeButtonSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
-    borderWidth: 3,
+  toggleButtonSelected: {
+    backgroundColor: colors.glass.bgHero,
+    borderColor: colors.cyan[500],
+    borderWidth: 2,
   },
-  largeButtonText: {
-    ...typography.h3,
-    color: palette.white,
+  toggleButtonText: {
+    ...textStyles.label,
+    fontSize: 16,
+    color: colors.text.primary,
   },
-  largeButtonTextSelected: {
-    color: palette.tealPrimary,
+  toggleButtonTextSelected: {
+    color: colors.cyan[500],
   },
   frequencyContainer: {
-    gap: spacing.m,
+    gap: spacing.md,
   },
-  frequencyCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
-    borderWidth: 2,
-    borderColor: palette.border,
-    minHeight: 64,
+  durationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.m,
+    gap: spacing.base,
   },
-  frequencyCardSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.darkerCard,
-  },
-  checkmarkContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: palette.tealPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  checkmark: {
-    color: palette.deepBlack,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  frequencyCardText: {
-    ...typography.h3,
-    color: palette.white,
-    flex: 1,
-  },
-  frequencyCardTextSelected: {
-    color: palette.tealPrimary,
-  },
-  binderTypeContainer: {
-    gap: spacing.m,
-  },
-  binderTypeCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
-    borderWidth: 2,
-    borderColor: palette.border,
-    minHeight: 80,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.m,
-  },
-  binderTypeCardSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.darkerCard,
-  },
-  binderTypeTextContainer: {
-    flex: 1,
-  },
-  binderTypeTitle: {
-    ...typography.h3,
-    marginBottom: spacing.xs,
-    color: palette.white,
-  },
-  binderTypeTitleSelected: {
-    color: palette.tealPrimary,
-  },
-  binderTypeDescription: {
-    ...typography.body,
-    color: palette.midGray,
-    lineHeight: 20,
-  },
-  binderTypeDescriptionSelected: {
-    color: palette.lightGray,
-  },
-  sliderContainer: {
-    gap: spacing.m,
-  },
-  sliderInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s,
-  },
-  sliderInput: {
-    backgroundColor: palette.darkCard,
-    borderWidth: 2,
-    borderColor: palette.border,
-    borderRadius: 12,
-    padding: spacing.m,
-    minWidth: 100,
-    ...typography.h3,
-    color: palette.white,
-    textAlign: 'center',
-  },
-  hoursLabel: {
-    ...typography.body,
-    color: palette.midGray,
-    marginRight: spacing.s,
-  },
-  sliderButtons: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  sliderButton: {
-    backgroundColor: palette.darkCard,
-    borderWidth: 2,
-    borderColor: palette.border,
-    borderRadius: 8,
-    width: 44,
-    height: 44,
+  durationButton: {
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sliderButtonText: {
-    ...typography.h2,
-    color: palette.tealPrimary,
+  durationDisplay: {
+    flex: 1,
+    height: 60,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sliderValueText: {
-    ...typography.body,
-    color: palette.tealPrimary,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  warningBanner: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 184, 77, 0.15)',
-    borderLeftWidth: 4,
-    borderLeftColor: palette.warning,
-    borderRadius: 12,
-    padding: spacing.m,
-    marginTop: spacing.m,
-    alignItems: 'flex-start',
-    gap: spacing.s,
+  durationText: {
+    ...textStyles.statMedium,
+    fontSize: 36,
+    color: colors.cyan[500],
   },
   warningIcon: {
-    fontSize: 20,
-    flexShrink: 0,
+    marginTop: 2,
   },
   warningText: {
-    ...typography.bodySmall,
-    color: palette.warning,
+    ...textStyles.bodySmall,
     flex: 1,
-    lineHeight: 18,
+    color: colors.semantic.warning,
   },
-  errorBanner: {
-    backgroundColor: 'rgba(255, 107, 107, 0.15)',
-    borderLeftWidth: 4,
-    borderLeftColor: palette.error,
-    borderRadius: 12,
-    padding: spacing.m,
-    marginTop: spacing.m,
+  pickerButton: {
+    height: 56,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 2,
+    borderColor: colors.glass.border,
+    paddingHorizontal: spacing.base,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  errorText: {
-    ...typography.bodySmall,
-    color: palette.error,
-    lineHeight: 18,
+  pickerText: {
+    ...textStyles.label,
+    fontSize: 16,
+    color: colors.text.primary,
+    flex: 1,
   },
-  ctaContainer: {
-    marginTop: spacing.s,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
+  pickerTextPlaceholder: {
+    color: colors.text.tertiary,
   },
-  hintText: {
-    ...typography.caption,
-    textAlign: 'center',
-    color: palette.midGray,
-    marginTop: spacing.xs,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.bg.raised,
+    borderTopLeftRadius: borderRadius['2xl'],
+    borderTopRightRadius: borderRadius['2xl'],
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.glass.border,
+  },
+  modalTitle: {
+    ...textStyles.h3,
+    fontSize: 20,
+  },
+  modalScrollView: {
+    maxHeight: 400,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.glass.border,
+  },
+  modalOptionSelected: {
+    backgroundColor: colors.glass.bgHero,
+  },
+  modalOptionText: {
+    ...textStyles.body,
+    flex: 1,
+    color: colors.text.primary,
+  },
+  modalOptionTextSelected: {
+    color: colors.cyan[500],
+  },
+  modalOptionTextPlaceholder: {
+    color: colors.text.tertiary,
   },
 });
-

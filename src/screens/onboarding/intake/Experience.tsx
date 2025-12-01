@@ -1,565 +1,389 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { OnboardingScreenProps } from '../../../types/onboarding';
-import { useProfile } from '../../../hooks/useProfile';
-import { palette, spacing, typography } from '../../../theme';
-import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
-import PrimaryButton from '../../../components/ui/PrimaryButton';
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { Ionicons } from "@expo/vector-icons";
+import { OnboardingStackParamList } from "../../../types/onboarding";
+import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import SelectionCard from "../../../components/onboarding/SelectionCard";
+import { colors, spacing, borderRadius } from "../../../theme/theme";
+import { glassStyles, textStyles, inputStyles } from "../../../theme/components";
+import { useProfile } from "../../../hooks/useProfile";
+import { updateProfile } from "../../../services/storage/profile";
 
-type FitnessExperience = 'beginner' | 'intermediate' | 'advanced';
-type WorkoutFrequency = 3 | 4 | 5 | 6;
-type SessionDuration = 30 | 45 | 60 | 90;
+type ExperienceLevel = "beginner" | "intermediate" | "advanced";
 
-interface ExperienceOption {
-  value: FitnessExperience;
-  title: string;
-  description: string;
+type ExperienceNavigationProp = StackNavigationProp<OnboardingStackParamList, "Experience">;
+
+interface ExperienceProps {
+  navigation: ExperienceNavigationProp;
 }
 
-const EXPERIENCE_OPTIONS: ExperienceOption[] = [
-  {
-    value: 'beginner',
-    title: 'Beginner',
-    description: 'New to structured fitness or returning after a long break',
-  },
-  {
-    value: 'intermediate',
-    title: 'Intermediate',
-    description: '6+ months of consistent training',
-  },
-  {
-    value: 'advanced',
-    title: 'Advanced',
-    description: '2+ years of structured training experience',
-  },
+const DURATION_OPTIONS = [
+  { value: 30, label: "30 min" },
+  { value: 45, label: "45 min" },
+  { value: 60, label: "60 min" },
+  { value: 90, label: "90 min" }
 ];
 
 const EQUIPMENT_OPTIONS = [
-  'bodyweight',
-  'dumbbells',
-  'barbell',
-  'kettlebell',
-  'bands',
-  'pull_up_bar',
-  'bench',
-  'step',
-  'wall',
-  'chair',
-  'mat',
-  'other',
+  { id: "bodyweight", label: "Bodyweight" },
+  { id: "dumbbells", label: "Dumbbells" },
+  { id: "bands", label: "Resistance Band" },
+  { id: "barbells", label: "Barbell" },
+  { id: "kettlebells", label: "Kettlebell" },
+  { id: "other", label: "Other Equipment" },
 ];
 
-const EQUIPMENT_LABELS: Record<string, string> = {
-  bodyweight: 'Bodyweight',
-  dumbbells: 'Dumbbells',
-  barbell: 'Barbell',
-  kettlebell: 'Kettlebell',
-  bands: 'Resistance Bands',
-  pull_up_bar: 'Pull-up Bar',
-  bench: 'Bench',
-  step: 'Step',
-  wall: 'Wall',
-  chair: 'Chair',
-  mat: 'Mat',
-  other: 'Other',
-};
+export default function Experience({ navigation }: ExperienceProps) {
+  const { profile } = useProfile();
+  const [experience, setExperience] = useState<ExperienceLevel | null>(null);
+  const [frequency, setFrequency] = useState<number>(3);
+  const [duration, setDuration] = useState<number>(45);
+  const [equipment, setEquipment] = useState<Set<string>>(new Set());
 
-const FREQUENCY_OPTIONS: WorkoutFrequency[] = [3, 4, 5, 6];
-const DURATION_OPTIONS: SessionDuration[] = [30, 45, 60, 90];
-
-export default function Experience({ navigation }: OnboardingScreenProps<'Experience'>) {
-  const { profile, updateProfile } = useProfile();
-  const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isSmall = width < 375;
-
-  const [fitnessExperience, setFitnessExperience] = useState<FitnessExperience | null>(
-    (profile?.fitness_experience as FitnessExperience) || null
-  );
-
-  const [equipment, setEquipment] = useState<string[]>(
-    profile?.equipment && profile.equipment.length > 0
-      ? profile.equipment
-      : ['bodyweight'] // Default to bodyweight
-  );
-
-  const [workoutFrequency, setWorkoutFrequency] = useState<WorkoutFrequency | null>(
-    (profile?.workout_frequency as WorkoutFrequency) || null
-  );
-
-  const [sessionDuration, setSessionDuration] = useState<SessionDuration | null>(
-    (profile?.session_duration as SessionDuration) || null
-  );
-
-  // Ensure bodyweight is always selected
+  // Load initial data from profile
   useEffect(() => {
-    if (!equipment.includes('bodyweight')) {
-      setEquipment([...equipment, 'bodyweight']);
+    if (profile) {
+      if (profile.fitness_experience) {
+        setExperience(profile.fitness_experience);
+      }
+      if (profile.workout_frequency) {
+        setFrequency(profile.workout_frequency);
+      }
+      if (profile.session_duration) {
+        setDuration(profile.session_duration);
+      }
+      if (profile.equipment && profile.equipment.length > 0) {
+        setEquipment(new Set(profile.equipment));
+      }
     }
-  }, [equipment]);
+  }, [profile]);
 
-  const toggleEquipment = (item: string) => {
-    // Bodyweight cannot be unselected
-    if (item === 'bodyweight') return;
+  const experienceOptions = [
+    {
+      id: "beginner" as ExperienceLevel,
+      icon: "trophy-outline" as keyof typeof Ionicons.glyphMap,
+      title: "Beginner",
+      description: "New to fitness or returning after a long break"
+    },
+    {
+      id: "intermediate" as ExperienceLevel,
+      icon: "barbell-outline" as keyof typeof Ionicons.glyphMap,
+      title: "Intermediate",
+      description: "Comfortable with basic exercises, 6+ months experience"
+    },
+    {
+      id: "advanced" as ExperienceLevel,
+      icon: "trophy" as keyof typeof Ionicons.glyphMap,
+      title: "Advanced",
+      description: "Experienced lifter with 2+ years of consistent training"
+    }
+  ];
 
-    if (equipment.includes(item)) {
-      setEquipment(equipment.filter(e => e !== item));
+  const toggleEquipment = (id: string) => {
+    const newEquipment = new Set(equipment);
+    if (newEquipment.has(id)) {
+      newEquipment.delete(id);
     } else {
-      setEquipment([...equipment, item]);
+      newEquipment.add(id);
     }
+    setEquipment(newEquipment);
   };
 
   const handleContinue = async () => {
-    if (!fitnessExperience || equipment.length === 0 || !workoutFrequency || !sessionDuration) {
-      return;
-    }
-
     try {
-      await updateProfile({
-        fitness_experience: fitnessExperience,
-        equipment: equipment,
-        workout_frequency: workoutFrequency,
-        session_duration: sessionDuration,
-      });
-      navigation.navigate('DysphoriaTriggers');
+      if (experience && equipment.size > 0) {
+        await updateProfile({
+          fitness_experience: experience,
+          workout_frequency: frequency,
+          session_duration: duration,
+          equipment: Array.from(equipment)
+        });
+        navigation.navigate("DysphoriaTriggers");
+      }
     } catch (error) {
-      console.error('Error saving experience information:', error);
+      console.error("Error saving experience:", error);
     }
   };
 
-  const canContinue =
-    fitnessExperience !== null &&
-    equipment.length > 0 &&
-    workoutFrequency !== null &&
-    sessionDuration !== null;
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
+  const canContinue = experience !== null && equipment.size > 0;
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: Math.max(insets.top, spacing.m),
-          paddingBottom: Math.max(insets.bottom + spacing.m, spacing.l),
-        },
-      ]}
+    <OnboardingLayout
+      currentStep={6}
+      totalSteps={8}
+      title="Experience & Preferences"
+      subtitle="Tailor your program to your current fitness level and available resources."
+      onBack={handleBack}
+      onContinue={handleContinue}
+      canContinue={canContinue}
     >
-      <View style={styles.header}>
-        <Text style={[styles.headline, isSmall && styles.headlineSmall]}>
-          Tell us about your fitness background
-        </Text>
-        <Text style={[styles.subheadline, isSmall && styles.subheadlineSmall]}>
-          This helps us set appropriate intensity and exercise selection.
-        </Text>
-      </View>
-
-      <ProgressIndicator
-        currentStep={6}
-        totalSteps={8}
-        stepLabels={['Gender Identity', 'HRT Status', 'Binding Info', 'Surgery History', 'Goals', 'Experience', 'Dysphoria', 'Review']}
-      />
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* SECTION A: Fitness Experience */}
+      <View style={styles.container}>
+        {/* Experience Level */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What's your experience level?</Text>
+          <Text style={styles.sectionTitle}>Experience Level</Text>
           <View style={styles.experienceContainer}>
-            {EXPERIENCE_OPTIONS.map((option) => {
-              const isSelected = fitnessExperience === option.value;
-              return (
-                <TouchableOpacity
-                  key={option.value}
-                  onPress={() => setFitnessExperience(option.value)}
-                  activeOpacity={0.7}
-                  style={[
-                    styles.experienceCard,
-                    isSelected && styles.experienceCardSelected,
-                  ]}
-                >
-                  {isSelected && (
-                    <View style={styles.checkmarkContainer}>
-                      <Text style={styles.checkmark}>✓</Text>
-                    </View>
-                  )}
-                  <View style={styles.experienceCardContent}>
-                    <Text style={[styles.experienceCardTitle, isSelected && styles.experienceCardTitleSelected]}>
-                      {option.title}
-                    </Text>
-                    <Text style={[styles.experienceCardDescription, isSelected && styles.experienceCardDescriptionSelected]}>
-                      {option.description}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+            {experienceOptions.map((option) => (
+              <SelectionCard
+                key={option.id}
+                icon={option.icon}
+                title={option.title}
+                description={option.description}
+                selected={experience === option.id}
+                onClick={() => setExperience(option.id)}
+              />
+            ))}
           </View>
         </View>
 
-        <View style={styles.divider} />
-
-        {/* SECTION B: Equipment Access */}
+        {/* Workout Frequency */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What equipment do you have access to? (Select all that apply)</Text>
-          <View style={styles.equipmentGrid}>
-            {EQUIPMENT_OPTIONS.map((item) => {
-              const isSelected = equipment.includes(item);
-              const isBodyweight = item === 'bodyweight';
-              return (
-                <TouchableOpacity
-                  key={item}
-                  onPress={() => toggleEquipment(item)}
-                  activeOpacity={isBodyweight ? 1 : 0.7}
-                  disabled={isBodyweight}
-                  style={[
-                    styles.equipmentChip,
-                    isSelected && styles.equipmentChipSelected,
-                    isBodyweight && styles.equipmentChipBodyweight,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.equipmentChipText,
-                      isSelected && styles.equipmentChipTextSelected,
-                      isBodyweight && styles.equipmentChipTextBodyweight,
-                    ]}
-                  >
-                    {EQUIPMENT_LABELS[item]}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          <Text style={styles.sectionTitle}>Workout Frequency</Text>
+          <Text style={styles.label}>DAYS PER WEEK</Text>
+          
+          {/* Number Input with +/- buttons */}
+          <View style={styles.frequencyContainer}>
+            <TouchableOpacity
+              onPress={() => setFrequency(Math.max(1, frequency - 1))}
+              disabled={frequency <= 1}
+              activeOpacity={0.7}
+              style={[
+                styles.frequencyButton,
+                frequency <= 1 && styles.frequencyButtonDisabled
+              ]}
+            >
+              <Ionicons name="remove" size={24} color={frequency <= 1 ? colors.text.tertiary : colors.cyan[500]} />
+            </TouchableOpacity>
+
+            <View style={styles.frequencyDisplay}>
+              <Text style={styles.frequencyText}>{frequency}</Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setFrequency(Math.min(7, frequency + 1))}
+              disabled={frequency >= 7}
+              activeOpacity={0.7}
+              style={[
+                styles.frequencyButton,
+                frequency >= 7 && styles.frequencyButtonDisabled
+              ]}
+            >
+              <Ionicons name="add" size={24} color={frequency >= 7 ? colors.text.tertiary : colors.cyan[500]} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.divider} />
-
-        {/* SECTION C: Workout Frequency */}
+        {/* Session Duration */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How many days per week can you train?</Text>
-          <View style={styles.frequencyGrid}>
-            {FREQUENCY_OPTIONS.map((freq) => {
-              const isSelected = workoutFrequency === freq;
-              return (
-                <TouchableOpacity
-                  key={freq}
-                  onPress={() => setWorkoutFrequency(freq)}
-                  activeOpacity={0.7}
-                  style={[
-                    styles.frequencyButton,
-                    isSelected && styles.frequencyButtonSelected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.frequencyButtonText,
-                      isSelected && styles.frequencyButtonTextSelected,
-                    ]}
-                  >
-                    {freq} days/week
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <View style={styles.guidanceBox}>
-            <Text style={styles.guidanceIcon}>💡</Text>
-            <Text style={styles.guidanceText}>
-              We recommend 3-5 days/week for most people
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* SECTION D: Session Duration */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How long is each workout session?</Text>
+          <Text style={styles.sectionTitle}>Session Duration</Text>
           <View style={styles.durationGrid}>
-            {DURATION_OPTIONS.map((duration) => {
-              const isSelected = sessionDuration === duration;
+            {DURATION_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                onPress={() => setDuration(option.value)}
+                activeOpacity={0.7}
+                style={[
+                  styles.durationButton,
+                  duration === option.value && styles.durationButtonSelected
+                ]}
+              >
+                <Text style={[
+                  styles.durationButtonText,
+                  duration === option.value && styles.durationButtonTextSelected
+                ]}>
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Equipment */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Available Equipment</Text>
+          <Text style={styles.equipmentSubtitle}>
+            Select all that apply (at least 1 required)
+          </Text>
+          <View style={styles.equipmentGrid}>
+            {EQUIPMENT_OPTIONS.map((option) => {
+              const isSelected = equipment.has(option.id);
               return (
                 <TouchableOpacity
-                  key={duration}
-                  onPress={() => setSessionDuration(duration)}
+                  key={option.id}
+                  onPress={() => toggleEquipment(option.id)}
                   activeOpacity={0.7}
                   style={[
-                    styles.durationButton,
-                    isSelected && styles.durationButtonSelected,
+                    styles.equipmentButton,
+                    isSelected && styles.equipmentButtonSelected
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.durationButtonText,
-                      isSelected && styles.durationButtonTextSelected,
-                    ]}
-                  >
-                    {duration} minutes
+                  <View style={[
+                    styles.equipmentCheckbox,
+                    isSelected && styles.equipmentCheckboxSelected
+                  ]}>
+                    {isSelected && (
+                      <Ionicons name="checkmark" size={18} color={colors.text.primary} />
+                    )}
+                  </View>
+                  <Text style={styles.equipmentLabel} numberOfLines={1}>
+                    {option.label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <View style={styles.guidanceBox}>
-            <Text style={styles.guidanceIcon}>💡</Text>
-            <Text style={styles.guidanceText}>
-              Longer sessions aren't always better - quality over quantity!
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
 
-      <View style={styles.ctaContainer}>
-        <PrimaryButton
-          onPress={handleContinue}
-          label="Continue"
-          disabled={!canContinue}
-        />
-        {!canContinue && (
-          <Text style={styles.hintText}>
-            Please complete all sections before continuing
-          </Text>
-        )}
+          {equipment.size === 0 && (
+            <Text style={styles.equipmentError}>
+              Please select at least one equipment option
+            </Text>
+          )}
+        </View>
       </View>
-    </View>
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: palette.deepBlack,
-    paddingHorizontal: spacing.l,
-  },
-  header: {
-    marginBottom: spacing.l,
-    paddingTop: spacing.s,
-  },
-  headline: {
-    ...typography.h1,
-    textAlign: 'left',
-    marginBottom: spacing.xs,
-    letterSpacing: -0.8,
-  },
-  headlineSmall: {
-    fontSize: 28,
-  },
-  subheadline: {
-    ...typography.bodyLarge,
-    textAlign: 'left',
-    color: palette.midGray,
-    lineHeight: 24,
-  },
-  subheadlineSmall: {
-    fontSize: 15,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: spacing.xl,
+    gap: spacing['3xl'],
   },
   section: {
-    marginBottom: spacing.xl,
+    gap: spacing.base,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.m,
+    ...textStyles.h3,
+    fontSize: 18,
+    marginBottom: spacing.base,
   },
-  divider: {
-    height: 1,
-    backgroundColor: palette.border,
-    marginVertical: spacing.l,
+  label: {
+    ...textStyles.label,
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
   },
-  // Experience Cards
   experienceContainer: {
-    gap: spacing.m,
+    gap: spacing.md,
   },
-  experienceCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
-    padding: spacing.l,
-    borderWidth: 2,
-    borderColor: palette.border,
+  frequencyContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.m,
-    minHeight: 100,
-  },
-  experienceCardSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.darkerCard,
-  },
-  checkmarkContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: palette.tealPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  checkmark: {
-    color: palette.deepBlack,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  experienceCardContent: {
-    flex: 1,
-  },
-  experienceCardTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.xs,
-  },
-  experienceCardTitleSelected: {
-    color: palette.tealPrimary,
-  },
-  experienceCardDescription: {
-    ...typography.body,
-    color: palette.midGray,
-    lineHeight: 20,
-  },
-  experienceCardDescriptionSelected: {
-    color: palette.lightGray,
-  },
-  // Equipment Chips
-  equipmentGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.s,
-  },
-  equipmentChip: {
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.s,
-    borderRadius: 20,
-    backgroundColor: palette.darkCard,
-    borderWidth: 1.5,
-    borderColor: palette.border,
-    minWidth: 100,
-  },
-  equipmentChipSelected: {
-    backgroundColor: palette.tealPrimary,
-    borderColor: palette.tealPrimary,
-  },
-  equipmentChipBodyweight: {
-    backgroundColor: palette.tealPrimary,
-    borderColor: palette.tealPrimary,
-  },
-  equipmentChipText: {
-    ...typography.bodySmall,
-    color: palette.white,
-    textAlign: 'center',
-  },
-  equipmentChipTextSelected: {
-    color: palette.deepBlack,
-    fontWeight: '600',
-  },
-  equipmentChipTextBodyweight: {
-    color: palette.deepBlack,
-    fontWeight: '600',
-  },
-  // Frequency Buttons
-  frequencyGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.m,
-    marginBottom: spacing.m,
+    gap: spacing.base,
   },
   frequencyButton: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
-    borderWidth: 2,
-    borderColor: palette.border,
+    width: 56,
+    height: 56,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 64,
   },
-  frequencyButtonSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
+  frequencyButtonDisabled: {
+    opacity: 0.4,
   },
-  frequencyButtonText: {
-    ...typography.h3,
-    color: palette.white,
+  frequencyDisplay: {
+    flex: 1,
+    height: 60,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  frequencyButtonTextSelected: {
-    color: palette.tealPrimary,
-    fontWeight: '600',
+  frequencyText: {
+    ...textStyles.statMedium,
+    fontSize: 36,
+    color: colors.cyan[500],
   },
-  // Duration Buttons
   durationGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.m,
-    marginBottom: spacing.m,
+    gap: spacing.md,
   },
   durationButton: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
+    height: 56,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
     borderWidth: 2,
-    borderColor: palette.border,
+    borderColor: colors.glass.border,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 64,
   },
   durationButtonSelected: {
-    borderWidth: 3,
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealGlow,
+    backgroundColor: colors.glass.bgHero,
+    borderColor: colors.cyan[500],
   },
   durationButtonText: {
-    ...typography.h3,
-    color: palette.white,
+    ...textStyles.label,
+    fontSize: 16,
+    color: colors.text.primary,
   },
   durationButtonTextSelected: {
-    color: palette.tealPrimary,
-    fontWeight: '600',
+    color: colors.cyan[500],
   },
-  // Guidance Box
-  guidanceBox: {
+  equipmentSubtitle: {
+    ...textStyles.bodySmall,
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: spacing.base,
+  },
+  equipmentGrid: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.s,
-    backgroundColor: 'rgba(0, 204, 204, 0.1)',
-    borderRadius: 12,
-    padding: spacing.m,
-    marginTop: spacing.s,
+    flexWrap: 'wrap',
+    gap: spacing.md,
   },
-  guidanceIcon: {
-    fontSize: 20,
-    flexShrink: 0,
-  },
-  guidanceText: {
-    ...typography.body,
-    color: palette.tealPrimary,
+  equipmentButton: {
     flex: 1,
-    lineHeight: 20,
+    minWidth: '45%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.base,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
   },
-  // CTA
-  ctaContainer: {
-    marginTop: spacing.s,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
+  equipmentButtonSelected: {
+    backgroundColor: colors.glass.bgHero,
+    borderWidth: 2,
+    borderColor: colors.cyan[500],
   },
-  hintText: {
-    ...typography.caption,
-    textAlign: 'center',
-    color: palette.midGray,
-    marginTop: spacing.xs,
+  equipmentCheckbox: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
+    borderWidth: 2,
+    borderColor: colors.glass.border,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  equipmentCheckboxSelected: {
+    backgroundColor: colors.cyan[500],
+    borderColor: colors.cyan[500],
+  },
+  equipmentLabel: {
+    ...textStyles.body,
+    fontSize: 14,
+    fontWeight: '500',
+    flex: 1,
+    color: colors.text.primary,
+  },
+  equipmentError: {
+    ...textStyles.bodySmall,
+    fontSize: 13,
+    color: colors.semantic.warning,
+    marginTop: spacing.md,
   },
 });
-

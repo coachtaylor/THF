@@ -15,8 +15,8 @@ interface DayCardProps {
   onStartWorkout: () => void;
   onPreview: () => void;
   onExercisePress?: (exerciseId: string) => void;
-  selectedVariant?: 5 | 15 | 30 | 45;
-  onSelectVariant?: (duration: 5 | 15 | 30 | 45) => void;
+  selectedVariant?: 30 | 45 | 60 | 90;
+  onSelectVariant?: (duration: 30 | 45 | 60 | 90) => void;
 }
 
 export default function DayCard({ day, workout, onStartWorkout, onPreview, onExercisePress, selectedVariant, onSelectVariant }: DayCardProps) {

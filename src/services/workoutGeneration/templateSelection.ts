@@ -2,7 +2,7 @@
 // Selects and customizes workout templates based on user profile
 
 import { Profile } from '../types';
-import { SelectedTemplate, WorkoutTemplate } from './templates/types';
+import { SelectedTemplate, WorkoutTemplate, PrimaryGoal } from './templates/types';
 import { feminizationTemplates } from './templates/feminization';
 import { masculinizationTemplates } from './templates/masculinization';
 
@@ -17,14 +17,29 @@ const allTemplates: WorkoutTemplate[] = [
  * Returns a SelectedTemplate with HRT adjustments applied
  */
 export function selectTemplate(profile: Profile): SelectedTemplate {
-  // Filter templates by primary goal
+  // Map primary goal to gender-affirming templates based on gender identity
+  // This ensures transmasc users get masculinization templates and transfem users get feminization templates
+  let targetGoal: PrimaryGoal = profile.primary_goal;
+  
+  // Map strength/endurance/general_fitness to gender-affirming goals based on gender identity
+  if (profile.primary_goal === 'strength' || profile.primary_goal === 'endurance' || profile.primary_goal === 'general_fitness') {
+    if (profile.gender_identity === 'mtf') {
+      targetGoal = 'feminization';
+    } else if (profile.gender_identity === 'ftm') {
+      targetGoal = 'masculinization';
+    } else {
+      // For nonbinary/questioning, default to general_fitness (will fallback below)
+      targetGoal = 'general_fitness';
+    }
+  }
+
+  // Filter templates by mapped primary goal
   let candidates = allTemplates.filter(
-    template => template.primary_goal === profile.primary_goal
+    template => template.primary_goal === targetGoal
   );
 
-  // If no exact match for primary goal, fallback to general_fitness templates
-  // (Note: we don't have general_fitness templates yet, so this is future-proofing)
-  if (candidates.length === 0 && profile.primary_goal === 'general_fitness') {
+  // If still no match (e.g., nonbinary with general_fitness), fallback based on gender identity
+  if (candidates.length === 0) {
     // Fallback: use feminization for mtf, masculinization for ftm, or first available
     if (profile.gender_identity === 'mtf') {
       candidates = allTemplates.filter(t => t.primary_goal === 'feminization');

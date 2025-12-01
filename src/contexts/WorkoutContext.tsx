@@ -63,17 +63,20 @@ interface WorkoutContextType {
   exercisesCompleted: number;
   totalSets: number;
   setsCompleted: number;
+  isWorkoutComplete: boolean; // New: tracks if workout is complete
   
   // Actions
   startWorkout: (workout: ActiveWorkout) => void;
   updateSetData: (field: 'reps' | 'weight' | 'rpe', value: number) => void;
   completeSet: () => Promise<void>;
   skipSet: () => void;
+  skipRest: () => void;
   nextExercise: () => void;
   previousExercise: () => void;
   pauseWorkout: () => void;
   resumeWorkout: () => void;
   completeWorkout: () => Promise<void>;
+  clearWorkout: () => void; // New: clears workout state after summary
   
   // Safety
   checkpointTriggered: boolean;
@@ -102,6 +105,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   
   const [checkpointTriggered, setCheckpointTriggered] = useState(false);
   const [currentCheckpoint, setCurrentCheckpoint] = useState<SafetyCheckpointWithTrigger | null>(null);
+  const [isWorkoutComplete, setIsWorkoutComplete] = useState(false);
   
   // Workout timer (total duration)
   useEffect(() => {
@@ -151,6 +155,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     setIsPaused(false);
     setCheckpointTriggered(false);
     setCurrentCheckpoint(null);
+    setIsWorkoutComplete(false);
     
     // Pre-fill with last workout data if available
     const currentExercise = newWorkout.main_workout[0];
@@ -235,6 +240,11 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       nextExercise();
     }
   };
+
+  const skipRest = () => {
+    setIsResting(false);
+    setRestTimer(0);
+  };
   
   const nextExercise = () => {
     if (!workout) return;
@@ -266,6 +276,9 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
           rpe: 7,
         });
       }
+    } else {
+      // All exercises complete - mark workout as complete
+      setIsWorkoutComplete(true);
     }
   };
   
@@ -296,7 +309,12 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       exercises_completed: currentExerciseIndex + 1,
     });
     
-    // Clear state
+    // Mark as complete (don't clear state yet - let summary screen use it)
+    setIsWorkoutComplete(true);
+  };
+
+  const clearWorkout = () => {
+    // Clear state after summary screen is done
     setWorkout(null);
     setCurrentExerciseIndex(0);
     setCurrentSetNumber(1);
@@ -307,6 +325,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     setIsPaused(false);
     setCheckpointTriggered(false);
     setCurrentCheckpoint(null);
+    setIsWorkoutComplete(false);
   };
   
   const checkForSafetyCheckpoints = useCallback((durationSeconds: number) => {
@@ -364,17 +383,20 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     exercisesCompleted,
     totalSets,
     setsCompleted,
+    isWorkoutComplete,
     checkpointTriggered,
     currentCheckpoint,
     startWorkout,
     updateSetData,
     completeSet,
     skipSet,
+    skipRest,
     nextExercise,
     previousExercise,
     pauseWorkout,
     resumeWorkout,
     completeWorkout,
+    clearWorkout,
     dismissCheckpoint,
   };
   
@@ -391,6 +413,12 @@ export function useWorkout() {
     throw new Error('useWorkout must be used within a WorkoutProvider');
   }
   return context;
+}
+
+// Safe version that returns null instead of throwing
+export function useWorkoutSafe() {
+  const context = useContext(WorkoutContext);
+  return context || null;
 }
 
 // Helper functions
