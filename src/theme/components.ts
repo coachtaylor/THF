@@ -63,6 +63,35 @@ export const buttonStyles = StyleSheet.create({
     }),
   },
 
+  // Dashboard Start Workout button style (from Figma)
+  // Dimensions: 331px width, 52px height, 26px border radius
+  // Straight horizontal section: 279px (331 - 26 - 26 = 279)
+  dashboardPrimary: {
+    width: 331,
+    height: 52,
+    borderRadius: 26, // 26px rounded corners with 279px straight middle section
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+
+  dashboardPrimaryGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.m,
+    gap: spacing.xs,
+    width: '100%',
+    height: '100%',
+  },
+
+  dashboardPrimaryText: {
+    fontFamily: 'Poppins',
+    fontSize: typography.body,
+    fontWeight: typography.weights.semibold,
+    color: colors.bg.deep,
+  },
+
   secondary: {
     height: 56,
     borderRadius: borderRadius.lg,
@@ -361,12 +390,27 @@ const statCyan = colors.cyan[500];
 export const statCardStyles = StyleSheet.create({
   card: {
     flex: 1,
+    height: 72,
     backgroundColor: colors.bg.card,
-    borderRadius: borderRadius.m,
-    padding: spacing.m,
-    alignItems: 'center',
+    borderRadius: borderRadius.s,
+    padding: spacing.s,
     borderWidth: 1,
     borderColor: colors.border.default,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+
+  topSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    position: 'absolute',
+    top: spacing.s,
+    left: spacing.s,
+  },
+
+  iconContainer: {
+    // Container for custom icons
   },
 
   icon: {
@@ -375,37 +419,49 @@ export const statCardStyles = StyleSheet.create({
 
   valueBase: {
     fontFamily: 'Poppins',
-    fontSize: typography.statMedium,
-    fontWeight: typography.weights.bold,
-    letterSpacing: 1.2,
-    marginBottom: spacing.xs,
+    fontSize: 22,
+    fontWeight: typography.weights.regular,
+    lineHeight: 28,
+    letterSpacing: 0,
   },
 
   valueRed: {
     fontFamily: 'Poppins',
-    fontSize: typography.statMedium,
-    fontWeight: typography.weights.bold,
-    letterSpacing: 1.2,
-    marginBottom: spacing.xs,
+    fontSize: 22,
+    fontWeight: typography.weights.regular,
+    lineHeight: 28,
+    letterSpacing: 0,
     color: statRed,
+    position: 'absolute',
+    bottom: spacing.s,
+    left: spacing.s,
   },
 
   valueCyan: {
     fontFamily: 'Poppins',
-    fontSize: typography.statMedium,
-    fontWeight: typography.weights.bold,
-    letterSpacing: 1.2,
-    marginBottom: spacing.xs,
+    fontSize: 22,
+    fontWeight: typography.weights.regular,
+    lineHeight: 28,
+    letterSpacing: 0,
     color: statCyan,
+    position: 'absolute',
+    bottom: spacing.s,
+    left: spacing.s,
+  },
+
+  valueBottom: {
+    position: 'absolute',
+    bottom: spacing.s,
+    left: spacing.s,
   },
 
   label: {
     fontFamily: 'Poppins',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: typography.weights.medium,
-    color: colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: colors.text.secondary,
+    lineHeight: 16,
+    letterSpacing: -0.5,
   },
 });
 

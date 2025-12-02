@@ -30,31 +30,28 @@ export default function TodayWorkoutCard({ workout, onStartWorkout }: TodayWorko
 
       <View style={styles.statsRow}>
         <View style={styles.stat}>
-          <Ionicons name="barbell-outline" size={16} color={colors.text.secondary} />
           <Text style={styles.statText}>{exerciseCount} exercises</Text>
         </View>
         <View style={styles.stat}>
-          <Ionicons name="layers-outline" size={16} color={colors.text.secondary} />
           <Text style={styles.statText}>{workout.totalSets} sets</Text>
         </View>
         <View style={styles.stat}>
-          <Ionicons name="time-outline" size={16} color={colors.text.secondary} />
           <Text style={styles.statText}>{duration} min</Text>
         </View>
       </View>
 
       <TouchableOpacity 
-        style={styles.button}
+        style={[buttonStyles.dashboardPrimary, styles.button]}
         onPress={onStartWorkout}
         activeOpacity={0.8}
       >
         <LinearGradient
           colors={[colors.cyan[500], colors.cyan[600]]}
-          style={styles.buttonGradient}
+          style={buttonStyles.dashboardPrimaryGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
         >
-          <Text style={styles.buttonText}>Start Workout</Text>
+          <Text style={buttonStyles.dashboardPrimaryText}>Start Workout</Text>
           <Ionicons name="arrow-forward" size={18} color={colors.bg.deep} />
         </LinearGradient>
       </TouchableOpacity>
@@ -101,22 +98,9 @@ const styles = StyleSheet.create({
     ...textStyles.bodySmall,
   },
   button: {
-    margin: spacing.l,
+    marginHorizontal: spacing.l,
+    marginBottom: spacing.l,
     marginTop: 0,
-    borderRadius: borderRadius.m,
-    overflow: 'hidden',
-  },
-  buttonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.m,
-    gap: spacing.xs,
-  },
-  buttonText: {
-    fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.bg.deep,
+    alignSelf: 'center', // Center the button with fixed width
   },
 });
