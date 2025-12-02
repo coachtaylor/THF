@@ -261,6 +261,7 @@ export const onboardingExamples = {
 import { StackNavigationProp } from '@react-navigation/stack';
 
 export type OnboardingStackParamList = {
+  Splash: undefined;
   WhyTransFitness: undefined;
   Disclaimer: undefined;
   GenderIdentity: undefined;

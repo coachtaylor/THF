@@ -1,6 +1,7 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 
+import SplashScreen from '../screens/onboarding/SplashScreen';
 import WhyTransFitness from '../screens/onboarding/WhyTransFitness';
 import Disclaimer from '../screens/onboarding/Disclaimer';
 import type { OnboardingStackParamList } from '../types/onboarding';
@@ -29,7 +30,9 @@ export default function OnboardingNavigator() {
       screenOptions={{
         headerShown: false,
       }}
+      initialRouteName="Splash"
     >
+      <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="WhyTransFitness" component={WhyTransFitness} />
       <Stack.Screen name="Disclaimer" component={Disclaimer} />
       <Stack.Screen name="GenderIdentity" component={GenderIdentity} />

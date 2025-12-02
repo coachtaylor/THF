@@ -214,7 +214,7 @@ export const cardStyles = StyleSheet.create({
 
 export const textStyles = StyleSheet.create({
   display1: {
-    fontFamily: 'Anton',
+    fontFamily: 'Poppins',
     fontSize: typography.display1,
     fontWeight: typography.weights.bold,
     color: colors.text.primary,
@@ -222,7 +222,7 @@ export const textStyles = StyleSheet.create({
   },
 
   display2: {
-    fontFamily: 'Anton',
+    fontFamily: 'Poppins',
     fontSize: typography.display2,
     fontWeight: typography.weights.bold,
     color: colors.text.primary,
@@ -230,7 +230,7 @@ export const textStyles = StyleSheet.create({
   },
 
   h1: {
-    fontFamily: 'Anton',
+    fontFamily: 'Poppins',
     fontSize: typography.h1,
     fontWeight: typography.weights.semibold,
     color: colors.text.primary,
@@ -238,7 +238,7 @@ export const textStyles = StyleSheet.create({
   },
 
   h2: {
-    fontFamily: 'Anton',
+    fontFamily: 'Poppins',
     fontSize: typography.h2,
     fontWeight: typography.weights.semibold,
     color: colors.text.primary,
@@ -246,7 +246,7 @@ export const textStyles = StyleSheet.create({
   },
 
   h3: {
-    fontFamily: 'Anton',
+    fontFamily: 'Poppins',
     fontSize: typography.h3,
     fontWeight: typography.weights.semibold,
     color: colors.text.primary,
@@ -286,7 +286,7 @@ export const textStyles = StyleSheet.create({
   },
 
   statHero: {
-    fontFamily: 'Anton',
+    fontFamily: 'Poppins',
     fontSize: typography.statHero,
     fontWeight: typography.weights.bold,
     color: colors.cyan[500],
@@ -294,7 +294,7 @@ export const textStyles = StyleSheet.create({
   },
 
   statLarge: {
-    fontFamily: 'Anton',
+    fontFamily: 'Poppins',
     fontSize: typography.statLarge,
     fontWeight: typography.weights.bold,
     color: colors.cyan[500],
@@ -302,10 +302,16 @@ export const textStyles = StyleSheet.create({
   },
 
   statMedium: {
-    fontFamily: 'Anton',
+    fontFamily: 'Poppins',
     fontSize: typography.statMedium,
     fontWeight: typography.weights.bold,
-    color: colors.cyan[500],
+    letterSpacing: 1.2,
+  },
+
+  statMediumBase: {
+    fontFamily: 'Poppins',
+    fontSize: typography.statMedium,
+    fontWeight: typography.weights.bold,
     letterSpacing: 1.2,
   },
 });
@@ -343,3 +349,67 @@ export const layoutStyles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 });
+
+// ============================================
+// STAT CARD STYLES
+// ============================================
+
+// Extract color values for StyleSheet compatibility
+const statRed = colors.red[500];
+const statCyan = colors.cyan[500];
+
+export const statCardStyles = StyleSheet.create({
+  card: {
+    flex: 1,
+    backgroundColor: colors.bg.card,
+    borderRadius: borderRadius.m,
+    padding: spacing.m,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+
+  icon: {
+    marginBottom: spacing.xs,
+  },
+
+  valueBase: {
+    fontFamily: 'Poppins',
+    fontSize: typography.statMedium,
+    fontWeight: typography.weights.bold,
+    letterSpacing: 1.2,
+    marginBottom: spacing.xs,
+  },
+
+  valueRed: {
+    fontFamily: 'Poppins',
+    fontSize: typography.statMedium,
+    fontWeight: typography.weights.bold,
+    letterSpacing: 1.2,
+    marginBottom: spacing.xs,
+    color: statRed,
+  },
+
+  valueCyan: {
+    fontFamily: 'Poppins',
+    fontSize: typography.statMedium,
+    fontWeight: typography.weights.bold,
+    letterSpacing: 1.2,
+    marginBottom: spacing.xs,
+    color: statCyan,
+  },
+
+  label: {
+    fontFamily: 'Poppins',
+    fontSize: 10,
+    fontWeight: typography.weights.medium,
+    color: colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+});
+
+// Helper function to get icon color for stat cards based on variant
+export const getStatCardIconColor = (variant: 'red' | 'cyan'): string => {
+  return variant === 'red' ? statRed : statCyan;
+};
