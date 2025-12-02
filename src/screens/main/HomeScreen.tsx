@@ -302,7 +302,7 @@ export default function HomeScreen() {
           style={StyleSheet.absoluteFill}
         />
         <SafeAreaView edges={['top']} style={styles.headerContainer}>
-          <Text style={styles.subheader}>Loading...</Text>
+          <Text style={styles.subTitle}>Loading...</Text>
         </SafeAreaView>
       </View>
     );
@@ -319,8 +319,8 @@ export default function HomeScreen() {
       <SafeAreaView edges={['top']} style={styles.headerContainer}>
         <View style={styles.header}>
           <View style={styles.headerContent}>
-            <Text style={styles.h1}>{getGreeting()}, {userName}</Text>
-            <Text style={styles.subheader}>Ready to Train?</Text>
+            <Text style={styles.mainTitle}>{getGreeting()}, {userName}</Text>
+            <Text style={styles.subTitle}>Ready to Train?</Text>
           </View>
           <TouchableOpacity
             onPress={handleViewProfile}
@@ -330,6 +330,25 @@ export default function HomeScreen() {
             <Ionicons name="person-outline" size={20} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
+        
+        {/* Stats Cards Row */}
+        <View style={styles.statsRow}>
+          <StatCard
+            value={currentStreak}
+            label="Streak"
+            colorVariant="red"
+          />
+          <StatCard
+            value={workoutsCompleted}
+            label="Completed"
+            colorVariant="cyan"
+          />
+          <StatCard
+            value={`${weekProgress}/4`}
+            label="This Week"
+            colorVariant="cyan"
+          />
+        </View>
       </SafeAreaView>
 
       {/* Main Content */}
@@ -338,27 +357,6 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Stats Cards Row */}
-        <View style={styles.statsRow}>
-          <StatCard
-            icon="flame"
-            value={currentStreak}
-            label="DAY STREAK"
-            colorVariant="red"
-          />
-          <StatCard
-            icon="barbell-outline"
-            value={workoutsCompleted}
-            label="COMPLETED"
-            colorVariant="cyan"
-          />
-          <StatCard
-            icon="calendar-outline"
-            value={`${weekProgress}/4`}
-            label="THIS WEEK"
-            colorVariant="cyan"
-          />
-        </View>
 
         {/* Today's Workout */}
         {todayWorkoutDetails ? (
@@ -388,23 +386,25 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingHorizontal: spacing.l,
-    paddingTop: spacing.m,
-    paddingBottom: spacing.m,
+    paddingTop: spacing['3xl'] + spacing.xl, // Extra top padding to push content down
+    paddingBottom: spacing.l,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: spacing.m,
   },
   headerContent: {
     flex: 1,
+    gap: 2,
   },
-  h1: {
-    ...textStyles.body,
-    marginBottom: spacing.xs,
-  },
-  subheader: {
+  mainTitle: {
     ...textStyles.h1,
+  },
+  subTitle: {
+    ...textStyles.h3,
+    fontWeight: typography.weights.regular,
   },
   profileButton: {
     width: 40,
@@ -425,8 +425,8 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: spacing.m,
-    marginBottom: spacing.l,
+    gap: spacing.s,
+    marginTop: spacing.m,
   },
   emptyWorkoutCard: {
     backgroundColor: colors.bg.card,
