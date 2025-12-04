@@ -178,11 +178,11 @@ export default function Goals({ navigation }: GoalsProps) {
   const handleContinue = async () => {
     try {
       const secondaryGoals = secondaryGoal ? [secondaryGoal] : undefined;
-      await updateProfile({ 
+      await updateProfile({
         primary_goal: primaryGoal!,
         secondary_goals: secondaryGoals,
       });
-      navigation.navigate("Experience");
+      navigation.navigate("TrainingEnvironment");
     } catch (error) {
       console.error("Error saving goals:", error);
     }
@@ -197,7 +197,7 @@ export default function Goals({ navigation }: GoalsProps) {
   return (
     <OnboardingLayout
       currentStep={5}
-      totalSteps={8}
+      totalSteps={9}
       title="Your Fitness Goals"
       subtitle="Select your primary goal and optionally a secondary focus to blend training styles."
       onBack={handleBack}

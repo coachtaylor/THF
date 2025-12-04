@@ -53,6 +53,9 @@ export interface Profile {
   /** @deprecated Use primary_goal instead */
   goal_weighting?: { primary: number; secondary: number; };
   
+  // Training Environment (space-aware training)
+  training_environment?: TrainingEnvironment;
+
   // Legacy fields for backward compatibility
   id?: string; // Alias for user_id
   goalWeighting?: { primary: number; secondary: number }; // Alias for goal_weighting
@@ -69,6 +72,9 @@ export interface Profile {
   body_focus_prefer?: string[];
   body_focus_soft_avoid?: string[];
 }
+
+// Training environment type for space-aware training
+export type TrainingEnvironment = 'home' | 'gym' | 'studio' | 'outdoors';
 
 // Surgery interface
 export interface Surgery {

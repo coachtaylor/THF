@@ -1,24 +1,25 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, ScrollView, StatusBar, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useProfile } from '../../hooks/useProfile';
 import { usePlan } from '../../hooks/usePlan';
 import { getCurrentStreak, getWeeklyStats, type WeeklyStats } from '../../services/storage/stats';
 import { getWorkoutFromPlan } from '../../services/planGenerator';
 import { getExerciseLibrary } from '../../data/exercises';
-import { colors, spacing, borderRadius, typography } from '../../theme/theme';
-import { textStyles } from '../../theme/components';
+import { colors } from '../../theme/theme';
 import type { Exercise } from '../../types';
-import StatCard from '../../components/home/Statcard';
-import TodayWorkoutCard from '../../components/home/TodayWorkoutCard';
+import { saveWorkout, isWorkoutSaved, deleteSavedWorkout, findSavedWorkout } from '../../services/storage/savedWorkouts';
+import WelcomeSection from '../../components/home/WelcomeSection';
 import ThisWeekSection from '../../components/home/ThisWeekSection';
+import TodayWorkoutCard from '../../components/home/TodayWorkoutCard';
+import { StatsRow } from '../../components/home/Statcard';
 import TodaysReminderCard from '../../components/home/TodaysReminderCard';
+import UpcomingWorkoutsSection from '../../components/home/UpcomingWorkoutsSection';
 
 type MainTabParamList = {
   Home: undefined;
@@ -44,20 +45,29 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { profile, loading: profileLoading } = useProfile();
   const userId = profile?.user_id || profile?.id || 'default';
-  const { plan, loading: planLoading } = usePlan(userId);
+  const { plan, loading: planLoading, refreshPlan } = usePlan(userId);
+
+  // Debug: Log plan loading status
+  useEffect(() => {
+    console.log('🏠 HomeScreen - userId:', userId);
+    console.log('🏠 HomeScreen - plan:', plan ? 'EXISTS' : 'NULL');
+    console.log('🏠 HomeScreen - planLoading:', planLoading);
+    if (plan) {
+      console.log('🏠 HomeScreen - plan.id:', plan.id);
+      console.log('🏠 HomeScreen - plan.days count:', plan.days?.length || 0);
+    }
+  }, [userId, plan, planLoading]);
 
   const [currentStreak, setCurrentStreak] = useState(0);
   const [workoutsCompleted, setWorkoutsCompleted] = useState(0);
   const [weekProgress, setWeekProgress] = useState(0);
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats | null>(null);
   const [exerciseMap, setExerciseMap] = useState<Record<string, Exercise>>({});
+  const [isTodayWorkoutSaved, setIsTodayWorkoutSaved] = useState(false);
 
-  const today = new Date();
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const todayName = dayNames[today.getDay()];
-  const todayDayNumber = today.getDay() === 0 ? 7 : today.getDay();
+  const todayName = dayNames[new Date().getDay()];
 
-  // Load exercise library
   useEffect(() => {
     const loadExercises = async () => {
       try {
@@ -79,9 +89,9 @@ export default function HomeScreen() {
     const loadStats = async () => {
       if (!profile) return;
       try {
-        const userId = profile.user_id || profile.id || 'default';
-        const streak = await getCurrentStreak(userId);
-        const stats = await getWeeklyStats(userId);
+        const id = profile.user_id || profile.id || 'default';
+        const streak = await getCurrentStreak(id);
+        const stats = await getWeeklyStats(id);
         setCurrentStreak(streak);
         setWeeklyStats(stats);
         setWorkoutsCompleted(stats.totalWorkouts);
@@ -93,19 +103,10 @@ export default function HomeScreen() {
     loadStats();
   }, [profile]);
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 18) return 'Good Afternoon';
-    return 'Good Evening';
-  };
-
   const todayWorkout = useMemo(() => {
     if (!plan || !plan.days || plan.days.length === 0) return null;
-
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
-
     return plan.days.find(day => {
       const dayDate = new Date(day.date);
       dayDate.setHours(0, 0, 0, 0);
@@ -113,303 +114,246 @@ export default function HomeScreen() {
     });
   }, [plan]);
 
-  const todayWorkoutDetails = useMemo(() => {
-    if (!todayWorkout || !plan || !profile) return null;
-    
-    try {
-      // Get workout duration from profile, default to 45
-      const duration = (profile.session_duration && [30, 45, 60, 90].includes(profile.session_duration))
-        ? profile.session_duration as 30 | 45 | 60 | 90
-        : 45;
-      
-      const workout = getWorkoutFromPlan(plan as any, todayWorkout.dayNumber, duration);
-      if (!workout || !workout.exercises || workout.exercises.length === 0) {
-        return null;
-      }
-
-      // Generate workout name based on exercise patterns
-      const getWorkoutName = (workout: any): string => {
-        if (!workout.exercises || workout.exercises.length === 0) {
-          return 'Workout';
-        }
-
-        const exerciseIds = workout.exercises.map((e: any) => e.exerciseId);
-        const exercises = exerciseIds
-          .map((id: string) => exerciseMap[id])
-          .filter((ex: Exercise | undefined): ex is Exercise => !!ex);
-
-        if (exercises.length === 0) return 'Workout';
-
-        // Parse target_muscles and secondary_muscles (they're strings, not arrays)
-        const allMuscles: string[] = [];
-        exercises.forEach((ex: Exercise) => {
-          if (ex.target_muscles) {
-            const muscles = ex.target_muscles.split(',').map((m: string) => m.trim());
-            allMuscles.push(...muscles);
-          }
-          if (ex.secondary_muscles) {
-            const muscles = ex.secondary_muscles.split(',').map((m: string) => m.trim());
-            allMuscles.push(...muscles);
-          }
-        });
-        
-        const uniqueMuscles = [...new Set(allMuscles)];
-
-        // Check patterns (pattern is a string like "push", "pull", "squat", etc.)
-        const hasPush = exercises.some((ex: Exercise) => ex.pattern?.toLowerCase().includes('push'));
-        const hasPull = exercises.some((ex: Exercise) => ex.pattern?.toLowerCase().includes('pull'));
-        const hasSquat = exercises.some((ex: Exercise) => ex.pattern?.toLowerCase().includes('squat') || ex.pattern?.toLowerCase().includes('lower'));
-
-        if (uniqueMuscles.some(m => m.includes('Chest')) && uniqueMuscles.some(m => m.includes('Triceps'))) {
-          return 'Chest & Triceps';
-        } else if (uniqueMuscles.some(m => m.includes('Back')) && uniqueMuscles.some(m => m.includes('Biceps'))) {
-          return 'Back & Biceps';
-        } else if (uniqueMuscles.some(m => m.includes('Quadriceps') || m.includes('Glutes'))) {
-          return 'Lower Body';
-        } else if (hasPush || uniqueMuscles.some(m => m.includes('Chest'))) {
-          return 'Upper Body Push';
-        } else if (hasPull || uniqueMuscles.some(m => m.includes('Back'))) {
-          return 'Upper Body Pull';
-        } else if (exercises.length >= 5) {
-          return 'Full Body';
-        }
-
-        return 'Workout';
-      };
-
-      const workoutName = getWorkoutName(workout);
-      const totalSets = workout.exercises.reduce((sum: number, e: any) => sum + (e.sets || 0), 0);
-
-      return {
-        ...workout,
-        name: workoutName,
-        totalSets,
-      };
-    } catch (error) {
-      console.error('Error getting workout details:', error);
-      return null;
-    }
-  }, [todayWorkout, plan, exerciseMap, profile]);
-
-  const handleStartWorkout = () => {
-    if (todayWorkoutDetails) {
-      navigation.navigate('SessionPlayer', { 
-        workout: todayWorkoutDetails,
-        planId: plan?.id 
-      });
-    }
-  };
-
-  const handleViewProfile = () => {
-    navigation.navigate('Profile');
-  };
-
-  // Helper function to generate workout name (same logic as todayWorkoutDetails)
   const getWorkoutName = useCallback((workout: any): string => {
-    if (!workout?.exercises || workout.exercises.length === 0) {
-      return 'Workout';
-    }
-
+    if (!workout?.exercises || workout.exercises.length === 0) return 'Workout';
     const exerciseIds = workout.exercises.map((e: any) => e.exerciseId);
     const exercises = exerciseIds
       .map((id: string) => exerciseMap[id])
       .filter((ex: Exercise | undefined): ex is Exercise => !!ex);
-
     if (exercises.length === 0) return 'Workout';
 
-    // Parse target_muscles and secondary_muscles (they're strings, not arrays)
     const allMuscles: string[] = [];
     exercises.forEach((ex: Exercise) => {
       if (ex.target_muscles) {
-        const muscles = ex.target_muscles.split(',').map((m: string) => m.trim());
-        allMuscles.push(...muscles);
-      }
-      if (ex.secondary_muscles) {
-        const muscles = ex.secondary_muscles.split(',').map((m: string) => m.trim());
-        allMuscles.push(...muscles);
+        allMuscles.push(...ex.target_muscles.split(',').map(m => m.trim()));
       }
     });
-    
     const uniqueMuscles = [...new Set(allMuscles)];
 
-    // Check patterns (pattern is a string like "push", "pull", "squat", etc.)
-    const hasPush = exercises.some((ex: Exercise) => ex.pattern?.toLowerCase().includes('push'));
-    const hasPull = exercises.some((ex: Exercise) => ex.pattern?.toLowerCase().includes('pull'));
-
     if (uniqueMuscles.some(m => m.includes('Chest')) && uniqueMuscles.some(m => m.includes('Triceps'))) {
-      return 'Chest & Triceps';
+      return 'Chest & Arms';
     } else if (uniqueMuscles.some(m => m.includes('Back')) && uniqueMuscles.some(m => m.includes('Biceps'))) {
       return 'Back & Biceps';
     } else if (uniqueMuscles.some(m => m.includes('Quadriceps') || m.includes('Glutes'))) {
       return 'Lower Body';
-    } else if (hasPush || uniqueMuscles.some(m => m.includes('Chest'))) {
-      return 'Upper Body Push';
-    } else if (hasPull || uniqueMuscles.some(m => m.includes('Back'))) {
-      return 'Upper Body Pull';
-    } else if (exercises.length >= 5) {
-      return 'Full Body';
+    } else if (uniqueMuscles.some(m => m.includes('Chest'))) {
+      return 'Push Day';
+    } else if (uniqueMuscles.some(m => m.includes('Back'))) {
+      return 'Pull Day';
     }
-
-    return 'Workout';
+    return 'Full Body';
   }, [exerciseMap]);
+
+  const todayWorkoutDetails = useMemo(() => {
+    if (!todayWorkout || !plan || !profile) return null;
+    try {
+      const duration = (profile.session_duration && [30, 45, 60, 90].includes(profile.session_duration))
+        ? profile.session_duration as 30 | 45 | 60 | 90
+        : 45;
+      const workout = getWorkoutFromPlan(plan as any, todayWorkout.dayNumber, duration);
+      if (!workout || !workout.exercises || workout.exercises.length === 0) return null;
+
+      const workoutName = getWorkoutName(workout);
+      const totalSets = workout.exercises.reduce((sum: number, e: any) => sum + (e.sets || 0), 0);
+
+      // Enrich exercises with name and media_thumb for thumbnails
+      const enrichedExercises = workout.exercises.map((ex: any) => {
+        const exercise = exerciseMap[ex.exerciseId];
+        return {
+          ...ex,
+          name: exercise?.name || 'Exercise',
+          mediaThumb: exercise?.media_thumb || null,
+        };
+      });
+
+      return { ...workout, name: workoutName, totalSets, exercises: enrichedExercises };
+    } catch {
+      return null;
+    }
+  }, [todayWorkout, plan, exerciseMap, profile, getWorkoutName]);
+
+  const handleStartWorkout = () => {
+    if (todayWorkoutDetails) {
+      navigation.navigate('SessionPlayer', {
+        workout: todayWorkoutDetails,
+        planId: plan?.id
+      });
+    }
+  };
+
+  // Check if today's workout is saved
+  useEffect(() => {
+    const checkSavedStatus = async () => {
+      if (!plan?.id || !todayWorkout?.dayNumber || !profile) return;
+      const duration = (profile.session_duration && [30, 45, 60, 90].includes(profile.session_duration))
+        ? profile.session_duration as 30 | 45 | 60 | 90
+        : 45;
+      const saved = await isWorkoutSaved(userId, plan.id, todayWorkout.dayNumber, duration);
+      setIsTodayWorkoutSaved(saved);
+    };
+    checkSavedStatus();
+  }, [plan?.id, todayWorkout?.dayNumber, userId, profile]);
+
+  const handleSaveWorkout = async () => {
+    if (!todayWorkoutDetails || !plan?.id || !todayWorkout?.dayNumber) return;
+
+    const duration = (profile?.session_duration && [30, 45, 60, 90].includes(profile.session_duration))
+      ? profile.session_duration as 30 | 45 | 60 | 90
+      : 45;
+
+    try {
+      if (isTodayWorkoutSaved) {
+        // Unsave - find and delete
+        const saved = await findSavedWorkout(userId, plan.id, todayWorkout.dayNumber, duration);
+        if (saved) {
+          await deleteSavedWorkout(saved.id);
+          setIsTodayWorkoutSaved(false);
+        }
+      } else {
+        // Save
+        await saveWorkout(userId, {
+          planId: plan.id,
+          dayNumber: todayWorkout.dayNumber,
+          duration,
+          name: todayWorkoutDetails.name,
+          data: todayWorkoutDetails,
+        });
+        setIsTodayWorkoutSaved(true);
+      }
+    } catch (error) {
+      console.error('Error saving/unsaving workout:', error);
+    }
+  };
 
   const weekDays = useMemo(() => {
     if (!plan || !plan.days || plan.days.length === 0 || !profile) return [];
-    
-    // Get start of current week (Monday)
     const now = new Date();
     const dayOfWeek = now.getDay();
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
     startOfWeek.setHours(0, 0, 0, 0);
-    
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 7);
-    endOfWeek.setHours(0, 0, 0, 0);
 
-    // Get workout duration from profile, default to 45
     const duration = (profile.session_duration && [30, 45, 60, 90].includes(profile.session_duration))
       ? profile.session_duration as 30 | 45 | 60 | 90
       : 45;
 
-    // Filter days in current week and transform to include workout info
     const daysInWeek = plan.days.filter(day => {
       const dayDate = new Date(day.date);
       dayDate.setHours(0, 0, 0, 0);
       return dayDate >= startOfWeek && dayDate < endOfWeek;
     });
 
-    // Transform to include workout information
     return daysInWeek.map(day => {
       const workout = getWorkoutFromPlan(plan as any, day.dayNumber, duration);
-      const workoutName = workout ? getWorkoutName(workout) : undefined;
-      
       return {
         day,
         workout,
-        workoutName,
-        completed: false, // TODO: Check if workout is completed
+        workoutName: workout ? getWorkoutName(workout) : undefined,
+        completed: false,
       };
     });
   }, [plan, profile, exerciseMap, getWorkoutName]);
 
-  const userName = profile?.pronouns?.split('/')[0] || 'there';
+  // Filter out today from upcoming workouts (today is shown in TodayWorkoutCard)
+  const upcomingWeekDays = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 HomeScreen Debug:', {
-      profileLoading,
-      planLoading,
-      hasProfile: !!profile,
-      hasPlan: !!plan,
-      profileId: profile?.id || profile?.user_id,
-      planId: plan?.id,
-      planDays: plan?.days?.length,
-      userId: userId,
+    return weekDays.filter(wd => {
+      const wdDate = new Date(wd.day.date);
+      wdDate.setHours(0, 0, 0, 0);
+      return wdDate.getTime() !== today.getTime();
     });
-  }, [profileLoading, planLoading, profile, plan, userId]);
+  }, [weekDays]);
 
-  // Show loading state if still loading
-  if (profileLoading || planLoading) {
+  // Loading
+  if (profileLoading || planLoading || !profile) {
     return (
       <View style={styles.container}>
-        <LinearGradient
-          colors={[colors.bg.deep, colors.bg.mid]}
-          style={StyleSheet.absoluteFill}
-        />
-        <SafeAreaView edges={['top']} style={styles.headerContainer}>
-          <Text style={styles.subTitle}>Loading...</Text>
-        </SafeAreaView>
-      </View>
-    );
-  }
-
-  // If no profile, show minimal loading state
-  if (!profile) {
-    return (
-      <View style={styles.container}>
-        <LinearGradient
-          colors={[colors.bg.deep, colors.bg.mid]}
-          style={StyleSheet.absoluteFill}
-        />
-        <SafeAreaView edges={['top']} style={styles.headerContainer}>
-          <Text style={styles.subTitle}>Loading...</Text>
-        </SafeAreaView>
+        <StatusBar barStyle="light-content" backgroundColor="#000" />
+        <View style={styles.loadingContainer}>
+          <View style={styles.loadingDot} />
+        </View>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={[colors.bg.deep, colors.bg.mid]}
-        style={StyleSheet.absoluteFill}
-      />
+      <StatusBar barStyle="light-content" backgroundColor="#000" />
 
-      {/* Header */}
-      <SafeAreaView edges={['top']} style={styles.headerContainer}>
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.mainTitle}>{getGreeting()}, {userName}</Text>
-            <Text style={styles.subTitle}>Ready to Train?</Text>
-          </View>
-        </View>
-        
-        {/* Stats Cards Row */}
-        <View style={styles.statsRow}>
-          <StatCard
-            value={currentStreak}
-            label="DAY STREAK"
-            colorVariant="red"
-            iconType="flame"
-          />
-          <StatCard
-            value={`${weeklyStats?.completedWorkouts || weekProgress || 0}/5`}
-            label="THIS WEEK"
-            colorVariant="cyan"
-            iconType="time"
-          />
-          <StatCard
-            value={workoutsCompleted}
-            label="COMPLETED"
-            colorVariant="cyan"
-            iconType="dumbbell"
-          />
-        </View>
-      </SafeAreaView>
-
-      {/* Main Content */}
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 100 }
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Today's Reminder - should be first */}
-        <TodaysReminderCard />
+        {/* Safe area spacer */}
+        <View style={{ height: insets.top + 8 }} />
 
-        {/* Today's Workout Section */}
-        <Text style={styles.sectionTitle}>Todays Workout</Text>
-        {plan && todayWorkoutDetails ? (
-          <TodayWorkoutCard
-            workout={todayWorkoutDetails}
-            onStartWorkout={handleStartWorkout}
-          />
-        ) : (
-          <View style={styles.emptyWorkoutCard}>
-            <Ionicons name="calendar-outline" size={40} color={colors.text.tertiary} />
-            <Text style={styles.emptyWorkoutText}>
-              {!plan ? 'No workout plan found' : 'No workout scheduled today'}
-            </Text>
-            <Text style={styles.emptyWorkoutSubtext}>
-              {!plan ? 'Generate a workout plan to see your dashboard' : 'Take a rest day or browse workouts'}
-            </Text>
+        {/* 1. Welcome Section */}
+        <WelcomeSection />
+
+        {/* 2. Week Calendar */}
+        {plan && plan.days && plan.days.length > 0 && (
+          <View style={styles.weekSection}>
+            <ThisWeekSection weekDays={weekDays} todayName={todayName} />
           </View>
         )}
 
-        {/* This Week */}
-        {plan && plan.days && plan.days.length > 0 ? (
-          <ThisWeekSection weekDays={weekDays} todayName={todayName} />
-        ) : null}
+        {/* 3. Stats Section (below welcome) */}
+        <View style={styles.statsSection}>
+          <StatsRow
+            streak={currentStreak}
+            weekProgress={`${weeklyStats?.completedWorkouts || weekProgress || 0}/5`}
+            total={workoutsCompleted}
+          />
+        </View>
+
+        {/* 4. Safety Reminder (above workout card) */}
+        <TodaysReminderCard />
+
+        {/* 5. Today's Workout - Hero Card */}
+        <View style={styles.workoutSection}>
+          {plan && todayWorkoutDetails ? (
+            <TodayWorkoutCard
+              workout={todayWorkoutDetails}
+              onStartWorkout={handleStartWorkout}
+              onSaveWorkout={handleSaveWorkout}
+              isSaved={isTodayWorkoutSaved}
+            />
+          ) : (
+            <View style={styles.restDayCard}>
+              <LinearGradient
+                colors={['#141418', '#0A0A0C']}
+                style={StyleSheet.absoluteFill}
+              />
+              {/* Subtle pink glow for rest day */}
+              <LinearGradient
+                colors={['rgba(245, 169, 184, 0.1)', 'transparent']}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.restDayGlow}
+              />
+              <Text style={styles.restDayTitle}>REST DAY</Text>
+              <Text style={styles.restDaySubtitle}>Recovery is part of progress</Text>
+            </View>
+          )}
+        </View>
+
+        {/* 6. Upcoming Workouts (below stats) */}
+        {plan && plan.days && plan.days.length > 0 && (
+          <UpcomingWorkoutsSection
+            weekDays={weekDays}
+            exerciseMap={exerciseMap}
+            userId={userId}
+            planId={plan.id}
+          />
+        )}
       </ScrollView>
     </View>
   );
@@ -418,87 +362,78 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg.deep,
-  },
-  headerContainer: {
-    paddingHorizontal: spacing.l,
-    paddingTop: spacing.l, // Reduced padding to match Figma
-    paddingBottom: spacing.l,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.m,
-  },
-  headerContent: {
-    flex: 1,
-    gap: 2,
-  },
-  mainTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 24,
-    fontWeight: typography.weights.regular,
-    color: colors.text.primary,
-    letterSpacing: -0.4172,
-    lineHeight: 33.6,
-  },
-  subTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 20,
-    fontWeight: typography.weights.regular,
-    color: colors.text.tertiary,
-    lineHeight: 26,
-  },
-  sectionTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: typography.weights.regular,
-    color: colors.text.primary,
-    lineHeight: 24,
-    marginBottom: spacing.m,
-  },
-  profileButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.bg.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border.default,
+    backgroundColor: colors.bg.primary,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.l,
-    paddingTop: spacing.m,
+    paddingHorizontal: 20,
   },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 16, // Gap between cards (16px from Figma - calculated from card positions: 114.33 - 98.33 = 16px)
-    marginTop: spacing.m,
-    justifyContent: 'flex-start', // Align cards to start (fixed width cards)
-    alignItems: 'flex-start', // Prevent stretching
-    flexWrap: 'nowrap', // Prevent wrapping
+  weekSection: {
+    marginBottom: 0,
   },
-  emptyWorkoutCard: {
-    backgroundColor: colors.bg.card,
-    borderRadius: borderRadius.l,
-    padding: spacing.xl,
+  workoutSection: {
+    marginBottom: 12,
+  },
+  statsSection: {
+    marginBottom: 4,
+  },
+  restDayCard: {
+    height: 180,
+    borderRadius: 28,
+    justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.border.default,
-    marginBottom: spacing.l,
+    borderColor: colors.glass.borderPink,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.secondary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 24,
+      },
+      android: { elevation: 6 },
+    }),
   },
-  emptyWorkoutText: {
-    ...textStyles.body,
-    fontWeight: typography.weights.semibold,
-    marginTop: spacing.m,
+  restDayGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
   },
-  emptyWorkoutSubtext: {
-    ...textStyles.bodySmall,
-    marginTop: spacing.xs,
+  restDayTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 24,
+    fontWeight: '300',
+    color: colors.accent.secondary,
+    letterSpacing: 2,
+    marginBottom: 8,
+    ...Platform.select({
+      ios: {
+        textShadowColor: colors.accent.secondaryGlow,
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 12,
+      },
+    }),
+  },
+  restDaySubtitle: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.disabled,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accent.primary,
   },
 });

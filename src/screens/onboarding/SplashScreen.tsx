@@ -111,7 +111,7 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
   }, []);
 
   const handleGetStarted = () => {
-    navigation.navigate('WhyTransFitness');
+    navigation.navigate('Welcome');
   };
 
   const features = ['Binding-Safe', 'HRT-Adaptive', 'Post-Surgery Protocols'];
@@ -247,6 +247,7 @@ const styles = StyleSheet.create({
   },
   imageStyle: {
     opacity: 1,
+    left: 30,
   },
   gradientOverlay: {
     position: 'absolute',
@@ -304,12 +305,12 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     fontFamily: 'Poppins',
-    fontSize: 56,
+    fontSize: 44,
     fontWeight: '700',
-    letterSpacing: -0.12 * 56,
-    lineHeight: 56 * 1.1,
+    letterSpacing: 2,
+    lineHeight: 44 * 1.2,
     color: colors.text.primary,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xl + spacing.lg,
     textAlign: 'center',
     ...Platform.select({
       ios: {

@@ -26,7 +26,7 @@ import { autoRegress, AutoRegressionResult } from '../services/autoRegress';
 import { fetchAllExercises } from '../services/exerciseService';
 import { useProfile } from '../hooks/useProfile';
 import { getCachedVideo, cacheVideo } from '../services/videoCache';
-import { palette, spacing, typography } from '../theme';
+import { colors, spacing, borderRadius } from '../theme/theme';
 import type { OnboardingScreenProps } from '../types/onboarding';
 import { CommonActions } from '@react-navigation/native';
 
@@ -380,7 +380,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: Math.max(insets.top, spacing.l) }]}>
-        <ActivityIndicator size="large" color={palette.tealPrimary} />
+        <ActivityIndicator size="large" color={colors.accent.primary} />
         <Text style={styles.loadingText}>Loading workout...</Text>
       </View>
     );
@@ -433,9 +433,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     console.log('⏳ Showing loading state for main phase (still loading)');
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: Math.max(insets.top, spacing.l) }]}>
-        <ActivityIndicator size="large" color={palette.tealPrimary} />
+        <ActivityIndicator size="large" color={colors.accent.primary} />
         <Text style={styles.loadingText}>Loading workout exercises...</Text>
-        <Text style={[styles.loadingText, { marginTop: spacing.s, fontSize: 12, color: palette.midGray }]}>
+        <Text style={[styles.loadingText, { marginTop: spacing.s, fontSize: 12, color: colors.text.tertiary }]}>
           Preparing exercises...
         </Text>
       </View>
@@ -444,14 +444,14 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   // Show error if exercises failed to load (only if we're not loading and have no exercises)
   if (phase === 'main' && exercises.length === 0 && !loading && workout.exercises.length > 0) {
-    console.error('❌ Main phase but no exercises loaded', { 
+    console.error('❌ Main phase but no exercises loaded', {
       workoutExercisesCount: workout.exercises.length,
-      exercisesStateCount: exercises.length 
+      exercisesStateCount: exercises.length
     });
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: Math.max(insets.top, spacing.l) }]}>
         <Text style={styles.errorText}>No exercises found</Text>
-        <Text style={[styles.errorText, { fontSize: 12, marginTop: spacing.s, color: palette.midGray }]}>
+        <Text style={[styles.errorText, { fontSize: 12, marginTop: spacing.s, color: colors.text.tertiary }]}>
           Workout has {workout.exercises.length} exercises but couldn't load them
         </Text>
         <Button mode="outlined" onPress={() => {
@@ -482,7 +482,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   if (!currentExercise) {
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: Math.max(insets.top, spacing.l) }]}>
-        <ActivityIndicator size="large" color={palette.tealPrimary} />
+        <ActivityIndicator size="large" color={colors.accent.primary} />
         <Text style={styles.loadingText}>Loading exercise...</Text>
       </View>
     );
@@ -794,14 +794,14 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         {/* Header */}
         <View style={[styles.newHeader, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color={palette.white} />
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.workoutTimer}>{formatTime(totalElapsedSeconds)}</Text>
             <Text style={styles.timerLabel}>Total Time</Text>
           </View>
           <TouchableOpacity style={styles.menuButton}>
-            <Ionicons name="ellipsis-horizontal" size={24} color={palette.white} />
+            <Ionicons name="ellipsis-horizontal" size={24} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
 
@@ -834,7 +834,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
               <TouchableOpacity style={styles.videoContainer} onPress={handlePlayVideo}>
                 {loadingVideo ? (
                   <View style={styles.videoThumbnail}>
-                    <ActivityIndicator size="large" color={palette.tealPrimary} />
+                    <ActivityIndicator size="large" color={colors.accent.primary} />
                   </View>
                 ) : videoUri ? (
                   <Video
@@ -935,9 +935,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                 minimumValue={1}
                 maximumValue={10}
                 step={1}
-                minimumTrackTintColor="#00D9C0"
-                maximumTrackTintColor="#2A2F36"
-                thumbTintColor="#00D9C0"
+                minimumTrackTintColor={colors.accent.primary}
+                maximumTrackTintColor={colors.border.default}
+                thumbTintColor={colors.accent.primary}
                 style={styles.rpeSlider}
               />
               <View style={styles.rpeLabelsRow}>
@@ -983,7 +983,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             onPress={() => handleSetComplete(reps, weight, rpe)}
           >
             <LinearGradient
-              colors={['#00D9C0', '#00B39D']}
+              colors={[colors.accent.primary, '#4AA8D8']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.completeButtonGradient}
@@ -1043,7 +1043,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                 <Button
                   mode="contained"
                   onPress={confirmSkipExercise}
-                  buttonColor={palette.error}
+                  buttonColor={colors.error}
                 >
                   Skip Exercise
                 </Button>
@@ -1130,7 +1130,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={24} color={palette.white} />
+          <Ionicons name="close" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{workout.duration} min Workout</Text>
@@ -1151,7 +1151,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             ⏱️ {Math.floor(totalElapsedSecondsRef.current / 60)}:{(totalElapsedSecondsRef.current % 60).toString().padStart(2, '0')}
           </Text>
           <TouchableOpacity>
-            <Ionicons name="ellipsis-vertical" size={20} color={palette.white} />
+            <Ionicons name="ellipsis-vertical" size={20} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -1270,10 +1270,10 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             </Card.Content>
             <Card.Actions>
               <Button onPress={cancelSkipExercise}>Cancel</Button>
-              <Button 
-                mode="contained" 
+              <Button
+                mode="contained"
                 onPress={confirmSkipExercise}
-                buttonColor={palette.error}
+                buttonColor={colors.error}
               >
                 Skip Exercise
               </Button>
@@ -1350,7 +1350,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
+    backgroundColor: colors.bg.primary,
   },
   centerContent: {
     justifyContent: 'center',
@@ -1370,19 +1370,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: palette.deepBlack,
+    backgroundColor: colors.bg.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#1A1F26',
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+    borderBottomColor: colors.border.default,
   },
   headerCenter: {
     flex: 1,
     alignItems: 'center',
   },
   headerTitle: {
-    ...typography.h3,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   progressDots: {
@@ -1393,19 +1393,19 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: palette.border,
+    backgroundColor: colors.border.default,
   },
   progressDotActive: {
-    backgroundColor: palette.tealPrimary,
+    backgroundColor: colors.accent.primary,
   },
   progressDotCurrent: {
-    backgroundColor: palette.tealPrimary,
+    backgroundColor: colors.accent.primary,
     width: 12,
     height: 12,
     borderRadius: 6,
   },
   progressDotSkipped: {
-    backgroundColor: palette.midGray,
+    backgroundColor: colors.text.tertiary,
     opacity: 0.5,
   },
   headerRight: {
@@ -1414,8 +1414,9 @@ const styles = StyleSheet.create({
     gap: spacing.m,
   },
   timerText: {
-    ...typography.body,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.text.tertiary,
   },
   exerciseCounter: {
     alignItems: 'center',
@@ -1423,35 +1424,23 @@ const styles = StyleSheet.create({
     marginTop: spacing.m,
   },
   exerciseCounterText: {
-    ...typography.body,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.text.tertiary,
   },
   backButton: {
     marginLeft: spacing.s,
   },
-  videoContainer: {
-    width: '100%',
-    marginBottom: spacing.s,
-    borderRadius: 8,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  video: {
-    width: '100%',
-    height: 180,
-    backgroundColor: palette.darkerCard,
-  },
   lowSensoryNotice: {
     padding: spacing.s,
-    backgroundColor: palette.darkCard,
+    backgroundColor: colors.glass.bg,
     borderRadius: 8,
     marginBottom: spacing.s,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: colors.border.default,
   },
   lowSensoryText: {
-    color: palette.midGray,
+    color: colors.text.tertiary,
     textAlign: 'center',
     fontSize: 13,
   },
@@ -1468,24 +1457,20 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     alignItems: 'center',
   },
-  exerciseName: {
-    ...typography.h3,
-    color: palette.white,
-    textAlign: 'center',
-  },
   cuesLink: {
     marginBottom: spacing.s,
     paddingVertical: spacing.s,
     paddingHorizontal: spacing.m,
     borderRadius: 8,
-    backgroundColor: palette.darkCard,
+    backgroundColor: colors.glass.bg,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: colors.border.default,
     alignItems: 'center',
   },
   cuesLinkText: {
-    ...typography.body,
-    color: palette.tealPrimary,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.accent.primary,
     textDecorationLine: 'underline',
   },
   rpeSection: {
@@ -1495,11 +1480,11 @@ const styles = StyleSheet.create({
     padding: spacing.l,
   },
   modalCard: {
-    backgroundColor: palette.darkCard,
+    backgroundColor: colors.glass.bg,
     maxHeight: '80%',
   },
   modalTitle: {
-    color: palette.white,
+    color: colors.text.primary,
   },
   modalScrollView: {
     maxHeight: 400,
@@ -1508,52 +1493,58 @@ const styles = StyleSheet.create({
     marginBottom: spacing.m,
   },
   modalSectionTitle: {
-    ...typography.bodyLarge,
-    color: palette.tealPrimary,
+    fontFamily: 'Poppins',
+    fontSize: 16,
     fontWeight: '600',
+    color: colors.accent.primary,
     marginBottom: spacing.xs,
   },
   modalListItem: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.secondary,
     marginBottom: spacing.xxs,
     marginLeft: spacing.xs,
   },
   modalTransNotes: {
     borderRadius: 8,
     padding: spacing.s,
-    backgroundColor: palette.darkerCard,
+    backgroundColor: colors.bg.secondary,
     borderWidth: 1,
-    borderColor: palette.tealPrimary,
+    borderColor: colors.accent.primary,
     marginTop: spacing.s,
   },
   modalTransNotesTitle: {
-    ...typography.bodyLarge,
-    color: palette.tealPrimary,
+    fontFamily: 'Poppins',
+    fontSize: 16,
     fontWeight: '600',
+    color: colors.accent.primary,
     marginBottom: spacing.xs,
   },
   modalTransNotesItem: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.secondary,
     marginBottom: spacing.xxs,
   },
   modalTransNoteLabel: {
     fontWeight: '600',
-    color: palette.tealPrimary,
+    color: colors.accent.primary,
   },
   modalText: {
-    ...typography.body,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.text.primary,
     marginBottom: spacing.m,
   },
   modalBold: {
     fontWeight: '700',
-    color: palette.white,
+    color: colors.text.primary,
   },
   modalSubtext: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.tertiary,
   },
   actions: {
     flexDirection: 'row',
@@ -1564,11 +1555,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingText: {
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    color: colors.text.secondary,
     marginTop: spacing.m,
   },
   errorText: {
-    color: palette.error,
+    fontFamily: 'Poppins',
+    color: colors.error,
     marginBottom: spacing.m,
   },
   // New styles for redesigned main phase
@@ -1580,21 +1573,23 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   workoutTimer: {
+    fontFamily: 'Poppins',
     fontSize: 24,
     fontWeight: '700',
-    color: palette.white,
+    color: colors.text.primary,
   },
   timerLabel: {
+    fontFamily: 'Poppins',
     fontSize: 12,
     fontWeight: '500',
-    color: '#9CA3AF',
+    color: colors.text.tertiary,
     marginTop: 2,
   },
   menuButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#1A1F26',
+    backgroundColor: colors.glass.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1602,7 +1597,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 20,
-    backgroundColor: palette.deepBlack,
+    backgroundColor: colors.bg.primary,
   },
   progressInfoRow: {
     flexDirection: 'row',
@@ -1610,36 +1605,37 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   progressText: {
+    fontFamily: 'Poppins',
     fontSize: 14,
     fontWeight: '600',
-    color: '#E0E4E8',
+    color: colors.text.primary,
     letterSpacing: 0.2,
   },
   progressBarTrack: {
     height: 10,
-    backgroundColor: '#1A1F26',
+    backgroundColor: colors.glass.bg,
     borderRadius: 5,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#2A2F36',
+    borderColor: colors.border.default,
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#00D9C0',
+    backgroundColor: colors.accent.primary,
     borderRadius: 5,
-    shadowColor: '#00D9C0',
+    shadowColor: colors.accent.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 4,
   },
   exerciseCard: {
-    backgroundColor: '#1A1F26',
-    borderRadius: 20,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius['2xl'],
     padding: 24,
     marginHorizontal: 20,
     marginBottom: 32,
     borderWidth: 1,
-    borderColor: '#2A2F36',
+    borderColor: colors.border.default,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -1647,26 +1643,28 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   exerciseName: {
+    fontFamily: 'Poppins',
     fontSize: 28,
     fontWeight: '700',
-    color: palette.white,
+    color: colors.text.primary,
     marginBottom: 12,
     letterSpacing: -0.5,
   },
   targetBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(167, 139, 250, 0.15)',
+    backgroundColor: colors.accent.secondaryMuted,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(167, 139, 250, 0.3)',
+    borderColor: colors.glass.borderPink,
   },
   targetBadgeText: {
+    fontFamily: 'Poppins',
     fontSize: 13,
     fontWeight: '600',
-    color: '#A78BFA',
+    color: colors.accent.secondary,
     letterSpacing: 0.3,
   },
   videoContainer: {
@@ -1674,11 +1672,11 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#0F1419',
+    backgroundColor: colors.bg.secondary,
     marginBottom: 20,
     position: 'relative',
     borderWidth: 1,
-    borderColor: '#1A1F26',
+    borderColor: colors.border.default,
   },
   video: {
     width: '100%',
@@ -1689,7 +1687,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0F1419',
+    backgroundColor: colors.bg.secondary,
   },
   videoPlaceholder: {
     justifyContent: 'center',
@@ -1697,9 +1695,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   videoPlaceholderText: {
+    fontFamily: 'Poppins',
     fontSize: 14,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.text.tertiary,
     marginTop: 8,
   },
   playOverlay: {
@@ -1716,19 +1715,20 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(0, 217, 192, 0.9)',
+    backgroundColor: colors.accent.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#00D9C0',
+    shadowColor: colors.accent.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   setInfoText: {
+    fontFamily: 'Poppins',
     fontSize: 15,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: colors.text.tertiary,
     textAlign: 'center',
     marginTop: 4,
   },
@@ -1740,9 +1740,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   inputLabel: {
+    fontFamily: 'Poppins',
     fontSize: 14,
     fontWeight: '600',
-    color: '#E0E4E8',
+    color: colors.text.primary,
     marginBottom: 12,
     letterSpacing: 0.2,
   },
@@ -1756,11 +1757,11 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#1A1F26',
+    backgroundColor: colors.glass.bg,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2A2F36',
+    borderColor: colors.border.default,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1768,19 +1769,20 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   numberButtonText: {
+    fontFamily: 'Poppins',
     fontSize: 24,
     fontWeight: '600',
-    color: palette.white,
+    color: colors.text.primary,
   },
   numberDisplay: {
     minWidth: 110,
     height: 72,
-    backgroundColor: '#0F1419',
+    backgroundColor: colors.bg.secondary,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2A2F36',
+    borderColor: colors.border.default,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -1788,18 +1790,19 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   numberText: {
+    fontFamily: 'Poppins',
     fontSize: 32,
     fontWeight: '700',
-    color: palette.white,
+    color: colors.text.primary,
     letterSpacing: -0.5,
   },
   rpeContainer: {
     marginBottom: 32,
-    backgroundColor: '#1A1F26',
+    backgroundColor: colors.glass.bg,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#2A2F36',
+    borderColor: colors.border.default,
   },
   rpeValueContainer: {
     alignItems: 'center',
@@ -1807,11 +1810,12 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   rpeValueText: {
+    fontFamily: 'Poppins',
     fontSize: 42,
     fontWeight: '800',
-    color: '#00D9C0',
+    color: colors.accent.primary,
     letterSpacing: -1,
-    textShadowColor: 'rgba(0, 217, 192, 0.2)',
+    textShadowColor: 'rgba(91, 206, 250, 0.2)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
   },
@@ -1826,9 +1830,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   rpeLabel: {
+    fontFamily: 'Poppins',
     fontSize: 12,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.text.tertiary,
     letterSpacing: 0.2,
   },
   previousSetsContainer: {
@@ -1836,19 +1841,20 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   previousSetsTitle: {
+    fontFamily: 'Poppins',
     fontSize: 18,
     fontWeight: '700',
-    color: palette.white,
+    color: colors.text.primary,
     marginBottom: 16,
     letterSpacing: 0.3,
   },
   setHistoryCard: {
-    backgroundColor: '#1A1F26',
+    backgroundColor: colors.glass.bg,
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#2A2F36',
+    borderColor: colors.border.default,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1856,9 +1862,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   setHistoryText: {
+    fontFamily: 'Poppins',
     fontSize: 16,
     fontWeight: '600',
-    color: '#E0E4E8',
+    color: colors.text.primary,
     letterSpacing: 0.2,
   },
   actionsRow: {
@@ -1871,30 +1878,31 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: 12,
-    backgroundColor: '#1A1F26',
+    backgroundColor: colors.glass.bg,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2A2F36',
+    borderColor: colors.border.default,
   },
   secondaryButtonText: {
+    fontFamily: 'Poppins',
     fontSize: 15,
     fontWeight: '600',
-    color: palette.white,
+    color: colors.text.primary,
   },
   completeButtonContainer: {
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 24,
-    backgroundColor: palette.deepBlack,
+    backgroundColor: colors.bg.primary,
     borderTopWidth: 1,
-    borderTopColor: '#1A1F26',
+    borderTopColor: colors.border.default,
   },
   completeButton: {
     height: 64,
     borderRadius: 32,
     overflow: 'hidden',
-    shadowColor: '#00D9C0',
+    shadowColor: colors.accent.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -1908,9 +1916,10 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   completeButtonText: {
+    fontFamily: 'Poppins',
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F1419',
+    color: colors.text.inverse,
   },
   restOverlay: {
     position: 'absolute',
@@ -1918,39 +1927,41 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(15, 20, 25, 0.95)',
+    backgroundColor: 'rgba(10, 10, 12, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   restCard: {
-    backgroundColor: '#1A1F26',
-    borderRadius: 24,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius['2xl'],
     padding: 40,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#2A2F36',
+    borderColor: colors.glass.borderCyan,
     minWidth: 300,
-    shadowColor: '#000',
+    shadowColor: colors.accent.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 12,
   },
   restTitle: {
+    fontFamily: 'Poppins',
     fontSize: 20,
     fontWeight: '600',
-    color: '#E0E4E8',
+    color: colors.text.primary,
     marginBottom: 24,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   restTimerText: {
+    fontFamily: 'Poppins',
     fontSize: 72,
     fontWeight: '800',
-    color: '#00D9C0',
+    color: colors.accent.primary,
     marginBottom: 32,
     letterSpacing: -2,
-    textShadowColor: 'rgba(0, 217, 192, 0.4)',
+    textShadowColor: 'rgba(91, 206, 250, 0.4)',
     textShadowOffset: { width: 0, height: 4 },
     textShadowRadius: 12,
   },
@@ -1958,9 +1969,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 16,
-    backgroundColor: '#2A2F36',
+    backgroundColor: colors.glass.bgLight,
     borderWidth: 1,
-    borderColor: '#3A3F46',
+    borderColor: colors.border.default,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -1968,9 +1979,10 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   skipRestButtonText: {
+    fontFamily: 'Poppins',
     fontSize: 16,
     fontWeight: '600',
-    color: palette.white,
+    color: colors.text.primary,
     letterSpacing: 0.3,
   },
 });

@@ -1,86 +1,148 @@
-// Design System Tokens - TransFitness
-// Use these tokens throughout the app for consistency
+// Design System - TransFitness
+// Elite, powerful, minimal aesthetic with Trans Pride colors
 
 import { MD3DarkTheme } from 'react-native-paper';
 
+// ============================================
+// COLOR SYSTEM
+// Trans Pride: Blue (primary), Pink (secondary), White
+// Same shade intensity as the previous orange
+// ============================================
+
 export const colors = {
-  // Background colors
+  // Backgrounds - true dark
   bg: {
-    deep: '#0F1419',      // Primary dark background
-    mid: '#151920',       // Secondary dark background
-    card: '#1A1F26',      // Card backgrounds
-    elevated: '#1F2530',  // Elevated surfaces
-    raised: '#1F2530',    // Raised surfaces (alias for elevated)
+    primary: '#000000',
+    secondary: '#0A0A0A',
+    tertiary: '#111111',
+    elevated: '#1A1A1A',
+    // Legacy
+    deep: '#000000',
+    mid: '#0A0A0A',
+    card: '#111111',
+    raised: '#1A1A1A',
   },
 
-  // Glass morphism colors
-  glass: {
-    bg: 'rgba(255, 255, 255, 0.06)',
-    bgHero: 'rgba(6, 182, 212, 0.08)',
-    border: 'rgba(255, 255, 255, 0.1)',
-    borderCyan: 'rgba(6, 182, 212, 0.15)',
-  },
-
-  // Text colors
+  // Text - clean hierarchy
   text: {
-    primary: '#FFFFFF',   // Primary text (headers, important text)
-    secondary: '#E0E4E8', // Secondary text (body text)
-    tertiary: '#9CA3AF',  // Tertiary text (meta info, labels)
-    disabled: '#6B7280',  // Disabled text
-    statLabel: '#B4BCD0', // Stat card label color from Figma
+    primary: '#FFFFFF',
+    secondary: 'rgba(255, 255, 255, 0.7)',
+    tertiary: 'rgba(255, 255, 255, 0.4)',
+    disabled: 'rgba(255, 255, 255, 0.25)',
+    inverse: '#000000',
+    statLabel: 'rgba(255, 255, 255, 0.4)',
   },
 
-  // Border colors
-  border: {
-    default: '#2A2F36',   // Default border color
-    focus: '#00D9C0',     // Focused border color
-    subtle: '#1F2530',    // Subtle border color
+  // Trans Pride accents - Blue (primary), Pink (secondary)
+  // Same saturation/brightness as the orange #FF6B35
+  accent: {
+    primary: '#5BCEFA',       // Trans blue - vibrant like the orange was
+    primaryLight: '#7DD8FF',
+    primaryDark: '#45A8D4',
+    primaryMuted: 'rgba(91, 206, 250, 0.15)',
+    primaryGlow: 'rgba(91, 206, 250, 0.3)',
+    // Secondary - Trans pink
+    secondary: '#F5A9B8',     // Trans pink
+    secondaryLight: '#FFB8C6',
+    secondaryDark: '#E08A9A',
+    secondaryMuted: 'rgba(245, 169, 184, 0.15)',
+    secondaryGlow: 'rgba(245, 169, 184, 0.3)',
+    // Success for completed states
+    success: '#4ADE80',
+    successMuted: 'rgba(74, 222, 128, 0.15)',
+    // Warning
+    warning: '#FBBF24',
+    warningMuted: 'rgba(251, 191, 36, 0.12)',
   },
 
-  // Brand colors
+  // Gradient stops for hero elements
+  gradient: {
+    transPride: ['#5BCEFA', '#F5A9B8', '#FFFFFF', '#F5A9B8', '#5BCEFA'],
+    transSubtle: ['rgba(91, 206, 250, 0.2)', 'rgba(245, 169, 184, 0.15)'],
+    warm: ['#5BCEFA', '#7DD8FF', '#A8E6FF'],
+    pink: ['#F5A9B8', '#FFB8C6', '#FFD6E0'],
+    dark: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.8)', '#000000'],
+    overlay: ['transparent', 'rgba(0,0,0,0.6)'],
+    glass: ['rgba(91, 206, 250, 0.08)', 'rgba(245, 169, 184, 0.05)'],
+  },
+
+  // Legacy support - mapped to new blue
   cyan: {
-    400: '#22D3EE',
-    500: '#06b6d4',       // Primary cyan
-    600: '#00B39D',       // Darker cyan
-    700: '#008F7D',
+    400: '#7DD8FF',
+    500: '#5BCEFA',
+    600: '#45A8D4',
+    700: '#3090BE',
   },
-
+  // Pink for secondary uses
+  pink: {
+    400: '#FFB8C6',
+    500: '#F5A9B8',
+    600: '#E08A9A',
+    700: '#CC6B7C',
+  },
   red: {
-    400: '#F87171',
-    500: '#EF4444',       // Primary red
-    600: '#DC2626',
-    flame: '#F43F5E',    // Flame icon color from Figma
-    flameBg: '#FEECEF',  // Flame icon background from Figma
+    400: '#F5A9B8',
+    500: '#F5A9B8',
+    600: '#E08A9A',
+    flame: '#F5A9B8',
+    flameBg: 'rgba(245, 169, 184, 0.15)',
   },
-
-  // Stat card specific colors from Figma
-  stat: {
-    cardBg: '#30363B',      // Stat card background
-    iconBgRed: '#FEECEF',   // Red card icon background
-    iconBgGray: '#72777A',  // Gray card icon background
-    labelColor: '#B4BCD0',  // Stat label color
-  },
-
   purple: {
-    400: '#C084FC',
-    500: '#A78BFA',       // Primary purple
-    600: '#9333EA',
+    400: '#7DD8FF',
+    500: '#5BCEFA',
+    600: '#45A8D4',
   },
 
-  // Status colors
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#3B82F6',
+  // Borders - barely visible with subtle blue tint
+  border: {
+    default: 'rgba(255, 255, 255, 0.08)',
+    subtle: 'rgba(255, 255, 255, 0.04)',
+    focus: '#5BCEFA',
+    glow: 'rgba(91, 206, 250, 0.2)',
+  },
 
-  // Semantic colors (wrapper for status colors)
+  // Liquid glass effects
+  glass: {
+    bg: 'rgba(255, 255, 255, 0.03)',
+    bgLight: 'rgba(255, 255, 255, 0.05)',
+    border: 'rgba(255, 255, 255, 0.08)',
+    borderLight: 'rgba(255, 255, 255, 0.12)',
+    bgHero: 'rgba(91, 206, 250, 0.08)',
+    bgHeroPink: 'rgba(245, 169, 184, 0.08)',
+    borderCyan: 'rgba(91, 206, 250, 0.2)',
+    borderPink: 'rgba(245, 169, 184, 0.2)',
+    // Liquid glass specific
+    liquidBg: 'rgba(91, 206, 250, 0.06)',
+    liquidBorder: 'rgba(91, 206, 250, 0.15)',
+    liquidHighlight: 'rgba(255, 255, 255, 0.1)',
+  },
+
+  // Semantic
+  success: '#4ADE80',
+  warning: '#FBBF24',
+  error: '#EF4444',
+  info: '#5BCEFA',
+
   semantic: {
-    success: '#10B981',
-    warning: '#F59E0B',
+    success: '#4ADE80',
+    warning: '#FBBF24',
     error: '#EF4444',
-    info: '#3B82F6',
+    info: '#5BCEFA',
+  },
+
+  stat: {
+    cardBg: '#111111',
+    iconBgBlue: 'rgba(91, 206, 250, 0.15)',
+    iconBgPink: 'rgba(245, 169, 184, 0.15)',
+    iconBgRed: 'rgba(245, 169, 184, 0.15)',
+    iconBgGray: 'rgba(255, 255, 255, 0.08)',
+    labelColor: 'rgba(255, 255, 255, 0.4)',
   },
 };
+
+// ============================================
+// SPACING
+// ============================================
 
 export const spacing = {
   xxs: 2,
@@ -100,44 +162,64 @@ export const spacing = {
   xxxl: 48,
 };
 
+// ============================================
+// BORDER RADIUS
+// ============================================
+
 export const borderRadius = {
   xs: 4,
-  s: 8,
+  s: 6,
   sm: 8,
   m: 12,
   base: 12,
-  md: 14,
-  l: 16,
-  lg: 20,
-  xl: 20,
-  '2xl': 24,
-  xxl: 24,
-  '3xl': 32,
+  md: 16,
+  l: 20,
+  lg: 24,
+  xl: 28,
+  '2xl': 32,
+  xxl: 32,
+  '3xl': 40,
   full: 999,
 };
 
+export const radii = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  '2xl': 32,
+  full: 999,
+};
+
+// ============================================
+// TYPOGRAPHY
+// Light, editorial, powerful
+// ============================================
+
 export const typography = {
-  // Display sizes
+  // Display - bold statement
   display1: 48,
-  display2: 40,
-  
-  // Headings (fontSize values for direct use)
+  display2: 36,
+
+  // Headings
   h1: 32,
   h2: 24,
-  h3: 20,
+  h3: 18,
   h4: {
     fontSize: 16,
-    fontWeight: '600' as const,
-    letterSpacing: 0,
-    lineHeight: 24,
+    fontWeight: '500' as const,
+    letterSpacing: -0.3,
+    lineHeight: 22,
   },
 
-  // Body text
+  // Body
   body: 15,
   bodyLarge: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '400' as const,
     lineHeight: 24,
+    letterSpacing: -0.2,
   },
   bodySmall: 13,
 
@@ -145,15 +227,15 @@ export const typography = {
   label: 11,
   labelLarge: {
     fontSize: 13,
-    fontWeight: '600' as const,
-    letterSpacing: 0.3,
+    fontWeight: '500' as const,
+    letterSpacing: 0.5,
   },
 
-  // Button text
+  // Button
   button: {
     fontSize: 16,
     fontWeight: '600' as const,
-    letterSpacing: 0,
+    letterSpacing: -0.2,
   },
   buttonSmall: {
     fontSize: 14,
@@ -161,171 +243,208 @@ export const typography = {
     letterSpacing: 0,
   },
 
-  // Caption
   caption: 11,
 
   // Stats
-  statHero: 32,
-  statLarge: 24,
-  statMedium: 20,
+  statHero: 36,
+  statLarge: 28,
+  statMedium: 22,
 
   // Weights
   weights: {
+    light: '300' as const,
     regular: '400' as const,
     medium: '500' as const,
     semibold: '600' as const,
     bold: '700' as const,
   },
 
-  // Line heights
   lineHeights: {
-    normal: 1.5,
-    tight: 1.2,
-    loose: 1.8,
+    tight: 1.1,
+    normal: 1.3,
+    relaxed: 1.5,
   },
 
-  // Letter spacing
   letterSpacing: {
-    tight: -0.5,
+    tighter: -0.5,
+    tight: -0.3,
     normal: 0,
     wide: 0.5,
+    wider: 1.0,
+    caps: 1.5,
   },
 };
 
+// ============================================
+// SHADOWS
+// ============================================
+
 export const shadows = {
-  sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  md: {
+  none: {},
+  xs: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
-  lg: {
+  sm: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.4,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 3,
+  },
+  md: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  lg: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 8,
   },
   glow: {
-    shadowColor: colors.cyan[500],
+    shadowColor: colors.accent.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 6,
   },
-  // Platform-specific shadows
   ios: {
     glass: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.2,
-      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
     },
     glassStrong: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.3,
-      shadowRadius: 32,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.4,
+      shadowRadius: 20,
     },
     cyan: {
-      shadowColor: colors.cyan[500],
+      shadowColor: colors.accent.primary,
       shadowOffset: { width: 0, height: 0 },
       shadowOpacity: 0.4,
       shadowRadius: 16,
     },
   },
   android: {
-    glass: 8,
-    glassStrong: 12,
-    button: 8,
+    glass: 4,
+    glassStrong: 8,
+    button: 6,
   },
 };
 
-// Animation timing
+export const shadowPresets = {
+  none: {},
+  subtle: shadows.xs,
+  card: shadows.sm,
+  elevated: shadows.md,
+  prominent: shadows.lg,
+};
+
+// ============================================
+// ANIMATION
+// ============================================
+
 export const timing = {
   fast: 150,
   normal: 250,
-  slow: 350,
+  slow: 400,
 };
 
-// Common component styles
+// ============================================
+// CONTENT SPACING
+// ============================================
+
+export const contentSpacing = {
+  screenPadding: 24,
+  sectionGap: 32,
+  cardGap: 16,
+  inlineGap: 8,
+  cardPadding: 20,
+  cardPaddingLarge: 24,
+};
+
+// ============================================
+// COMPONENTS
+// ============================================
+
 export const components = {
   card: {
-    backgroundColor: colors.bg.card,
-    borderRadius: borderRadius.m,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    padding: spacing.l,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
   },
   button: {
     primary: {
-      backgroundColor: colors.cyan[500],
-      borderRadius: borderRadius.m,
-      paddingVertical: spacing.m,
-      paddingHorizontal: spacing.l,
+      backgroundColor: colors.accent.primary,
+      borderRadius: radii.full,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xl,
     },
     secondary: {
-      backgroundColor: colors.bg.elevated,
-      borderRadius: borderRadius.m,
+      backgroundColor: 'transparent',
+      borderRadius: radii.full,
       borderWidth: 1,
       borderColor: colors.border.default,
-      paddingVertical: spacing.m,
-      paddingHorizontal: spacing.l,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xl,
     },
   },
   input: {
-    backgroundColor: colors.bg.elevated,
-    borderRadius: borderRadius.m,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border.default,
     paddingVertical: spacing.m,
     paddingHorizontal: spacing.l,
-    fontSize: 15,
+    fontSize: 16,
     color: colors.text.primary,
   },
 };
 
-// Layout
 export const layout = {
-  screenPadding: spacing.l,
-  sectionSpacing: spacing.xl,
-  cardSpacing: spacing.m,
+  screenPadding: spacing.xl,
+  sectionSpacing: spacing['2xl'],
+  cardSpacing: spacing.l,
 };
 
-// Legacy palette object for backward compatibility
-// Maps old palette names to new colors structure
+// ============================================
+// LEGACY
+// ============================================
+
 export const palette = {
-  deepBlack: colors.bg.deep,
+  deepBlack: colors.bg.primary,
   white: colors.text.primary,
   midGray: colors.text.tertiary,
   lightGray: colors.text.secondary,
-  darkCard: colors.bg.card,
+  darkCard: colors.bg.tertiary,
   darkerCard: colors.bg.elevated,
   border: colors.border.default,
-  tealPrimary: colors.cyan[500],
-  tealDark: colors.cyan[600],
-  tealGlow: colors.cyan[400],
+  tealPrimary: colors.accent.primary,
+  tealDark: colors.accent.primaryDark,
+  tealGlow: colors.accent.primaryLight,
   error: colors.error,
   success: colors.success,
   warning: colors.warning,
 };
 
-// React Native Paper theme
 export const theme = {
   ...MD3DarkTheme,
   colors: {
     ...MD3DarkTheme.colors,
-    primary: colors.cyan[500],
-    background: colors.bg.deep,
-    surface: colors.bg.card,
+    primary: colors.accent.primary,
+    background: colors.bg.primary,
+    surface: colors.bg.tertiary,
     error: colors.error,
   },
 };

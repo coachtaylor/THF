@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useProfile } from '../../hooks/useProfile';
 import { getMonthWorkouts, getCurrentStreak, MonthWorkout } from '../../services/storage/stats';
-import { palette, spacing, typography } from '../../theme';
+import { colors, spacing, borderRadius, typography } from '../../theme/theme';
+import { GlassCard, GlassButton, ProgressRing } from '../../components/common';
+import { StatsRow } from '../../components/home/Statcard';
 
 type MainTabParamList = {
   Home: undefined;
@@ -59,19 +62,14 @@ export default function WorkoutsScreen() {
   };
 
   const renderCalendar = () => {
-    // Generate calendar grid for current month
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
 
-    // Get first day of month
     const firstDay = new Date(year, month, 1);
     const startingDayOfWeek = firstDay.getDay();
-
-    // Get last day of month
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
 
-    // Create calendar grid
     const calendar: Array<Array<{
       day: number;
       date: string;
@@ -85,12 +83,10 @@ export default function WorkoutsScreen() {
       isToday: boolean;
     } | null> = [];
 
-    // Add empty cells for days before month starts
     for (let i = 0; i < startingDayOfWeek; i++) {
       week.push(null);
     }
 
-    // Add days of month
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayStr = today.toISOString().split('T')[0];
@@ -108,14 +104,12 @@ export default function WorkoutsScreen() {
         isToday: dateStr === todayStr,
       });
 
-      // Start new week after Saturday
       if (week.length === 7) {
         calendar.push(week);
         week = [];
       }
     }
 
-    // Add remaining empty cells
     while (week.length > 0 && week.length < 7) {
       week.push(null);
     }
@@ -127,8 +121,8 @@ export default function WorkoutsScreen() {
       <View style={styles.calendar}>
         {/* Day headers */}
         <View style={styles.calendarRow}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <View key={day} style={styles.calendarHeaderCell}>
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+            <View key={i} style={styles.calendarHeaderCell}>
               <Text style={styles.calendarHeaderText}>{day}</Text>
             </View>
           ))}
@@ -140,20 +134,30 @@ export default function WorkoutsScreen() {
             {week.map((cell, cellIndex) => (
               <View key={cellIndex} style={styles.calendarCell}>
                 {cell && (
-                  <>
+                  <View style={[
+                    styles.calendarDayContainer,
+                    cell.isToday && styles.calendarDayTodayContainer,
+                    cell.hasWorkout && !cell.isToday && styles.calendarDayCompletedContainer,
+                  ]}>
+                    {cell.isToday && (
+                      <LinearGradient
+                        colors={[colors.accent.primary, colors.accent.primaryDark]}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    )}
                     <Text
                       style={[
                         styles.calendarDayText,
-                        cell.isToday && styles.calendarDayToday,
-                        cell.hasWorkout && styles.calendarDayCompleted,
+                        cell.isToday && styles.calendarDayTodayText,
+                        cell.hasWorkout && styles.calendarDayCompletedText,
                       ]}
                     >
                       {cell.day}
                     </Text>
-                    {cell.hasWorkout && (
-                      <Text style={styles.calendarCheckmark}>✓</Text>
+                    {cell.hasWorkout && !cell.isToday && (
+                      <View style={styles.checkmarkDot} />
                     )}
-                  </>
+                  </View>
                 )}
               </View>
             ))}
@@ -166,30 +170,22 @@ export default function WorkoutsScreen() {
   const completedThisMonth = workouts.filter(w => w.status === 'completed').length;
   const totalScheduled = workouts.length;
 
-  const handleProfilePress = () => {
-    navigation.navigate('Settings');
-  };
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color={palette.white} />
-        </TouchableOpacity>
+        <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+        </Pressable>
         <Text style={styles.headerTitle}>Workout History</Text>
         <View style={styles.headerRight}>
-          <TouchableOpacity onPress={() => {
-            // Could open month picker or cycle months
-            changeMonth('next');
-          }}>
-            <Text style={styles.monthSelector}>
-              🗓️ {currentMonth.toLocaleDateString('en-US', { month: 'long' })}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleProfilePress} style={styles.profileButton}>
-            <Ionicons name="person-circle-outline" size={28} color={palette.white} />
-          </TouchableOpacity>
+          <Pressable
+            onPress={() => navigation.navigate('Settings')}
+            style={styles.profileButton}
+            hitSlop={8}
+          >
+            <Ionicons name="person-circle-outline" size={26} color={colors.text.primary} />
+          </Pressable>
         </View>
       </View>
 
@@ -198,17 +194,65 @@ export default function WorkoutsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Calendar */}
-        {renderCalendar()}
+        {/* Month Navigation */}
+        <View style={styles.monthNav}>
+          <Pressable
+            onPress={() => changeMonth('prev')}
+            style={styles.monthNavButton}
+            hitSlop={8}
+          >
+            <Ionicons name="chevron-back" size={20} color={colors.text.secondary} />
+          </Pressable>
+          <Text style={styles.monthText}>
+            {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </Text>
+          <Pressable
+            onPress={() => changeMonth('next')}
+            style={styles.monthNavButton}
+            hitSlop={8}
+          >
+            <Ionicons name="chevron-forward" size={20} color={colors.text.secondary} />
+          </Pressable>
+        </View>
 
-        {/* Stats */}
-        <View style={styles.statsContainer}>
-          <Text style={styles.statText}>
-            🔥 Current Streak: {streak} days
-          </Text>
-          <Text style={styles.statText}>
-            📈 This month: {completedThisMonth} / {totalScheduled} workouts completed
-          </Text>
+        {/* Calendar */}
+        <GlassCard variant="default" style={styles.calendarCard}>
+          {renderCalendar()}
+        </GlassCard>
+
+        {/* Stats Summary */}
+        <View style={styles.statsSection}>
+          <Text style={styles.sectionTitle}>This Month</Text>
+          <View style={styles.statsGrid}>
+            <GlassCard variant="default" style={styles.statCard}>
+              <View style={styles.statContent}>
+                <ProgressRing
+                  progress={totalScheduled > 0 ? completedThisMonth / totalScheduled : 0}
+                  size={48}
+                  strokeWidth={3}
+                  color="primary"
+                >
+                  <Ionicons name="checkmark" size={18} color={colors.accent.primary} />
+                </ProgressRing>
+                <View style={styles.statText}>
+                  <Text style={styles.statValue}>{completedThisMonth}/{totalScheduled}</Text>
+                  <Text style={styles.statLabel}>Completed</Text>
+                </View>
+              </View>
+            </GlassCard>
+
+            <GlassCard variant="default" style={styles.statCard}>
+              <View style={styles.statContent}>
+                <View style={styles.streakCircle}>
+                  <Ionicons name="flame" size={20} color={colors.accent.primary} />
+                </View>
+                <View style={styles.statText}>
+                  <Text style={styles.statValue}>{streak}</Text>
+                  <Text style={styles.statLabel}>Day Streak</Text>
+                </View>
+              </View>
+            </GlassCard>
+          </View>
         </View>
 
         {/* Recent Workouts */}
@@ -219,70 +263,92 @@ export default function WorkoutsScreen() {
             .filter(w => w.status === 'completed')
             .slice(0, 10)
             .map((workout) => (
-              <TouchableOpacity
+              <GlassCard
                 key={workout.id}
+                variant="default"
+                pressable
+                onPress={() => console.log('View workout:', workout.id)}
                 style={styles.workoutCard}
-                onPress={() => {
-                  // Navigate to workout summary - adjust route name as needed
-                  // navigation.navigate('WorkoutSummary', { workoutId: workout.id });
-                  console.log('View workout:', workout.id);
-                }}
               >
                 <View style={styles.workoutHeader}>
-                  <Text style={styles.workoutDate}>
-                    {new Date(workout.workout_date).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </Text>
-                  <Text style={styles.workoutStatus}>✓ Completed</Text>
+                  <View style={styles.workoutDateBadge}>
+                    <Text style={styles.workoutDateText}>
+                      {new Date(workout.workout_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </Text>
+                  </View>
+                  <View style={styles.completedBadge}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+                    <Text style={styles.completedText}>Completed</Text>
+                  </View>
                 </View>
 
                 <Text style={styles.workoutName}>{workout.workout_name}</Text>
 
-                <Text style={styles.workoutStats}>
-                  {workout.duration_minutes} min •{' '}
-                  {workout.total_volume?.toLocaleString() || 0} lbs volume • RPE{' '}
-                  {workout.average_rpe?.toFixed(1) || 'N/A'}
-                </Text>
+                <View style={styles.workoutStats}>
+                  <View style={styles.workoutStatItem}>
+                    <Ionicons name="time-outline" size={14} color={colors.text.tertiary} />
+                    <Text style={styles.workoutStatText}>{workout.duration_minutes} min</Text>
+                  </View>
+                  <View style={styles.workoutStatItem}>
+                    <Ionicons name="barbell-outline" size={14} color={colors.text.tertiary} />
+                    <Text style={styles.workoutStatText}>
+                      {workout.total_volume?.toLocaleString() || 0} lbs
+                    </Text>
+                  </View>
+                  {workout.average_rpe && (
+                    <View style={styles.workoutStatItem}>
+                      <Ionicons name="fitness-outline" size={14} color={colors.text.tertiary} />
+                      <Text style={styles.workoutStatText}>
+                        RPE {workout.average_rpe.toFixed(1)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
 
                 {workout.has_pr && (
-                  <Text style={styles.prBadge}>
-                    💪 PR: {workout.pr_exercise}
-                  </Text>
+                  <View style={styles.prBadge}>
+                    <Ionicons name="trophy" size={14} color={colors.accent.primary} />
+                    <Text style={styles.prText}>PR: {workout.pr_exercise}</Text>
+                  </View>
                 )}
-              </TouchableOpacity>
+              </GlassCard>
             ))}
 
           {workouts.filter(w => w.status === 'completed').length === 0 && (
-            <View style={styles.emptyState}>
+            <GlassCard variant="default" style={styles.emptyState}>
+              <Ionicons name="barbell-outline" size={40} color={colors.text.tertiary} />
               <Text style={styles.emptyStateText}>No completed workouts this month</Text>
-            </View>
+              <Text style={styles.emptyStateSubtext}>
+                Start a workout to see your progress here
+              </Text>
+            </GlassCard>
           )}
         </View>
 
         {/* Action Buttons */}
-        <View style={styles.actionButtonsRow}>
-          <TouchableOpacity
+        <View style={styles.actionButtons}>
+          <GlassButton
+            title="View All"
+            variant="secondary"
+            size="medium"
+            icon="list-outline"
+            onPress={() => console.log('View all workouts')}
+            fullWidth={false}
             style={styles.actionButton}
-            onPress={() => {
-              // Navigate to all workouts view
-              console.log('View all workouts');
-            }}
-          >
-            <Text style={styles.actionButtonText}>View All</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
+          />
+          <GlassButton
+            title="Export Data"
+            variant="secondary"
+            size="medium"
+            icon="download-outline"
+            onPress={() => console.log('Export data')}
+            fullWidth={false}
             style={styles.actionButton}
-            onPress={() => {
-              // Export data functionality
-              console.log('Export data');
-            }}
-          >
-            <Text style={styles.actionButtonText}>Export Data</Text>
-          </TouchableOpacity>
+          />
         </View>
       </ScrollView>
     </View>
@@ -292,31 +358,25 @@ export default function WorkoutsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
+    backgroundColor: colors.bg.primary,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.l,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.m,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
   },
   headerTitle: {
-    ...typography.h2,
-    color: palette.white,
-    flex: 1,
-    marginLeft: spacing.m,
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.3,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.m,
-  },
-  monthSelector: {
-    ...typography.body,
-    color: palette.tealPrimary,
   },
   profileButton: {
     padding: spacing.xs,
@@ -325,15 +385,33 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.l,
+    paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
   },
-  calendar: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
-    marginTop: spacing.l,
+  monthNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.l,
+    gap: spacing.l,
+  },
+  monthNavButton: {
+    padding: spacing.s,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.glass.bg,
+  },
+  monthText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.2,
+  },
+  calendarCard: {
+    marginBottom: spacing.xl,
+  },
+  calendar: {
+    gap: spacing.xs,
   },
   calendarRow: {
     flexDirection: 'row',
@@ -344,105 +422,214 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.s,
   },
   calendarHeaderText: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 12,
     fontWeight: '600',
+    color: colors.text.tertiary,
   },
   calendarCell: {
     flex: 1,
     aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.xs,
+    padding: spacing.xxs,
+  },
+  calendarDayContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  calendarDayTodayContainer: {
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  calendarDayCompletedContainer: {
+    backgroundColor: colors.accent.primaryMuted,
   },
   calendarDayText: {
-    ...typography.body,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.secondary,
   },
-  calendarDayToday: {
-    color: palette.tealPrimary,
-    fontWeight: '700',
+  calendarDayTodayText: {
+    color: colors.text.inverse,
+    fontWeight: '600',
   },
-  calendarDayCompleted: {
-    color: palette.white,
+  calendarDayCompletedText: {
+    color: colors.accent.primary,
+    fontWeight: '500',
   },
-  calendarCheckmark: {
-    ...typography.bodySmall,
-    color: palette.tealPrimary,
-    marginTop: spacing.xxs,
+  checkmarkDot: {
+    position: 'absolute',
+    bottom: 2,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.accent.primary,
   },
-  statsContainer: {
-    gap: spacing.s,
-    marginBottom: spacing.l,
-  },
-  statText: {
-    ...typography.bodyLarge,
-    color: palette.white,
-  },
-  section: {
-    marginBottom: spacing.l,
+  statsSection: {
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.2,
     marginBottom: spacing.m,
   },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: spacing.m,
+  },
+  statCard: {
+    flex: 1,
+  },
+  statContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.m,
+  },
+  streakCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.glass.bgHero,
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statText: {
+    flex: 1,
+  },
+  statValue: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.3,
+  },
+  statLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  section: {
+    marginBottom: spacing.xl,
+  },
   workoutCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
     marginBottom: spacing.m,
   },
   workoutHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    alignItems: 'center',
+    marginBottom: spacing.s,
   },
-  workoutDate: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+  workoutDateBadge: {
+    backgroundColor: colors.glass.bgLight,
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.xs,
   },
-  workoutStatus: {
-    ...typography.bodySmall,
-    color: palette.tealPrimary,
+  workoutDateText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.text.secondary,
+  },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  completedText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.success,
   },
   workoutName: {
-    ...typography.bodyLarge,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 16,
     fontWeight: '600',
-    marginBottom: spacing.xs,
+    color: colors.text.primary,
+    marginBottom: spacing.s,
   },
   workoutStats: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.m,
+  },
+  workoutStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  workoutStatText: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.tertiary,
   },
   prBadge: {
-    ...typography.bodySmall,
-    color: palette.tealPrimary,
-    marginTop: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.s,
+    backgroundColor: colors.glass.bgHero,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.xs,
   },
-  actionButtonsRow: {
+  prText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.accent.primary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: spacing.xxl,
+    gap: spacing.s,
+  },
+  emptyStateText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  emptyStateSubtext: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.tertiary,
+    textAlign: 'center',
+  },
+  actionButtons: {
     flexDirection: 'row',
     gap: spacing.m,
     marginTop: spacing.m,
   },
   actionButton: {
     flex: 1,
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
-    alignItems: 'center',
-  },
-  actionButtonText: {
-    ...typography.body,
-    color: palette.white,
-  },
-  emptyState: {
-    padding: spacing.xl,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    ...typography.body,
-    color: palette.midGray,
   },
 });

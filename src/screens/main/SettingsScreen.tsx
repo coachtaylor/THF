@@ -1,14 +1,16 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useProfile } from '../../hooks/useProfile';
-import { logout } from '../../services/auth/auth';
-import { clearSession } from '../../services/auth/session';
+import { useAuth } from '../../contexts/AuthContext';
 import { deleteProfile } from '../../services/storage/profile';
-import { palette, spacing, typography } from '../../theme';
+import { signalLogout } from '../../services/events/onboardingEvents';
+import { colors, spacing, borderRadius } from '../../theme/theme';
+import { GlassCard, GlassButton, GlassListItem, GlassList, GlassModal } from '../../components/common';
 
 type MainTabParamList = {
   Home: undefined;
@@ -23,20 +25,23 @@ export default function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
+  const { logout } = useAuth();
+
+  // Modal states
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleEdit = (section: string) => {
-    // Navigate to edit screens (reuse onboarding screens)
-    // navigation.navigate('EditProfile', { section });
     console.log('Edit section:', section);
   };
 
   const handleExportData = async () => {
-    // TODO: Implement data export
     console.log('Export data');
   };
 
   const handleDeleteAccount = () => {
-    // TODO: Implement account deletion
     console.log('Delete account');
   };
 
@@ -53,8 +58,8 @@ export default function SettingsScreen() {
 
   const formatHRTType = (hrtType?: string) => {
     if (!hrtType || hrtType === 'none') return 'Not on HRT';
-    if (hrtType === 'estrogen_blockers') return 'estrogen + anti-androgens';
-    if (hrtType === 'testosterone') return 'testosterone';
+    if (hrtType === 'estrogen_blockers') return 'Estrogen + anti-androgens';
+    if (hrtType === 'testosterone') return 'Testosterone';
     return hrtType;
   };
 
@@ -73,84 +78,72 @@ export default function SettingsScreen() {
       .join(' ');
   };
 
+  const formatEnvironment = (env?: string) => {
+    if (!env) return 'Not set';
+    const map: Record<string, string> = {
+      home: 'Home',
+      gym: 'Commercial Gym',
+      studio: 'Small Studio',
+      outdoors: 'Outdoors / Mixed',
+    };
+    return map[env] || env;
+  };
+
   const handleLogout = () => {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Log Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await logout();
-              await clearSession();
-            } catch (error) {
-              console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to log out. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+      setShowLogoutModal(false);
+      // Signal App.tsx to switch to OnboardingNavigator
+      signalLogout();
+    } catch (error) {
+      console.error('Logout error:', error);
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+      Alert.alert('Error', 'Failed to log out. Please try again.');
+    }
   };
 
   const handleResetOnboarding = () => {
-    Alert.alert(
-      'Reset Onboarding',
-      'This will delete your profile and reset onboarding. You\'ll need to restart the app to see the onboarding screens again. Continue?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteProfile();
-              Alert.alert(
-                'Profile Deleted',
-                'Your profile has been deleted. Please restart the app to see the onboarding screens again.',
-                [{ text: 'OK' }]
-              );
-            } catch (error) {
-              console.error('Reset onboarding error:', error);
-              Alert.alert('Error', 'Failed to reset onboarding. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+    setShowResetModal(true);
+  };
+
+  const confirmResetOnboarding = async () => {
+    try {
+      setIsResetting(true);
+      await deleteProfile();
+      await logout();
+      setShowResetModal(false);
+      // Signal App.tsx to switch to OnboardingNavigator
+      signalLogout();
+    } catch (error) {
+      console.error('Reset onboarding error:', error);
+      setIsResetting(false);
+      setShowResetModal(false);
+      Alert.alert('Error', 'Failed to reset onboarding. Please try again.');
+    }
   };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <Pressable
           onPress={() => {
-            console.log('Back button pressed - navigating to Home');
-            // Use CommonActions to ensure navigation works
             navigation.dispatch(
-              CommonActions.navigate({
-                name: 'Home',
-                params: {},
-              })
+              CommonActions.navigate({ name: 'Home', params: {} })
             );
           }}
-          activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={8}
         >
-          <Ionicons name="arrow-back" size={28} color={palette.white} />
-        </TouchableOpacity>
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+        </Pressable>
         <Text style={styles.headerTitle}>Settings</Text>
-        <View style={{ width: 28 }} />
+        <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
@@ -158,246 +151,391 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>👤 Profile</Text>
-            <TouchableOpacity onPress={() => handleEdit('profile')}>
-              <Text style={styles.editButton}>[Edit]</Text>
-            </TouchableOpacity>
+        {/* Profile Header Card */}
+        <GlassCard variant="hero" shimmer style={styles.profileCard}>
+          <View style={styles.profileContent}>
+            <View style={styles.avatarContainer}>
+              <LinearGradient
+                colors={[colors.accent.primary, colors.accent.secondary]}
+                style={styles.avatarGradient}
+              >
+                <Ionicons name="person" size={32} color={colors.text.inverse} />
+              </LinearGradient>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profilePronouns}>
+                {profile?.pronouns || 'No pronouns set'}
+              </Text>
+              <Text style={styles.profileIdentity}>
+                {formatGenderIdentity(profile?.gender_identity)}
+              </Text>
+            </View>
+            <Pressable onPress={() => handleEdit('profile')} hitSlop={8}>
+              <View style={styles.editButton}>
+                <Ionicons name="pencil" size={16} color={colors.accent.primary} />
+              </View>
+            </Pressable>
           </View>
-
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionText}>
-              {profile?.pronouns || 'No pronouns set'} • {formatGenderIdentity(profile?.gender_identity)}
-            </Text>
-          </View>
-        </View>
+        </GlassCard>
 
         {/* HRT Status */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>💊 HRT Status</Text>
-            <TouchableOpacity onPress={() => handleEdit('hrt')}>
-              <Text style={styles.editButton}>[Edit]</Text>
-            </TouchableOpacity>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.secondaryMuted }]}>
+                <Ionicons name="medical" size={16} color={colors.accent.secondary} />
+              </View>
+              <Text style={styles.sectionTitle}>HRT Status</Text>
+            </View>
+            <Pressable onPress={() => handleEdit('hrt')} hitSlop={8}>
+              <Text style={styles.editLink}>Edit</Text>
+            </Pressable>
           </View>
-
-          <View style={styles.sectionCard}>
+          <GlassCard variant="default">
             {profile?.on_hrt ? (
-              <>
-                <Text style={styles.sectionText}>
-                  • On {formatHRTType(profile.hrt_type)}
-                </Text>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoText}>On {formatHRTType(profile.hrt_type)}</Text>
                 {profile.hrt_start_date && (
-                  <Text style={styles.sectionText}>
-                    • Started {new Date(profile.hrt_start_date).toLocaleDateString('en-US', {
+                  <Text style={styles.infoSubtext}>
+                    Started {new Date(profile.hrt_start_date).toLocaleDateString('en-US', {
                       month: 'long',
                       year: 'numeric',
                     })}
-                    {profile.hrt_months_duration
-                      ? ` (${profile.hrt_months_duration} months)`
-                      : ''}
+                    {profile.hrt_months_duration ? ` (${profile.hrt_months_duration} months)` : ''}
                   </Text>
                 )}
-              </>
+              </View>
             ) : (
-              <Text style={styles.sectionText}>• Not on HRT</Text>
+              <Text style={styles.infoText}>Not on HRT</Text>
             )}
-          </View>
+          </GlassCard>
         </View>
 
         {/* Binding */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🔒 Binding</Text>
-            <TouchableOpacity onPress={() => handleEdit('binding')}>
-              <Text style={styles.editButton}>[Edit]</Text>
-            </TouchableOpacity>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+                <Ionicons name="shield-checkmark" size={16} color={colors.accent.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>Binding</Text>
+            </View>
+            <Pressable onPress={() => handleEdit('binding')} hitSlop={8}>
+              <Text style={styles.editLink}>Edit</Text>
+            </Pressable>
           </View>
-
-          <View style={styles.sectionCard}>
+          <GlassCard variant="default">
             {profile?.binds_chest ? (
-              <>
+              <View style={styles.infoContent}>
                 {profile.binding_frequency && (
-                  <Text style={styles.sectionText}>
-                    • Binds {profile.binding_frequency}
-                  </Text>
+                  <Text style={styles.infoText}>Binds {profile.binding_frequency}</Text>
                 )}
                 {profile.binding_duration_hours && (
-                  <Text style={styles.sectionText}>
-                    • {profile.binding_duration_hours} hours per session
+                  <Text style={styles.infoSubtext}>
+                    {profile.binding_duration_hours} hours per session
                   </Text>
                 )}
-              </>
+              </View>
             ) : (
-              <Text style={styles.sectionText}>• Does not bind</Text>
+              <Text style={styles.infoText}>Does not bind</Text>
             )}
-          </View>
+          </GlassCard>
         </View>
 
         {/* Surgery History */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🏥 Surgery History</Text>
-            <TouchableOpacity onPress={() => handleEdit('surgery')}>
-              <Text style={styles.editButton}>[Edit]</Text>
-            </TouchableOpacity>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+                <Ionicons name="bandage" size={16} color={colors.accent.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>Surgery History</Text>
+            </View>
+            <Pressable onPress={() => handleEdit('surgery')} hitSlop={8}>
+              <Text style={styles.editLink}>Edit</Text>
+            </Pressable>
           </View>
-
-          <View style={styles.sectionCard}>
+          <GlassCard variant="default">
             {profile?.surgeries && profile.surgeries.length > 0 ? (
-              profile.surgeries.map((surgery, index) => (
-                <Text key={index} style={styles.sectionText}>
-                  • {formatSurgeryType(surgery.type)} (
-                  {new Date(surgery.date).toLocaleDateString('en-US', {
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                  {surgery.weeks_post_op ? `, ${surgery.weeks_post_op} weeks post-op` : ''})
-                </Text>
-              ))
+              <View style={styles.infoContent}>
+                {profile.surgeries.map((surgery, index) => (
+                  <Text key={index} style={styles.infoText}>
+                    {formatSurgeryType(surgery.type)} ({new Date(surgery.date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      year: 'numeric',
+                    })})
+                  </Text>
+                ))}
+              </View>
             ) : (
-              <Text style={styles.sectionText}>• No surgeries</Text>
+              <Text style={styles.infoText}>No surgeries</Text>
             )}
-          </View>
+          </GlassCard>
         </View>
 
         {/* Fitness Goals */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>🎯 Fitness Goals</Text>
-            <TouchableOpacity onPress={() => handleEdit('goals')}>
-              <Text style={styles.editButton}>[Edit]</Text>
-            </TouchableOpacity>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.successMuted }]}>
+                <Ionicons name="trophy" size={16} color={colors.success} />
+              </View>
+              <Text style={styles.sectionTitle}>Fitness Goals</Text>
+            </View>
+            <Pressable onPress={() => handleEdit('goals')} hitSlop={8}>
+              <Text style={styles.editLink}>Edit</Text>
+            </Pressable>
           </View>
-
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionText}>
-              • Primary: {formatGoal(profile?.primary_goal)}
-            </Text>
-            {profile?.secondary_goals && profile.secondary_goals.length > 0 && (
-              <Text style={styles.sectionText}>
-                • Secondary: {profile.secondary_goals.map(formatGoal).join(', ')}
+          <GlassCard variant="default">
+            <View style={styles.infoContent}>
+              <Text style={styles.infoText}>
+                Primary: {formatGoal(profile?.primary_goal)}
               </Text>
-            )}
-          </View>
+              {profile?.secondary_goals && profile.secondary_goals.length > 0 && (
+                <Text style={styles.infoSubtext}>
+                  Secondary: {profile.secondary_goals.map(formatGoal).join(', ')}
+                </Text>
+              )}
+            </View>
+          </GlassCard>
         </View>
 
         {/* Training Preferences */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>💪 Training Preferences</Text>
-            <TouchableOpacity onPress={() => handleEdit('training')}>
-              <Text style={styles.editButton}>[Edit]</Text>
-            </TouchableOpacity>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+                <Ionicons name="barbell" size={16} color={colors.accent.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>Training Preferences</Text>
+            </View>
+            <Pressable onPress={() => handleEdit('training')} hitSlop={8}>
+              <Text style={styles.editLink}>Edit</Text>
+            </Pressable>
           </View>
+          <GlassCard variant="default">
+            <View style={styles.infoContent}>
+              <Text style={styles.infoText}>
+                {profile?.fitness_experience
+                  ? profile.fitness_experience.charAt(0).toUpperCase() + profile.fitness_experience.slice(1)
+                  : 'Not set'} level
+              </Text>
+              <Text style={styles.infoSubtext}>
+                {profile?.workout_frequency || 0} days/week, {profile?.session_duration || 0} min sessions
+              </Text>
+              <Text style={styles.infoSubtext}>
+                Equipment: {profile?.equipment?.join(', ') || 'None'}
+              </Text>
+            </View>
+          </GlassCard>
+        </View>
 
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionText}>
-              • {profile?.fitness_experience
-                ? profile.fitness_experience.charAt(0).toUpperCase() +
-                  profile.fitness_experience.slice(1)
-                : 'Not set'}{' '}
-              level
-            </Text>
-            <Text style={styles.sectionText}>
-              • {profile?.workout_frequency || 0} days/week, {profile?.session_duration || 0} min
-              sessions
-            </Text>
-            <Text style={styles.sectionText}>
-              • Equipment: {profile?.equipment?.join(', ') || 'None'}
-            </Text>
+        {/* Training Environment */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+                <Ionicons name="location" size={16} color={colors.accent.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>Training Environment</Text>
+            </View>
+            <Pressable onPress={() => handleEdit('environment')} hitSlop={8}>
+              <Text style={styles.editLink}>Edit</Text>
+            </Pressable>
           </View>
+          <GlassCard variant="default">
+            <View style={styles.infoContent}>
+              <Text style={styles.infoText}>
+                {formatEnvironment(profile?.training_environment)}
+              </Text>
+              <Text style={styles.infoSubtext}>
+                {profile?.training_environment === 'home' && 'Workouts optimized for home with minimal equipment'}
+                {profile?.training_environment === 'gym' && 'Full access to gym equipment and machines'}
+                {profile?.training_environment === 'studio' && 'Workouts for studio environments with basic equipment'}
+                {profile?.training_environment === 'outdoors' && 'Portable and bodyweight exercises for any location'}
+                {!profile?.training_environment && 'Set your training environment to get customized workouts'}
+              </Text>
+            </View>
+          </GlassCard>
         </View>
 
         {/* App Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚙️ App Settings</Text>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Notifications</Text>
-            <Text style={styles.settingValue}>[Edit]</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Rest timer sound</Text>
-            <Text style={styles.settingValue}>✓ Enabled</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Metric system</Text>
-            <Text style={styles.settingValue}>lbs / kg</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Theme</Text>
-            <Text style={styles.settingValue}>Dark</Text>
-          </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.glass.bgLight }]}>
+                <Ionicons name="settings" size={16} color={colors.text.secondary} />
+              </View>
+              <Text style={styles.sectionTitle}>App Settings</Text>
+            </View>
+          </View>
+          <GlassList>
+            <GlassListItem
+              title="Notifications"
+              rightIcon="chevron-forward"
+              onPress={() => console.log('Notifications')}
+            />
+            <GlassListItem
+              title="Rest timer sound"
+              rightValue="Enabled"
+            />
+            <GlassListItem
+              title="Units"
+              rightValue="lbs"
+            />
+            <GlassListItem
+              title="Theme"
+              rightValue="Dark"
+            />
+          </GlassList>
         </View>
 
         {/* Data & Privacy */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📊 Data & Privacy</Text>
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleExportData}>
-            <Text style={styles.settingText}>Export workout data</Text>
-            <Ionicons name="download-outline" size={20} color={palette.white} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem} onPress={handleDeleteAccount}>
-            <Text style={[styles.settingText, styles.dangerText]}>Delete account</Text>
-            <Ionicons name="trash-outline" size={20} color={palette.error} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Privacy policy</Text>
-            <Ionicons name="open-outline" size={20} color={palette.white} />
-          </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.glass.bgLight }]}>
+                <Ionicons name="shield" size={16} color={colors.text.secondary} />
+              </View>
+              <Text style={styles.sectionTitle}>Data & Privacy</Text>
+            </View>
+          </View>
+          <GlassList>
+            <GlassListItem
+              title="Export workout data"
+              leftIcon="download-outline"
+              onPress={handleExportData}
+              showChevron
+            />
+            <GlassListItem
+              title="Delete account"
+              leftIcon="trash-outline"
+              variant="danger"
+              onPress={handleDeleteAccount}
+              showChevron
+            />
+            <GlassListItem
+              title="Privacy policy"
+              leftIcon="document-text-outline"
+              onPress={() => console.log('Privacy policy')}
+              showChevron
+            />
+          </GlassList>
         </View>
 
-        {/* DEBUG: Reset Onboarding - TEMPORARY */}
+        {/* Debug Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: palette.warning || palette.error }]}>
-            🧪 DEBUG: Reset Onboarding
-          </Text>
-          <TouchableOpacity style={[styles.settingItem, { borderColor: palette.error + '40' }]} onPress={handleResetOnboarding}>
-            <Text style={[styles.settingText, styles.dangerText]}>Reset Onboarding (Delete Profile)</Text>
-            <Ionicons name="refresh-outline" size={20} color={palette.error} />
-          </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.warningMuted }]}>
+                <Ionicons name="bug" size={16} color={colors.warning} />
+              </View>
+              <Text style={[styles.sectionTitle, { color: colors.warning }]}>Debug</Text>
+            </View>
+          </View>
+          <GlassList>
+            <GlassListItem
+              title="Reset Onboarding"
+              subtitle="Delete profile and restart"
+              leftIcon="refresh-outline"
+              variant="danger"
+              onPress={handleResetOnboarding}
+              showChevron
+            />
+          </GlassList>
         </View>
 
         {/* Support */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>💬 Support</Text>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Contact support</Text>
-            <Ionicons name="mail-outline" size={20} color={palette.white} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Report a bug</Text>
-            <Ionicons name="bug-outline" size={20} color={palette.white} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Give feedback</Text>
-            <Ionicons name="chatbubble-outline" size={20} color={palette.white} />
-          </TouchableOpacity>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.glass.bgLight }]}>
+                <Ionicons name="help-circle" size={16} color={colors.text.secondary} />
+              </View>
+              <Text style={styles.sectionTitle}>Support</Text>
+            </View>
+          </View>
+          <GlassList>
+            <GlassListItem
+              title="Contact support"
+              leftIcon="mail-outline"
+              onPress={() => console.log('Contact support')}
+              showChevron
+            />
+            <GlassListItem
+              title="Report a bug"
+              leftIcon="bug-outline"
+              onPress={() => console.log('Report bug')}
+              showChevron
+            />
+            <GlassListItem
+              title="Give feedback"
+              leftIcon="chatbubble-outline"
+              onPress={() => console.log('Feedback')}
+              showChevron
+            />
+          </GlassList>
         </View>
 
-        {/* Logout Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.logoutButton}
+        {/* Logout Button */}
+        <View style={styles.logoutSection}>
+          <GlassButton
+            title="Log Out"
+            variant="danger"
+            icon="log-out-outline"
             onPress={handleLogout}
-          >
-            <Ionicons name="log-out-outline" size={24} color={palette.error} />
-            <Text style={styles.logoutButtonText}>Log Out</Text>
-          </TouchableOpacity>
+          />
         </View>
+
+        {/* Version */}
+        <Text style={styles.versionText}>TransFitness v1.0.0</Text>
       </ScrollView>
+
+      {/* Logout Modal */}
+      <GlassModal
+        visible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        title="Log Out"
+        message="Are you sure you want to log out? You'll need to sign in again to access your workouts."
+        icon="log-out-outline"
+        iconColor={colors.error}
+        actions={[
+          {
+            label: 'Log Out',
+            onPress: confirmLogout,
+            variant: 'danger',
+            loading: isLoggingOut,
+          },
+          {
+            label: 'Cancel',
+            onPress: () => setShowLogoutModal(false),
+            variant: 'secondary',
+          },
+        ]}
+      />
+
+      {/* Reset Onboarding Modal */}
+      <GlassModal
+        visible={showResetModal}
+        onClose={() => setShowResetModal(false)}
+        title="Reset Everything"
+        message="This will delete your profile, workout history, and log you out. You'll start fresh with onboarding. This cannot be undone."
+        icon="warning-outline"
+        iconColor={colors.warning}
+        actions={[
+          {
+            label: 'Reset & Log Out',
+            onPress: confirmResetOnboarding,
+            variant: 'danger',
+            loading: isResetting,
+          },
+          {
+            label: 'Cancel',
+            onPress: () => setShowResetModal(false),
+            variant: 'secondary',
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -405,89 +543,144 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
+    backgroundColor: colors.bg.primary,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.l,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.m,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
   },
   headerTitle: {
-    ...typography.h2,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.3,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.l,
+    paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
   },
+  profileCard: {
+    marginBottom: spacing.xl,
+  },
+  profileContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.l,
+  },
+  avatarContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  avatarGradient: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profilePronouns: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.3,
+  },
+  profileIdentity: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  editButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.glass.bgHero,
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   section: {
-    marginTop: spacing.xl,
+    marginBottom: spacing.xl,
   },
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.m,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+  },
+  sectionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.2,
   },
-  editButton: {
-    ...typography.body,
-    color: palette.tealPrimary,
+  editLink: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.accent.primary,
   },
-  sectionCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
+  infoContent: {
     gap: spacing.xs,
   },
-  sectionText: {
-    ...typography.body,
-    color: palette.lightGray,
+  infoText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.m,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+  infoSubtext: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.secondary,
   },
-  settingText: {
-    ...typography.body,
-    color: palette.white,
+  logoutSection: {
+    marginTop: spacing.m,
+    marginBottom: spacing.l,
   },
-  settingValue: {
-    ...typography.body,
-    color: palette.midGray,
-  },
-  dangerText: {
-    color: palette.error,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.m,
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
-    borderWidth: 1,
-    borderColor: palette.error + '40',
-    marginTop: spacing.xl,
-  },
-  logoutButtonText: {
-    ...typography.button,
-    color: palette.error,
-    fontSize: 18,
+  versionText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '400',
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
   },
 });

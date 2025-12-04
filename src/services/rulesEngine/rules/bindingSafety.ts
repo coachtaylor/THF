@@ -8,7 +8,7 @@ export const bindingSafetyRules: Rule[] = [
     severity: 'critical',
     condition: (ctx: EvaluationContext) => {
       return ctx.user_profile.binds_chest &&
-             (ctx.user_profile.binding_frequency === 'daily' || 
+             (ctx.user_profile.binding_frequency === 'daily' ||
               ctx.user_profile.binding_frequency === 'sometimes');
     },
     action: {
@@ -17,9 +17,10 @@ export const bindingSafetyRules: Rule[] = [
         contraindications: ['heavy_binding', 'tight_binder'],
         custom_filter: (ex) => !ex.binder_aware && !ex.heavy_binding_safe
       }
-    }
+    },
+    userMessage: "We've selected exercises that reduce chest compression stress while you're binding."
   },
-  
+
   // BS-02: Breathing-Intensive Cardio Duration
   {
     rule_id: 'BS-02',
@@ -36,9 +37,10 @@ export const bindingSafetyRules: Rule[] = [
         // Add breaks every 5 minutes
         // This is applied during workout assembly
       }
-    }
+    },
+    userMessage: "Cardio is kept moderate since binding can limit breathing capacity during intense exercise."
   },
-  
+
   // BS-03: Binder Break Reminders
   {
     rule_id: 'BS-03',
@@ -55,9 +57,10 @@ export const bindingSafetyRules: Rule[] = [
         message: 'Time for a binder break. Remove binder for 10-15 minutes to allow rib expansion and deep breathing.',
         severity: 'medium'
       }
-    }
+    },
+    userMessage: "We've included binder break reminders to support safe chest binding during longer sessions."
   },
-  
+
   // BS-04: Overhead Movement Restriction
   {
     rule_id: 'BS-04',
@@ -74,9 +77,10 @@ export const bindingSafetyRules: Rule[] = [
         // Reduce sets by 1 for overhead push exercises
         // Add stretch after
       }
-    }
+    },
+    userMessage: "Overhead pressing volume is reduced to minimize rib expansion strain while binding."
   },
-  
+
   // BS-05: Post-Workout Binder Removal Prompt
   {
     rule_id: 'BS-05',
@@ -93,6 +97,7 @@ export const bindingSafetyRules: Rule[] = [
         message: 'Remove binder for at least 30 minutes post-workout. Your body needs recovery time.',
         severity: 'low'
       }
-    }
+    },
+    userMessage: "You'll get a reminder to remove your binder after the workout for recovery."
   }
 ];
