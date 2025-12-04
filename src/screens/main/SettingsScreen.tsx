@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useProfile } from '../../hooks/useProfile';
 import { logout } from '../../services/auth/auth';
@@ -133,7 +133,20 @@ export default function SettingsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity 
+          onPress={() => {
+            console.log('Back button pressed - navigating to Home');
+            // Use CommonActions to ensure navigation works
+            navigation.dispatch(
+              CommonActions.navigate({
+                name: 'Home',
+                params: {},
+              })
+            );
+          }}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <Ionicons name="arrow-back" size={28} color={palette.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
