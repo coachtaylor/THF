@@ -50,6 +50,20 @@ const tableStatements = [
     total_sessions INTEGER DEFAULT 0,
     avg_rpe REAL DEFAULT 0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );`,
+  `CREATE TABLE IF NOT EXISTS saved_workouts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    plan_id TEXT,
+    day_number INTEGER,
+    duration INTEGER NOT NULL,
+    workout_name TEXT NOT NULL,
+    workout_data TEXT NOT NULL,
+    notes TEXT,
+    saved_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    last_used_at TEXT,
+    use_count INTEGER DEFAULT 0,
+    synced_at TEXT
   );`
 ];
 

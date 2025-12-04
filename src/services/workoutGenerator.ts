@@ -17,7 +17,7 @@ import { calculateVolumeAdjustments, VolumeAdjustments } from './workoutGenerati
 import { filterByEquipment, filterByConstraints, calculateExerciseScore } from './workoutGeneration/utils';
 
 interface WorkoutGenerationOptions {
-  duration: 5 | 15 | 30 | 45;
+  duration: 30 | 45 | 60 | 90;
   profile: Profile;
   availableExercises: Exercise[];
 }
@@ -27,7 +27,7 @@ interface WorkoutGenerationOptions {
  */
 export function generateWorkout(
   profile: Profile,
-  duration: 5 | 15 | 30 | 45,
+  duration: 30 | 45 | 60 | 90,
   availableExercises: Exercise[],
   dayTemplate?: DayTemplate,  // Optional day template
   selectedTemplate?: SelectedTemplate,  // Optional selected template (for volume adjustments)
@@ -362,17 +362,17 @@ export function selectByGoals(
  */
 function calculateExerciseCount(duration: number): number {
   const mapping: Record<
-    5 | 15 | 30 | 45,
+    30 | 45 | 60 | 90,
     { min: number; max: number; default: number }
   > = {
-    5: { min: 1, max: 3, default: 2 },
-    15: { min: 3, max: 6, default: 4 },
     30: { min: 4, max: 8, default: 6 },
     45: { min: 5, max: 10, default: 8 },
+    60: { min: 6, max: 12, default: 10 },
+    90: { min: 8, max: 15, default: 12 },
   };
 
-  const config = mapping[duration as 5 | 15 | 30 | 45];
-  return config.default;
+  const config = mapping[duration as 30 | 45 | 60 | 90];
+  return config?.default || 6; // Fallback to 6 if duration not in mapping
 }
 
 /**
@@ -438,7 +438,7 @@ export function structureWorkout(
   });
 
   return {
-    duration: duration as 5 | 15 | 30 | 45,
+    duration: duration as 30 | 45 | 60 | 90,
     exercises: exerciseInstances,
     totalMinutes: duration,
   };

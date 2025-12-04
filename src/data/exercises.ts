@@ -120,6 +120,7 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
     pressure_level,
     target_muscles: db.target_muscles ?? undefined,
     secondary_muscles: db.secondary_muscles ?? undefined,
+    media_thumb: db.media_thumb ?? undefined,
     cue_primary: db.cue_primary ?? undefined,
     breathing: db.breathing ?? undefined,
     neutral_cues: [], // TODO: Add cues column to database
@@ -130,8 +131,8 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
     effectiveness_rating: db.effectiveness_rating ?? undefined,
     source: db.source ?? undefined,
     notes: db.notes ?? undefined,
-    dysphoria_tags: Array.isArray(db.dysphoria_tags) 
-      ? db.dysphoria_tags.join(', ') 
+    dysphoria_tags: Array.isArray(db.dysphoria_tags)
+      ? db.dysphoria_tags.join(', ')
       : (db.dysphoria_tags ?? undefined),
     post_op_safe_weeks: db.post_op_safe_weeks ?? undefined,
     swaps: [], // TODO: Add swaps column to database
@@ -173,6 +174,7 @@ export async function fetchExercises(): Promise<Exercise[]> {
         contraindications,
         target_muscles,
         secondary_muscles,
+        media_thumb,
         gender_goal_emphasis,
         cue_primary,
         breathing,

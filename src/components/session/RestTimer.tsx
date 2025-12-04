@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Card } from 'react-native-paper';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { palette, spacing, typography } from '../../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, spacing, borderRadius } from '../../theme/theme';
+
 // Haptics are optional - only use if available
 let Haptics: any = null;
 try {
@@ -32,12 +33,12 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
-export default function RestTimer({ 
-  restSeconds, 
+export default function RestTimer({
+  restSeconds,
   previousSet,
   nextSetNumber,
   totalSets,
-  onComplete, 
+  onComplete,
   onSkip,
   onAddTime,
   onSkipExercise,
@@ -45,6 +46,7 @@ export default function RestTimer({
   const [remainingSeconds, setRemainingSeconds] = useState(restSeconds);
   const [isPaused, setIsPaused] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!isPaused && remainingSeconds > 0) {
@@ -78,6 +80,26 @@ export default function RestTimer({
     };
   }, [isPaused, remainingSeconds]);
 
+  // Pulse animation when timer is complete
+  useEffect(() => {
+    if (remainingSeconds === 0) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.05,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [remainingSeconds, pulseAnim]);
+
   const handleAddTime = (seconds: number) => {
     setRemainingSeconds(prev => prev + seconds);
     if (onAddTime) {
@@ -101,29 +123,56 @@ export default function RestTimer({
 
   return (
     <View style={styles.container}>
+      <LinearGradient
+        colors={['#141418', '#0A0A0C']}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={['rgba(91, 206, 250, 0.1)', 'transparent']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
       <View style={styles.restHeader}>
+        <View style={styles.restIconContainer}>
+          <Ionicons name="pause-circle" size={28} color={colors.accent.primary} />
+        </View>
         <Text style={styles.restTitle}>Rest</Text>
       </View>
 
-      <View style={styles.timerDisplay}>
-        <Text style={styles.timerText}>{formatTime(remainingSeconds)}</Text>
-      </View>
+      <Animated.View style={[styles.timerContainer, { transform: [{ scale: pulseAnim }] }]}>
+        <Text style={[
+          styles.timerText,
+          remainingSeconds === 0 && styles.timerTextReady
+        ]}>
+          {formatTime(remainingSeconds)}
+        </Text>
+      </Animated.View>
 
       {/* Progress Bar */}
       <View style={styles.progressBarContainer}>
         <View style={styles.progressBar}>
-          <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+          <LinearGradient
+            colors={[colors.accent.primary, '#4AA8D8']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.progressBarFill, { width: `${progress * 100}%` }]}
+          />
         </View>
       </View>
 
       <Text style={styles.recommendedText}>
-        Recommended: {formatTime(restSeconds)} ({restSeconds} seconds)
+        Recommended: {formatTime(restSeconds)}
       </Text>
 
       {/* Previous Set Summary */}
       {previousSet && (
         <View style={styles.previousSetContainer}>
-          <Text style={styles.previousSetMessage}>Great set! 💪</Text>
+          <View style={styles.previousSetBadge}>
+            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            <Text style={styles.previousSetMessage}>Great set!</Text>
+          </View>
           <Text style={styles.previousSetDetails}>
             {previousSet.reps} reps @ {previousSet.weight} lbs • RPE {previousSet.rpe}
           </Text>
@@ -133,61 +182,73 @@ export default function RestTimer({
       {/* Next Set Info */}
       {nextSetNumber && totalSets && (
         <View style={styles.nextSetContainer}>
-          <Text style={styles.nextSetLabel}>💡 Next: Set {nextSetNumber} of {totalSets}</Text>
-          <Text style={styles.nextSetTip}>Take deep breaths and stay hydrated</Text>
+          <Ionicons name="arrow-forward-circle" size={20} color={colors.accent.primary} />
+          <Text style={styles.nextSetLabel}>Next: Set {nextSetNumber} of {totalSets}</Text>
         </View>
       )}
 
       {/* Start Next Set Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[
           styles.startNextButton,
           remainingSeconds === 0 && styles.startNextButtonReady
-        ]} 
+        ]}
         onPress={onComplete}
+        activeOpacity={0.8}
       >
-        <Text style={styles.startNextButtonText}>
-          {remainingSeconds === 0 ? 'Ready? Start Next Set →' : 'Start Next Set →'}
-        </Text>
+        <LinearGradient
+          colors={remainingSeconds === 0 ? [colors.success, '#2ECC71'] : [colors.accent.primary, '#4AA8D8']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.startNextButtonGradient}
+        >
+          <Text style={styles.startNextButtonText}>
+            {remainingSeconds === 0 ? 'Ready! Start Next Set' : 'Start Next Set'}
+          </Text>
+          <Ionicons name="arrow-forward" size={20} color={colors.text.inverse} />
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Time Controls */}
       <View style={styles.timeControls}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.addTimeButton}
           onPress={() => handleAddTime(15)}
+          activeOpacity={0.7}
         >
-          <Text style={styles.addTimeButtonText}>Add 15s</Text>
+          <Ionicons name="add" size={18} color={colors.text.primary} />
+          <Text style={styles.addTimeButtonText}>15s</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.addTimeButton}
           onPress={() => handleAddTime(30)}
+          activeOpacity={0.7}
         >
-          <Text style={styles.addTimeButtonText}>Add 30s</Text>
+          <Ionicons name="add" size={18} color={colors.text.primary} />
+          <Text style={styles.addTimeButtonText}>30s</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.skipButton}
           onPress={handleSkip}
+          activeOpacity={0.7}
         >
-          <Text style={styles.skipButtonText}>Skip Rest</Text>
+          <Ionicons name="play-skip-forward" size={18} color={colors.text.tertiary} />
+          <Text style={styles.skipButtonText}>Skip</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Previous Sets (if available) */}
-      {previousSet && (
-        <View style={styles.allSetsContainer}>
-          <Text style={styles.allSetsLabel}>Previous Sets</Text>
-          <Text style={styles.allSetsText}>
-            Set {nextSetNumber ? nextSetNumber - 1 : 1}: ✓ {previousSet.reps} reps @ {previousSet.weight} lbs • RPE {previousSet.rpe}
-          </Text>
-        </View>
-      )}
+      {/* Hydration Tip */}
+      <View style={styles.tipContainer}>
+        <Ionicons name="water" size={18} color={colors.accent.primary} />
+        <Text style={styles.tipText}>Take deep breaths and stay hydrated</Text>
+      </View>
 
       {/* Skip Exercise Option */}
       {onSkipExercise && (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.skipExerciseButton}
           onPress={onSkipExercise}
+          activeOpacity={0.7}
         >
           <Text style={styles.skipExerciseButtonText}>Skip Exercise</Text>
         </TouchableOpacity>
@@ -198,44 +259,83 @@ export default function RestTimer({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: palette.deepBlack,
+    borderRadius: borderRadius['2xl'],
     padding: spacing.l,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   restHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.s,
     marginBottom: spacing.m,
   },
-  restTitle: {
-    ...typography.h2,
-    color: palette.white,
+  restIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.accent.primaryMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  timerDisplay: {
+  restTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.text.primary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  timerContainer: {
     alignItems: 'center',
     marginBottom: spacing.m,
   },
   timerText: {
-    ...typography.h1,
-    color: palette.tealPrimary,
-    fontSize: 64,
-    fontWeight: '700',
+    fontFamily: 'Poppins',
+    fontSize: 72,
+    fontWeight: '800',
+    color: colors.accent.primary,
+    letterSpacing: -2,
+    textShadowColor: 'rgba(91, 206, 250, 0.3)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 12,
+  },
+  timerTextReady: {
+    color: colors.success,
+    textShadowColor: 'rgba(46, 204, 113, 0.3)',
   },
   progressBarContainer: {
     marginBottom: spacing.s,
   },
   progressBar: {
     height: 8,
-    backgroundColor: palette.border,
+    backgroundColor: colors.glass.bg,
     borderRadius: 4,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border.default,
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: palette.tealPrimary,
     borderRadius: 4,
   },
   recommendedText: {
-    ...typography.body,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.tertiary,
     textAlign: 'center',
     marginBottom: spacing.m,
   },
@@ -243,100 +343,142 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.m,
     paddingVertical: spacing.m,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  previousSetBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
   },
   previousSetMessage: {
-    ...typography.bodyLarge,
-    color: palette.white,
-    marginBottom: spacing.xs,
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
   previousSetDetails: {
-    ...typography.body,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.text.secondary,
   },
   nextSetContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
     marginBottom: spacing.m,
-    paddingVertical: spacing.m,
   },
   nextSetLabel: {
-    ...typography.body,
-    color: palette.lightGray,
-    marginBottom: spacing.xs,
-  },
-  nextSetTip: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.secondary,
   },
   startNextButton: {
-    backgroundColor: palette.tealPrimary,
-    borderRadius: 12,
-    padding: spacing.m,
-    alignItems: 'center',
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
     marginBottom: spacing.m,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   startNextButtonReady: {
-    backgroundColor: palette.success,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.success,
+      },
+    }),
+  },
+  startNextButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.s,
+    padding: spacing.m,
+    paddingVertical: 16,
   },
   startNextButtonText: {
-    ...typography.button,
-    color: palette.deepBlack,
+    fontFamily: 'Poppins',
+    fontSize: 16,
     fontWeight: '700',
-    fontSize: 18,
+    color: colors.text.inverse,
+    letterSpacing: 0.3,
   },
   timeControls: {
     flexDirection: 'row',
-    gap: spacing.m,
+    gap: spacing.s,
     marginBottom: spacing.m,
   },
   addTimeButton: {
     flex: 1,
-    backgroundColor: palette.darkCard,
-    borderRadius: 8,
-    padding: spacing.m,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.l,
+    padding: spacing.m,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: colors.border.default,
   },
   addTimeButtonText: {
-    ...typography.body,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
   skipButton: {
     flex: 1,
-    backgroundColor: palette.darkCard,
-    borderRadius: 8,
-    padding: spacing.m,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.l,
+    padding: spacing.m,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: colors.border.default,
   },
   skipButtonText: {
-    ...typography.body,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.tertiary,
   },
-  allSetsContainer: {
-    marginTop: spacing.m,
-    paddingTop: spacing.m,
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
+  tipContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.m,
   },
-  allSetsLabel: {
-    ...typography.body,
-    color: palette.lightGray,
-    marginBottom: spacing.xs,
-  },
-  allSetsText: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+  tipText: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.tertiary,
   },
   skipExerciseButton: {
-    marginTop: spacing.m,
     padding: spacing.m,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: palette.border,
+    borderTopColor: colors.border.default,
   },
   skipExerciseButtonText: {
-    ...typography.body,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.tertiary,
   },
 });

@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Button, IconButton } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 import { TimerFormat, TimerState } from '../../types/session';
-import { palette, spacing, typography } from '../../theme';
+import { colors, spacing, borderRadius } from '../../theme/theme';
 
 interface TimerProps {
   format: TimerFormat;
@@ -287,49 +289,69 @@ const Timer: React.FC<TimerProps> = ({
 const styles = StyleSheet.create({
   container: {
     padding: spacing.m,
-    gap: spacing.s,
+    gap: spacing.m,
   },
   instructions: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.tertiary,
     textAlign: 'center',
+    lineHeight: 18,
   },
   timerCard: {
-    backgroundColor: palette.darkerCard,
-    borderRadius: 12,
-    paddingVertical: spacing.m,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius['2xl'],
+    paddingVertical: spacing.l,
     paddingHorizontal: spacing.m,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: colors.glass.borderCyan,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   timerText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: palette.tealPrimary,
-    letterSpacing: 1,
+    fontFamily: 'Poppins',
+    fontSize: 56,
+    fontWeight: '800',
+    color: colors.accent.primary,
+    letterSpacing: -1,
+    textShadowColor: 'rgba(91, 206, 250, 0.3)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 12,
   },
   setCounter: {
-    marginTop: spacing.xs,
-    ...typography.bodySmall,
-    color: palette.midGray,
+    marginTop: spacing.s,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.tertiary,
   },
   controls: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.xs,
+    gap: spacing.s,
     justifyContent: 'center',
   },
   completeButton: {
-    minWidth: 120,
+    minWidth: 140,
   },
   actionButton: {
-    minWidth: 120,
+    minWidth: 140,
   },
   secondaryControls: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: spacing.s,
   },
   iconRow: {
     flexDirection: 'row',

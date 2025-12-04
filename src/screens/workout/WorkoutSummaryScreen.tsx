@@ -1,20 +1,23 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
+  Pressable,
   TextInput,
   Alert,
+  Platform,
+  Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useWorkoutSafe } from '../../contexts/WorkoutContext';
-import { palette, spacing, typography } from '../../theme';
-import { useRoute } from '@react-navigation/native';
+import { colors, spacing, borderRadius } from '../../theme/theme';
+import { GlassCard, ProgressRing } from '../../components/common';
 
 type RootStackParamList = {
   WorkoutSummary: {
@@ -40,26 +43,154 @@ type WorkoutSummaryScreenRouteProp = {
 
 type WorkoutRating = 'great' | 'good' | 'okay' | 'hard' | 'tough';
 
-const RATING_OPTIONS: Array<{ value: WorkoutRating; emoji: string; label: string }> = [
-  { value: 'great', emoji: '😊', label: 'Great' },
-  { value: 'good', emoji: '🙂', label: 'Good' },
-  { value: 'okay', emoji: '😐', label: 'Okay' },
-  { value: 'hard', emoji: '😕', label: 'Hard' },
-  { value: 'tough', emoji: '😣', label: 'Tough' },
+const RATING_OPTIONS: Array<{ value: WorkoutRating; emoji: string; label: string; color: string }> = [
+  { value: 'great', emoji: '😊', label: 'Great', color: colors.success },
+  { value: 'good', emoji: '🙂', label: 'Good', color: colors.accent.primary },
+  { value: 'okay', emoji: '😐', label: 'Okay', color: colors.text.secondary },
+  { value: 'hard', emoji: '😕', label: 'Hard', color: colors.warning },
+  { value: 'tough', emoji: '😣', label: 'Tough', color: colors.accent.secondary },
 ];
+
+// Celebration confetti animation component
+function CelebrationHeader({ duration }: { duration: string }) {
+  const scaleAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-150, 150],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.celebrationContainer,
+        {
+          transform: [{ scale: scaleAnim }],
+          opacity: fadeAnim,
+        },
+      ]}
+    >
+      <View style={styles.celebrationGlow}>
+        <LinearGradient
+          colors={['rgba(91, 206, 250, 0.3)', 'transparent']}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
+      <Animated.View
+        style={[
+          styles.celebrationShimmer,
+          { transform: [{ translateX: shimmerTranslate }] },
+        ]}
+      >
+        <LinearGradient
+          colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      <View style={styles.trophyContainer}>
+        <LinearGradient
+          colors={[colors.accent.primaryMuted, colors.glass.bg]}
+          style={styles.trophyBg}
+        />
+        <Ionicons name="trophy" size={48} color={colors.accent.primary} />
+      </View>
+
+      <Text style={styles.celebrationTitle}>Workout Complete!</Text>
+      <View style={styles.durationBadge}>
+        <Ionicons name="time-outline" size={16} color={colors.accent.primary} />
+        <Text style={styles.durationText}>{duration}</Text>
+      </View>
+    </Animated.View>
+  );
+}
+
+// Stat card with progress ring
+function StatCard({
+  icon,
+  value,
+  label,
+  progress,
+  color = 'primary',
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  value: string;
+  label: string;
+  progress?: number;
+  color?: 'primary' | 'secondary';
+}) {
+  const iconColor = color === 'primary' ? colors.accent.primary : colors.accent.secondary;
+
+  return (
+    <View style={styles.statCard}>
+      <LinearGradient
+        colors={['#141418', '#0A0A0C']}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.glassHighlight} />
+
+      {progress !== undefined ? (
+        <View style={styles.statRingContainer}>
+          <ProgressRing progress={progress} size={44} strokeWidth={3} color={color} />
+          <View style={styles.statIconOverlay}>
+            <Ionicons name={icon} size={16} color={iconColor} />
+          </View>
+        </View>
+      ) : (
+        <View style={[styles.statIconContainer, { backgroundColor: color === 'primary' ? colors.accent.primaryMuted : colors.accent.secondaryMuted }]}>
+          <Ionicons name={icon} size={18} color={iconColor} />
+        </View>
+      )}
+
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
 
 export default function WorkoutSummaryScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<WorkoutSummaryScreenNavigationProp>();
   const route = useRoute<WorkoutSummaryScreenRouteProp>();
-  
-  // Use route params if available (from SessionPlayer), otherwise try context
+
   const routeData = route.params?.workoutData;
-  
-  // Use safe version of useWorkout that doesn't throw if WorkoutProvider isn't available
   const workoutContext = useWorkoutSafe();
-  
-  // Use route params if available, otherwise fall back to context
+
   const workout = routeData ? null : (workoutContext?.workout || null);
   const completedSets = routeData?.completedSets || workoutContext?.completedSets || [];
   const workoutDuration = routeData?.workoutDuration || workoutContext?.workoutDuration || 0;
@@ -70,8 +201,8 @@ export default function WorkoutSummaryScreen() {
 
   const [rating, setRating] = useState<WorkoutRating | null>(null);
   const [notes, setNotes] = useState('');
+  const [notesFocused, setNotesFocused] = useState(false);
 
-  // Calculate workout statistics
   const stats = useMemo(() => {
     if (!completedSets || completedSets.length === 0) {
       return {
@@ -87,68 +218,54 @@ export default function WorkoutSummaryScreen() {
     const totalRPE = completedSets.reduce((sum, set) => sum + set.rpe, 0);
     const avgRPE = totalRPE / completedSets.length;
     const totalReps = completedSets.reduce((sum, set) => sum + set.reps, 0);
-    
-    // Calculate average rest time (assuming 60s default, would need actual rest data)
-    const avgRest = 60; // This would come from actual rest timer data
+    const avgRest = 60;
 
     return {
       totalVolume,
-      avgRPE: Math.round(avgRPE * 10) / 10, // Round to 1 decimal
+      avgRPE: Math.round(avgRPE * 10) / 10,
       totalSets: completedSets.length,
       totalReps,
       avgRest,
     };
   }, [completedSets]);
 
-  // Format duration
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
-    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+    return `${minutes} min`;
   };
 
-  // Format rest time
-  const formatRestTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    if (mins === 0) return `${secs}s`;
-    return `${mins}:${secs.toString().padStart(2, '0')} min`;
-  };
-
-  // Get achievements (mock data for now)
   const achievements = useMemo(() => {
     const achievementsList = [];
-    
-    // Streak (mock - would come from user data)
+
     achievementsList.push({
-      icon: '🔥',
+      icon: 'flame' as const,
       text: '8-day streak maintained!',
+      color: colors.warning,
     });
 
-    // PRs (mock - would check against previous workouts)
     if (stats.totalVolume > 2000) {
       achievementsList.push({
-        icon: '💪',
+        icon: 'trophy' as const,
         text: `New PR: Total Volume (${stats.totalVolume.toLocaleString()} lbs)`,
+        color: colors.accent.primary,
       });
     }
 
-    // Safety milestones (mock - would check workout data)
     achievementsList.push({
-      icon: '✓',
+      icon: 'checkmark-circle' as const,
       text: 'No binding incidents',
+      color: colors.success,
     });
 
     return achievementsList;
   }, [stats]);
 
-  // Get next workout (mock - would come from plan)
   const nextWorkout = useMemo(() => {
-    // This would come from the user's plan
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + 1);
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+
     return {
       name: 'Lower Body',
       day: dayNames[nextDate.getDay()],
@@ -158,7 +275,6 @@ export default function WorkoutSummaryScreen() {
 
   const handleDone = async () => {
     try {
-      // Save workout rating and notes
       if (rating) {
         console.log('Workout rating:', rating);
       }
@@ -166,13 +282,9 @@ export default function WorkoutSummaryScreen() {
         console.log('Workout notes:', notes);
       }
 
-      // Complete workout in context (save to database)
       await completeWorkout();
-
-      // Clear workout state
       clearWorkout();
 
-      // Navigate to Home
       navigation.reset({
         index: 0,
         routes: [{ name: 'Home' }],
@@ -184,127 +296,173 @@ export default function WorkoutSummaryScreen() {
   };
 
   const handleShareProgress = () => {
-    // TODO: Implement share functionality
     Alert.alert('Share', 'Share functionality coming soon!');
   };
 
   const handleViewDetailedStats = () => {
-    // TODO: Navigate to detailed stats screen
     navigation.navigate('DetailedStats');
   };
 
-  // Allow summary screen to work with route params even if no workout in context
   const workoutName = routeData?.workoutName || workout?.workout_name || 'Workout Complete';
-  
+
   if (!workout && !routeData) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <Text style={styles.errorText}>No workout data found</Text>
-        <TouchableOpacity 
-          style={styles.doneButton}
-          onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
-        >
-          <Text style={styles.doneButtonText}>Go Home</Text>
-        </TouchableOpacity>
+        <GlassCard variant="default" style={styles.errorCard}>
+          <Ionicons name="alert-circle" size={48} color={colors.error} />
+          <Text style={styles.errorText}>No workout data found</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.errorButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
+          >
+            <Text style={styles.errorButtonText}>Go Home</Text>
+          </Pressable>
+        </GlassCard>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[colors.bg.primary, colors.bg.secondary]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + 100 }
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Celebration Header */}
-        <View style={styles.header}>
-          <Text style={styles.celebrationEmoji}>🎉</Text>
-          <Text style={styles.celebrationText}>Workout Complete!</Text>
-          <Text style={styles.durationText}>{formatDuration(workoutDuration)}</Text>
-        </View>
+        <CelebrationHeader duration={formatDuration(workoutDuration)} />
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{exercisesCompleted}/{totalExercises}</Text>
-            <Text style={styles.statLabel}>Exercises</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.totalVolume.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>lbs</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.avgRPE}</Text>
-            <Text style={styles.statLabel}>RPE</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.totalSets}</Text>
-            <Text style={styles.statLabel}>Sets</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.totalReps}</Text>
-            <Text style={styles.statLabel}>Reps</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{formatRestTime(stats.avgRest)}</Text>
-            <Text style={styles.statLabel}>Rest Avg</Text>
-          </View>
+          <StatCard
+            icon="fitness"
+            value={`${exercisesCompleted}/${totalExercises}`}
+            label="Exercises"
+            progress={exercisesCompleted / totalExercises}
+            color="primary"
+          />
+          <StatCard
+            icon="barbell"
+            value={stats.totalVolume.toLocaleString()}
+            label="Volume (lbs)"
+            color="primary"
+          />
+          <StatCard
+            icon="speedometer"
+            value={stats.avgRPE.toString()}
+            label="Avg RPE"
+            progress={stats.avgRPE / 10}
+            color="secondary"
+          />
+          <StatCard
+            icon="layers"
+            value={stats.totalSets.toString()}
+            label="Total Sets"
+            color="primary"
+          />
+          <StatCard
+            icon="repeat"
+            value={stats.totalReps.toString()}
+            label="Total Reps"
+            color="secondary"
+          />
+          <StatCard
+            icon="time"
+            value={`${stats.avgRest}s`}
+            label="Avg Rest"
+            color="primary"
+          />
         </View>
 
         {/* Achievements */}
         {achievements.length > 0 && (
-          <View style={styles.achievementsSection}>
-            <Text style={styles.sectionTitle}>🏆 Achievements:</Text>
+          <GlassCard variant="hero" shimmer style={styles.achievementsCard}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="medal" size={20} color={colors.accent.primary} />
+              <Text style={styles.sectionTitle}>Achievements</Text>
+            </View>
+
             {achievements.map((achievement, index) => (
               <View key={index} style={styles.achievementItem}>
-                <Text style={styles.achievementIcon}>{achievement.icon}</Text>
+                <View style={[styles.achievementIcon, { backgroundColor: achievement.color + '20' }]}>
+                  <Ionicons name={achievement.icon} size={16} color={achievement.color} />
+                </View>
                 <Text style={styles.achievementText}>{achievement.text}</Text>
               </View>
             ))}
-          </View>
+          </GlassCard>
         )}
 
         {/* Workout Rating */}
-        <View style={styles.ratingSection}>
-          <Text style={styles.sectionTitle}>💬 How was your workout?</Text>
+        <GlassCard variant="default" style={styles.ratingCard}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="chatbubble-ellipses" size={20} color={colors.accent.secondary} />
+            <Text style={styles.sectionTitle}>How was your workout?</Text>
+          </View>
+
           <View style={styles.ratingOptions}>
             {RATING_OPTIONS.map((option) => (
-              <TouchableOpacity
+              <Pressable
                 key={option.value}
-                style={[
+                style={({ pressed }) => [
                   styles.ratingOption,
                   rating === option.value && styles.ratingOptionSelected,
+                  pressed && styles.buttonPressed,
                 ]}
                 onPress={() => setRating(option.value)}
               >
+                {rating === option.value && (
+                  <LinearGradient
+                    colors={[option.color + '30', 'transparent']}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
                 <Text style={styles.ratingEmoji}>{option.emoji}</Text>
-                <Text
-                  style={[
-                    styles.ratingLabel,
-                    rating === option.value && styles.ratingLabelSelected,
-                  ]}
-                >
+                <Text style={[
+                  styles.ratingLabel,
+                  rating === option.value && { color: option.color },
+                ]}>
                   {option.label}
                 </Text>
                 {rating === option.value && (
-                  <View style={styles.radioButton}>
-                    <View style={styles.radioButtonInner} />
+                  <View style={[styles.ratingCheckmark, { backgroundColor: option.color }]}>
+                    <Ionicons name="checkmark" size={10} color={colors.text.inverse} />
                   </View>
                 )}
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
-        </View>
+        </GlassCard>
 
         {/* Notes Input */}
-        <View style={styles.notesSection}>
+        <View style={[
+          styles.notesContainer,
+          notesFocused && styles.notesContainerFocused,
+        ]}>
+          <LinearGradient
+            colors={['#141418', '#0A0A0C']}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.glassHighlight} />
           <TextInput
             style={styles.notesInput}
-            placeholder="Add notes (optional)"
-            placeholderTextColor={palette.midGray}
+            placeholder="Add notes about your workout (optional)"
+            placeholderTextColor={colors.text.tertiary}
             value={notes}
             onChangeText={setNotes}
+            onFocus={() => setNotesFocused(true)}
+            onBlur={() => setNotesFocused(false)}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
@@ -312,33 +470,66 @@ export default function WorkoutSummaryScreen() {
         </View>
 
         {/* Next Workout Preview */}
-        <View style={styles.nextWorkoutSection}>
-          <Text style={styles.nextWorkoutText}>
-            📅 Next: {nextWorkout.name} - {nextWorkout.day}, {nextWorkout.date}
-          </Text>
+        <View style={styles.nextWorkoutCard}>
+          <LinearGradient
+            colors={[colors.accent.primaryMuted, 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <Ionicons name="calendar" size={20} color={colors.accent.primary} />
+          <View style={styles.nextWorkoutContent}>
+            <Text style={styles.nextWorkoutLabel}>Next Workout</Text>
+            <Text style={styles.nextWorkoutName}>
+              {nextWorkout.name} • {nextWorkout.day}, {nextWorkout.date}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.accent.primary} />
         </View>
 
         {/* Done Button */}
-        <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
-          <Text style={styles.doneButtonText}>Done ✓</Text>
-        </TouchableOpacity>
+        <Pressable
+          style={({ pressed }) => [
+            styles.doneButton,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={handleDone}
+        >
+          <LinearGradient
+            colors={[colors.accent.primary, colors.accent.primaryDark]}
+            style={StyleSheet.absoluteFill}
+          />
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.2)', 'transparent']}
+            style={styles.buttonGlassOverlay}
+          />
+          <Ionicons name="checkmark-circle" size={22} color={colors.text.inverse} />
+          <Text style={styles.doneButtonText}>Complete & Save</Text>
+        </Pressable>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity
-            style={styles.actionButton}
+          <Pressable
+            style={({ pressed }) => [
+              styles.actionButton,
+              pressed && styles.buttonPressed,
+            ]}
             onPress={handleShareProgress}
           >
-            <Ionicons name="share-outline" size={20} color={palette.white} />
-            <Text style={styles.actionButtonText}>Share Progress</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionButton}
+            <Ionicons name="share-outline" size={20} color={colors.text.secondary} />
+            <Text style={styles.actionButtonText}>Share</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.actionButton,
+              pressed && styles.buttonPressed,
+            ]}
             onPress={handleViewDetailedStats}
           >
-            <Ionicons name="stats-chart-outline" size={20} color={palette.white} />
-            <Text style={styles.actionButtonText}>View Detailed Stats</Text>
-          </TouchableOpacity>
+            <Ionicons name="stats-chart-outline" size={20} color={colors.text.secondary} />
+            <Text style={styles.actionButtonText}>Detailed Stats</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </View>
@@ -348,33 +539,79 @@ export default function WorkoutSummaryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
+    backgroundColor: colors.bg.primary,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.l,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.xl,
   },
-  header: {
+  // Celebration header
+  celebrationContainer: {
     alignItems: 'center',
     marginBottom: spacing.xl,
+    paddingVertical: spacing.xl,
+    borderRadius: borderRadius['2xl'],
+    overflow: 'hidden',
   },
-  celebrationEmoji: {
-    fontSize: 64,
+  celebrationGlow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  celebrationShimmer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: 150,
+  },
+  trophyContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.l,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 24,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  trophyBg: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 50,
+  },
+  celebrationTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text.primary,
+    letterSpacing: -0.5,
     marginBottom: spacing.s,
   },
-  celebrationText: {
-    ...typography.h1,
-    color: palette.white,
-    marginBottom: spacing.xs,
+  durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.accent.primaryMuted,
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
   },
   durationText: {
-    ...typography.bodyLarge,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.accent.primary,
   },
+  // Stats grid
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -383,135 +620,226 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '30%',
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border.default,
     padding: spacing.m,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: palette.border,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  statRingContainer: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.s,
+  },
+  statIconOverlay: {
+    position: 'absolute',
+  },
+  statIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.s,
   },
   statValue: {
-    ...typography.h2,
-    color: palette.tealPrimary,
+    fontFamily: 'Poppins',
+    fontSize: 18,
     fontWeight: '700',
-    marginBottom: spacing.xs,
+    color: colors.text.primary,
+    marginBottom: spacing.xxs,
   },
   statLabel: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 10,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    textAlign: 'center',
   },
-  achievementsSection: {
-    marginBottom: spacing.xl,
+  // Achievements
+  achievementsCard: {
+    marginBottom: spacing.l,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+    marginBottom: spacing.m,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: palette.white,
-    marginBottom: spacing.m,
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
   achievementItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.s,
+    gap: spacing.m,
+    paddingVertical: spacing.s,
   },
   achievementIcon: {
-    fontSize: 20,
-    marginRight: spacing.s,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   achievementText: {
-    ...typography.body,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.text.secondary,
+    flex: 1,
   },
-  ratingSection: {
-    marginBottom: spacing.xl,
+  // Rating
+  ratingCard: {
+    marginBottom: spacing.l,
   },
   ratingOptions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: spacing.s,
-    marginTop: spacing.m,
   },
   ratingOption: {
     flex: 1,
-    minWidth: '18%',
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: palette.border,
+    paddingVertical: spacing.m,
+    paddingHorizontal: spacing.xs,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    backgroundColor: colors.glass.bg,
+    overflow: 'hidden',
     position: 'relative',
   },
   ratingOptionSelected: {
-    borderColor: palette.tealPrimary,
-    backgroundColor: palette.tealPrimary + '20',
+    borderColor: colors.accent.primary,
   },
   ratingEmoji: {
-    fontSize: 32,
+    fontSize: 28,
     marginBottom: spacing.xs,
   },
   ratingLabel: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.text.tertiary,
   },
-  ratingLabelSelected: {
-    color: palette.tealPrimary,
-    fontWeight: '600',
-  },
-  radioButton: {
+  ratingCheckmark: {
     position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: palette.tealPrimary,
-    alignItems: 'center',
+    top: 6,
+    right: 6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: palette.tealPrimary,
+  // Notes
+  notesContainer: {
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    marginBottom: spacing.l,
+    overflow: 'hidden',
   },
-  notesSection: {
-    marginBottom: spacing.xl,
+  notesContainerFocused: {
+    borderColor: colors.accent.primary,
   },
   notesInput: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.text.primary,
     padding: spacing.m,
-    ...typography.body,
-    color: palette.white,
     minHeight: 100,
-    borderWidth: 1,
-    borderColor: palette.border,
   },
-  nextWorkoutSection: {
-    backgroundColor: palette.tealPrimary + '20',
-    borderRadius: 12,
+  // Next workout
+  nextWorkoutCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.m,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
     padding: spacing.m,
     marginBottom: spacing.xl,
-    alignItems: 'center',
+    overflow: 'hidden',
   },
-  nextWorkoutText: {
-    ...typography.bodyLarge,
-    color: palette.tealPrimary,
+  nextWorkoutContent: {
+    flex: 1,
   },
+  nextWorkoutLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  nextWorkoutName: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.accent.primary,
+  },
+  // Done button
   doneButton: {
-    backgroundColor: palette.tealPrimary,
-    borderRadius: 12,
-    padding: spacing.m,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.s,
+    borderRadius: borderRadius.xl,
+    paddingVertical: spacing.m,
     marginBottom: spacing.l,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  buttonGlassOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
   },
   doneButtonText: {
-    ...typography.button,
-    color: palette.deepBlack,
-    fontWeight: '700',
-    fontSize: 18,
+    fontFamily: 'Poppins',
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.text.inverse,
   },
+  buttonPressed: {
+    opacity: 0.8,
+  },
+  // Action buttons
   actionButtons: {
     flexDirection: 'row',
     gap: spacing.m,
@@ -522,21 +850,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.s,
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.lg,
+    paddingVertical: spacing.m,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: colors.border.default,
   },
   actionButtonText: {
-    ...typography.body,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.secondary,
+  },
+  // Error state
+  errorCard: {
+    alignItems: 'center',
+    marginTop: spacing.xxl,
+    marginHorizontal: spacing.xl,
+    paddingVertical: spacing.xxl,
   },
   errorText: {
-    ...typography.body,
-    color: palette.error,
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    color: colors.error,
     textAlign: 'center',
-    marginTop: spacing.xl,
+    marginTop: spacing.m,
+    marginBottom: spacing.l,
+  },
+  errorButton: {
+    backgroundColor: colors.accent.primary,
+    borderRadius: borderRadius.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.m,
+  },
+  errorButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.inverse,
   },
 });
-

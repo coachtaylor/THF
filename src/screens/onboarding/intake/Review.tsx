@@ -189,9 +189,11 @@ export default function Review({ navigation }: ReviewProps) {
 
       // Generate the plan
       const plan = await generatePlan(profile);
-      
-      // Save the plan (type assertion needed due to Plan type differences)
-      await savePlan(plan as any, profile.user_id);
+
+      // Save the plan using consistent userId (prefer user_id, fall back to id)
+      const userId = profile.user_id || profile.id || 'default';
+      console.log('💾 Saving plan for userId:', userId);
+      await savePlan(plan as any, userId);
 
       setIsGenerating(false);
       
@@ -211,8 +213,8 @@ export default function Review({ navigation }: ReviewProps) {
   return (
     <>
       <OnboardingLayout
-        currentStep={8}
-        totalSteps={8}
+        currentStep={9}
+        totalSteps={9}
         title="Review & Generate"
         subtitle="Review your profile and generate your personalized program."
         onBack={handleBack}

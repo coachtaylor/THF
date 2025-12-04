@@ -1,36 +1,59 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
+import * as SecureStore from 'expo-secure-store';
+import 'react-native-url-polyfill/auto';
 
-// Read from environment variables (loaded by dotenv in app.config.js)
-// Fallback to Constants.expoConfig.extra (populated from app.config.js)
+// Read from environment variables
+// Prefer EXPO_PUBLIC_ prefix for Expo compatibility
 const supabaseUrl =
+  process.env.EXPO_PUBLIC_SUPABASE_URL ||
   process.env.SUPABASE_URL ||
   Constants.expoConfig?.extra?.supabaseUrl ||
   '';
+
 const supabaseAnonKey =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
   process.env.SUPABASE_ANON_KEY ||
   Constants.expoConfig?.extra?.supabaseAnonKey ||
   '';
 
-// Only create Supabase client if we have valid credentials
-// This prevents errors when Supabase isn't configured yet
+// SecureStore adapter for Supabase Auth session storage
+const SecureStoreAdapter = {
+  getItem: async (key: string): Promise<string | null> => {
+    return await SecureStore.getItemAsync(key);
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    await SecureStore.setItemAsync(key, value);
+  },
+  removeItem: async (key: string): Promise<void> => {
+    await SecureStore.deleteItemAsync(key);
+  },
+};
+
 let supabaseInstance: SupabaseClient | null = null;
 
 // Diagnostic logging
 console.log('🔧 Supabase Configuration Check:');
-console.log(`   SUPABASE_URL: ${supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'NOT SET'}`);
+console.log(`   SUPABASE_URL: ${supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'NOT SET'}`);
 console.log(`   SUPABASE_ANON_KEY: ${supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'NOT SET'}`);
 
 if (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')) {
   try {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
-    console.log('✅ Supabase client initialized successfully');
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        storage: SecureStoreAdapter,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false, // Important for React Native
+      },
+    });
+    console.log('✅ Supabase client initialized with secure storage');
   } catch (error) {
-    console.warn('⚠️ Failed to initialize Supabase client:', error);
+    console.error('❌ Failed to initialize Supabase client:', error);
   }
 } else {
-  console.warn('⚠️ Supabase not configured - cloud sync will be disabled');
-  console.warn('   To fix: Create a .env file with SUPABASE_URL and SUPABASE_ANON_KEY');
+  console.warn('⚠️ Supabase not configured - auth will be disabled');
+  console.warn('   To fix: Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env');
 }
 
-export const supabase = supabaseInstance;
+export const supabase = supabaseInstance!;

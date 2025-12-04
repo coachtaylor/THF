@@ -17,6 +17,8 @@ import MainNavigator from './src/navigation/MainNavigator';
 import { checkOnboardingStatus } from './src/services/storage/onboarding';
 import { initializeApp } from './src/services/init';
 import { setupDeepLinking } from './src/services/auth/deepLinking';
+import { onOnboardingComplete, clearOnboardingCallback, onLogout, clearLogoutCallback } from './src/services/events/onboardingEvents';
+import { AuthProvider } from './src/contexts/AuthContext';
 import { theme } from './src/theme';
 
 export default function App() {
@@ -42,6 +44,30 @@ export default function App() {
 
   useEffect(() => {
     initialize();
+  }, []);
+
+  // Listen for onboarding completion event
+  useEffect(() => {
+    onOnboardingComplete(() => {
+      console.log('📱 App received onboarding complete signal');
+      setHasCompletedOnboarding(true);
+    });
+
+    return () => {
+      clearOnboardingCallback();
+    };
+  }, []);
+
+  // Listen for logout event
+  useEffect(() => {
+    onLogout(() => {
+      console.log('📱 App received logout signal');
+      setHasCompletedOnboarding(false);
+    });
+
+    return () => {
+      clearLogoutCallback();
+    };
   }, []);
 
   useEffect(() => {
@@ -95,9 +121,11 @@ export default function App() {
   return (
     <SafeAreaProvider style={{ backgroundColor: theme.colors.background }}>
       <PaperProvider theme={theme}>
-        <NavigationContainer ref={navigationRef}>
-          {hasCompletedOnboarding ? <MainNavigator /> : <OnboardingNavigator />}
-        </NavigationContainer>
+        <AuthProvider>
+          <NavigationContainer ref={navigationRef}>
+            {hasCompletedOnboarding ? <MainNavigator /> : <OnboardingNavigator />}
+          </NavigationContainer>
+        </AuthProvider>
       </PaperProvider>
     </SafeAreaProvider>
   );

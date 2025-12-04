@@ -17,9 +17,10 @@ export const hrtAdjustmentRules: Rule[] = [
         volume_reduction_percent: 15,
         rest_seconds_increase: 15
       }
-    }
+    },
+    userMessage: "Recovery time is optimized for your body on estrogen, with slightly longer rest periods."
   },
-  
+
   // HRT-02: FTM Strength Adaptation Boost
   {
     rule_id: 'HRT-02',
@@ -35,9 +36,10 @@ export const hrtAdjustmentRules: Rule[] = [
         // Progressive overload rate increase
         // Handled in progression logic
       }
-    }
+    },
+    userMessageTemplate: "At {hrtMonths} months on T, your strength gains are ramping up. We're supporting progressive overload."
   },
-  
+
   // HRT-03: MTF Lower Body Distribution
   {
     rule_id: 'HRT-03',
@@ -55,9 +57,10 @@ export const hrtAdjustmentRules: Rule[] = [
         // Upper body volume: 30-40%
         // Handled in template selection
       }
-    }
+    },
+    userMessage: "Your workout emphasizes glutes and lower body to support your feminization goals on estrogen."
   },
-  
+
   // HRT-04: FTM Upper Body Emphasis
   {
     rule_id: 'HRT-04',
@@ -75,6 +78,7 @@ export const hrtAdjustmentRules: Rule[] = [
         // Lower body volume: 40-50%
         // Handled in template selection
       }
-    }
+    },
+    userMessage: "Your workout emphasizes upper body development to support your masculinization goals on T."
   }
 ];

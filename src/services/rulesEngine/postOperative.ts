@@ -16,7 +16,7 @@ export const postOperativeRules: Rule[] = [
     condition: (ctx: EvaluationContext) => {
       const topSurgery = ctx.user_profile.surgeries.find(s => s.type === 'top_surgery');
       if (!topSurgery) return false;
-      
+
       const weeksPostOp = calculateWeeksPostOp(topSurgery.date);
       return weeksPostOp < 6;
     },
@@ -26,9 +26,10 @@ export const postOperativeRules: Rule[] = [
         patterns: ['push'],
         muscle_groups: ['pectorals']
       }
-    }
+    },
+    userMessageTemplate: "You're {weeksPostOp} weeks post top surgery. We've blocked chest and pushing exercises to protect your healing."
   },
-  
+
   // PO-02: Top Surgery - Light Upper Body (Weeks 6-12)
   {
     rule_id: 'PO-02',
@@ -37,7 +38,7 @@ export const postOperativeRules: Rule[] = [
     condition: (ctx: EvaluationContext) => {
       const topSurgery = ctx.user_profile.surgeries.find(s => s.type === 'top_surgery');
       if (!topSurgery) return false;
-      
+
       const weeksPostOp = calculateWeeksPostOp(topSurgery.date);
       return weeksPostOp >= 6 && weeksPostOp < 12;
     },
@@ -49,9 +50,10 @@ export const postOperativeRules: Rule[] = [
         rep_range: '12-15',
         rest_seconds_increase: 30
       }
-    }
+    },
+    userMessageTemplate: "At {weeksPostOp} weeks post top surgery, you can do light upper body work. We're keeping weights low and sets limited."
   },
-  
+
   // PO-03: Top Surgery - Scar Massage Reminder (Weeks 6+)
   {
     rule_id: 'PO-03',
@@ -60,7 +62,7 @@ export const postOperativeRules: Rule[] = [
     condition: (ctx: EvaluationContext) => {
       const topSurgery = ctx.user_profile.surgeries.find(s => s.type === 'top_surgery');
       if (!topSurgery) return false;
-      
+
       const weeksPostOp = calculateWeeksPostOp(topSurgery.date);
       return weeksPostOp >= 6;
     },
@@ -72,9 +74,10 @@ export const postOperativeRules: Rule[] = [
         message: 'After workout: Perform scar massage for 5 minutes to improve tissue mobility.',
         severity: 'low'
       }
-    }
+    },
+    userMessage: "We've included a scar massage reminder to support your post-op healing."
   },
-  
+
   // PO-04: Bottom Surgery - No High-Impact Lower Body (Weeks 0-8)
   {
     rule_id: 'PO-04',
@@ -83,7 +86,7 @@ export const postOperativeRules: Rule[] = [
     condition: (ctx: EvaluationContext) => {
       const bottomSurgery = ctx.user_profile.surgeries.find(s => s.type === 'bottom_surgery');
       if (!bottomSurgery) return false;
-      
+
       const weeksPostOp = calculateWeeksPostOp(bottomSurgery.date);
       return weeksPostOp < 8;
     },
@@ -93,9 +96,10 @@ export const postOperativeRules: Rule[] = [
         contraindications: ['early_post_op_bottom'],
         custom_filter: (ex) => ex.pattern === 'plyometric'
       }
-    }
+    },
+    userMessageTemplate: "At {weeksPostOp} weeks post bottom surgery, we've excluded jumping and high-impact exercises to protect healing."
   },
-  
+
   // PO-05: Bottom Surgery - Pelvic Floor Safe Only (Weeks 0-12)
   {
     rule_id: 'PO-05',
@@ -104,7 +108,7 @@ export const postOperativeRules: Rule[] = [
     condition: (ctx: EvaluationContext) => {
       const bottomSurgery = ctx.user_profile.surgeries.find(s => s.type === 'bottom_surgery');
       if (!bottomSurgery) return false;
-      
+
       const weeksPostOp = calculateWeeksPostOp(bottomSurgery.date);
       return weeksPostOp < 12;
     },
@@ -113,8 +117,7 @@ export const postOperativeRules: Rule[] = [
       criteria: {
         custom_filter: (ex) => !ex.pelvic_floor_safe
       }
-    }
+    },
+    userMessage: "We're only including exercises that are safe for your pelvic floor during bottom surgery recovery."
   },
-  
-  // Add more post-op rules as needed...
 ];

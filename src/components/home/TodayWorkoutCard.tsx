@@ -1,0 +1,445 @@
+import React, { useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors } from '../../theme/theme';
+import { useProfile } from '../../hooks/useProfile';
+
+interface EnrichedExercise {
+  exerciseId: string;
+  sets: number;
+  reps: number;
+  name: string;
+  mediaThumb: string | null;
+}
+
+interface TodayWorkoutCardProps {
+  workout: {
+    name: string;
+    duration?: number;
+    exercises: EnrichedExercise[];
+    totalSets: number;
+  };
+  onStartWorkout: () => void;
+  onSaveWorkout?: () => void;
+  isSaved?: boolean;
+}
+
+export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkout, isSaved = false }: TodayWorkoutCardProps) {
+  const { profile } = useProfile();
+  const duration = workout.duration || 45;
+  const exerciseCount = workout.exercises.length;
+
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  const getDayLabel = () => {
+    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    return days[new Date().getDay()];
+  };
+
+  const tags: string[] = [];
+  if (profile?.binds_chest) tags.push('Binding-Safe');
+  if (profile?.on_hrt) tags.push('HRT-Optimized');
+
+  const displayExercises = workout.exercises.slice(0, 4);
+  const remainingCount = workout.exercises.length - 4;
+
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-200, 400],
+  });
+
+  return (
+    <View style={styles.container}>
+      {/* Base gradient background - liquid glass effect */}
+      <LinearGradient
+        colors={['#141418', '#0A0A0C']}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Trans pride gradient glow - blue in corner */}
+      <LinearGradient
+        colors={['rgba(91, 206, 250, 0.2)', 'rgba(91, 206, 250, 0.08)', 'transparent']}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.glowOverlay}
+      />
+
+      {/* Pink accent glow - opposite corner */}
+      <LinearGradient
+        colors={['rgba(245, 169, 184, 0.12)', 'transparent']}
+        start={{ x: 0, y: 1 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.glowOverlayPink}
+      />
+
+      {/* Liquid glass shimmer effect */}
+      <Animated.View
+        style={[
+          styles.shimmerOverlay,
+          { transform: [{ translateX: shimmerTranslate }] }
+        ]}
+      >
+        <LinearGradient
+          colors={['transparent', 'rgba(255, 255, 255, 0.03)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      {/* Top highlight for glass depth */}
+      <View style={styles.glassHighlight} />
+
+      {/* Content */}
+      <View style={styles.content}>
+        {/* Header row */}
+        <View style={styles.header}>
+          <View style={styles.dayBadge}>
+            <View style={styles.liveDot} />
+            <Text style={styles.dayLabel}>{getDayLabel()}</Text>
+          </View>
+          <View style={styles.headerRight}>
+            <Text style={styles.meta}>
+              {duration} min · {workout.totalSets} sets
+            </Text>
+            {onSaveWorkout && (
+              <Pressable
+                onPress={onSaveWorkout}
+                style={({ pressed }) => [styles.saveButton, pressed && styles.saveButtonPressed]}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                  size={20}
+                  color={isSaved ? colors.accent.primary : colors.text.tertiary}
+                />
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        {/* Title */}
+        <Text style={styles.title}>{workout.name}</Text>
+
+        {/* Tags */}
+        {tags.length > 0 && (
+          <View style={styles.tagsRow}>
+            {tags.map((tag, i) => (
+              <View key={i} style={styles.tag}>
+                <View style={styles.tagDot} />
+                <Text style={styles.tagText}>{tag}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Exercise list */}
+        <View style={styles.exerciseList}>
+          {displayExercises.map((ex, index) => (
+            <View key={index} style={styles.exerciseRow}>
+              <View style={styles.exerciseNumber}>
+                <Text style={styles.exerciseNumberText}>{index + 1}</Text>
+              </View>
+              <Text style={styles.exerciseName} numberOfLines={1}>{ex.name}</Text>
+              <Text style={styles.exerciseSets}>{ex.sets}×{ex.reps}</Text>
+            </View>
+          ))}
+          {remainingCount > 0 && (
+            <Text style={styles.moreText}>+{remainingCount} more exercises</Text>
+          )}
+        </View>
+
+        {/* Start button - Liquid Glass Effect */}
+        <Pressable
+          style={({ pressed }) => [styles.startButton, pressed && styles.startButtonPressed]}
+          onPress={onStartWorkout}
+        >
+          {/* Base gradient */}
+          <LinearGradient
+            colors={[colors.accent.primary, colors.accent.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Glass overlay - top highlight */}
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.05)', 'transparent']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.buttonGlassOverlay}
+          />
+          {/* Shimmer effect */}
+          <Animated.View
+            style={[
+              styles.buttonShimmer,
+              { transform: [{ translateX: shimmerTranslate }] }
+            ]}
+          >
+            <LinearGradient
+              colors={['transparent', 'rgba(255, 255, 255, 0.15)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+          {/* Content */}
+          <View style={styles.startButtonContent}>
+            <Ionicons name="play" size={18} color={colors.text.inverse} style={styles.playIcon} />
+            <Text style={styles.startButtonText}>Start Workout</Text>
+          </View>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.2,
+        shadowRadius: 32,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  glowOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '70%',
+    height: '70%',
+  },
+  glowOverlayPink: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: '50%',
+    height: '50%',
+  },
+  shimmerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: 200,
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  content: {
+    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  dayBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.accent.primary,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 6,
+      },
+    }),
+  },
+  dayLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  meta: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.tertiary,
+  },
+  saveButton: {
+    padding: 4,
+  },
+  saveButtonPressed: {
+    opacity: 0.7,
+  },
+  title: {
+    fontFamily: 'Poppins',
+    fontSize: 28,
+    fontWeight: '300',
+    color: colors.text.primary,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 4,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tagDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.accent.success,
+  },
+  tagText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '400',
+    color: colors.text.secondary,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    marginVertical: 16,
+  },
+  exerciseList: {
+    gap: 10,
+    marginBottom: 20,
+  },
+  exerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  exerciseNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: 'rgba(91, 206, 250, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  exerciseNumberText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.accent.primary,
+  },
+  exerciseName: {
+    flex: 1,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.secondary,
+  },
+  exerciseSets: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+  },
+  moreText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '400',
+    color: colors.text.tertiary,
+    marginLeft: 36,
+    marginTop: 2,
+  },
+  startButton: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  startButtonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  buttonGlassOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+  },
+  buttonShimmer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: 100,
+  },
+  startButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  playIcon: {
+    marginLeft: 2,
+  },
+  startButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.inverse,
+    letterSpacing: 0.5,
+  },
+});

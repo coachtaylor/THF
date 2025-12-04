@@ -20,7 +20,7 @@ export async function handleDeepLink(
       try {
         const result = await verifyEmail(queryParams.token as string);
 
-        if (result.success) {
+        if (result && result.success) {
           // Navigate to Login with success message
           navigation.navigate('Login', {
             message: 'Email verified! Please log in to continue.',

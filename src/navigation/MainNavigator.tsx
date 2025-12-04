@@ -10,10 +10,12 @@ import HomeScreen from '../screens/main/HomeScreen';
 import WorkoutsScreen from '../screens/main/WorkoutsScreen';
 import ProgressScreen from '../screens/main/ProgressScreen';
 import SettingsScreen from '../screens/main/SettingsScreen';
+import SavedWorkoutsScreen from '../screens/main/SavedWorkoutsScreen';
 import WorkoutOverviewScreen from '../screens/workout/WorkoutOverviewScreen';
 import SessionPlayer from '../screens/SessionPlayer';
 import ActiveWorkoutScreen from '../screens/workout/ActiveWorkoutScreen';
 import WorkoutSummaryScreen from '../screens/workout/WorkoutSummaryScreen';
+import WorkoutSwapScreen from '../screens/workout/WorkoutSwapScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -50,17 +52,15 @@ function MainTabs() {
         headerRight: () => <ProfileButton />,
         tabBarActiveTintColor: palette.tealPrimary,
         tabBarInactiveTintColor: palette.midGray,
+        tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: palette.deepBlack,
           borderTopColor: palette.border,
           borderTopWidth: 1,
-          paddingBottom: 8,
           paddingTop: 8,
-          height: 70,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
+          paddingHorizontal: 16,
+          height: 85,
+          paddingBottom: 25,
         },
       }}
     >
@@ -85,6 +85,16 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
+        name="Saved"
+        component={SavedWorkoutsScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="bookmark" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="Progress"
         component={ProgressScreen}
         options={{
@@ -98,7 +108,9 @@ function MainTabs() {
         component={SettingsScreen}
         options={{
           headerShown: false, // SettingsScreen has custom header
-          tabBarButton: () => null, // Hide from tab bar
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -129,6 +141,10 @@ export default function MainNavigator() {
       <Stack.Screen
         name="WorkoutSummary"
         component={WorkoutSummaryScreen}
+      />
+      <Stack.Screen
+        name="WorkoutSwap"
+        component={WorkoutSwapScreen}
       />
     </Stack.Navigator>
   );
