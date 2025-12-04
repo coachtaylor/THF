@@ -11,6 +11,7 @@ import { glassStyles, textStyles, buttonStyles } from "../../../theme/components
 import { useProfile } from "../../../hooks/useProfile";
 import { getPlan } from "../../../services/storage/plan";
 import { getExerciseLibrary } from "../../../data/exercises";
+import { signalOnboardingComplete } from "../../../services/events/onboardingEvents";
 import { Platform } from "react-native";
 
 type ProgramSetupNavigationProp = StackNavigationProp<OnboardingStackParamList>;
@@ -219,8 +220,9 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
   };
 
   const handleGoToDashboard = () => {
-    // Navigate to the Home screen (dashboard)
-    navigation.navigate("Home");
+    // Signal the App component that onboarding is complete
+    // This will trigger a re-render that switches from OnboardingNavigator to MainNavigator
+    signalOnboardingComplete();
   };
 
   if (loading) {

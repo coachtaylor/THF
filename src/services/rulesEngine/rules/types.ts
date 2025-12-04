@@ -1,9 +1,13 @@
 export interface Rule {
     rule_id: string;
-    category: 'binding_safety' | 'post_op' | 'hrt_adjustment' | 'dysphoria';
+    category: 'binding_safety' | 'post_op' | 'hrt_adjustment' | 'dysphoria' | 'environment';
     severity: 'critical' | 'high' | 'medium' | 'low';
     condition: (context: EvaluationContext) => boolean;
     action: RuleAction;
+    // User-facing explanation for "Why this workout?" feature
+    userMessage?: string;
+    // Template message with placeholders like {weeksPostOp}, {hrtMonths}
+    userMessageTemplate?: string;
   }
   
   export interface EvaluationContext {
@@ -61,4 +65,6 @@ export interface Rule {
     category: string;
     action_taken: string;
     context: any;
+    // User-facing message explaining why this rule was applied
+    userMessage?: string;
   }

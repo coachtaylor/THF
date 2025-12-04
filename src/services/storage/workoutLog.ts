@@ -428,7 +428,7 @@ export async function abandonWorkoutLog(workoutLogId: string): Promise<void> {
   try {
     workoutLogDb.withTransactionSync(() => {
       const stmt = workoutLogDb.prepareSync(
-        `UPDATE workout_logs 
+        `UPDATE workout_logs
          SET status = 'abandoned', completed_at = ?
          WHERE id = ?`
       );
@@ -440,6 +440,108 @@ export async function abandonWorkoutLog(workoutLogId: string): Promise<void> {
   } catch (error) {
     console.error('❌ Failed to abandon workout log:', error);
     throw error;
+  }
+}
+
+/**
+ * Get workout logs for a specific week
+ * Returns logs for the week starting from the given date
+ */
+export async function getWeekWorkoutLogs(
+  userId: string,
+  weekStartDate: Date
+): Promise<WorkoutLog[]> {
+  try {
+    const weekEnd = new Date(weekStartDate);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    const startDateStr = weekStartDate.toISOString().split('T')[0];
+    const endDateStr = weekEnd.toISOString().split('T')[0];
+
+    let logs: any[] = [];
+
+    workoutLogDb.withTransactionSync(() => {
+      const stmt = workoutLogDb.prepareSync(
+        `SELECT * FROM workout_logs
+         WHERE user_id = ?
+           AND workout_date >= ?
+           AND workout_date < ?
+         ORDER BY workout_date DESC`
+      );
+      logs = stmt.executeSync([userId, startDateStr, endDateStr]).getAllSync() as any[];
+      stmt.finalizeSync();
+    });
+
+    return logs.map((log: any) => ({
+      id: log.id,
+      user_id: log.user_id,
+      workout_id: log.workout_id,
+      workout_date: new Date(log.workout_date),
+      status: log.status as 'in_progress' | 'completed' | 'abandoned',
+      started_at: new Date(log.started_at),
+      completed_at: log.completed_at ? new Date(log.completed_at) : undefined,
+      duration_minutes: log.duration_minutes,
+      exercises_completed: log.exercises_completed,
+      total_volume: log.total_volume,
+      average_rpe: log.average_rpe,
+      workout_rating: log.workout_rating,
+      performance_notes: log.performance_notes,
+      sets: [], // Load separately if needed for performance
+    }));
+  } catch (error) {
+    console.error('❌ Failed to get week workout logs:', error);
+    return [];
+  }
+}
+
+/**
+ * Get workout log for a specific date
+ * Returns the workout log for the given date, or null if none exists
+ */
+export async function getWorkoutLogByDate(
+  userId: string,
+  date: Date
+): Promise<WorkoutLog | null> {
+  try {
+    const dateStr = date.toISOString().split('T')[0];
+    let log: any = null;
+
+    workoutLogDb.withTransactionSync(() => {
+      const stmt = workoutLogDb.prepareSync(
+        `SELECT * FROM workout_logs
+         WHERE user_id = ? AND workout_date = ?
+         ORDER BY started_at DESC
+         LIMIT 1`
+      );
+      const rows = stmt.executeSync([userId, dateStr]).getAllSync() as any[];
+      stmt.finalizeSync();
+
+      if (rows.length > 0) {
+        log = rows[0];
+      }
+    });
+
+    if (!log) return null;
+
+    return {
+      id: log.id,
+      user_id: log.user_id,
+      workout_id: log.workout_id,
+      workout_date: new Date(log.workout_date),
+      status: log.status as 'in_progress' | 'completed' | 'abandoned',
+      started_at: new Date(log.started_at),
+      completed_at: log.completed_at ? new Date(log.completed_at) : undefined,
+      duration_minutes: log.duration_minutes,
+      exercises_completed: log.exercises_completed,
+      total_volume: log.total_volume,
+      average_rpe: log.average_rpe,
+      workout_rating: log.workout_rating,
+      performance_notes: log.performance_notes,
+      sets: [],
+    };
+  } catch (error) {
+    console.error('❌ Failed to get workout log by date:', error);
+    return null;
   }
 }
 

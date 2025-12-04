@@ -1,346 +1,265 @@
-import { getSupabaseClient } from '../supabase';
+import { supabase } from '../../utils/supabase';
 import {
   User,
   LoginRequest,
   SignupRequest,
   LoginResponse,
   SignupResponse,
-  AuthError,
   AuthTokens,
 } from '../../types/auth';
-import {
-  storeTokens,
-  clearTokens,
-  getAccessToken,
-  getRefreshToken,
-  isTokenExpired,
-} from './tokens';
+import { clearTokens } from './tokens';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.transfitness.app';
+/**
+ * Sign up with email and password
+ */
+export async function signup(data: SignupRequest): Promise<SignupResponse> {
+  console.log('📝 Creating account:', data.email);
+
+  const { data: authData, error } = await supabase.auth.signUp({
+    email: data.email,
+    password: data.password,
+    options: {
+      data: {
+        first_name: data.first_name,
+        last_name: data.last_name,
+      },
+      emailRedirectTo: 'transfitness://verify-email',
+    },
+  });
+
+  if (error) {
+    console.error('❌ Signup error:', error.message);
+    throw new Error(error.message);
+  }
+
+  if (!authData.user) {
+    throw new Error('Signup failed - no user returned');
+  }
+
+  console.log('✅ Account created:', authData.user.email);
+
+  return {
+    success: true,
+    user: mapSupabaseUser(authData.user),
+    message: 'Please check your email to verify your account',
+  };
+}
 
 /**
  * Login with email and password
  */
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
-  try {
-    console.log('🔐 Attempting login:', credentials.email);
+  console.log('🔐 Attempting login:', credentials.email);
 
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: credentials.email,
+    password: credentials.password,
+  });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Login failed');
-    }
-
-    console.log('✅ Login successful:', data.user.email);
-
-    // Store tokens securely
-    if (data.tokens) {
-      await storeTokens(data.tokens.access_token, data.tokens.refresh_token);
-    }
-
-    return data;
-  } catch (error) {
-    console.error('❌ Login error:', error);
-    throw error;
+  if (error) {
+    console.error('❌ Login error:', error.message);
+    throw new Error(error.message);
   }
+
+  if (!data.user || !data.session) {
+    throw new Error('Login failed - no session returned');
+  }
+
+  console.log('✅ Login successful:', data.user.email);
+
+  return {
+    success: true,
+    user: mapSupabaseUser(data.user),
+    tokens: {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_in: data.session.expires_in || 3600,
+    },
+  };
 }
 
 /**
- * Create new account
+ * Logout
  */
-export async function signup(data: SignupRequest): Promise<SignupResponse> {
-  try {
-    console.log('📝 Creating account:', data.email);
+export async function logout(): Promise<void> {
+  console.log('👋 Logging out...');
 
-    const response = await fetch(`${API_URL}/auth/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
+  const { error } = await supabase.auth.signOut();
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Signup failed');
-    }
-
-    console.log('✅ Account created:', result.user.email);
-
-    // Store tokens if provided (some backends return tokens immediately)
-    if (result.tokens) {
-      await storeTokens(result.tokens.access_token, result.tokens.refresh_token);
-    }
-
-    return result;
-  } catch (error) {
-    console.error('❌ Signup error:', error);
-    throw error;
+  if (error) {
+    console.error('❌ Logout error:', error.message);
   }
-}
 
-/**
- * Verify email with token
- */
-export async function verifyEmail(token: string): Promise<{ success: boolean; message: string }> {
-  try {
-    console.log('📧 Verifying email...');
-
-    const response = await fetch(`${API_URL}/auth/verify-email?token=${token}`, {
-      method: 'GET',
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Verification failed');
-    }
-
-    console.log('✅ Email verified');
-    return data;
-  } catch (error) {
-    console.error('❌ Email verification error:', error);
-    throw error;
-  }
-}
-
-/**
- * Resend verification email
- */
-export async function resendVerificationEmail(userId: string): Promise<void> {
-  try {
-    console.log('📧 Resending verification email...');
-
-    const response = await fetch(`${API_URL}/auth/resend-verification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ user_id: userId }),
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Resend failed');
-    }
-
-    console.log('✅ Verification email sent');
-  } catch (error) {
-    console.error('❌ Resend verification error:', error);
-    throw error;
-  }
+  await clearTokens();
+  console.log('✅ Logged out');
 }
 
 /**
  * Request password reset
  */
 export async function requestPasswordReset(email: string): Promise<void> {
-  try {
-    console.log('🔑 Requesting password reset:', email);
+  console.log('🔑 Requesting password reset:', email);
 
-    const response = await fetch(`${API_URL}/auth/forgot-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: 'transfitness://reset-password',
+  });
 
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Request failed');
-    }
-
-    console.log('✅ Password reset email sent');
-  } catch (error) {
-    console.error('❌ Password reset request error:', error);
-    throw error;
+  if (error) {
+    console.error('❌ Password reset error:', error.message);
+    throw new Error(error.message);
   }
+
+  console.log('✅ Password reset email sent');
 }
 
 /**
- * Reset password with token
+ * Update password (after reset link clicked)
  */
-export async function resetPassword(token: string, newPassword: string): Promise<void> {
-  try {
-    console.log('🔑 Resetting password...');
+export async function updatePassword(newPassword: string): Promise<void> {
+  console.log('🔑 Updating password...');
 
-    const response = await fetch(`${API_URL}/auth/reset-password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token, new_password: newPassword }),
-    });
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
 
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Reset failed');
-    }
-
-    console.log('✅ Password reset successful');
-  } catch (error) {
-    console.error('❌ Password reset error:', error);
-    throw error;
+  if (error) {
+    console.error('❌ Password update error:', error.message);
+    throw new Error(error.message);
   }
+
+  console.log('✅ Password updated');
 }
 
 /**
- * Logout (clear session)
+ * Reset password with token (alias for updatePassword for backward compatibility)
  */
-export async function logout(): Promise<void> {
-  try {
-    console.log('👋 Logging out...');
-
-    // Call logout endpoint to invalidate refresh token
-    const response = await fetch(`${API_URL}/auth/logout`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    console.log('✅ Logged out');
-  } catch (error) {
-    console.error('❌ Logout error:', error);
-    // Don't throw - still clear local tokens
-  } finally {
-    // Always clear local tokens
-    await clearTokens();
-  }
+export async function resetPassword(_token: string, newPassword: string): Promise<void> {
+  // In Supabase, the token is handled via the deep link which sets up the session
+  // We just need to update the password
+  return updatePassword(newPassword);
 }
 
 /**
- * Refresh access token
+ * Verify email - handled by Supabase via deep links
+ * This is called after the user clicks the verification link
  */
-export async function refreshAccessToken(refreshToken: string): Promise<AuthTokens> {
-  try {
-    console.log('🔄 Refreshing access token...');
+export async function verifyEmail(_token: string): Promise<{ success: boolean; message: string }> {
+  // In Supabase, email verification is handled automatically via the confirmation URL
+  // The token is processed by Supabase when the user clicks the link
+  // We just need to check if the current user is verified
+  const user = await getCurrentUser();
 
-    const response = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Token refresh failed');
-    }
-
-    console.log('✅ Token refreshed');
-
-    // Store new tokens
-    if (data.tokens) {
-      await storeTokens(data.tokens.access_token, data.tokens.refresh_token);
-    }
-
-    return data.tokens;
-  } catch (error) {
-    console.error('❌ Token refresh error:', error);
-    throw error;
+  if (user?.email_verified) {
+    return { success: true, message: 'Email verified successfully' };
   }
+
+  return { success: false, message: 'Email not yet verified' };
 }
 
 /**
- * Get current authenticated user from API
+ * Refresh access token - Supabase handles this automatically
+ */
+export async function refreshAccessToken(_refreshToken: string): Promise<AuthTokens> {
+  console.log('🔄 Refreshing access token...');
+
+  const { data, error } = await supabase.auth.refreshSession();
+
+  if (error) {
+    console.error('❌ Token refresh error:', error.message);
+    throw new Error(error.message);
+  }
+
+  if (!data.session) {
+    throw new Error('No session returned from refresh');
+  }
+
+  console.log('✅ Token refreshed');
+
+  return {
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+    expires_in: data.session.expires_in || 3600,
+  };
+}
+
+/**
+ * Resend verification email
+ */
+export async function resendVerificationEmail(email: string): Promise<void> {
+  console.log('📧 Resending verification email...');
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: email,
+    options: {
+      emailRedirectTo: 'transfitness://verify-email',
+    },
+  });
+
+  if (error) {
+    console.error('❌ Resend error:', error.message);
+    throw new Error(error.message);
+  }
+
+  console.log('✅ Verification email sent');
+}
+
+/**
+ * Get current user
  */
 export async function getCurrentUser(): Promise<User | null> {
-  try {
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      return null;
-    }
+  const { data: { user }, error } = await supabase.auth.getUser();
 
-    console.log('👤 Fetching current user...');
-
-    const response = await fetch(`${API_URL}/auth/me`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Token invalid, try to refresh
-        const refreshToken = await getRefreshToken();
-        if (refreshToken) {
-          try {
-            const newTokens = await refreshAccessToken(refreshToken);
-            // Retry with new token
-            const retryResponse = await fetch(`${API_URL}/auth/me`, {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${newTokens.access_token}`,
-              },
-            });
-            if (retryResponse.ok) {
-              const data = await retryResponse.json();
-              console.log('✅ Current user fetched:', data.user?.email);
-              return data.user;
-            }
-          } catch {
-            return null;
-          }
-        }
-      }
-      return null;
-    }
-
-    const data = await response.json();
-    console.log('✅ Current user fetched:', data.user?.email);
-    return data.user;
-  } catch (error) {
-    console.error('❌ Error getting current user:', error);
+  if (error || !user) {
     return null;
   }
+
+  return mapSupabaseUser(user);
 }
 
 /**
- * Check if user is authenticated and token is valid
+ * Get current session
+ */
+export async function getSession() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+
+  if (error || !session) {
+    return null;
+  }
+
+  return session;
+}
+
+/**
+ * Check if user is authenticated
  */
 export async function isAuthenticated(): Promise<boolean> {
-  try {
-    const accessToken = await getAccessToken();
-    if (!accessToken) {
-      return false;
-    }
+  const session = await getSession();
+  return session !== null;
+}
 
-    // Check if token is expired
-    if (isTokenExpired(accessToken)) {
-      // Try to refresh
-      const refreshToken = await getRefreshToken();
-      if (!refreshToken) {
-        return false;
-      }
-      try {
-        await refreshAccessToken(refreshToken);
-        return true;
-      } catch {
-        return false;
-      }
-    }
+/**
+ * Listen to auth state changes
+ */
+export function onAuthStateChange(callback: (user: User | null) => void) {
+  return supabase.auth.onAuthStateChange((event, session) => {
+    console.log('🔔 Auth state changed:', event);
+    callback(session?.user ? mapSupabaseUser(session.user) : null);
+  });
+}
 
-    // Verify token is valid by calling /auth/me
-    const user = await getCurrentUser();
-    return user !== null;
-  } catch (error) {
-    console.error('Error checking authentication:', error);
-    return false;
-  }
+/**
+ * Map Supabase user to our User type
+ */
+function mapSupabaseUser(supabaseUser: any): User {
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email || '',
+    first_name: supabaseUser.user_metadata?.first_name || '',
+    last_name: supabaseUser.user_metadata?.last_name || '',
+    email_verified: !!supabaseUser.email_confirmed_at,
+    onboarding_completed: supabaseUser.user_metadata?.onboarding_completed || false,
+    created_at: new Date(supabaseUser.created_at),
+    updated_at: new Date(supabaseUser.updated_at || supabaseUser.created_at),
+  };
 }

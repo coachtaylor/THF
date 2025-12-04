@@ -1,14 +1,16 @@
 // src/theme/components.ts
-// TransFitness Component Styles - Pure FigmaMake Glass Aesthetic
+// TransFitness Component Styles - Liquid Glass Aesthetic with Trans Pride colors
 
 import { StyleSheet, Platform } from 'react-native';
 import { colors, spacing, borderRadius, shadows, typography } from './theme';
 
 // ============================================
-// GLASS MORPHISM STYLES
+// LIQUID GLASS MORPHISM STYLES
+// Advanced glass effects with depth and light refraction
 // ============================================
 
 export const glassStyles = StyleSheet.create({
+  // Base glass card
   card: {
     backgroundColor: colors.glass.bg,
     borderRadius: borderRadius['2xl'],
@@ -20,13 +22,56 @@ export const glassStyles = StyleSheet.create({
     }),
   },
 
+  // Liquid glass - more advanced effect
+  liquidCard: {
+    backgroundColor: colors.glass.liquidBg,
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+    borderColor: colors.glass.liquidBorder,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 24,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+
+  // Hero card with trans pride gradient hint
   cardHero: {
     backgroundColor: colors.glass.bgHero,
     borderRadius: borderRadius['3xl'],
     borderWidth: 1,
     borderColor: colors.glass.borderCyan,
+    overflow: 'hidden',
     ...Platform.select({
-      ios: shadows.ios.glassStrong,
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.25,
+        shadowRadius: 32,
+      },
+      android: { elevation: shadows.android.glassStrong },
+    }),
+  },
+
+  // Pink accent hero card
+  cardHeroPink: {
+    backgroundColor: colors.glass.bgHeroPink,
+    borderRadius: borderRadius['3xl'],
+    borderWidth: 1,
+    borderColor: colors.glass.borderPink,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.secondary,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.2,
+        shadowRadius: 32,
+      },
       android: { elevation: shadows.android.glassStrong },
     }),
   },
@@ -36,7 +81,45 @@ export const glassStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.glass.border,
   },
+
+  // Liquid highlight effect (for inner glow)
+  liquidHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: colors.glass.liquidHighlight,
+    borderTopLeftRadius: borderRadius['2xl'],
+    borderTopRightRadius: borderRadius['2xl'],
+  },
 });
+
+// ============================================
+// LIQUID GLASS PRESETS
+// Ready-to-use liquid glass configurations
+// ============================================
+
+export const liquidGlass = {
+  // For cards with blue accent
+  blue: {
+    background: colors.glass.bgHero,
+    border: colors.glass.borderCyan,
+    glow: colors.accent.primaryGlow,
+  },
+  // For cards with pink accent
+  pink: {
+    background: colors.glass.bgHeroPink,
+    border: colors.glass.borderPink,
+    glow: colors.accent.secondaryGlow,
+  },
+  // Neutral glass
+  neutral: {
+    background: colors.glass.bg,
+    border: colors.glass.border,
+    glow: 'rgba(255, 255, 255, 0.1)',
+  },
+};
 
 // ============================================
 // BUTTON STYLES
@@ -380,101 +463,37 @@ export const layoutStyles = StyleSheet.create({
 });
 
 // ============================================
-// STAT CARD STYLES
+// STAT CARD STYLES (Legacy - kept for backwards compatibility)
+// New StatCard component uses inline styles with new design tokens
 // ============================================
-
-// Extract color values for StyleSheet compatibility
-const statRed = colors.red[500];
-const statCyan = colors.cyan[500];
 
 export const statCardStyles = StyleSheet.create({
   card: {
-    width: 98.33, // Fixed width from Figma: 98.33px
-    height: 110,
-    backgroundColor: '#30363B', // Exact color from Figma
-    borderRadius: 24, // border-radius: 24px from Figma
-    padding: 18, // padding: 18px (all sides) from Figma
-    borderWidth: 0,
-    flexDirection: 'column', // flex-direction: column from Figma
-    justifyContent: 'center', // justify-content: center from Figma
-    alignItems: 'flex-start', // align-items: flex-start from Figma
-    gap: 16, // gap: 12px from Figma (was incorrectly 16px)
-    shadowColor: '#000', // React Native shadow color
-    shadowOffset: { width: 0, height: 6 }, // box-shadow: 0px 6px from Figma
-    shadowOpacity: 0.05, // rgba(0, 0, 0, 0.05) opacity
-    shadowRadius: 40, // box-shadow blur: 40px from Figma
-    elevation: 4,
-    // Removed overflow: 'hidden' to allow shadows to be visible
-    flexShrink: 0, // Prevent shrinking
-    flexGrow: 0, // Prevent growing
+    flex: 1,
+    minHeight: 100,
+    backgroundColor: colors.bg.card,
+    borderRadius: 16,
+    padding: 16,
+    justifyContent: 'space-between',
   },
-
-  topSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-
-  iconContainer: {
-    // Container for custom icons
-  },
-
-  icon: {
-    marginBottom: spacing.xs,
-  },
-
-  valueBase: {
+  label: {
     fontFamily: 'Poppins',
-    fontSize: 14,
-    fontWeight: typography.weights.bold,
-    lineHeight: 20,
-    letterSpacing: 0,
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  valueRed: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '700',
     color: colors.text.primary,
   },
-
-  valueRed: {
-    fontFamily: 'Poppins', // Using Poppins (app standard) - Figma shows DM Sans but app uses Poppins
-    fontSize: 14, // font-size: 14px from Figma CSS
-    fontWeight: '700', // font-weight: 700 from Figma
-    lineHeight: 20, // line-height: 20px from Figma CSS (identical to box height, or 143%)
-    letterSpacing: 0,
-    color: '#FFFFFF', // Exact white color from Figma
-    textAlign: 'right', // text-align: right from Figma CSS
-    alignSelf: 'stretch', // Stretch to full width of container
-    // No marginTop - gap: 12px handles spacing
-  },
-
   valueCyan: {
-    fontFamily: 'Poppins', // Using Poppins (app standard) - Figma shows DM Sans but app uses Poppins
-    fontSize: 14, // font-size: 14px from Figma CSS
-    fontWeight: '700', // font-weight: 700 from Figma
-    lineHeight: 20, // line-height: 20px from Figma CSS (identical to box height, or 143%)
-    letterSpacing: 0,
-    color: '#FFFFFF', // Exact white color from Figma
-    textAlign: 'right', // text-align: right from Figma CSS
-    alignSelf: 'stretch', // Stretch to full width of container
-    // No marginTop - gap: 12px handles spacing
-  },
-
-  valueBottom: {
-    // Legacy support
-  },
-
-  label: {
-    fontFamily: 'Poppins', // Using Poppins (app standard) - Figma shows DM Sans but app uses Poppins
-    fontSize: 10, // font-size: 10px from Figma CSS
-    fontWeight: '500', // font-weight: 500 from Figma
-    color: '#B4BCD0', // Exact color from Figma
-    lineHeight: 12, // Adjusted from 0px (Figma shows 0px which would clip text, using 12px for readability)
-    letterSpacing: 0.3, // letter-spacing: 0.03em = 0.03 * 10px = 0.3px (varies by card in Figma, using 0.3px)
-    textTransform: 'uppercase', // Uppercase text
-    textAlign: 'left', // Align to left (align-items: flex-start)
-    alignSelf: 'stretch', // align-self: stretch from Figma
-    // No marginTop - gap: 12px handles spacing
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.primary,
   },
 });
-
-// Helper function to get icon color for stat cards based on variant
-export const getStatCardIconColor = (variant: 'red' | 'cyan'): string => {
-  return variant === 'red' ? statRed : statCyan;
-};

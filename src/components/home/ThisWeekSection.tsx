@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, typography } from '../../theme/theme';
-import { textStyles } from '../../theme/components';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors } from '../../theme/theme';
 import type { Day } from '../../types/plan';
 
 interface WeekDayWithWorkout {
   day: Day;
-  workout: any; // Workout from plan with exercises
+  workout: any;
   workoutName?: string;
   completed?: boolean;
 }
@@ -17,84 +17,107 @@ interface ThisWeekSectionProps {
   todayName: string;
 }
 
-export default function ThisWeekSection({ weekDays, todayName }: ThisWeekSectionProps) {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  
-  const getDayName = (date: Date) => {
-    const dayIndex = date.getDay();
-    return dayNames[dayIndex];
-  };
-
-  const formatDate = (date: Date) => {
-    const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    const dayName = dayNames[date.getDay()];
-    const month = monthNames[date.getMonth()];
-    const day = date.getDate();
-    const suffix = day === 1 || day === 21 || day === 31 ? 'ST' : day === 2 || day === 22 ? 'ND' : day === 3 || day === 23 ? 'RD' : 'TH';
-    return `${dayName}, ${month} ${day}${suffix}`.toUpperCase();
-  };
-
-  const isToday = (date: Date) => {
+export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
+  // Get all days of current week
+  const getWeekDays = () => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const compareDate = new Date(date);
-    compareDate.setHours(0, 0, 0, 0);
-    return compareDate.getTime() === today.getTime();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+    const days = [];
+    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      date.setHours(0, 0, 0, 0);
+
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+
+      const isToday = date.getTime() === todayDate.getTime();
+      const isPast = date.getTime() < todayDate.getTime();
+
+      // Check if this day has a workout
+      const workoutDay = weekDays.find(wd => {
+        const wdDate = new Date(wd.day.date);
+        wdDate.setHours(0, 0, 0, 0);
+        return wdDate.getTime() === date.getTime();
+      });
+
+      days.push({
+        label: dayLabels[i],
+        date: date.getDate(),
+        isToday,
+        isPast,
+        hasWorkout: !!workoutDay?.workout,
+        workout: workoutDay,
+        completed: workoutDay?.completed || false,
+      });
+    }
+    return days;
   };
 
-  if (weekDays.length === 0) {
-    return null;
-  }
-
-  // Filter to only show days with workouts
-  const daysWithWorkouts = weekDays.filter(item => item.workout !== null);
-
-  if (daysWithWorkouts.length === 0) {
-    return null;
-  }
+  const allDays = getWeekDays();
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>This Week</Text>
+      {/* Week strip */}
+      <View style={styles.weekStrip}>
+        {allDays.map((day, index) => (
+          <View key={index} style={styles.dayColumn}>
+            <Text style={[
+              styles.dayLabel,
+              day.isToday && styles.dayLabelToday
+            ]}>
+              {day.label}
+            </Text>
 
-      <View style={styles.workoutsList}>
-        {daysWithWorkouts.map((item, index) => {
-          const { day, workout, workoutName, completed } = item;
-          const isTodayWorkout = isToday(new Date(day.date));
-          const exerciseCount = workout?.exercises?.length || 0;
-          const duration = workout?.duration || 45;
-
-          return (
-            <TouchableOpacity
-              key={`${day.dayNumber}-${index}`}
-              style={styles.workoutCard}
-              activeOpacity={0.7}
-            >
-              <View style={styles.workoutCardContent}>
-                <Text style={styles.dateText}>{formatDate(new Date(day.date))}</Text>
-                <Text style={styles.workoutName}>{workoutName || 'Workout'}</Text>
-                
-                <View style={styles.metaRow}>
-                  <View style={styles.metaItem}>
-                    <Ionicons name="time-outline" size={14} color={colors.text.primary} />
-                    <Text style={styles.metaText}>{duration} min</Text>
-                  </View>
-                  <View style={styles.metaItem}>
-                    <Ionicons name="barbell-outline" size={14} color={colors.text.primary} />
-                    <Text style={styles.metaText}>{exerciseCount} exercises</Text>
-                  </View>
-                </View>
+            {day.isToday ? (
+              <View style={styles.dayCircleToday}>
+                <LinearGradient
+                  colors={[colors.accent.primary, colors.accent.primaryDark]}
+                  style={styles.dayCircleTodayGradient}
+                >
+                  <Text style={styles.dayNumberToday}>
+                    {day.date}
+                  </Text>
+                </LinearGradient>
               </View>
+            ) : (
+              <View style={[
+                styles.dayCircle,
+                day.hasWorkout && styles.dayCircleWorkout,
+                day.completed && styles.dayCircleCompleted,
+              ]}>
+                {day.completed ? (
+                  <Ionicons name="checkmark" size={18} color={colors.accent.success} />
+                ) : (
+                  <Text style={[
+                    styles.dayNumber,
+                    day.isPast && styles.dayNumberPast,
+                  ]}>
+                    {day.date}
+                  </Text>
+                )}
+              </View>
+            )}
 
-              <Ionicons 
-                name="chevron-forward" 
-                size={20} 
-                color={colors.text.primary} 
-              />
-            </TouchableOpacity>
-          );
-        })}
+            {/* Indicator - only show barbell for today */}
+            <View style={styles.indicatorContainer}>
+              {day.isToday && day.hasWorkout && !day.completed && (
+                <View style={styles.workoutIndicatorToday}>
+                  <Ionicons
+                    name="barbell"
+                    size={10}
+                    color={colors.accent.primary}
+                  />
+                </View>
+              )}
+            </View>
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -102,65 +125,90 @@ export default function ThisWeekSection({ weekDays, todayName }: ThisWeekSection
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.xl,
+    paddingVertical: 4,
   },
-  title: {
-    ...textStyles.h3,
-    marginBottom: spacing.m,
-  },
-  workoutsList: {
-    gap: spacing.m,
-  },
-  workoutCard: {
-    backgroundColor: 'transparent',
-    borderRadius: borderRadius.s,
-    borderWidth: 1,
-    borderColor: '#505962',
-    height: 94,
-    paddingHorizontal: spacing.l,
-    paddingVertical: spacing.sm,
+  weekStrip: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    overflow: 'hidden',
   },
-  workoutCardContent: {
+  dayColumn: {
+    alignItems: 'center',
     flex: 1,
-    gap: 2,
   },
-  dateText: {
-    fontFamily: 'Poppins',
-    fontSize: 8,
-    fontWeight: typography.weights.regular,
-    color: colors.text.tertiary,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    lineHeight: 15,
-  },
-  workoutName: {
-    fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: typography.weights.regular,
-    color: colors.text.primary,
-    letterSpacing: -0.5697,
-    lineHeight: 16,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s,
-    marginTop: spacing.xs,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  metaText: {
+  dayLabel: {
     fontFamily: 'Poppins',
     fontSize: 11,
-    fontWeight: typography.weights.medium,
-    color: colors.text.primary,
-    lineHeight: 21,
+    fontWeight: '500',
+    color: colors.text.disabled,
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  dayLabelToday: {
+    color: colors.accent.primary,
+    fontWeight: '600',
+  },
+  dayCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dayCircleToday: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 12,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  dayCircleTodayGradient: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dayCircleWorkout: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  dayCircleCompleted: {
+    backgroundColor: colors.accent.successMuted,
+  },
+  dayNumber: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.secondary,
+  },
+  dayNumberToday: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.text.inverse,
+    fontWeight: '700',
+  },
+  dayNumberPast: {
+    color: colors.text.disabled,
+  },
+  indicatorContainer: {
+    height: 16,
+    marginTop: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  workoutIndicatorToday: {
+    width: 18,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: colors.accent.primaryMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

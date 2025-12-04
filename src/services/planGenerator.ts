@@ -49,20 +49,18 @@ export async function generateQuickStartPlan(): Promise<Plan> {
     throw new Error('No exercises available. Please check your database.');
   }
 
-  // Generate only the 5-minute workout
-  const workout = generateWorkout(quickStartProfile, 5, exercises);
+  // Generate a 30-minute workout for quick start (minimum supported duration)
+  const workout = generateWorkout(quickStartProfile, 30, exercises);
 
-  // Create a single day with only the 5-minute variant
-  // Note: Type definition requires 15/30/45 to be Workout, but quick start only has 5-min
-  // Using type assertion to match test expectations
+  // Create a single day with the 30-minute variant
   const day: Day = {
     dayNumber: 1,
     date: new Date(),
     variants: {
-      5: workout,
-      15: null as any,
-      30: null as any,
-      45: null as any,
+      30: workout,
+      45: null,
+      60: null,
+      90: null,
     },
   };
 
@@ -240,12 +238,10 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
     }
 
     const variants: Day['variants'] = {
-      5: profile.preferred_minutes?.includes(5)
-        ? generateWorkout(profile, 5, availableExercises.length > 0 ? availableExercises : exercises)
-        : null,
-      15: generateWorkout(profile, 15, availableExercises.length > 0 ? availableExercises : exercises),
       30: generateWorkout(profile, 30, availableExercises.length > 0 ? availableExercises : exercises),
       45: generateWorkout(profile, 45, availableExercises.length > 0 ? availableExercises : exercises),
+      60: generateWorkout(profile, 60, availableExercises.length > 0 ? availableExercises : exercises),
+      90: generateWorkout(profile, 90, availableExercises.length > 0 ? availableExercises : exercises),
     };
 
     // Mark exercises as used
@@ -293,12 +289,10 @@ export async function regenerateDay(
   console.log(`\n🔄 Regenerating Day ${dayNumber}`);
 
   const variants: Day['variants'] = {
-    5: profile.preferred_minutes?.includes(5)
-      ? generateWorkout(profile, 5, exercises)
-      : null,
-    15: generateWorkout(profile, 15, exercises),
     30: generateWorkout(profile, 30, exercises),
     45: generateWorkout(profile, 45, exercises),
+    60: generateWorkout(profile, 60, exercises),
+    90: generateWorkout(profile, 90, exercises),
   };
 
   return {
