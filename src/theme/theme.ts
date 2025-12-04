@@ -1,64 +1,142 @@
-// src/theme/theme.ts
-// TransFitness Design System - Pure FigmaMake Premium Glass Aesthetic
+// Design System - TransFitness
+// Elite, powerful, minimal aesthetic with Trans Pride colors
 
 import { MD3DarkTheme } from 'react-native-paper';
 
 // ============================================
-// COLORS
+// COLOR SYSTEM
+// Trans Pride: Blue (primary), Pink (secondary), White
+// Same shade intensity as the previous orange
 // ============================================
 
 export const colors = {
-  // Primary - Cyan
-  cyan: {
-    500: '#06b6d4',
-    600: '#0891b2',
-    400: '#22d3ee',
-  },
-
-  // Secondary - Red
-  red: {
-    500: '#f43f5e',
-    600: '#e11d48',
-    400: '#fb7185',
-  },
-
-  // Backgrounds
+  // Backgrounds - true dark
   bg: {
+    primary: '#000000',
+    secondary: '#0A0A0A',
+    tertiary: '#111111',
+    elevated: '#1A1A1A',
+    // Legacy
     deep: '#000000',
-    mid: '#0a0f14',
-    raised: '#141b23',
-    surface: '#1a2332',
+    mid: '#0A0A0A',
+    card: '#111111',
+    raised: '#1A1A1A',
   },
 
-  // Glass Effects
-  glass: {
-    bg: 'rgba(255, 255, 255, 0.06)',
-    bgHero: 'rgba(6, 182, 212, 0.08)',
-    border: 'rgba(255, 255, 255, 0.1)',
-    borderCyan: 'rgba(6, 182, 212, 0.15)',
-  },
-
-  // Text
+  // Text - clean hierarchy
   text: {
-    primary: '#ffffff',
-    secondary: '#b4bcd0',
-    tertiary: '#6b7280',
-    disabled: '#4b5563',
+    primary: '#FFFFFF',
+    secondary: 'rgba(255, 255, 255, 0.7)',
+    tertiary: 'rgba(255, 255, 255, 0.4)',
+    disabled: 'rgba(255, 255, 255, 0.25)',
+    inverse: '#000000',
+    statLabel: 'rgba(255, 255, 255, 0.4)',
+  },
+
+  // Trans Pride accents - Blue (primary), Pink (secondary)
+  // Same saturation/brightness as the orange #FF6B35
+  accent: {
+    primary: '#5BCEFA',       // Trans blue - vibrant like the orange was
+    primaryLight: '#7DD8FF',
+    primaryDark: '#45A8D4',
+    primaryMuted: 'rgba(91, 206, 250, 0.15)',
+    primaryGlow: 'rgba(91, 206, 250, 0.3)',
+    // Secondary - Trans pink
+    secondary: '#F5A9B8',     // Trans pink
+    secondaryLight: '#FFB8C6',
+    secondaryDark: '#E08A9A',
+    secondaryMuted: 'rgba(245, 169, 184, 0.15)',
+    secondaryGlow: 'rgba(245, 169, 184, 0.3)',
+    // Success for completed states
+    success: '#4ADE80',
+    successMuted: 'rgba(74, 222, 128, 0.15)',
+    // Warning
+    warning: '#FBBF24',
+    warningMuted: 'rgba(251, 191, 36, 0.12)',
+  },
+
+  // Gradient stops for hero elements
+  gradient: {
+    transPride: ['#5BCEFA', '#F5A9B8', '#FFFFFF', '#F5A9B8', '#5BCEFA'],
+    transSubtle: ['rgba(91, 206, 250, 0.2)', 'rgba(245, 169, 184, 0.15)'],
+    warm: ['#5BCEFA', '#7DD8FF', '#A8E6FF'],
+    pink: ['#F5A9B8', '#FFB8C6', '#FFD6E0'],
+    dark: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.8)', '#000000'],
+    overlay: ['transparent', 'rgba(0,0,0,0.6)'],
+    glass: ['rgba(91, 206, 250, 0.08)', 'rgba(245, 169, 184, 0.05)'],
+  },
+
+  // Legacy support - mapped to new blue
+  cyan: {
+    400: '#7DD8FF',
+    500: '#5BCEFA',
+    600: '#45A8D4',
+    700: '#3090BE',
+  },
+  // Pink for secondary uses
+  pink: {
+    400: '#FFB8C6',
+    500: '#F5A9B8',
+    600: '#E08A9A',
+    700: '#CC6B7C',
+  },
+  red: {
+    400: '#F5A9B8',
+    500: '#F5A9B8',
+    600: '#E08A9A',
+    flame: '#F5A9B8',
+    flameBg: 'rgba(245, 169, 184, 0.15)',
+  },
+  purple: {
+    400: '#7DD8FF',
+    500: '#5BCEFA',
+    600: '#45A8D4',
+  },
+
+  // Borders - barely visible with subtle blue tint
+  border: {
+    default: 'rgba(255, 255, 255, 0.08)',
+    subtle: 'rgba(255, 255, 255, 0.04)',
+    focus: '#5BCEFA',
+    glow: 'rgba(91, 206, 250, 0.2)',
+  },
+
+  // Liquid glass effects
+  glass: {
+    bg: 'rgba(255, 255, 255, 0.03)',
+    bgLight: 'rgba(255, 255, 255, 0.05)',
+    border: 'rgba(255, 255, 255, 0.08)',
+    borderLight: 'rgba(255, 255, 255, 0.12)',
+    bgHero: 'rgba(91, 206, 250, 0.08)',
+    bgHeroPink: 'rgba(245, 169, 184, 0.08)',
+    borderCyan: 'rgba(91, 206, 250, 0.2)',
+    borderPink: 'rgba(245, 169, 184, 0.2)',
+    // Liquid glass specific
+    liquidBg: 'rgba(91, 206, 250, 0.06)',
+    liquidBorder: 'rgba(91, 206, 250, 0.15)',
+    liquidHighlight: 'rgba(255, 255, 255, 0.1)',
   },
 
   // Semantic
+  success: '#4ADE80',
+  warning: '#FBBF24',
+  error: '#EF4444',
+  info: '#5BCEFA',
+
   semantic: {
-    success: '#22c55e',
-    warning: '#f59e0b',
-    error: '#ef4444',
-    info: '#3b82f6',
+    success: '#4ADE80',
+    warning: '#FBBF24',
+    error: '#EF4444',
+    info: '#5BCEFA',
   },
 
-  // Glows (for shadows)
-  glow: {
-    cyan: 'rgba(6, 182, 212, 0.4)',
-    red: 'rgba(244, 63, 94, 0.3)',
-    white: 'rgba(255, 255, 255, 0.15)',
+  stat: {
+    cardBg: '#111111',
+    iconBgBlue: 'rgba(91, 206, 250, 0.15)',
+    iconBgPink: 'rgba(245, 169, 184, 0.15)',
+    iconBgRed: 'rgba(245, 169, 184, 0.15)',
+    iconBgGray: 'rgba(255, 255, 255, 0.08)',
+    labelColor: 'rgba(255, 255, 255, 0.4)',
   },
 };
 
@@ -67,42 +145,112 @@ export const colors = {
 // ============================================
 
 export const spacing = {
+  xxs: 2,
+  xs: 4,
+  s: 8,
+  sm: 10,
+  m: 12,
+  base: 12,
+  md: 14,
+  l: 16,
+  lg: 20,
+  xl: 24,
+  '2xl': 32,
+  xxl: 32,
+  '3xl': 40,
+  '4xl': 48,
+  xxxl: 48,
+};
+
+// ============================================
+// BORDER RADIUS
+// ============================================
+
+export const borderRadius = {
+  xs: 4,
+  s: 6,
+  sm: 8,
+  m: 12,
+  base: 12,
+  md: 16,
+  l: 20,
+  lg: 24,
+  xl: 28,
+  '2xl': 32,
+  xxl: 32,
+  '3xl': 40,
+  full: 999,
+};
+
+export const radii = {
   xs: 4,
   sm: 8,
   md: 12,
-  base: 16,
-  lg: 20,
+  lg: 16,
   xl: 24,
-  '2xl': 28,
-  '3xl': 32,
-  '4xl': 40,
-  '5xl': 56,
+  '2xl': 32,
+  full: 999,
 };
 
 // ============================================
 // TYPOGRAPHY
+// Light, editorial, powerful
 // ============================================
 
 export const typography = {
-  // Font Sizes
-  display1: 42,
+  // Display - bold statement
+  display1: 48,
   display2: 36,
+
+  // Headings
   h1: 32,
-  h2: 26,
-  h3: 22,
-  h4: 20,
-  body: 16,
-  bodySmall: 14,
-  label: 14,
+  h2: 24,
+  h3: 18,
+  h4: {
+    fontSize: 16,
+    fontWeight: '500' as const,
+    letterSpacing: -0.3,
+    lineHeight: 22,
+  },
+
+  // Body
+  body: 15,
+  bodyLarge: {
+    fontSize: 17,
+    fontWeight: '400' as const,
+    lineHeight: 24,
+    letterSpacing: -0.2,
+  },
+  bodySmall: 13,
+
+  // Labels
+  label: 11,
+  labelLarge: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    letterSpacing: 0.5,
+  },
+
+  // Button
+  button: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    letterSpacing: -0.2,
+  },
+  buttonSmall: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    letterSpacing: 0,
+  },
+
   caption: 11,
 
-  // Stats/Numbers
-  statHero: 80,
-  statLarge: 48,
-  statMedium: 36,
-  statSmall: 24,
+  // Stats
+  statHero: 36,
+  statLarge: 28,
+  statMedium: 22,
 
-  // Font Weights
+  // Weights
   weights: {
     light: '300' as const,
     regular: '400' as const,
@@ -111,34 +259,20 @@ export const typography = {
     bold: '700' as const,
   },
 
-  // Line Heights
   lineHeights: {
-    tight: 1.2,
-    normal: 1.5,
-    relaxed: 1.75,
+    tight: 1.1,
+    normal: 1.3,
+    relaxed: 1.5,
   },
 
-  // Letter Spacing
   letterSpacing: {
-    tight: -1.5,
-    normal: -0.5,
-    wide: 0.8,
+    tighter: -0.5,
+    tight: -0.3,
+    normal: 0,
+    wide: 0.5,
+    wider: 1.0,
+    caps: 1.5,
   },
-};
-
-// ============================================
-// BORDER RADIUS
-// ============================================
-
-export const borderRadius = {
-  sm: 8,
-  md: 10,
-  base: 12,
-  lg: 14,
-  xl: 16,
-  '2xl': 20,
-  '3xl': 24,
-  full: 9999,
 };
 
 // ============================================
@@ -146,145 +280,171 @@ export const borderRadius = {
 // ============================================
 
 export const shadows = {
-  // iOS shadows
+  none: {},
+  xs: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  sm: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  md: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  lg: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.6,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  glow: {
+    shadowColor: colors.accent.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 6,
+  },
   ios: {
     glass: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.2,
-      shadowRadius: 24,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 12,
     },
     glassStrong: {
       shadowColor: '#000',
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.3,
-      shadowRadius: 32,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.4,
+      shadowRadius: 20,
     },
     cyan: {
-      shadowColor: '#06b6d4',
+      shadowColor: colors.accent.primary,
       shadowOffset: { width: 0, height: 0 },
       shadowOpacity: 0.4,
-      shadowRadius: 24,
-    },
-    cyanStrong: {
-      shadowColor: '#06b6d4',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.5,
-      shadowRadius: 32,
+      shadowRadius: 16,
     },
   },
-
-  // Android elevations
   android: {
-    glass: 8,
-    glassStrong: 12,
-    button: 8,
-    card: 4,
+    glass: 4,
+    glassStrong: 8,
+    button: 6,
   },
 };
 
+export const shadowPresets = {
+  none: {},
+  subtle: shadows.xs,
+  card: shadows.sm,
+  elevated: shadows.md,
+  prominent: shadows.lg,
+};
+
 // ============================================
-// REACT NATIVE PAPER THEME
+// ANIMATION
 // ============================================
 
-export const darkTheme = {
+export const timing = {
+  fast: 150,
+  normal: 250,
+  slow: 400,
+};
+
+// ============================================
+// CONTENT SPACING
+// ============================================
+
+export const contentSpacing = {
+  screenPadding: 24,
+  sectionGap: 32,
+  cardGap: 16,
+  inlineGap: 8,
+  cardPadding: 20,
+  cardPaddingLarge: 24,
+};
+
+// ============================================
+// COMPONENTS
+// ============================================
+
+export const components = {
+  card: {
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+  },
+  button: {
+    primary: {
+      backgroundColor: colors.accent.primary,
+      borderRadius: radii.full,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xl,
+    },
+    secondary: {
+      backgroundColor: 'transparent',
+      borderRadius: radii.full,
+      borderWidth: 1,
+      borderColor: colors.border.default,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.xl,
+    },
+  },
+  input: {
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    paddingVertical: spacing.m,
+    paddingHorizontal: spacing.l,
+    fontSize: 16,
+    color: colors.text.primary,
+  },
+};
+
+export const layout = {
+  screenPadding: spacing.xl,
+  sectionSpacing: spacing['2xl'],
+  cardSpacing: spacing.l,
+};
+
+// ============================================
+// LEGACY
+// ============================================
+
+export const palette = {
+  deepBlack: colors.bg.primary,
+  white: colors.text.primary,
+  midGray: colors.text.tertiary,
+  lightGray: colors.text.secondary,
+  darkCard: colors.bg.tertiary,
+  darkerCard: colors.bg.elevated,
+  border: colors.border.default,
+  tealPrimary: colors.accent.primary,
+  tealDark: colors.accent.primaryDark,
+  tealGlow: colors.accent.primaryLight,
+  error: colors.error,
+  success: colors.success,
+  warning: colors.warning,
+};
+
+export const theme = {
   ...MD3DarkTheme,
-  dark: true,
   colors: {
     ...MD3DarkTheme.colors,
-    primary: colors.cyan[500],
-    primaryContainer: colors.cyan[600],
-    secondary: colors.semantic.info,
-    secondaryContainer: '#4A7FCC',
-    tertiary: colors.semantic.warning,
-    background: colors.bg.deep,
-    surface: colors.bg.raised,
-    surfaceVariant: colors.bg.mid,
-    surfaceDisabled: colors.glass.border,
-    onPrimary: colors.bg.deep,
-    onSecondary: colors.text.primary,
-    onSurface: colors.text.primary,
-    onSurfaceVariant: colors.text.secondary,
-    onSurfaceDisabled: colors.text.disabled,
-    outline: colors.glass.border,
-    outlineVariant: '#3A4545',
-    error: colors.semantic.error,
-    errorContainer: '#CC5555',
-    onError: colors.text.primary,
-    backdrop: 'rgba(10, 14, 14, 0.8)',
+    primary: colors.accent.primary,
+    background: colors.bg.primary,
+    surface: colors.bg.tertiary,
+    error: colors.error,
   },
-  roundness: 16,
-  fonts: {
-    ...MD3DarkTheme.fonts,
-    displayLarge: { 
-      fontFamily: 'Anton', 
-      fontSize: 34, 
-      fontWeight: '400' as const, 
-      letterSpacing: 1.0 
-    },
-    displayMedium: { 
-      fontFamily: 'Anton', 
-      fontSize: 28, 
-      fontWeight: '400' as const, 
-      letterSpacing: 0.8 
-    },
-    displaySmall: { 
-      fontFamily: 'Anton', 
-      fontSize: 24, 
-      fontWeight: '400' as const, 
-      letterSpacing: 0.6 
-    },
-    headlineLarge: { 
-      fontFamily: 'Anton', 
-      fontSize: 20, 
-      fontWeight: '400' as const, 
-      letterSpacing: 0.5 
-    },
-    bodyLarge: { 
-      fontFamily: 'Poppins', 
-      fontSize: 17, 
-      fontWeight: '400' as const, 
-      letterSpacing: 0 
-    },
-    bodyMedium: { 
-      fontFamily: 'Poppins', 
-      fontSize: 15, 
-      fontWeight: '400' as const, 
-      letterSpacing: 0 
-    },
-    bodySmall: { 
-      fontFamily: 'Poppins', 
-      fontSize: 13, 
-      fontWeight: '400' as const, 
-      letterSpacing: 0 
-    },
-    labelLarge: { 
-      fontFamily: 'Poppins', 
-      fontSize: 16, 
-      fontWeight: '600' as const, 
-      letterSpacing: 0 
-    },
-  },
-};
-
-// Default export
-export const theme = darkTheme;
-
-// Legacy palette export for existing components that use it
-// (Remove this after migrating all components to use 'colors')
-export const palette = {
-  deepBlack: colors.bg.deep,
-  darkCard: colors.bg.raised,
-  darkerCard: colors.bg.mid,
-  border: colors.glass.border,
-  tealPrimary: colors.cyan[500],
-  tealDark: colors.cyan[600],
-  white: colors.text.primary,
-  lightGray: colors.text.secondary,
-  midGray: colors.text.tertiary,
-  disabled: colors.text.disabled,
-  success: colors.semantic.success,
-  warning: colors.semantic.warning,
-  error: colors.semantic.error,
-  info: colors.semantic.info,
 };

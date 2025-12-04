@@ -261,6 +261,7 @@ export const onboardingExamples = {
 import { StackNavigationProp } from '@react-navigation/stack';
 
 export type OnboardingStackParamList = {
+  Splash: undefined;
   WhyTransFitness: undefined;
   Disclaimer: undefined;
   GenderIdentity: undefined;
@@ -268,6 +269,7 @@ export type OnboardingStackParamList = {
   BindingInfo: undefined;
   Surgery: undefined;
   Goals: undefined;
+  TrainingEnvironment: undefined;
   Experience: undefined;
   DysphoriaTriggers: undefined;
   Review: undefined;
@@ -290,6 +292,15 @@ export type OnboardingStackParamList = {
       workoutName?: string;
     };
   };
+
+  // Auth screens
+  Welcome: undefined;
+  Login: { message?: string; error?: string } | undefined;
+  Signup: undefined;
+  EmailVerification: { userId?: string; email: string };
+  ForgotPassword: undefined;
+  ResetPassword: { token: string };
+  Main: undefined;
 };
 
 export type OnboardingScreenProps<T extends keyof OnboardingStackParamList> = {

@@ -34,9 +34,12 @@ export async function evaluateSafetyRules(
     if (rule.condition(context)) {
       // Rule triggered!
       console.log(`✅ Rule triggered: ${rule.rule_id}`);
-      
+
       applyRuleAction(rule, context, safetyContext);
-      
+
+      // Generate user-facing message
+      const userMessage = generateUserMessage(rule, userProfile);
+
       // Log rule application
       safetyContext.rules_applied.push({
         rule_id: rule.rule_id,
@@ -45,7 +48,8 @@ export async function evaluateSafetyRules(
         context: {
           user_id: userProfile.user_id,
           timestamp: new Date().toISOString()
-        }
+        },
+        userMessage
       });
     }
   }
@@ -100,13 +104,59 @@ function filterExcludedExercises(
         );
         if (hasContra) return true;
       }
-      
+
       // Check custom filter
       if (criteria.custom_filter && criteria.custom_filter(ex)) {
         return true;
       }
-      
+
       return false;
     })
     .map(ex => parseInt(ex.id));
+}
+
+// Generate user-facing message from rule, with template interpolation
+function generateUserMessage(rule: Rule, profile: Profile): string | undefined {
+  // If rule has a static message, use it
+  if (rule.userMessage) {
+    return rule.userMessage;
+  }
+
+  // If rule has a template, interpolate values
+  if (rule.userMessageTemplate) {
+    let message = rule.userMessageTemplate;
+
+    // Calculate weeks post-op for surgery rules
+    if (rule.category === 'post_op') {
+      const topSurgery = profile.surgeries?.find(s => s.type === 'top_surgery');
+      const bottomSurgery = profile.surgeries?.find(s => s.type === 'bottom_surgery');
+
+      if (topSurgery) {
+        const weeksPostOp = calculateWeeksPostOp(topSurgery.date);
+        message = message.replace('{weeksPostOp}', String(weeksPostOp));
+      }
+      if (bottomSurgery) {
+        const weeksPostOp = calculateWeeksPostOp(bottomSurgery.date);
+        message = message.replace('{weeksPostOp}', String(weeksPostOp));
+      }
+    }
+
+    // HRT months interpolation
+    if (profile.hrt_months_duration !== undefined) {
+      message = message.replace('{hrtMonths}', String(profile.hrt_months_duration));
+    }
+
+    return message;
+  }
+
+  return undefined;
+}
+
+// Helper to calculate weeks post-op
+function calculateWeeksPostOp(surgeryDate: Date): number {
+  const now = new Date();
+  const surgeryDateTime = new Date(surgeryDate).getTime();
+  const diffTime = Math.abs(now.getTime() - surgeryDateTime);
+  const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+  return diffWeeks;
 }

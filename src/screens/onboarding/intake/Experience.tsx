@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,6 +9,7 @@ import { colors, spacing, borderRadius } from "../../../theme/theme";
 import { glassStyles, textStyles, inputStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile } from "../../../services/storage/profile";
+import { TrainingEnvironment } from "../../../types";
 
 type ExperienceLevel = "beginner" | "intermediate" | "advanced";
 
@@ -25,14 +26,42 @@ const DURATION_OPTIONS = [
   { value: 90, label: "90 min" }
 ];
 
-const EQUIPMENT_OPTIONS = [
-  { id: "bodyweight", label: "Bodyweight" },
-  { id: "dumbbells", label: "Dumbbells" },
-  { id: "bands", label: "Resistance Band" },
-  { id: "barbells", label: "Barbell" },
-  { id: "kettlebells", label: "Kettlebell" },
-  { id: "other", label: "Other Equipment" },
+// Equipment options with environment availability
+interface EquipmentOption {
+  id: string;
+  label: string;
+  environments: TrainingEnvironment[]; // Which environments this equipment is available in
+  defaultForEnv?: TrainingEnvironment[]; // Pre-select for these environments
+}
+
+const ALL_EQUIPMENT_OPTIONS: EquipmentOption[] = [
+  { id: "bodyweight", label: "Bodyweight", environments: ["home", "gym", "studio", "outdoors"], defaultForEnv: ["home", "outdoors"] },
+  { id: "dumbbells", label: "Dumbbells", environments: ["home", "gym", "studio"], defaultForEnv: ["home", "studio"] },
+  { id: "bands", label: "Resistance Bands", environments: ["home", "gym", "studio", "outdoors"], defaultForEnv: ["home", "outdoors"] },
+  { id: "kettlebells", label: "Kettlebell", environments: ["home", "gym", "studio"] },
+  { id: "barbells", label: "Barbell", environments: ["gym", "studio"] },
+  { id: "cables", label: "Cable Machine", environments: ["gym"] },
+  { id: "machines", label: "Weight Machines", environments: ["gym"] },
+  { id: "pull_up_bar", label: "Pull-up Bar", environments: ["home", "gym", "studio", "outdoors"] },
+  { id: "bench", label: "Bench", environments: ["home", "gym", "studio"] },
+  { id: "other", label: "Other Equipment", environments: ["home", "gym", "studio", "outdoors"] },
 ];
+
+// Get filtered equipment options for a training environment
+function getEquipmentForEnvironment(env?: TrainingEnvironment): EquipmentOption[] {
+  if (!env) return ALL_EQUIPMENT_OPTIONS;
+  return ALL_EQUIPMENT_OPTIONS.filter(opt => opt.environments.includes(env));
+}
+
+// Get default selected equipment for an environment
+function getDefaultEquipmentForEnvironment(env?: TrainingEnvironment): Set<string> {
+  if (!env) return new Set(["bodyweight"]);
+  return new Set(
+    ALL_EQUIPMENT_OPTIONS
+      .filter(opt => opt.defaultForEnv?.includes(env))
+      .map(opt => opt.id)
+  );
+}
 
 export default function Experience({ navigation }: ExperienceProps) {
   const { profile } = useProfile();
@@ -40,10 +69,20 @@ export default function Experience({ navigation }: ExperienceProps) {
   const [frequency, setFrequency] = useState<number>(3);
   const [duration, setDuration] = useState<number>(45);
   const [equipment, setEquipment] = useState<Set<string>>(new Set());
+  const [initialized, setInitialized] = useState(false);
+
+  // Get training environment from profile
+  const trainingEnvironment = profile?.training_environment;
+
+  // Filter equipment options based on training environment
+  const availableEquipment = useMemo(
+    () => getEquipmentForEnvironment(trainingEnvironment),
+    [trainingEnvironment]
+  );
 
   // Load initial data from profile
   useEffect(() => {
-    if (profile) {
+    if (profile && !initialized) {
       if (profile.fitness_experience) {
         setExperience(profile.fitness_experience);
       }
@@ -53,11 +92,26 @@ export default function Experience({ navigation }: ExperienceProps) {
       if (profile.session_duration) {
         setDuration(profile.session_duration);
       }
+      // If user has saved equipment, use it; otherwise use defaults for their environment
       if (profile.equipment && profile.equipment.length > 0) {
         setEquipment(new Set(profile.equipment));
+      } else if (trainingEnvironment) {
+        setEquipment(getDefaultEquipmentForEnvironment(trainingEnvironment));
       }
+      setInitialized(true);
     }
-  }, [profile]);
+  }, [profile, trainingEnvironment, initialized]);
+
+  // Get environment display name
+  const getEnvironmentLabel = (env?: TrainingEnvironment): string => {
+    switch (env) {
+      case "home": return "home";
+      case "gym": return "gym";
+      case "studio": return "studio";
+      case "outdoors": return "outdoors";
+      default: return "";
+    }
+  };
 
   const experienceOptions = [
     {
@@ -114,8 +168,8 @@ export default function Experience({ navigation }: ExperienceProps) {
 
   return (
     <OnboardingLayout
-      currentStep={6}
-      totalSteps={8}
+      currentStep={7}
+      totalSteps={9}
       title="Experience & Preferences"
       subtitle="Tailor your program to your current fitness level and available resources."
       onBack={handleBack}
@@ -205,11 +259,19 @@ export default function Experience({ navigation }: ExperienceProps) {
         {/* Equipment */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Available Equipment</Text>
+          {trainingEnvironment && (
+            <View style={styles.environmentNote}>
+              <Ionicons name="location-outline" size={16} color={colors.cyan[500]} />
+              <Text style={styles.environmentNoteText}>
+                Showing equipment for {getEnvironmentLabel(trainingEnvironment)} workouts
+              </Text>
+            </View>
+          )}
           <Text style={styles.equipmentSubtitle}>
             Select all that apply (at least 1 required)
           </Text>
           <View style={styles.equipmentGrid}>
-            {EQUIPMENT_OPTIONS.map((option) => {
+            {availableEquipment.map((option) => {
               const isSelected = equipment.has(option.id);
               return (
                 <TouchableOpacity
@@ -329,6 +391,17 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   durationButtonTextSelected: {
+    color: colors.cyan[500],
+  },
+  environmentNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  environmentNoteText: {
+    ...textStyles.bodySmall,
+    fontSize: 13,
     color: colors.cyan[500],
   },
   equipmentSubtitle: {

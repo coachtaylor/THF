@@ -1,88 +1,100 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, { useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Platform,
+  Animated,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, Circle, Rect } from 'react-native-svg';
-
-// SVG Icons
-const ShieldCheckSVG = () => (
-  <Svg width={28} height={28} viewBox="0 0 28 28" fill="none">
-    <Path
-      d="M14 2 L24 6 L24 14 C24 19 20 23 14 26 C8 23 4 19 4 14 L4 6 Z"
-      stroke="#00D9C0"
-      strokeWidth="2"
-    />
-    <Path
-      d="M10 14 L13 17 L18 12"
-      stroke="#00D9C0"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </Svg>
-);
-
-const ClockSVG = () => (
-  <Svg width={28} height={28} viewBox="0 0 28 28" fill="none">
-    <Circle cx="14" cy="14" r="11" stroke="#00D9C0" strokeWidth="2" />
-    <Path
-      d="M14 8 L14 14 L18 16"
-      stroke="#00D9C0"
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </Svg>
-);
-
-const LockSVG = () => (
-  <Svg width={28} height={28} viewBox="0 0 28 28" fill="none">
-    <Rect x="6" y="12" width="16" height="12" rx="2" stroke="#00D9C0" strokeWidth="2" />
-    <Path
-      d="M10 12 L10 8 C10 5.8 11.8 4 14 4 C16.2 4 18 5.8 18 8 L18 12"
-      stroke="#00D9C0"
-      strokeWidth="2"
-    />
-  </Svg>
-);
-
-const HeartSVG = () => (
-  <Svg width={28} height={28} viewBox="0 0 28 28" fill="none">
-    <Path
-      d="M14 24 L6 16 C4 14 4 10.5 6 8.5 C8 6.5 11 7 14 10 C17 7 20 6.5 22 8.5 C24 10.5 24 14 22 16 Z"
-      stroke="#00D9C0"
-      strokeWidth="2"
-    />
-  </Svg>
-);
-
-const SparkleSVG = () => (
-  <Svg width={18} height={18} viewBox="0 0 18 18" fill="none">
-    <Path d="M9 1 L10 7 L16 8 L10 9 L9 15 L8 9 L2 8 L8 7 Z" fill="#0F1419" />
-  </Svg>
-);
+import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing, borderRadius } from '../../theme/theme';
 
 // Feature data
 const FEATURES = [
   {
-    icon: 'shield',
+    icon: 'shield-checkmark' as const,
     title: 'Binder-Aware Exercises',
     description: 'Safe alternatives for chest compression',
   },
   {
-    icon: 'clock',
+    icon: 'time' as const,
     title: 'Flexible Workouts',
     description: '5-45 minute options for any energy level',
   },
   {
-    icon: 'lock',
+    icon: 'lock-closed' as const,
     title: 'Privacy-First',
     description: 'Your data stays on your device',
   },
   {
-    icon: 'heart',
+    icon: 'heart' as const,
     title: 'Recovery Support',
     description: 'Post-surgery modifications included',
   },
 ];
+
+// Feature card component
+function FeatureCard({
+  icon,
+  title,
+  description,
+  index,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+  index: number;
+}) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={[
+        styles.featureCard,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <LinearGradient
+        colors={['#141418', '#0A0A0C']}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.glassHighlight} />
+
+      <View style={styles.featureIconContainer}>
+        <Ionicons name={icon} size={24} color={colors.accent.primary} />
+      </View>
+      <View style={styles.featureContent}>
+        <Text style={styles.featureTitle}>{title}</Text>
+        <Text style={styles.featureDescription}>{description}</Text>
+      </View>
+    </Animated.View>
+  );
+}
 
 interface WelcomeScreenProps {
   navigation: any;
@@ -90,68 +102,116 @@ interface WelcomeScreenProps {
 
 export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
   const insets = useSafeAreaInsets();
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const logoScaleAnim = useRef(new Animated.Value(0)).current;
+  const logoGlowAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Logo animation
+    Animated.spring(logoScaleAnim, {
+      toValue: 1,
+      tension: 50,
+      friction: 7,
+      useNativeDriver: true,
+    }).start();
+
+    // Logo glow pulse
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoGlowAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoGlowAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Button shimmer
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 2500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-200, 400],
+  });
+
+  const logoGlowOpacity = logoGlowAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 0.6],
+  });
 
   const handleGetStarted = () => {
-    // Navigate to Signup or WhyTransFitness if it exists
-    if (navigation.canGoBack()) {
-      navigation.navigate('WhyTransFitness');
-    } else {
-      // If WhyTransFitness is not in the same navigator, try Signup
-      navigation.navigate('Signup');
-    }
+    navigation.navigate('Signup');
   };
 
   const handleSignIn = () => {
     navigation.navigate('Login');
   };
 
-  const handleContinueAsGuest = () => {
-    // Navigate to onboarding for anonymous session
-    navigation.navigate('WhyTransFitness');
-  };
-
-  const handleTerms = () => {
-    // TODO: Open terms modal or navigate to terms screen
-    console.log('Terms pressed');
-  };
-
-  const handlePrivacy = () => {
-    // TODO: Open privacy modal or navigate to privacy screen
-    console.log('Privacy pressed');
-  };
-
   return (
-    <SafeAreaView style={styles.container} edges={[]}>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[colors.bg.primary, colors.bg.secondary]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 },
+          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* HERO SECTION */}
+        {/* Hero Section */}
         <View style={styles.heroContainer}>
-          <LinearGradient
-            colors={['rgba(0, 217, 192, 0.08)', 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.heroBackground}
-          />
-
-          <View style={styles.logoContainer}>
-            <View style={styles.logoGradientCircle}>
+          {/* Logo */}
+          <Animated.View
+            style={[
+              styles.logoContainer,
+              { transform: [{ scale: logoScaleAnim }] },
+            ]}
+          >
+            <Animated.View
+              style={[styles.logoGlow, { opacity: logoGlowOpacity }]}
+            >
               <LinearGradient
-                colors={['#00D9C0', '#A78BFA']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoGradient}
+                colors={['rgba(91, 206, 250, 0.4)', 'transparent']}
+                style={StyleSheet.absoluteFill}
               />
-            </View>
-            <Text style={styles.appName}>TransFitness</Text>
-            <Text style={styles.tagline}>Affirming Fitness for Every Body</Text>
-          </View>
+            </Animated.View>
+            <LinearGradient
+              colors={[colors.accent.primary, colors.accent.secondary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoGradient}
+            >
+              <Ionicons name="fitness" size={36} color={colors.text.inverse} />
+            </LinearGradient>
+          </Animated.View>
 
+          <Text style={styles.appName}>TransFitness</Text>
+          <Text style={styles.tagline}>Affirming Fitness for Every Body</Text>
+
+          {/* Headline */}
           <View style={styles.headlineContainer}>
             <Text style={styles.headline}>
               Safety-first workouts{'\n'}for trans bodies
@@ -163,43 +223,32 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
           </View>
         </View>
 
-        {/* MASCOT (Optional) */}
-        <View style={styles.mascotContainer}>
-          <View style={styles.mascotPlaceholder}>
-            <Text style={styles.mascotText}>Riley Phoenix</Text>
-          </View>
-          <Text style={styles.mascotCaption}>Your workout companion</Text>
-        </View>
-
-        {/* FEATURE CARDS */}
+        {/* Feature Cards */}
         <View style={styles.featuresContainer}>
-          {FEATURES.map((feature) => (
-            <View key={feature.title} style={styles.featureCard}>
-              <View style={styles.iconContainer}>
-                {feature.icon === 'shield' && <ShieldCheckSVG />}
-                {feature.icon === 'clock' && <ClockSVG />}
-                {feature.icon === 'lock' && <LockSVG />}
-                {feature.icon === 'heart' && <HeartSVG />}
-              </View>
-              <View style={styles.featureContent}>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDescription}>{feature.description}</Text>
-              </View>
-            </View>
+          {FEATURES.map((feature, index) => (
+            <FeatureCard
+              key={feature.title}
+              icon={feature.icon}
+              title={feature.title}
+              description={feature.description}
+              index={index}
+            />
           ))}
         </View>
 
-        {/* SOCIAL PROOF (Optional) */}
+        {/* Social Proof */}
         <View style={styles.socialProofContainer}>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>10K+</Text>
               <Text style={styles.statLabel}>Downloads</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>4.8★</Text>
+              <Text style={styles.statValue}>4.8</Text>
               <Text style={styles.statLabel}>Rating</Text>
             </View>
+            <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>500+</Text>
               <Text style={styles.statLabel}>Reviews</Text>
@@ -207,6 +256,13 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
           </View>
 
           <View style={styles.testimonialCard}>
+            <LinearGradient
+              colors={[colors.accent.primaryMuted, 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.testimonialAccent} />
             <Text style={styles.testimonialText}>
               "Finally, a fitness app that gets it. The binder-aware exercises are a game-changer."
             </Text>
@@ -214,319 +270,343 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
           </View>
         </View>
 
-        {/* CTA SECTION */}
+        {/* CTA Section */}
         <View style={styles.ctaContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleGetStarted}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleGetStarted}
+          >
             <LinearGradient
-              colors={['#00D9C0', '#00B39D']}
+              colors={[colors.accent.primary, colors.accent.primaryDark]}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.buttonGradient}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.2)', 'transparent']}
+              style={styles.buttonGlassOverlay}
+            />
+            <Animated.View
+              style={[
+                styles.buttonShimmer,
+                { transform: [{ translateX: shimmerTranslate }] },
+              ]}
             >
-              <View style={styles.buttonIconContainer}>
-                <SparkleSVG />
-              </View>
-              <Text style={styles.buttonText}>Get Started Free</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={['transparent', 'rgba(255, 255, 255, 0.2)', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+            <Ionicons name="sparkles" size={20} color={colors.text.inverse} />
+            <Text style={styles.primaryButtonText}>Get Started Free</Text>
+          </Pressable>
 
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleSignIn}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleSignIn}
+          >
             <Text style={styles.secondaryButtonText}>Sign In</Text>
-          </TouchableOpacity>
+          </Pressable>
 
-          <TouchableOpacity style={styles.guestLink} onPress={handleContinueAsGuest}>
-            <Text style={styles.guestText}>Continue as Guest</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* FOOTER */}
+        {/* Footer */}
         <View style={styles.footerContainer}>
           <Text style={styles.legalText}>
             By continuing, you agree to our{' '}
-            <Text style={styles.legalLink} onPress={handleTerms}>
-              Terms
-            </Text>{' '}
-            and{' '}
-            <Text style={styles.legalLink} onPress={handlePrivacy}>
-              Privacy Policy
-            </Text>
+            <Text style={styles.legalLink}>Terms</Text>
+            {' '}and{' '}
+            <Text style={styles.legalLink}>Privacy Policy</Text>
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F1419',
+    backgroundColor: colors.bg.primary,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 0,
+    paddingHorizontal: spacing.xl,
   },
+  // Hero
   heroContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 48,
     alignItems: 'center',
-    position: 'relative',
+    marginBottom: spacing.xl,
   },
-  heroBackground: {
+  logoContainer: {
+    width: 88,
+    height: 88,
+    marginBottom: spacing.l,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  logoGradient: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  appName: {
+    fontFamily: 'Poppins',
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.text.primary,
+    letterSpacing: -0.5,
+    marginBottom: spacing.xs,
+  },
+  tagline: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.secondary,
+    marginBottom: spacing.xl,
+  },
+  headlineContainer: {
+    alignItems: 'center',
+  },
+  headline: {
+    fontFamily: 'Poppins',
+    fontSize: 32,
+    fontWeight: '800',
+    color: colors.text.primary,
+    textAlign: 'center',
+    lineHeight: 40,
+    letterSpacing: -1,
+    marginBottom: spacing.m,
+  },
+  subheadline: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  // Features
+  featuresContainer: {
+    marginBottom: spacing.xl,
+    gap: spacing.m,
+  },
+  featureCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: borderRadius['2xl'],
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: spacing.lg,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  glassHighlight: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 400,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  logoContainer: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  logoGradientCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 16,
-    shadowColor: '#00D9C0',
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-    overflow: 'hidden',
-  },
-  logoGradient: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  appName: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    letterSpacing: -0.5,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  tagline: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  headlineContainer: {
-    marginTop: 24,
-    marginBottom: 40,
-  },
-  headline: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 44,
-    letterSpacing: -1,
-    marginBottom: 12,
-  },
-  subheadline: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#B8C5C5',
-    textAlign: 'center',
-    lineHeight: 28,
-  },
-  mascotContainer: {
-    marginVertical: 32,
-    alignItems: 'center',
-  },
-  mascotPlaceholder: {
-    width: 280,
-    height: 280,
-    borderRadius: 20,
-    backgroundColor: '#1A1F26',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#2A2F36',
-  },
-  mascotText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  mascotCaption: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6B7280',
-    marginTop: 12,
-    textAlign: 'center',
-  },
-  featuresContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 48,
-  },
-  featureCard: {
-    backgroundColor: '#1A1F26',
+  featureIconContainer: {
+    width: 52,
+    height: 52,
     borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#2A2F36',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(0, 217, 192, 0.12)',
+    backgroundColor: colors.accent.primaryMuted,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: spacing.m,
   },
   featureContent: {
     flex: 1,
   },
   featureTitle: {
+    fontFamily: 'Poppins',
     fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
-    lineHeight: 22,
-    textAlign: 'left',
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.xxs,
   },
   featureDescription: {
-    fontSize: 14,
-    fontWeight: '400',
-    color: '#9CA3AF',
-    lineHeight: 20,
-    textAlign: 'left',
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.secondary,
+    lineHeight: 18,
   },
+  // Social proof
   socialProofContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
+    marginBottom: spacing.xl,
     alignItems: 'center',
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 24,
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: spacing.l,
   },
   statItem: {
     alignItems: 'center',
+    paddingHorizontal: spacing.l,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.border.default,
   },
   statValue: {
+    fontFamily: 'Poppins',
     fontSize: 24,
     fontWeight: '800',
-    color: '#00D9C0',
-    marginBottom: 2,
+    color: colors.accent.primary,
+    marginBottom: spacing.xxs,
   },
   statLabel: {
+    fontFamily: 'Poppins',
     fontSize: 12,
     fontWeight: '500',
-    color: '#6B7280',
+    color: colors.text.tertiary,
   },
   testimonialCard: {
-    backgroundColor: 'rgba(0, 217, 192, 0.05)',
-    borderRadius: 12,
-    padding: 16,
-    borderLeftWidth: 3,
-    borderLeftColor: '#00D9C0',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+    padding: spacing.lg,
     width: '100%',
+    overflow: 'hidden',
+  },
+  testimonialAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: colors.accent.primary,
   },
   testimonialText: {
+    fontFamily: 'Poppins',
     fontSize: 14,
     fontWeight: '500',
-    color: '#B8C5C5',
+    color: colors.text.secondary,
     fontStyle: 'italic',
-    marginBottom: 8,
-    lineHeight: 21,
-    textAlign: 'left',
+    lineHeight: 22,
+    marginBottom: spacing.s,
   },
   testimonialAuthor: {
+    fontFamily: 'Poppins',
     fontSize: 13,
     fontWeight: '600',
-    color: '#00D9C0',
-    textAlign: 'left',
+    color: colors.accent.primary,
   },
+  // CTA
   ctaContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   primaryButton: {
-    height: 60,
-    borderRadius: 30,
-    overflow: 'hidden',
-    marginBottom: 16,
-    shadowColor: '#00D9C0',
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  buttonGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     flexDirection: 'row',
-  },
-  buttonIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(15, 20, 25, 0.15)',
-    marginRight: 12,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.s,
+    height: 56,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+    marginBottom: spacing.m,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
+      },
+      android: { elevation: 8 },
+    }),
   },
-  buttonText: {
-    fontSize: 18,
+  buttonGlassOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+  },
+  buttonShimmer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: 200,
+  },
+  primaryButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 17,
     fontWeight: '700',
-    color: '#0F1419',
+    color: colors.text.inverse,
   },
   secondaryButton: {
-    height: 56,
-    borderRadius: 28,
+    height: 52,
+    borderRadius: borderRadius.full,
     borderWidth: 2,
-    borderColor: '#2A2F36',
-    backgroundColor: 'transparent',
+    borderColor: colors.border.default,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.m,
   },
   secondaryButtonText: {
-    fontSize: 17,
+    fontFamily: 'Poppins',
+    fontSize: 16,
     fontWeight: '600',
-    color: '#E0E4E8',
+    color: colors.text.primary,
   },
-  guestLink: {
-    paddingVertical: 12,
-    alignItems: 'center',
+  buttonPressed: {
+    opacity: 0.8,
   },
-  guestText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#9CA3AF',
-  },
+  // Footer
   footerContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 0,
     alignItems: 'center',
   },
   legalText: {
+    fontFamily: 'Poppins',
     fontSize: 11,
-    fontWeight: '400',
-    color: '#6B7280',
+    color: colors.text.disabled,
     textAlign: 'center',
     lineHeight: 16,
   },
   legalLink: {
-    color: '#9CA3AF',
+    color: colors.text.tertiary,
     textDecorationLine: 'underline',
   },
 });

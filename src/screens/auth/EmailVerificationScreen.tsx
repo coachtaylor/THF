@@ -30,7 +30,7 @@ export default function EmailVerificationScreen({
       setResending(true);
       setError(null);
 
-      await resendVerificationEmail(userId);
+      await resendVerificationEmail(email);
 
       setResent(true);
       setCanResend(false);

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { palette, spacing, typography } from '../../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { colors, spacing, borderRadius } from '../../theme/theme';
 
 interface WarmUpExercise {
   name: string;
@@ -30,6 +31,7 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
     new Array(warmUpExercises.length).fill(false)
   );
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   // Timer for warm-up duration
   useEffect(() => {
@@ -38,6 +40,24 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Shimmer animation for complete button
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [shimmerAnim]);
 
   const toggleExercise = (index: number) => {
     setCompletedExercises(prev => {
@@ -49,18 +69,31 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
 
   const allCompleted = completedExercises.every(completed => completed);
 
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-200, 200],
+  });
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Background gradient */}
+      <LinearGradient
+        colors={[colors.bg.primary, colors.bg.secondary]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <View style={styles.header}>
         <TouchableOpacity>
-          <Ionicons name="close" size={24} color={palette.white} />
+          <Ionicons name="close" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Warm-Up</Text>
         <View style={styles.headerRight}>
-          <Ionicons name="time-outline" size={20} color={palette.midGray} />
-          <Text style={styles.timerText}>{formatTime(elapsedSeconds)}</Text>
-          <TouchableOpacity>
-            <Ionicons name="ellipsis-vertical" size={20} color={palette.white} />
+          <View style={styles.timerBadge}>
+            <Ionicons name="time-outline" size={18} color={colors.accent.primary} />
+            <Text style={styles.timerText}>{formatTime(elapsedSeconds)}</Text>
+          </View>
+          <TouchableOpacity style={styles.menuButton}>
+            <Ionicons name="ellipsis-vertical" size={20} color={colors.text.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -70,59 +103,117 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.instructionText}>
-          Get your body ready for the workout ahead!
-        </Text>
+        <View style={styles.instructionCard}>
+          <Ionicons name="fitness-outline" size={24} color={colors.accent.primary} />
+          <Text style={styles.instructionText}>
+            Get your body ready for the workout ahead!
+          </Text>
+        </View>
 
         {warmUpExercises.map((exercise, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.exerciseCard}
+            style={[
+              styles.exerciseCard,
+              completedExercises[index] && styles.exerciseCardCompleted
+            ]}
             onPress={() => toggleExercise(index)}
             activeOpacity={0.7}
           >
+            <LinearGradient
+              colors={['#141418', '#0A0A0C']}
+              style={StyleSheet.absoluteFill}
+            />
+            {completedExercises[index] && (
+              <LinearGradient
+                colors={['rgba(91, 206, 250, 0.1)', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+            )}
+            <View style={styles.glassHighlight} />
+
             <View style={styles.exerciseCheckboxContainer}>
               <View style={[
                 styles.checkbox,
                 completedExercises[index] && styles.checkboxChecked
               ]}>
                 {completedExercises[index] && (
-                  <Ionicons name="checkmark" size={20} color={palette.deepBlack} />
+                  <Ionicons name="checkmark" size={18} color={colors.text.inverse} />
                 )}
               </View>
             </View>
             <View style={styles.exerciseContent}>
               <View style={styles.exerciseHeader}>
-                <Text style={styles.exerciseName}>{exercise.name}</Text>
-                <Text style={styles.exerciseDuration}>
-                  {exercise.duration || exercise.reps || ''}
+                <Text style={[
+                  styles.exerciseName,
+                  completedExercises[index] && styles.exerciseNameCompleted
+                ]}>
+                  {exercise.name}
                 </Text>
+                <View style={styles.durationBadge}>
+                  <Text style={styles.exerciseDuration}>
+                    {exercise.duration || exercise.reps || ''}
+                  </Text>
+                </View>
               </View>
               <Text style={styles.exerciseDescription}>{exercise.description}</Text>
-              {/* Placeholder for thumbnail/GIF animation */}
-              <View style={styles.thumbnailPlaceholder}>
-                <Text style={styles.thumbnailText}>[Thumbnail/GIF animation]</Text>
-              </View>
             </View>
           </TouchableOpacity>
         ))}
 
-        <Text style={styles.hintText}>
-          ✓ Check off each exercise as you complete it
-        </Text>
+        <View style={styles.hintContainer}>
+          <Ionicons name="checkmark-circle-outline" size={20} color={colors.accent.primary} />
+          <Text style={styles.hintText}>
+            Check off each exercise as you complete it
+          </Text>
+        </View>
       </ScrollView>
 
       <View style={[styles.buttonContainer, { paddingBottom: insets.bottom + spacing.m }]}>
-        <TouchableOpacity 
-          style={[styles.completeButton, !allCompleted && styles.completeButtonDisabled]} 
+        <TouchableOpacity
+          style={[styles.completeButton, !allCompleted && styles.completeButtonDisabled]}
           onPress={onComplete}
           activeOpacity={0.8}
           disabled={!allCompleted}
         >
-          <Text style={styles.completeButtonText}>Complete Warm-Up →</Text>
+          <LinearGradient
+            colors={allCompleted ? [colors.accent.primary, '#4AA8D8'] : [colors.glass.bg, colors.glass.bg]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.completeButtonGradient}
+          >
+            {allCompleted && (
+              <Animated.View
+                style={[
+                  styles.shimmerOverlay,
+                  { transform: [{ translateX: shimmerTranslate }] },
+                ]}
+              >
+                <LinearGradient
+                  colors={['transparent', 'rgba(255, 255, 255, 0.2)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
+            )}
+            <Text style={[
+              styles.completeButtonText,
+              !allCompleted && styles.completeButtonTextDisabled
+            ]}>
+              Complete Warm-Up
+            </Text>
+            <Ionicons
+              name="arrow-forward"
+              size={20}
+              color={allCompleted ? colors.text.inverse : colors.text.tertiary}
+            />
+          </LinearGradient>
         </TouchableOpacity>
         {onSkip && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.skipButton}
             onPress={onSkip}
             activeOpacity={0.8}
@@ -138,33 +229,55 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
+    backgroundColor: colors.bg.primary,
   },
   header: {
     paddingHorizontal: spacing.l,
     paddingVertical: spacing.m,
     borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+    borderBottomColor: colors.border.default,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerTitle: {
-    ...typography.h2,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.primary,
     flex: 1,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.s,
+  },
+  timerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
+    backgroundColor: colors.glass.bg,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
   },
   timerText: {
-    ...typography.body,
-    color: palette.midGray,
-    minWidth: 50,
-    textAlign: 'right',
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.accent.primary,
+  },
+  menuButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: colors.glass.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scroll: {
     flex: 1,
@@ -174,18 +287,53 @@ const styles = StyleSheet.create({
     paddingTop: spacing.l,
     paddingBottom: spacing.xl,
   },
-  instructionText: {
-    ...typography.body,
-    color: palette.lightGray,
+  instructionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.xl,
+    padding: spacing.m,
     marginBottom: spacing.l,
-    textAlign: 'center',
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+  },
+  instructionText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    color: colors.text.secondary,
+    flex: 1,
   },
   exerciseCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
+    borderRadius: borderRadius.xl,
     padding: spacing.m,
     marginBottom: spacing.m,
     flexDirection: 'row',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  exerciseCardCompleted: {
+    borderColor: colors.glass.borderCyan,
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   exerciseCheckboxContainer: {
     marginRight: spacing.m,
@@ -193,18 +341,29 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xxs,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     borderWidth: 2,
-    borderColor: palette.border,
-    backgroundColor: palette.darkerCard,
+    borderColor: colors.border.default,
+    backgroundColor: colors.bg.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: palette.tealPrimary,
-    borderColor: palette.tealPrimary,
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.primary,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   exerciseContent: {
     flex: 1,
@@ -216,72 +375,105 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   exerciseName: {
-    ...typography.bodyLarge,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 16,
     fontWeight: '600',
+    color: colors.text.primary,
     flex: 1,
   },
+  exerciseNameCompleted: {
+    color: colors.accent.primary,
+  },
+  durationBadge: {
+    backgroundColor: colors.glass.bg,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
   exerciseDuration: {
-    ...typography.body,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text.tertiary,
   },
   exerciseDescription: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
-    marginBottom: spacing.s,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.text.secondary,
     lineHeight: 20,
   },
-  thumbnailPlaceholder: {
-    height: 100,
-    backgroundColor: palette.darkerCard,
-    borderRadius: 8,
+  hintContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.xs,
-  },
-  thumbnailText: {
-    ...typography.bodySmall,
-    color: palette.midGray,
-    fontStyle: 'italic',
-  },
-  hintText: {
-    ...typography.bodySmall,
-    color: palette.midGray,
-    textAlign: 'center',
+    gap: spacing.xs,
     marginTop: spacing.m,
     marginBottom: spacing.s,
+  },
+  hintText: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.tertiary,
   },
   buttonContainer: {
     paddingHorizontal: spacing.l,
     paddingTop: spacing.m,
     borderTopWidth: 1,
-    borderTopColor: palette.border,
-    backgroundColor: palette.deepBlack,
+    borderTopColor: colors.border.default,
+    backgroundColor: colors.bg.primary,
     gap: spacing.m,
   },
   completeButton: {
-    backgroundColor: palette.tealPrimary,
-    borderRadius: 12,
-    padding: spacing.m,
-    alignItems: 'center',
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
   completeButtonDisabled: {
-    backgroundColor: palette.darkCard,
-    opacity: 0.5,
+    opacity: 0.6,
+  },
+  completeButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.s,
+    padding: spacing.m,
+    paddingVertical: 16,
+  },
+  shimmerOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 100,
   },
   completeButtonText: {
-    ...typography.button,
-    color: palette.deepBlack,
+    fontFamily: 'Poppins',
+    fontSize: 17,
     fontWeight: '700',
-    fontSize: 18,
+    color: colors.text.inverse,
+    letterSpacing: 0.3,
+  },
+  completeButtonTextDisabled: {
+    color: colors.text.tertiary,
   },
   skipButton: {
     padding: spacing.m,
     alignItems: 'center',
   },
   skipButtonText: {
-    ...typography.body,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.tertiary,
   },
 });
 
