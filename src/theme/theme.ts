@@ -27,6 +27,7 @@ export const colors = {
     secondary: '#E0E4E8', // Secondary text (body text)
     tertiary: '#9CA3AF',  // Tertiary text (meta info, labels)
     disabled: '#6B7280',  // Disabled text
+    statLabel: '#B4BCD0', // Stat card label color from Figma
   },
 
   // Border colors
@@ -48,6 +49,16 @@ export const colors = {
     400: '#F87171',
     500: '#EF4444',       // Primary red
     600: '#DC2626',
+    flame: '#F43F5E',    // Flame icon color from Figma
+    flameBg: '#FEECEF',  // Flame icon background from Figma
+  },
+
+  // Stat card specific colors from Figma
+  stat: {
+    cardBg: '#30363B',      // Stat card background
+    iconBgRed: '#FEECEF',   // Red card icon background
+    iconBgGray: '#72777A',  // Gray card icon background
+    labelColor: '#B4BCD0',  // Stat label color
   },
 
   purple: {

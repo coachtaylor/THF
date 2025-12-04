@@ -389,24 +389,30 @@ const statCyan = colors.cyan[500];
 
 export const statCardStyles = StyleSheet.create({
   card: {
-    flex: 1,
-    height: 72,
-    backgroundColor: colors.bg.card,
-    borderRadius: borderRadius.s,
-    padding: spacing.s,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    position: 'relative',
-    overflow: 'hidden',
+    width: 98.33, // Fixed width from Figma: 98.33px
+    height: 110,
+    backgroundColor: '#30363B', // Exact color from Figma
+    borderRadius: 24, // border-radius: 24px from Figma
+    padding: 18, // padding: 18px (all sides) from Figma
+    borderWidth: 0,
+    flexDirection: 'column', // flex-direction: column from Figma
+    justifyContent: 'center', // justify-content: center from Figma
+    alignItems: 'flex-start', // align-items: flex-start from Figma
+    gap: 16, // gap: 12px from Figma (was incorrectly 16px)
+    shadowColor: '#000', // React Native shadow color
+    shadowOffset: { width: 0, height: 6 }, // box-shadow: 0px 6px from Figma
+    shadowOpacity: 0.05, // rgba(0, 0, 0, 0.05) opacity
+    shadowRadius: 40, // box-shadow blur: 40px from Figma
+    elevation: 4,
+    // Removed overflow: 'hidden' to allow shadows to be visible
+    flexShrink: 0, // Prevent shrinking
+    flexGrow: 0, // Prevent growing
   },
 
   topSection: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    position: 'absolute',
-    top: spacing.s,
-    left: spacing.s,
   },
 
   iconContainer: {
@@ -419,49 +425,52 @@ export const statCardStyles = StyleSheet.create({
 
   valueBase: {
     fontFamily: 'Poppins',
-    fontSize: 22,
-    fontWeight: typography.weights.regular,
-    lineHeight: 28,
+    fontSize: 14,
+    fontWeight: typography.weights.bold,
+    lineHeight: 20,
     letterSpacing: 0,
+    color: colors.text.primary,
   },
 
   valueRed: {
-    fontFamily: 'Poppins',
-    fontSize: 22,
-    fontWeight: typography.weights.regular,
-    lineHeight: 28,
+    fontFamily: 'Poppins', // Using Poppins (app standard) - Figma shows DM Sans but app uses Poppins
+    fontSize: 14, // font-size: 14px from Figma CSS
+    fontWeight: '700', // font-weight: 700 from Figma
+    lineHeight: 20, // line-height: 20px from Figma CSS (identical to box height, or 143%)
     letterSpacing: 0,
-    color: statRed,
-    position: 'absolute',
-    bottom: spacing.s,
-    left: spacing.s,
+    color: '#FFFFFF', // Exact white color from Figma
+    textAlign: 'right', // text-align: right from Figma CSS
+    alignSelf: 'stretch', // Stretch to full width of container
+    // No marginTop - gap: 12px handles spacing
   },
 
   valueCyan: {
-    fontFamily: 'Poppins',
-    fontSize: 22,
-    fontWeight: typography.weights.regular,
-    lineHeight: 28,
+    fontFamily: 'Poppins', // Using Poppins (app standard) - Figma shows DM Sans but app uses Poppins
+    fontSize: 14, // font-size: 14px from Figma CSS
+    fontWeight: '700', // font-weight: 700 from Figma
+    lineHeight: 20, // line-height: 20px from Figma CSS (identical to box height, or 143%)
     letterSpacing: 0,
-    color: statCyan,
-    position: 'absolute',
-    bottom: spacing.s,
-    left: spacing.s,
+    color: '#FFFFFF', // Exact white color from Figma
+    textAlign: 'right', // text-align: right from Figma CSS
+    alignSelf: 'stretch', // Stretch to full width of container
+    // No marginTop - gap: 12px handles spacing
   },
 
   valueBottom: {
-    position: 'absolute',
-    bottom: spacing.s,
-    left: spacing.s,
+    // Legacy support
   },
 
   label: {
-    fontFamily: 'Poppins',
-    fontSize: 12,
-    fontWeight: typography.weights.medium,
-    color: colors.text.secondary,
-    lineHeight: 16,
-    letterSpacing: -0.5,
+    fontFamily: 'Poppins', // Using Poppins (app standard) - Figma shows DM Sans but app uses Poppins
+    fontSize: 10, // font-size: 10px from Figma CSS
+    fontWeight: '500', // font-weight: 500 from Figma
+    color: '#B4BCD0', // Exact color from Figma
+    lineHeight: 12, // Adjusted from 0px (Figma shows 0px which would clip text, using 12px for readability)
+    letterSpacing: 0.3, // letter-spacing: 0.03em = 0.03 * 10px = 0.3px (varies by card in Figma, using 0.3px)
+    textTransform: 'uppercase', // Uppercase text
+    textAlign: 'left', // Align to left (align-items: flex-start)
+    alignSelf: 'stretch', // align-self: stretch from Figma
+    // No marginTop - gap: 12px handles spacing
   },
 });
 

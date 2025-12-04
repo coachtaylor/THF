@@ -26,9 +26,13 @@ export default function ThisWeekSection({ weekDays, todayName }: ThisWeekSection
   };
 
   const formatDate = (date: Date) => {
+    const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const dayName = dayNames[date.getDay()];
+    const month = monthNames[date.getMonth()];
     const day = date.getDate();
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
-    return `${month} ${day}`;
+    const suffix = day === 1 || day === 21 || day === 31 ? 'ST' : day === 2 || day === 22 ? 'ND' : day === 3 || day === 23 ? 'RD' : 'TH';
+    return `${dayName}, ${month} ${day}${suffix}`.toUpperCase();
   };
 
   const isToday = (date: Date) => {
@@ -52,17 +56,11 @@ export default function ThisWeekSection({ weekDays, todayName }: ThisWeekSection
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>This Week</Text>
-        <TouchableOpacity activeOpacity={0.7}>
-          <Text style={styles.viewAllText}>View All</Text>
-        </TouchableOpacity>
-      </View>
+      <Text style={styles.title}>This Week</Text>
 
       <View style={styles.workoutsList}>
         {daysWithWorkouts.map((item, index) => {
           const { day, workout, workoutName, completed } = item;
-          const dayName = getDayName(new Date(day.date));
           const isTodayWorkout = isToday(new Date(day.date));
           const exerciseCount = workout?.exercises?.length || 0;
           const duration = workout?.duration || 45;
@@ -70,43 +68,29 @@ export default function ThisWeekSection({ weekDays, todayName }: ThisWeekSection
           return (
             <TouchableOpacity
               key={`${day.dayNumber}-${index}`}
-              style={[
-                styles.workoutCard,
-                completed && styles.workoutCardCompleted,
-              ]}
+              style={styles.workoutCard}
               activeOpacity={0.7}
             >
-              <View style={styles.workoutCardLeft}>
-                <View style={styles.dateContainer}>
-                  <Text style={[
-                    styles.dayNumber,
-                    isTodayWorkout && styles.dayNumberToday,
-                  ]}>
-                    {new Date(day.date).getDate()}
-                  </Text>
-                </View>
+              <View style={styles.workoutCardContent}>
+                <Text style={styles.dateText}>{formatDate(new Date(day.date))}</Text>
+                <Text style={styles.workoutName}>{workoutName || 'Workout'}</Text>
                 
-                <View style={styles.workoutInfo}>
-                  <View style={styles.workoutHeader}>
-                    <Text style={styles.dayName}>
-                      {dayName.slice(0, 3).toUpperCase()}
-                      {isTodayWorkout && ' • Today'}
-                    </Text>
-                    {completed && (
-                      <View style={styles.completedBadge}>
-                        <Ionicons name="checkmark-circle" size={16} color={colors.cyan[500]} />
-                      </View>
-                    )}
+                <View style={styles.metaRow}>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="time-outline" size={14} color={colors.text.primary} />
+                    <Text style={styles.metaText}>{duration} min</Text>
                   </View>
-                  <Text style={styles.workoutDetails}>{workoutName || 'Workout'}</Text>
-                  <Text style={styles.workoutMeta}>{duration} min • {exerciseCount} exercises</Text>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="barbell-outline" size={14} color={colors.text.primary} />
+                    <Text style={styles.metaText}>{exerciseCount} exercises</Text>
+                  </View>
                 </View>
               </View>
 
               <Ionicons 
                 name="chevron-forward" 
                 size={20} 
-                color={colors.text.tertiary} 
+                color={colors.text.primary} 
               />
             </TouchableOpacity>
           );
@@ -120,86 +104,63 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: spacing.xl,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.m,
-  },
   title: {
     ...textStyles.h3,
-  },
-  viewAllText: {
-    ...textStyles.bodySmall,
-    color: colors.cyan[500],
+    marginBottom: spacing.m,
   },
   workoutsList: {
-    gap: spacing.l,
+    gap: spacing.m,
   },
   workoutCard: {
-    backgroundColor: colors.bg.card,
-    borderRadius: borderRadius.m,
-    paddingVertical: spacing.m,
-    paddingHorizontal: spacing.xl,
-    marginHorizontal: spacing.xs,
+    backgroundColor: 'transparent',
+    borderRadius: borderRadius.s,
     borderWidth: 1,
-    borderColor: colors.border.default,
+    borderColor: '#505962',
+    height: 94,
+    paddingHorizontal: spacing.l,
+    paddingVertical: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    overflow: 'hidden',
   },
-  workoutCardCompleted: {
-    backgroundColor: colors.bg.elevated,
-    borderColor: colors.cyan[500] + '20',
-  },
-  workoutCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  workoutCardContent: {
     flex: 1,
-    gap: spacing.xl,
+    gap: 2,
   },
-  dateContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.s,
-    backgroundColor: colors.bg.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  dayNumber: {
-    ...textStyles.statMediumBase,
-    color: colors.text.primary,
-  },
-  dayNumberToday: {
-    color: colors.cyan[500],
-  },
-  workoutInfo: {
-    flex: 1,
-  },
-  workoutHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  dayName: {
-    ...textStyles.bodySmall,
-    fontWeight: typography.weights.semibold,
-  },
-  completedBadge: {
-    marginLeft: 'auto',
-  },
-  workoutDetails: {
-    ...textStyles.body,
-    fontWeight: typography.weights.semibold,
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
-  },
-  workoutMeta: {
-    ...textStyles.caption,
-    textTransform: 'none',
+  dateText: {
+    fontFamily: 'Poppins',
+    fontSize: 8,
+    fontWeight: typography.weights.regular,
     color: colors.text.tertiary,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    lineHeight: 15,
+  },
+  workoutName: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: typography.weights.regular,
+    color: colors.text.primary,
+    letterSpacing: -0.5697,
+    lineHeight: 16,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+    marginTop: spacing.xs,
+  },
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  metaText: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: typography.weights.medium,
+    color: colors.text.primary,
+    lineHeight: 21,
   },
 });

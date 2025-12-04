@@ -18,6 +18,7 @@ import type { Exercise } from '../../types';
 import StatCard from '../../components/home/Statcard';
 import TodayWorkoutCard from '../../components/home/TodayWorkoutCard';
 import ThisWeekSection from '../../components/home/ThisWeekSection';
+import TodaysReminderCard from '../../components/home/TodaysReminderCard';
 
 type MainTabParamList = {
   Home: undefined;
@@ -41,8 +42,9 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const { profile } = useProfile();
-  const { plan } = usePlan();
+  const { profile, loading: profileLoading } = useProfile();
+  const userId = profile?.user_id || profile?.id || 'default';
+  const { plan, loading: planLoading } = usePlan(userId);
 
   const [currentStreak, setCurrentStreak] = useState(0);
   const [workoutsCompleted, setWorkoutsCompleted] = useState(0);
@@ -293,8 +295,37 @@ export default function HomeScreen() {
 
   const userName = profile?.pronouns?.split('/')[0] || 'there';
 
-  // Show loading state if profile or plan not loaded
-  if (!profile || !plan) {
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 HomeScreen Debug:', {
+      profileLoading,
+      planLoading,
+      hasProfile: !!profile,
+      hasPlan: !!plan,
+      profileId: profile?.id || profile?.user_id,
+      planId: plan?.id,
+      planDays: plan?.days?.length,
+      userId: userId,
+    });
+  }, [profileLoading, planLoading, profile, plan, userId]);
+
+  // Show loading state if still loading
+  if (profileLoading || planLoading) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={[colors.bg.deep, colors.bg.mid]}
+          style={StyleSheet.absoluteFill}
+        />
+        <SafeAreaView edges={['top']} style={styles.headerContainer}>
+          <Text style={styles.subTitle}>Loading...</Text>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // If no profile, show minimal loading state
+  if (!profile) {
     return (
       <View style={styles.container}>
         <LinearGradient
@@ -322,31 +353,27 @@ export default function HomeScreen() {
             <Text style={styles.mainTitle}>{getGreeting()}, {userName}</Text>
             <Text style={styles.subTitle}>Ready to Train?</Text>
           </View>
-          <TouchableOpacity
-            onPress={handleViewProfile}
-            style={styles.profileButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="person-outline" size={20} color={colors.text.secondary} />
-          </TouchableOpacity>
         </View>
         
         {/* Stats Cards Row */}
         <View style={styles.statsRow}>
           <StatCard
             value={currentStreak}
-            label="Streak"
+            label="DAY STREAK"
             colorVariant="red"
+            iconType="flame"
+          />
+          <StatCard
+            value={`${weeklyStats?.completedWorkouts || weekProgress || 0}/5`}
+            label="THIS WEEK"
+            colorVariant="cyan"
+            iconType="time"
           />
           <StatCard
             value={workoutsCompleted}
-            label="Completed"
+            label="COMPLETED"
             colorVariant="cyan"
-          />
-          <StatCard
-            value={`${weekProgress}/4`}
-            label="This Week"
-            colorVariant="cyan"
+            iconType="dumbbell"
           />
         </View>
       </SafeAreaView>
@@ -357,9 +384,12 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Today's Reminder - should be first */}
+        <TodaysReminderCard />
 
-        {/* Today's Workout */}
-        {todayWorkoutDetails ? (
+        {/* Today's Workout Section */}
+        <Text style={styles.sectionTitle}>Todays Workout</Text>
+        {plan && todayWorkoutDetails ? (
           <TodayWorkoutCard
             workout={todayWorkoutDetails}
             onStartWorkout={handleStartWorkout}
@@ -367,13 +397,19 @@ export default function HomeScreen() {
         ) : (
           <View style={styles.emptyWorkoutCard}>
             <Ionicons name="calendar-outline" size={40} color={colors.text.tertiary} />
-            <Text style={styles.emptyWorkoutText}>No workout scheduled today</Text>
-            <Text style={styles.emptyWorkoutSubtext}>Take a rest day or browse workouts</Text>
+            <Text style={styles.emptyWorkoutText}>
+              {!plan ? 'No workout plan found' : 'No workout scheduled today'}
+            </Text>
+            <Text style={styles.emptyWorkoutSubtext}>
+              {!plan ? 'Generate a workout plan to see your dashboard' : 'Take a rest day or browse workouts'}
+            </Text>
           </View>
         )}
 
         {/* This Week */}
-        <ThisWeekSection weekDays={weekDays} todayName={todayName} />
+        {plan && plan.days && plan.days.length > 0 ? (
+          <ThisWeekSection weekDays={weekDays} todayName={todayName} />
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -386,7 +422,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingHorizontal: spacing.l,
-    paddingTop: spacing['3xl'] + spacing.xl, // Extra top padding to push content down
+    paddingTop: spacing.l, // Reduced padding to match Figma
     paddingBottom: spacing.l,
   },
   header: {
@@ -400,11 +436,27 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   mainTitle: {
-    ...textStyles.h1,
+    fontFamily: 'Poppins',
+    fontSize: 24,
+    fontWeight: typography.weights.regular,
+    color: colors.text.primary,
+    letterSpacing: -0.4172,
+    lineHeight: 33.6,
   },
   subTitle: {
-    ...textStyles.h3,
+    fontFamily: 'Poppins',
+    fontSize: 20,
     fontWeight: typography.weights.regular,
+    color: colors.text.tertiary,
+    lineHeight: 26,
+  },
+  sectionTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: typography.weights.regular,
+    color: colors.text.primary,
+    lineHeight: 24,
+    marginBottom: spacing.m,
   },
   profileButton: {
     width: 40,
@@ -425,8 +477,11 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: spacing.s,
+    gap: 16, // Gap between cards (16px from Figma - calculated from card positions: 114.33 - 98.33 = 16px)
     marginTop: spacing.m,
+    justifyContent: 'flex-start', // Align cards to start (fixed width cards)
+    alignItems: 'flex-start', // Prevent stretching
+    flexWrap: 'nowrap', // Prevent wrapping
   },
   emptyWorkoutCard: {
     backgroundColor: colors.bg.card,
