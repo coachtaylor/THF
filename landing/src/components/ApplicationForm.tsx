@@ -237,7 +237,19 @@ export function ApplicationForm() {
                   onChange={handleInputChange}
                 />
                 <Checkbox
-                  label="I agree to respect other testers and follow the community guidelines"
+                  label={
+                    <>
+                      I agree to respect other testers and follow the{" "}
+                      <a
+                        href="/community-guidelines"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-accent-blue hover:underline"
+                      >
+                        community guidelines
+                      </a>
+                    </>
+                  }
                   name="agreesToGuidelines"
                   checked={formData.agreesToGuidelines}
                   onChange={handleInputChange}
