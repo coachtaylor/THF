@@ -207,6 +207,36 @@ export async function syncProfileToCloud(profile: Profile): Promise<void> {
   }
 }
 
+/**
+ * Log equipment request to Supabase for product analytics
+ * This helps identify popular equipment types to add to the app
+ * Fire-and-forget: errors are logged but don't block the UI
+ */
+export async function logEquipmentRequest(equipmentText: string): Promise<void> {
+  if (!supabase) {
+    console.log('Supabase not configured, skipping equipment request log');
+    return;
+  }
+
+  try {
+    // Get current user ID if available
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { error } = await supabase.from('equipment_requests').insert({
+      equipment_text: equipmentText,
+      user_id: user?.id || null,
+    });
+
+    if (error) {
+      console.warn('Failed to log equipment request:', error.message);
+    } else {
+      console.log('✅ Equipment request logged for analytics');
+    }
+  } catch (error) {
+    console.warn('Error logging equipment request:', error);
+  }
+}
+
 // Add this function to inspect the database
 export async function debugProfileStorage(): Promise<void> {
   try {

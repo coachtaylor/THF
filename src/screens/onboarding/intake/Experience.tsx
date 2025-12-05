@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, TextInput } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
@@ -8,7 +8,7 @@ import SelectionCard from "../../../components/onboarding/SelectionCard";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
 import { glassStyles, textStyles, inputStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
-import { updateProfile } from "../../../services/storage/profile";
+import { updateProfile, logEquipmentRequest } from "../../../services/storage/profile";
 import { TrainingEnvironment } from "../../../types";
 
 type ExperienceLevel = "beginner" | "intermediate" | "advanced";
@@ -69,6 +69,8 @@ export default function Experience({ navigation }: ExperienceProps) {
   const [frequency, setFrequency] = useState<number>(3);
   const [duration, setDuration] = useState<number>(45);
   const [equipment, setEquipment] = useState<Set<string>>(new Set());
+  const [otherEquipmentText, setOtherEquipmentText] = useState<string>("");
+  const [isOtherInputFocused, setIsOtherInputFocused] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   // Get training environment from profile
@@ -97,6 +99,10 @@ export default function Experience({ navigation }: ExperienceProps) {
         setEquipment(new Set(profile.equipment));
       } else if (trainingEnvironment) {
         setEquipment(getDefaultEquipmentForEnvironment(trainingEnvironment));
+      }
+      // Load saved "other" equipment text
+      if (profile.other_equipment_text) {
+        setOtherEquipmentText(profile.other_equipment_text);
       }
       setInitialized(true);
     }
@@ -147,12 +153,25 @@ export default function Experience({ navigation }: ExperienceProps) {
   const handleContinue = async () => {
     try {
       if (experience && equipment.size > 0) {
+        const hasOther = equipment.has("other");
+        const trimmedOtherText = otherEquipmentText.trim();
+
         await updateProfile({
           fitness_experience: experience,
           workout_frequency: frequency,
           session_duration: duration,
-          equipment: Array.from(equipment)
+          equipment: Array.from(equipment),
+          // Only save other_equipment_text if "other" is selected and text is not empty
+          other_equipment_text: hasOther && trimmedOtherText ? trimmedOtherText : undefined,
         });
+
+        // Log to Supabase for analytics (fire and forget, don't block navigation)
+        if (hasOther && trimmedOtherText) {
+          logEquipmentRequest(trimmedOtherText).catch(err =>
+            console.warn("Failed to log equipment request:", err)
+          );
+        }
+
         navigation.navigate("DysphoriaTriggers");
       }
     } catch (error) {
@@ -298,6 +317,30 @@ export default function Experience({ navigation }: ExperienceProps) {
               );
             })}
           </View>
+
+          {/* Other Equipment Text Input */}
+          {equipment.has("other") && (
+            <View style={styles.otherEquipmentContainer}>
+              <Text style={styles.inputLabel}>
+                What equipment do you have? <Text style={styles.optionalText}>(Optional)</Text>
+              </Text>
+              <TextInput
+                value={otherEquipmentText}
+                onChangeText={setOtherEquipmentText}
+                placeholder="e.g., suspension trainer, medicine ball, foam roller..."
+                placeholderTextColor={colors.text.tertiary}
+                multiline
+                numberOfLines={2}
+                maxLength={200}
+                onFocus={() => setIsOtherInputFocused(true)}
+                onBlur={() => setIsOtherInputFocused(false)}
+                style={[
+                  styles.otherEquipmentInput,
+                  isOtherInputFocused && inputStyles.textInputFocused
+                ]}
+              />
+            </View>
+          )}
 
           {equipment.size === 0 && (
             <Text style={styles.equipmentError}>
@@ -458,5 +501,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.semantic.warning,
     marginTop: spacing.md,
+  },
+  otherEquipmentContainer: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  inputLabel: {
+    ...textStyles.label,
+    fontSize: 14,
+    color: colors.text.primary,
+  },
+  optionalText: {
+    color: colors.text.tertiary,
+  },
+  otherEquipmentInput: {
+    ...inputStyles.textInput,
+    height: 80,
+    paddingTop: spacing.base,
+    textAlignVertical: 'top',
   },
 });
