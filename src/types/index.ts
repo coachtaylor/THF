@@ -56,6 +56,9 @@ export interface Profile {
   // Training Environment (space-aware training)
   training_environment?: TrainingEnvironment;
 
+  // OPTIONAL FIELDS - Equipment
+  other_equipment_text?: string; // Free-text description of "other" equipment (for analytics)
+
   // Legacy fields for backward compatibility
   id?: string; // Alias for user_id
   goalWeighting?: { primary: number; secondary: number }; // Alias for goal_weighting

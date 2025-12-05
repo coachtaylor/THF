@@ -83,8 +83,9 @@ export default function LoginScreen({ navigation }: any) {
       }
     } catch (err: any) {
       console.error('Login failed:', err);
+      const errorMessage = err.message?.toLowerCase() || '';
 
-      if (err.message?.includes('locked')) {
+      if (errorMessage.includes('locked')) {
         Alert.alert(
           'Account Locked',
           'Your account has been locked due to multiple failed login attempts. Please try again in 15 minutes or reset your password.',
@@ -96,6 +97,21 @@ export default function LoginScreen({ navigation }: any) {
             { text: 'OK', style: 'cancel' },
           ]
         );
+      } else if (
+        errorMessage.includes('email not confirmed') ||
+        errorMessage.includes('not confirmed') ||
+        errorMessage.includes('json parse error')
+      ) {
+        // JSON parse errors often occur when email is not verified
+        Alert.alert(
+          'Email Verification Required',
+          'Please check your email and click the verification link to activate your account.',
+          [
+            { text: 'OK', style: 'default' },
+          ]
+        );
+      } else if (errorMessage.includes('invalid login credentials') || errorMessage.includes('invalid credentials')) {
+        setError('Invalid email or password');
       } else {
         setError(err.message || 'Invalid email or password');
       }
