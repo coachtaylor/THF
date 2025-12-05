@@ -306,14 +306,8 @@ export default function WelcomeScreen({ navigation }: WelcomeScreenProps) {
             <Text style={styles.primaryButtonText}>Get Started Free</Text>
           </Pressable>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleSignIn}
-          >
-            <Text style={styles.secondaryButtonText}>Sign In</Text>
+          <Pressable onPress={handleSignIn}>
+            <Text style={styles.signInLink}>Sign In</Text>
           </Pressable>
 
         </View>
@@ -576,20 +570,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text.inverse,
   },
-  secondaryButton: {
-    height: 52,
-    borderRadius: borderRadius.full,
-    borderWidth: 2,
-    borderColor: colors.border.default,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.m,
-  },
-  secondaryButtonText: {
+  signInLink: {
     fontFamily: 'Poppins',
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    paddingVertical: spacing.m,
   },
   buttonPressed: {
     opacity: 0.8,
