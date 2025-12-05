@@ -158,7 +158,6 @@ const styles = StyleSheet.create({
   },
   imageStyle: {
     opacity: 1,
-    left: 30,
   },
   gradientOverlay: {
     position: 'absolute',
