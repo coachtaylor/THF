@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StackNavigationProp } from '@react-navigation/stack';
 import type { OnboardingStackParamList } from '../../types/onboarding';
 import { colors, spacing, borderRadius } from '../../theme/theme';
@@ -25,36 +25,15 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
   const insets = useSafeAreaInsets();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  const badgeFadeAnim = useRef(new Animated.Value(0)).current;
-  const badgeSlideAnim = useRef(new Animated.Value(-30)).current;
-  const featureAnim1 = useRef(new Animated.Value(0)).current;
-  const featureAnim2 = useRef(new Animated.Value(0)).current;
-  const featureAnim3 = useRef(new Animated.Value(0)).current;
   const buttonAnim = useRef(new Animated.Value(0)).current;
   const buttonSlideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
     // Staggered animations
     Animated.parallel([
-      // Top badge
+      // Middle content (title)
       Animated.sequence([
         Animated.delay(300),
-        Animated.parallel([
-          Animated.timing(badgeFadeAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(badgeSlideAnim, {
-            toValue: 0,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-      // Middle content
-      Animated.sequence([
-        Animated.delay(500),
         Animated.parallel([
           Animated.timing(fadeAnim, {
             toValue: 1,
@@ -68,32 +47,9 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
           }),
         ]),
       ]),
-      // Feature pills
-      Animated.sequence([
-        Animated.delay(900),
-        Animated.parallel([
-          Animated.timing(featureAnim1, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.delay(100),
-          Animated.timing(featureAnim2, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.delay(100),
-          Animated.timing(featureAnim3, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
       // Bottom button
       Animated.sequence([
-        Animated.delay(1200),
+        Animated.delay(800),
         Animated.parallel([
           Animated.timing(buttonAnim, {
             toValue: 1,
@@ -114,9 +70,6 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
     navigation.navigate('Welcome');
   };
 
-  const features = ['Binding-Safe', 'HRT-Adaptive', 'Post-Surgery Protocols'];
-  const featureAnims = [featureAnim1, featureAnim2, featureAnim3];
-
   return (
     <View style={styles.container}>
       <ImageBackground
@@ -135,22 +88,6 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
         {/* Content */}
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
           <View style={[styles.content, { paddingTop: Math.max(insets.top, spacing.xl * 2) }]}>
-            {/* Top Section - Branding Badge */}
-            <Animated.View
-              style={[
-                styles.topSection,
-                {
-                  opacity: badgeFadeAnim,
-                  transform: [{ translateY: badgeSlideAnim }],
-                },
-              ]}
-            >
-              <View style={styles.brandBadge}>
-                <Ionicons name="sparkles" size={18} color={colors.cyan[500]} />
-                <Text style={styles.brandBadgeText}>GENDER-AFFIRMING FITNESS</Text>
-              </View>
-            </Animated.View>
-
             {/* Middle Section - Main Message */}
             <Animated.View
               style={[
@@ -161,36 +98,9 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
                 },
               ]}
             >
-              <Text style={styles.mainTitle}>TransFitness</Text>
-
-              <View style={styles.descriptionCard}>
-                <Text style={styles.descriptionText}>
-                  Fitness designed for{' '}
-                  <Text style={styles.descriptionHighlight}>your body</Text>,{'\n'}
-                  built with{' '}
-                  <Text style={styles.descriptionHighlight}>your journey</Text> in mind.
-                </Text>
-              </View>
-
-              {/* Feature Pills */}
-              <View style={styles.featurePills}>
-                {features.map((feature, index) => (
-                  <Animated.View
-                    key={feature}
-                    style={[
-                      styles.featurePill,
-                      {
-                        opacity: featureAnims[index],
-                        transform: [{ translateY: featureAnims[index].interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [20, 0],
-                        }) }],
-                      },
-                    ]}
-                  >
-                    <Text style={styles.featurePillText}>{feature}</Text>
-                  </Animated.View>
-                ))}
+              <View style={styles.titleContainer}>
+                <Text style={styles.mainTitle}>TRANS HEALTH &</Text>
+                <Text style={styles.mainTitleSecond}>FITNESS</Text>
               </View>
             </Animated.View>
 
@@ -210,21 +120,22 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
                 style={styles.getStartedButton}
                 activeOpacity={0.8}
               >
-                <LinearGradient
-                  colors={[colors.cyan[500], colors.cyan[600]]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.buttonGradient}
-                >
+                <View style={styles.buttonInner}>
                   <Text style={styles.getStartedText}>Get Started</Text>
-                  <Ionicons name="arrow-forward" size={22} color={colors.text.primary} />
-                </LinearGradient>
+                  <View style={styles.iconCircle}>
+                    <View style={styles.iconCircleGlow} />
+                    <MaterialCommunityIcons name="dumbbell" size={22} color="#FFFFFF" style={{ transform: [{ scaleX: -1 }] }} />
+                  </View>
+                </View>
               </TouchableOpacity>
 
               {/* Privacy Notice */}
               <View style={styles.privacyNotice}>
+                <View style={styles.privacyIconContainer}>
+                  <MaterialCommunityIcons name="lock" size={18} color="rgba(255, 255, 255, 0.7)" />
+                </View>
                 <Text style={styles.privacyText}>
-                  🔒 Your data stays private. All information is stored locally on your device.
+                  Your data stays private. All information is stored locally on your device.
                 </Text>
               </View>
             </Animated.View>
@@ -265,177 +176,109 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl * 1.5,
     justifyContent: 'space-between',
   },
-  topSection: {
-    alignItems: 'center',
-  },
-  brandBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: borderRadius.base,
-    backgroundColor: 'rgba(6, 182, 212, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.25)',
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.cyan[500],
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.25,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  brandBadgeText: {
-    fontFamily: 'Poppins',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.08 * 16,
-    textTransform: 'uppercase',
-    color: colors.cyan[500],
-  },
   middleSection: {
     alignItems: 'center',
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: spacing.xl,
+  },
+  titleContainer: {
+    alignItems: 'center',
+    width: '100%',
   },
   mainTitle: {
     fontFamily: 'Poppins',
-    fontSize: 44,
-    fontWeight: '700',
-    letterSpacing: 2,
-    lineHeight: 44 * 1.2,
-    color: colors.text.primary,
-    marginBottom: spacing.xl + spacing.lg,
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: 4,
+    lineHeight: 32 * 1.4,
+    color: '#FFFFFF',
     textAlign: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.5,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  descriptionCard: {
-    paddingHorizontal: spacing.xl + 4,
-    paddingVertical: spacing.base,
-    borderRadius: borderRadius.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    marginBottom: spacing.xl,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.3,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  descriptionText: {
-    fontFamily: 'Poppins',
-    fontSize: 18,
-    fontWeight: '500',
-    lineHeight: 18 * 1.5,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  descriptionHighlight: {
-    color: colors.cyan[500],
-    fontWeight: '600',
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.cyan[500],
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
-      },
-    }),
-  },
-  featurePills: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  featurePill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: borderRadius.sm,
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.25)',
-  },
-  featurePillText: {
-    fontFamily: 'Poppins',
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.03 * 11,
     textTransform: 'uppercase',
-    color: colors.semantic.success,
+  },
+  mainTitleSecond: {
+    fontFamily: 'Poppins',
+    fontSize: 32,
+    fontWeight: '800',
+    letterSpacing: 8,
+    lineHeight: 32 * 1.4,
+    color: '#B8B8B8',
+    textAlign: 'center',
+    textTransform: 'uppercase',
   },
   bottomSection: {
     gap: spacing.base,
   },
   getStartedButton: {
-    height: 64,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#2A2A2E',
+    alignSelf: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: colors.cyan[500],
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.5,
-        shadowRadius: 32,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
       },
       android: {
-        elevation: 16,
+        elevation: 12,
       },
     }),
   },
-  buttonGradient: {
+  buttonInner: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.xl,
+    paddingLeft: spacing.xl,
+    paddingRight: 4,
+    gap: spacing.xl,
   },
   getStartedText: {
     fontFamily: 'Poppins',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: '#8A8A8E',
+  },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#3A3A3E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  iconCircleGlow: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   privacyNotice: {
+    flexDirection: 'row',
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.base,
     borderRadius: borderRadius.base,
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  privacyIconContainer: {
+    paddingTop: 2,
   },
   privacyText: {
+    flex: 1,
     fontFamily: 'Poppins',
     fontSize: 13,
     fontWeight: '400',
     lineHeight: 13 * 1.5,
-    color: colors.text.tertiary,
-    textAlign: 'center',
+    color: 'rgba(255, 255, 255, 0.7)',
   },
 });
 
