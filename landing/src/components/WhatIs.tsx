@@ -138,10 +138,10 @@ export function WhatIs() {
           transition={{ duration: 0.6 }}
           className="text-center mb-10 md:mb-16 lg:mb-20"
         >
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-6">
+          <h2 className="text-[1.625rem] md:text-4xl lg:text-5xl font-bold text-text-primary mb-6">
             What is{" "}
             <span className="relative inline-block">
-              <span className="text-gradient">Trans Health & Fitness</span>
+              <span className="text-gradient">Trans Health & Fitness?</span>
               <motion.span
                 className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-accent-blue via-accent-pink to-accent-blue rounded-full"
                 initial={{ scaleX: 0 }}
@@ -150,7 +150,6 @@ export function WhatIs() {
                 transition={{ duration: 0.8, delay: 0.5 }}
               />
             </span>
-            ?
           </h2>
 
           <p className="text-lg md:text-xl text-text-secondary leading-relaxed max-w-2xl mx-auto">
@@ -171,7 +170,7 @@ export function WhatIs() {
             whileInView={{ opacity: 1, x: 0, scale: 1 }}
             viewport={viewportSettings}
             transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-            className="lg:col-span-5 flex items-center justify-center lg:sticky lg:top-32 lg:self-start"
+            className="lg:col-span-5 flex items-center justify-center lg:sticky lg:top-32 lg:self-start pb-16 lg:pb-0"
           >
             {/* Phone Frame with scroll-driven motion */}
             <motion.div

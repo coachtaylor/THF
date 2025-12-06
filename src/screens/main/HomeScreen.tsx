@@ -296,17 +296,17 @@ export default function HomeScreen() {
         {/* Safe area spacer */}
         <View style={{ height: insets.top + 4 }} />
 
-        {/* 1. Welcome Section */}
-        <WelcomeSection />
-
-        {/* 2. Week Calendar */}
+        {/* 1. Week Calendar */}
         {plan && plan.days && plan.days.length > 0 && (
           <View style={styles.weekSection}>
             <ThisWeekSection weekDays={weekDays} todayName={todayName} />
           </View>
         )}
 
-        {/* 3. Stats Section (below welcome) */}
+        {/* 2. Welcome Section */}
+        <WelcomeSection />
+
+        {/* 3. Stats Section */}
         <View style={styles.statsSection}>
           <StatsRow
             streak={currentStreak}
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statsSection: {
-    marginBottom: 4,
+    marginBottom: 0,
   },
   restDayCard: {
     height: 150,

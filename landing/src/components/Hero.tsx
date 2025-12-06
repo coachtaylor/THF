@@ -82,8 +82,8 @@ export function Hero() {
                 ))}
               </div>
               <div className="text-sm">
-                <span className="text-text-primary font-semibold">50+ athletes</span>
-                <span className="text-text-tertiary"> already signed up</span>
+                <span className="text-text-primary font-semibold">Spots filling fast</span>
+                <span className="text-text-tertiary"> — limited founding access</span>
               </div>
             </motion.div>
           </motion.div>
