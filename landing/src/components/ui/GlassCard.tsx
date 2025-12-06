@@ -24,7 +24,7 @@ export function GlassCard({
 
   if (!animate) {
     return (
-      <div className={`${variantStyles[variant]} p-6 md:p-8 ${className}`}>
+      <div className={`${variantStyles[variant]} p-5 md:p-6 lg:p-8 ${className}`}>
         {children}
       </div>
     );
@@ -32,7 +32,7 @@ export function GlassCard({
 
   return (
     <motion.div
-      className={`${variantStyles[variant]} p-6 md:p-8 ${className}`}
+      className={`${variantStyles[variant]} p-5 md:p-6 lg:p-8 ${className}`}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}

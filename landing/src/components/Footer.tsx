@@ -20,6 +20,12 @@ export function Footer() {
           {/* Links */}
           <div className="flex items-center gap-6 text-sm">
             <a
+              href="/resources"
+              className="text-text-tertiary hover:text-text-secondary transition-colors"
+            >
+              Resources
+            </a>
+            <a
               href="/privacy"
               className="text-text-tertiary hover:text-text-secondary transition-colors"
             >

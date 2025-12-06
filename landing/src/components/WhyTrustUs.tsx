@@ -36,14 +36,14 @@ const pillars = [
 
 export function WhyTrustUs() {
   return (
-    <section id="research" className="py-24 md:py-32 bg-background">
+    <section id="research" className="py-16 md:py-24 lg:py-32 bg-background">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-8 md:mb-12"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
             Rooted in research, shaped by lived experience
@@ -61,7 +61,7 @@ export function WhyTrustUs() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 max-w-4xl mx-auto"
+          className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8 md:mb-12 max-w-4xl mx-auto"
         >
           {[
             { text: "Exercise and cardiovascular safety", color: "blue" },
@@ -84,7 +84,7 @@ export function WhyTrustUs() {
 
               {/* Card content */}
               <div
-                className="relative flex items-center justify-center text-center p-5 rounded-2xl text-text-secondary text-sm h-full min-h-[100px]"
+                className="relative flex items-center justify-center text-center p-3 md:p-5 rounded-xl md:rounded-2xl text-text-secondary text-sm h-full min-h-[80px] md:min-h-[100px]"
                 style={{
                   background: "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 24px rgba(0,0,0,0.2)",
@@ -111,7 +111,7 @@ export function WhyTrustUs() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="text-lg text-text-secondary max-w-3xl mx-auto text-center mb-16 leading-relaxed"
+          className="text-base md:text-lg text-text-secondary max-w-3xl mx-auto text-center mb-10 md:mb-16 leading-relaxed"
         >
           We combine that foundation with real-world feedback from trans and non-binary
           athletes to make sure the app feels as good in your body as it looks on paper.
@@ -122,7 +122,7 @@ export function WhyTrustUs() {
           initial="initial"
           whileInView="animate"
           viewport={viewportSettings}
-          className="grid md:grid-cols-3 gap-6 mb-12"
+          className="grid md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12"
         >
           {pillars.map((pillar, index) => (
             <motion.div key={pillar.title} variants={staggerItem} className="group">
@@ -148,16 +148,16 @@ export function WhyTrustUs() {
                   </div>
 
                   {/* Content container */}
-                  <div className="relative p-8">
+                  <div className="relative p-5 md:p-8">
                     {/* Icon container */}
                     <div
-                      className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6`}
+                      className={`w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center mb-4 md:mb-6`}
                       style={{
                         background: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)",
                         boxShadow: "inset 0 1px 1px rgba(255,255,255,0.1), 0 4px 20px rgba(0,0,0,0.3)",
                       }}
                     >
-                      <pillar.icon size={28} className={pillar.iconColor} />
+                      <pillar.icon className={`w-6 h-6 md:w-7 md:h-7 ${pillar.iconColor}`} />
                     </div>
 
                     {/* Title with subtle highlight */}

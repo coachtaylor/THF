@@ -59,7 +59,7 @@ function FeatureCard({
         delay: index * 0.1,
         ease: [0.25, 0.1, 0.25, 1],
       }}
-      className={`group relative p-6 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
+      className={`group relative p-4 md:p-6 rounded-xl md:rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
         isBlue
           ? "bg-gradient-to-br from-accent-blue/[0.08] to-transparent border border-accent-blue/10 hover:border-accent-blue/25"
           : "bg-gradient-to-br from-accent-pink/[0.08] to-transparent border border-accent-pink/10 hover:border-accent-pink/25"
@@ -75,13 +75,13 @@ function FeatureCard({
       <div className="relative">
         {/* Icon */}
         <div
-          className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 transition-all duration-300 group-hover:scale-110 ${
+          className={`inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl mb-3 md:mb-4 transition-all duration-300 group-hover:scale-110 ${
             isBlue
               ? "bg-accent-blue/15 text-accent-blue"
               : "bg-accent-pink/15 text-accent-pink"
           }`}
         >
-          <Icon size={24} />
+          <Icon className="w-5 h-5 md:w-6 md:h-6" />
         </div>
 
         {/* Text */}
@@ -112,7 +112,7 @@ export function WhatIs() {
   const orbPinkY = useTransform(scrollYProgress, [0, 1], [0, 100]);
 
   return (
-    <section id="features" ref={sectionRef} className="py-24 md:py-32 relative overflow-hidden">
+    <section id="features" ref={sectionRef} className="py-16 md:py-24 lg:py-32 relative overflow-hidden">
       {/* Background elements with scroll parallax */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Floating orbs with scroll-based movement */}
@@ -136,7 +136,7 @@ export function WhatIs() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16 md:mb-20"
+          className="text-center mb-10 md:mb-16 lg:mb-20"
         >
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-text-primary mb-6">
             What is{" "}
@@ -164,7 +164,7 @@ export function WhatIs() {
         </motion.div>
 
         {/* Main Content - Bento-style grid */}
-        <div className="grid lg:grid-cols-12 gap-6 lg:gap-8">
+        <div className="grid lg:grid-cols-12 gap-4 md:gap-6 lg:gap-8">
           {/* Phone Mockup with scroll parallax */}
           <motion.div
             initial={{ opacity: 0, x: -50, scale: 0.95 }}
@@ -187,7 +187,7 @@ export function WhatIs() {
               <div className="absolute inset-0 bg-accent-blue/10 blur-[60px] rounded-[60px] scale-95 translate-y-4" />
 
               {/* Phone container */}
-              <div className="relative w-[240px] md:w-[280px] lg:w-[300px] phone-mockup phone-tilted-right phone-shadow-stack">
+              <div className="relative w-[180px] md:w-[260px] lg:w-[300px] phone-mockup phone-tilted-right phone-shadow-stack">
                 {/* Edge glow */}
                 <div className="phone-edge-glow" />
 
@@ -220,7 +220,7 @@ export function WhatIs() {
           </motion.div>
 
           {/* Feature Cards Grid - Right side */}
-          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-4 md:gap-5 content-start">
+          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-3 md:gap-4 lg:gap-5 content-start">
             {/* First row - 2 cards */}
             <FeatureCard feature={features[0]} index={0} />
             <FeatureCard feature={features[1]} index={1} />
@@ -238,7 +238,7 @@ export function WhatIs() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={viewportSettings}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="relative p-6 rounded-2xl bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 flex flex-col justify-center"
+              className="relative p-4 md:p-6 rounded-xl md:rounded-2xl bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 flex flex-col justify-center"
             >
               <p className="text-xl md:text-2xl font-semibold text-gradient mb-2">
                 Structure. Safety. Support.

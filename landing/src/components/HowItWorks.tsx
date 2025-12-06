@@ -39,7 +39,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 md:py-32 bg-background-secondary/50 relative overflow-hidden">
+    <section id="how-it-works" className="py-16 md:py-24 lg:py-32 bg-background-secondary/50 relative overflow-hidden">
       {/* Background decorative elements */}
       <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-accent-blue/5 rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent-pink/5 rounded-full blur-3xl" />
@@ -50,7 +50,7 @@ export function HowItWorks() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
             How it works
@@ -65,7 +65,7 @@ export function HowItWorks() {
           initial="initial"
           whileInView="animate"
           viewport={viewportSettings}
-          className="grid md:grid-cols-3 gap-6"
+          className="grid md:grid-cols-3 gap-4 md:gap-6"
         >
           {steps.map((step, index) => (
             <motion.div key={step.number} variants={staggerItem} className="group">
@@ -102,12 +102,12 @@ export function HowItWorks() {
                   </div>
 
                   {/* Content */}
-                  <div className="relative p-8">
+                  <div className="relative p-5 md:p-8">
                     {/* Number and Icon row */}
-                    <div className="flex items-center gap-4 mb-6">
+                    <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
                       {/* Large number with gradient */}
                       <span
-                        className="text-5xl font-bold bg-clip-text text-transparent"
+                        className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent"
                         style={{
                           backgroundImage: index === 1
                             ? "linear-gradient(180deg, rgba(245,169,184,0.4) 0%, rgba(245,169,184,0.1) 100%)"
@@ -119,13 +119,13 @@ export function HowItWorks() {
 
                       {/* Icon container */}
                       <div
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center"
+                        className="w-11 h-11 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center"
                         style={{
                           background: "linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%)",
                           boxShadow: "inset 0 1px 1px rgba(255,255,255,0.15), 0 8px 24px rgba(0,0,0,0.3)",
                         }}
                       >
-                        <step.icon size={26} className={step.iconColor} />
+                        <step.icon className={`w-5 h-5 md:w-[26px] md:h-[26px] ${step.iconColor}`} />
                       </div>
                     </div>
 
