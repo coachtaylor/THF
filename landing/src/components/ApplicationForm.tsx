@@ -26,6 +26,7 @@ export function ApplicationForm() {
     name: "",
     pronouns: "",
     email: "",
+    socialHandle: "",
     selfDescription: "",
     statusHrt: false,
     statusBinding: false,
@@ -61,6 +62,7 @@ export function ApplicationForm() {
       name: formData.name,
       pronouns: formData.pronouns || undefined,
       email: formData.email,
+      social_handle: formData.socialHandle || undefined,
       self_description: formData.selfDescription || undefined,
       status_hrt: formData.statusHrt,
       status_binding: formData.statusBinding,
@@ -168,6 +170,15 @@ export function ApplicationForm() {
                 onChange={handleInputChange}
                 placeholder="you@example.com"
                 required
+              />
+
+              <GlassInput
+                label="Social Media Handle"
+                name="socialHandle"
+                value={formData.socialHandle}
+                onChange={handleInputChange}
+                placeholder="@yourhandle"
+                optional
               />
 
               <Select

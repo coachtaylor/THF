@@ -14,6 +14,7 @@ export interface BetaApplication {
   name: string;
   pronouns?: string;
   email: string;
+  social_handle?: string;
   self_description?: string;
   status_hrt: boolean;
   status_binding: boolean;
