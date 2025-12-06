@@ -3,6 +3,14 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
+// Debug: log whether env vars are present (not the actual values)
+if (typeof window !== "undefined") {
+  console.log("Supabase config:", {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+  });
+}
+
 // Create client only if env vars are set (avoids build errors)
 let supabase: SupabaseClient | null = null;
 
