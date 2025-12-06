@@ -23,7 +23,7 @@ import CoolDownPhase from '../components/session/CoolDownPhase';
 import SafetyCheckpointModal from '../components/session/SafetyCheckpointModal';
 import { saveSession, buildSessionData } from '../services/sessionLogger';
 import { autoRegress, AutoRegressionResult } from '../services/autoRegress';
-import { fetchAllExercises } from '../services/exerciseService';
+import { fetchAllExercises, getCachedExercises } from '../services/exerciseService';
 import { useProfile } from '../hooks/useProfile';
 import { getCachedVideo, cacheVideo } from '../services/videoCache';
 import { colors, spacing, borderRadius } from '../theme/theme';
@@ -686,16 +686,55 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     setCurrentRPE(rpe);
   };
 
-  const handleSwapSelect = (swapExerciseId: string) => {
-    // Track swapped exercise
+  const handleSwapSelect = async (swapExerciseId: string) => {
+    // Track the original exercise ID before swapping
+    const originalExerciseId = currentExercise.id;
+
+    // Track swapped exercise mapping (original -> new)
     setSwappedExercises(prev => {
       const newMap = new Map(prev);
-      newMap.set(currentExercise.id, swapExerciseId);
+      newMap.set(originalExerciseId, swapExerciseId);
       return newMap;
     });
+
+    // Find the swapped exercise from cached exercises
+    try {
+      const allExercises = await getCachedExercises();
+      const swappedExercise = allExercises.find(ex =>
+        ex.id === swapExerciseId || ex.slug === swapExerciseId
+      );
+
+      if (swappedExercise) {
+        // Update exercises array with swapped exercise
+        setExercises(prev => {
+          const updated = [...prev];
+          const currentInstance = updated[currentExerciseIndex];
+          updated[currentExerciseIndex] = {
+            // Spread the new exercise data
+            ...swappedExercise,
+            // Preserve the instance data (sets, reps, format, rest)
+            sets: currentInstance.sets,
+            reps: currentInstance.reps,
+            format: currentInstance.format,
+            restSeconds: currentInstance.restSeconds,
+            exerciseId: swappedExercise.id,
+          } as ExerciseInstanceWithData;
+          return updated;
+        });
+
+        // Reset video for new exercise
+        setVideoUri(null);
+        setLoadingVideo(false);
+
+        console.log('✅ Swapped to exercise:', swappedExercise.name);
+      } else {
+        console.warn('⚠️ Could not find swapped exercise:', swapExerciseId);
+      }
+    } catch (error) {
+      console.error('❌ Error swapping exercise:', error);
+    }
+
     setShowSwapDrawer(false);
-    // TODO: Update current exercise with swapped exercise
-    console.log('Swapped to exercise:', swapExerciseId);
   };
 
   const handlePainFlag = async (result: AutoRegressionResult) => {
@@ -713,7 +752,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           planId,
           workout.duration || 15,
           startedAt,
-          completedAt
+          completedAt,
+          swappedExercises,
+          painFlaggedExercises
         );
         await saveSession(sessionData);
         // Show success message or navigate

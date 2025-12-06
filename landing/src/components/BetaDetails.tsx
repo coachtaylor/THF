@@ -111,20 +111,27 @@ export function BetaDetails() {
                   Founding Athlete Plan
                 </h3>
 
-                <div className="flex items-baseline gap-2 mb-2">
+                <p className="text-sm text-text-secondary mb-6">
+                  No credit card required to apply
+                </p>
+
+                <div className="flex items-baseline gap-2 mb-1">
                   <span className="text-5xl md:text-6xl font-bold text-accent-blue">
                     $5
                   </span>
                   <span className="text-xl text-text-secondary">/month</span>
                 </div>
 
+                <p className="text-text-secondary text-sm mb-4">
+                  or $50/year (save $10)
+                </p>
+
                 <p className="text-accent-blue font-medium mb-6">
                   Locked in for life while you stay subscribed
                 </p>
 
                 <p className="text-text-secondary mb-8">
-                  Future public pricing will be higher. Lock in your founding
-                  rate today.
+                  Payment only required if accepted. Future public pricing will be higher.
                 </p>
 
                 <a

@@ -1,0 +1,795 @@
+Product Requirements Document (PRD v3.1)
+
+Product name: TransFitness
+Version: 3.1
+Status: MVP Definition
+Owner: Taylor Pangilinan
+Last updated: December 2025
+
+1. Executive Summary
+
+TransFitness is a safety first, dysphoria aware fitness app built by and for trans and non binary people. The initial product wedge focuses on transmasc and non binary users who bind, are on testosterone, and are pre or post top surgery.
+
+The core of the product is a workout engine that understands three realities most mainstream apps ignore:
+
+Many users are training while binding
+
+Hormone replacement therapy changes energy, recovery, and body composition over time
+
+Gender affirming surgeries temporarily reset what safe movement looks like
+
+TransFitness combines this context with strength and conditioning best practices to generate personalized, binder safe, surgery aware training plans and explains the “why” behind decisions in clear, affirming language.
+
+Alongside the workout engine, the app delivers:
+
+Short, evidence informed guidance for training through HRT changes and surgical recovery
+
+Space aware programming that adapts to whether a user feels safe in gyms, prefers to train at home, or only has access to low key environments
+
+A lightweight education and Copilot layer that lets users ask questions about their training, binding, HRT, and post surgical movement, within clear safety bounds
+
+Over time, TransFitness will expand to support transfemme and non binary users across estrogen based HRT and other surgery paths, and will add coach tooling so trans coaches can deliver programs inside the same safety framework. The long term vision is a trusted, trans led fitness layer that sits between individual coaches, local gyms, and general purpose workout apps.
+
+2. Problem Statement
+
+Trans and non binary people who want to move their bodies face a cluster of problems that mainstream fitness products do not address.
+
+Unclear safety when binding and exercising
+
+People routinely exceed recommended binder limits because dysphoria relief often outweighs abstract health warnings
+
+There is very little practical guidance on how to modify strength and cardio sessions while binding, when to absolutely unbind, and what red flag symptoms look like
+
+Anxiety about HRT and performance
+
+Transmasc users on testosterone want to build strength and muscle but often do not know how to adjust volume, intensity, and recovery by month and year on T
+
+Transfemme users starting estrogen fear losing strength or “ruining” their gains and rarely find clear, phased guidance that balances safety, performance, and goals
+
+No structured plan to return to movement after gender affirming surgery
+
+Post top surgery, users are told “no lifting for X weeks” then left to guess how to progress from walking to full upper body training
+
+People are scared of damaging incisions, impacting scar healing, or causing long term issues by moving too early or too aggressively
+
+Gyms and locker rooms feel unsafe or dysphoria inducing
+
+Many users experience real or anticipated harm in gendered spaces like locker rooms and bathrooms
+
+Even when they pass, anxiety around where to change, shower, or be seen keeps people from going to the gym at all
+
+Fragmented and inconsistent information
+
+Useful advice is scattered across Reddit, Discord, Facebook, and individual trans trainers
+
+Users are forced to cobble together safety rules, HRT insights, and workout ideas from anecdotal threads
+
+There is no single tool that encodes clinical guidance, lived experience, and practical training into one coherent system
+
+TransFitness aims to become that coherent system for an initial wedge of users, then expand outward.
+
+3. Product Pillars
+
+The product is organized around five pillars.
+
+Safety aware workout engine
+A personalized training engine that encodes binder safety, surgery phases, HRT context, and experience level into structured workouts.
+
+Education and reassurance layer
+A content layer that answers “Why this workout and is this safe for me right now” in plain language, linked to real research and lived experience.
+
+Space aware training modes
+Programming that respects where users actually feel safe moving, from home only to community gyms and outdoors.
+
+Community and accountability (future)
+Lightweight connection features that support consistency and belonging without becoming a full social network.
+
+Recovery and nourishment (future)
+Simple, HRT and surgery aware guidance for fueling and recovering, focused on function and nervous system safety rather than dieting.
+
+For MVP, pillars 1, 2, and a narrow slice of 3 are in scope. Pillars 4 and 5 are partially represented only through very small, text first elements.
+
+4. MVP Scope
+
+This section explicitly defines what is in scope for the first public MVP and what is intentionally out of scope or deferred to later phases.
+
+4.1 MVP goals
+
+For MVP, TransFitness will:
+
+Prove that a safety aware, trans specific workout engine can reliably generate plans that feel relevant, affirming, and trustworthy to transmasc and non binary users who bind
+
+Make the existing safety intelligence visible to users through “Why this workout” explanations and short, contextual education snippets
+
+Support at least one clear journey per persona:
+
+Training while binding
+
+Preparing for top surgery
+
+Early to mid post top surgery return to movement
+
+Operate within clear safety and non medical advice boundaries, with simple deflection patterns for acute or clinical issues
+
+4.2 In scope for MVP
+
+Pillar 1, Safety aware workout engine
+
+MVP includes:
+
+Onboarding that collects:
+
+Training environment (home, gym, studio, outdoors)
+
+Binder status and basic binding while exercising behavior
+
+HRT status and start date for testosterone
+
+High level goal and experience level
+
+Top surgery history and date, at least as a single surgery field
+
+Workout generation that:
+
+Uses binder behavior, HRT status, surgery status, and environment in its rules
+
+Applies binder aware limits to volume and intensity
+
+Applies basic top surgery phases:
+
+Pre op training emphasis
+
+Early post op, movement suggestions are education only
+
+Mid post op, conservative progression patterns
+
+Adjusts programming style based on environment and equipment (home friendly vs gym heavy)
+
+Rules engine output that:
+
+Records which rules fired in a structured rules_triggered field
+
+Stores a generation_context snapshot with the workout
+
+Pillar 2, Education and reassurance
+
+MVP includes:
+
+“Why this workout” explanations:
+
+At least two or three short, human readable explanations per generated workout that reference binder safety, HRT, and surgery context when applicable
+
+Education snippets:
+
+Short text snippets attached to workouts for:
+
+Binding and exercise
+
+Early HRT training expectations for T
+
+Early and mid post op considerations
+
+Selection logic that shows only relevant snippets based on profile and phase
+
+At least two small “mini guides”:
+
+Binder safety basics
+
+General, non prescriptive outline of returning to movement after top surgery
+
+Pillar 3, Space aware training modes
+
+MVP includes:
+
+Training environment selection in onboarding
+
+Environment aware workout generation:
+
+Home only users receive no machine based prescriptions
+
+Gym users can receive more varied equipment while still respecting toggles
+
+Light guidance on training at home versus in gyms, through snippets and explanations
+
+Copilot v0, optional but strongly preferred for MVP
+
+A simple Copilot chat that:
+
+Lets users ask general questions about their workouts, binding, HRT, and surgery context
+
+Uses retrieval over your own research and guidelines
+
+Has clear, hard coded deflections for acute symptom and medical questions
+
+If Copilot does not make MVP, the education snippets and “Why this workout” explanations remain required.
+
+Platform and UX
+
+Mobile app delivered via React Native or Expo, focused on:
+
+Onboarding
+
+Daily workout view and execution
+
+“Why this workout” and education snippets
+
+Profile and settings
+
+Basic analytics and error logging to track usage and issues
+
+4.3 Out of scope for MVP
+
+The following items are explicitly out of scope for MVP and will not be built before the first public test cohort.
+
+Community and social features
+
+No friend system or public profiles
+
+No open social feed or comment threads
+
+No accountability pods or group challenges
+
+No in app DMs or messaging between users
+
+Coach and marketplace features
+
+No dedicated coach accounts
+
+No coach marketplace or paid programming inside the app
+
+No external coach dashboard or web admin tools beyond what you need for internal content management
+
+Advanced Copilot capabilities
+
+No long form, multi step coaching programs run entirely by Copilot
+
+No interpretation of wearable or biomarker data
+
+No complex mood tracking analysis beyond very basic prompts if included
+
+Nutrition and detailed recovery
+
+No calorie tracking or macro logging
+
+No specific meal plans or food databases
+
+No injury specific rehab protocols beyond very general movement guidance
+
+No sleep tracking integrations
+
+Transfemme specific programming
+
+MVP will not ship dedicated transfemme or estrogen specific training tracks beyond basic education snippets
+
+Support for transfemme users will be explicitly framed as limited, with a plan to expand in a later phase
+
+Integrations and external services
+
+No wearables integrations for launch
+
+No third party gym directories or safe space maps
+
+No automated clinician reports or provider portal
+
+4.4 Non goals and constraints
+
+The app will not provide medical advice or clearance for exercise, post operative activity, or HRT dosing
+
+The app will not override surgeon or clinician instructions, and will explicitly instruct users to follow those over general rules when there is a conflict
+
+The app will not attempt to be a general fitness product for all people, it will prioritize being excellent for the initial wedge of transmasc and non binary users who bind and are near top surgery and early T
+
+
+---
+
+## 5. Primary Persona
+
+### 5.1 Primary Persona: Jay (he/they) – Transmasc / NB lifter navigating binding, T, and top surgery
+
+**Profile**
+
+* Age: 22–30
+* Identity: Transmasculine or non binary masc-leaning, uses he/they
+* Transition context:
+
+  * On testosterone for 3–18 months
+  * Binds regularly, often longer than recommended
+  * Either:
+
+    * Preparing for top surgery in the next 3–9 months, or
+    * 6–16 weeks post top surgery and anxious about doing too much
+* Fitness background:
+
+  * Has done some lifting or sports in the past (true beginner to lower intermediate)
+  * Watches fitness TikToks, follows a couple of trans trainers online, but doesn’t feel confident programming their own training
+  * May struggle with consistency due to ADHD / executive dysfunction, mood, or access to safe spaces
+
+**Motivations**
+
+* Wants to feel stronger, more capable, and more at home in his body
+* Wants his chest and shoulders to feel and look more aligned with his gender, but:
+
+  * Is more focused on function and dysphoria reduction than aesthetics
+* Wants clear, practical answers:
+
+  * “Is this safe while binding?”
+  * “What’s realistic at X weeks post top surgery?”
+  * “What does T actually do to my training?”
+
+**Pain points**
+
+* Conflicting advice from Reddit, surgeons, and friends
+* Mainstream apps only ask for “male/female” and feel invalidating and unsafe
+* Anxiety about hurting himself:
+
+  * “If I mess up post op, will I ruin my results?”
+  * “If I push too hard in a binder, am I damaging my lungs / ribs?”
+* Overwhelm and decision fatigue:
+
+  * Too many programs and ideas, no clear tailored plan
+  * Gets stuck at planning and never actually starts
+
+**Environment**
+
+* Trains mostly at home or in a small community/queer gym
+* May have:
+
+  * Bands, a couple of dumbbells, maybe a bench
+  * Or a modest gym membership but avoids locker rooms and crowded times
+
+**Success looks like (for Jay)**
+
+* Feels like the app “gets” his situation and doesn’t treat him as an edge case
+* Can clearly see:
+
+  * Why today’s workout looks the way it does
+  * How it respects binding, HRT stage, and surgery phase
+* Feels more confident and less scared that he is “messing things up”
+* Is able to do consistent, realistic training 2–4x/week for several weeks
+* Starts to feel stronger and more capable, with dysphoria around movement reduced
+
+---
+
+## 6. User Stories
+
+These are grouped by experience area. They’re written for Jay, but generalize to the MVP wedge.
+
+### 6.1 Onboarding & Setup
+
+1. As a transmasc person who binds, I want onboarding questions that reflect my actual experience (binding, HRT, surgery), so I feel seen and trust the recommendations.
+2. As a user who trains mostly at home, I want to select my training environment and equipment, so workouts match what I can realistically do.
+3. As someone on testosterone, I want to record when I started HRT without doing math, so the app can calculate how long I’ve been on T and adjust training appropriately.
+4. As someone who has had or is planning top surgery, I want a simple way to indicate my surgery type and date, so my plan respects my healing timeline.
+
+### 6.2 Binder-aware training
+
+5. As a person who binds regularly, I want the app to ask whether I’m binding today (or how often I bind when exercising), so it can adjust intensity and exercise selection.
+6. As someone worried about binding and exercise, I want to see clear “today we adjusted volume because you are binding” messages, so I understand how the app is protecting me.
+7. As a user planning to reduce binding during workouts, I want suggestions for lower dysphoria options (compression tops, layering, etc.), so I don’t feel like my only choices are “bind dangerously” or “do nothing.”
+
+### 6.3 Pre-top surgery prep
+
+8. As a person preparing for top surgery, I want a pre-op training path that focuses on building general strength, stamina, and mobility, so I feel physically ready for surgery and recovery.
+9. As someone anxious about surgery, I want the app to set realistic expectations about what training can and cannot change before surgery, so I don’t blame myself for outcomes outside my control.
+
+### 6.4 Post-top surgery return to movement
+
+10. As a user 4–12 weeks post top surgery, I want a phased return-to-movement outline that shows what types of movement are usually appropriate at my stage, so I have a starting point to discuss with my surgeon and adjust from.
+11. As a post-op user, I want workouts that clearly avoid movements that are typically too risky in my current phase (heavy pressing, overhead loading, etc.), so I don’t accidentally pick exercises that contradict my restrictions.
+12. As someone afraid of “ruining my results,” I want gentle explanations attached to my plan that explain why certain movements are delayed or restricted, so I can be patient and feel reassured.
+
+### 6.5 HRT-aware programming
+
+13. As a user early on T, I want to see realistic expectations about strength and muscle gains, so I don’t feel like I’m “failing” if progress is slower than fitness influencers.
+14. As someone on HRT, I want my workout plan to adjust volume and recovery over time based on my phase, so my plan feels like it evolves with my body rather than being static.
+15. As a user feeling extra fatigue during HRT adjustments, I want the app to validate that this can happen and suggest lighter options or extra rest, so I feel supported instead of weak.
+
+### 6.6 Space & environment
+
+16. As a user who feels unsafe in locker rooms, I want home-first and minimal-equipment options, so I can build strength without relying on gyms.
+17. As someone with access to a gym but high anxiety, I want workouts that can be done without using the locker room (arrive changed, minimal equipment circuits), so I can still benefit from gym access.
+18. As a user whose environment changes (for example I join a queer gym later), I want to update my training environment and equipment easily, so my plan grows with my access.
+
+### 6.7 Education & reassurance
+
+19. As a user with anxiety about safety, I want a simple “Why this workout?” explanation that tells me what the app considered (binding, HRT, surgery, environment), so I can trust the plan.
+20. As someone used to doomscrolling Reddit for answers, I want short, trustworthy education snippets inside the app (binder safety, post-op basics, HRT expectations), so I can stop bouncing between tabs.
+21. As a user who worries I’m “doing it wrong,” I want guidance on what normal discomfort vs. concerning symptoms feel like (without diagnosing), so I know when to rest and when to seek care.
+
+### 6.8 Copilot (if included in MVP)
+
+22. As a user, I want to ask free-form questions like “Is it okay to do this workout while binding today?” and get an answer that combines research and my own profile, so I feel personally supported.
+23. As someone recovering from surgery, I want Copilot to remind me to follow my surgeon’s instructions and not override them with generic advice, so I’m not tempted to ignore medical guidance.
+24. As a user with ADHD, I want to ask Copilot for simple, practical adjustments (“What’s a shorter version of today’s workout?”) so I can still do *something* on low-executive-function days.
+
+### 6.9 Consistency, motivation, and reflection
+
+25. As a user who struggles with consistency, I want the app to celebrate small wins (for example consistent walks, partial workouts), so I don’t feel like it’s “all or nothing.”
+26. As someone whose dysphoria and mood fluctuate, I want optional quick check-ins (“How did moving today feel in your body?”), so I can see patterns in what types of movement help me feel better.
+27. As a user who may or may not stay on T or may change plans, I want the app to flex if my path changes, so I don’t feel like I “broke” the program by making new decisions about my body.
+
+---
+
+7. Success Metrics for MVP
+
+MVP success is about trust, safety, and “this finally gets me” more than it is about raw MAUs. Metrics are split into four buckets.
+
+7.1 Adoption and activation
+
+Goal: Prove that the right people can discover, onboard, and reach their first safe workout.
+
+MVP cohort size
+
+Target: 30 to 100 transmasc or NB users in the first closed beta
+
+Source: personal network, r/transfitness volunteers, community groups
+
+Onboarding completion rate
+
+Definition: Percentage of users who start onboarding and finish the last question
+
+Target: 75 percent or higher
+
+Interpretation: If it is lower, questions feel confusing, intrusive, or too long
+
+First workout generation rate
+
+Definition: Percentage of onboarded users who successfully generate at least one workout
+
+Target: 80 percent or higher
+
+Interpretation: Confirms the generator is usable and not intimidating
+
+7.2 Engagement and early retention
+
+Goal: Prove that people actually use the workouts and feel good about them, not just poke around.
+
+Workout start rate
+
+Definition: Percentage of generated workouts that are opened and started
+
+Target: 60 percent or higher for the first two weeks of a cohort
+
+Workout completion rate
+
+Definition: Percentage of started workouts that are marked complete
+
+Target: 50 percent or higher
+
+Short term retention
+
+Definition: Percentage of users who complete at least three workouts in their first fourteen days
+
+Target: 40 percent or higher
+
+Feature usage: “Why this workout”
+
+Definition: Percentage of workout sessions where the user opens the “Why this workout” explanation
+
+Target: 50 percent or higher in early cohorts
+
+Interpretation: High usage means people actually care about the safety and reasoning, which is your wedge
+
+7.3 Trust, perceived safety, and product market fit
+
+Goal: Confirm that the core value lands for the right users.
+
+Collect this via short in app surveys or follow up forms.
+
+Perceived safety score
+
+Question: “On a scale of 1 to 5, how safe do you feel following the workouts in TransFitness, given your binding, HRT, and surgery context?”
+
+Target: Average 4.0 or higher
+
+Relevance score
+
+Question: “On a scale of 1 to 5, how well do you feel this app understands your situation compared to general fitness apps?”
+
+Target: Average 4.0 or higher
+
+“Would you be sad if this went away” metric
+
+Question: “If you could no longer use TransFitness, how disappointed would you be?”
+
+Options: Very, somewhat, not really
+
+Target: At least 40 percent answering “Very disappointed” in the target persona
+
+Qualitative signal
+
+Look for phrases like:
+
+“I have never seen an app ask me these questions”
+
+“I feel safer doing this than random YouTube stuff”
+
+“I finally see my situation reflected in the plan”
+
+These matter more than vanity metrics at MVP.
+
+7.4 Safety and operational metrics
+
+Goal: Make sure you are not accidentally doing harm or wandering into doctor cosplay.
+
+Red flag deflection adherence
+
+Definition: Percentage of red flag questions where Copilot or static content correctly deflects to “seek medical care, follow your surgeon”
+
+Target: 100 percent
+
+How: Spot check Copilot logs for any messages tagged with high risk
+
+Zero “the app told me to ignore my doctor” incidents
+
+Target: 0 reports in feedback channels
+
+Crash free sessions
+
+Target: 95 percent or higher crash free rate during beta
+
+Bug threshold
+
+Target: No critical bugs that corrupt user data, misapply core safety rules, or prevent workout generation
+
+8. Roadmap, Now, Next, Later
+
+This is your simple, reality friendly roadmap that lines up with your MVP scope and what you have already built.
+
+Think of it as:
+
+Now: What has to exist for a small closed beta
+
+Next: What you add once the engine is “real” and you start learning from real users
+
+Later: The big leverage bets and expansions
+
+8.1 Now, MVP build and closed beta
+
+Focus: Harden the core engine, expose the safety logic, and ship a minimal but trustworthy experience for your primary persona.
+
+Core product
+
+Finalize onboarding with:
+
+Transition path
+
+Binding behavior
+
+HRT status and start date
+
+Training environment and equipment
+
+Surgery status and date
+
+Ship the safety aware workout engine:
+
+Binder aware rules in place
+
+Basic top surgery phases encoded
+
+HRT aware volume and progression tweaks
+
+Environment aware exercise selection
+
+Implement “Why this workout”:
+
+Engine returns rules_triggered and explanations
+
+UI shows a simple explanation panel
+
+Education v1
+
+Seed minimum education_snippets:
+
+Binder safety tips
+
+Early T expectations
+
+Early and mid post op guidance
+
+Add two mini guides in the app:
+
+Binder basics
+
+General post top surgery movement outline
+
+Tech and safety
+
+Complete Supabase schema work for:
+
+Profiles with new fields
+
+Workouts with rules and generation context
+
+Knowledge base tables
+
+Add basic analytics:
+
+Onboarding completion
+
+Workout generated, started, completed
+
+“Why this workout” opened
+
+Add safety boundaries:
+
+Global disclaimers
+
+Red flag detection and deflection, even if Copilot v0 is not live
+
+Optional but ideal, Copilot v0
+
+A simple Copilot chat that:
+
+Handles low risk questions using your corpus
+
+Deflects correctly on medical and acute symptom asks
+
+Outcome of Now phase
+
+You can run a small, invite only beta
+
+You gather first metrics on safety perceptions, trust, and basic engagement
+
+You validate that the core wedge, “safety aware trans specific training,” resonates
+
+8.2 Next, polish, deepen journeys, and early Copilot
+
+Timeline: After first closed beta, once “it works” and is not on fire.
+
+Focus: Make the experience more supportive and coherent without exploding scope.
+
+Experience polish
+
+Improve workout flow:
+
+Better execution UI
+
+Clearer exercise instructions
+
+Basic rest timers and progress indicators
+
+Refine onboarding based on feedback:
+
+Clarify confusing questions
+
+Reduce friction where people drop off
+
+Journey building
+
+Formalize at least three structured journeys:
+
+“Training while binding”
+
+“Preparing for top surgery in X months”
+
+“Returning to movement 6 to 12 weeks post top surgery”
+
+Each journey has:
+
+A clear explanation screen
+
+Slightly tuned templates or presets in the generator
+
+Targeted education snippets
+
+Copilot v1
+
+Copilot gains:
+
+Awareness of the current workout and rules
+
+Simple guided flows for:
+
+“Can I train while binding today?”
+
+“What is realistic at my post op week?”
+
+Better orchestration:
+
+Intent classification
+
+Basic topic tagging for analytics
+
+Logging and review of higher risk categories
+
+Data and insights
+
+Add a light “how did this feel” check in after workouts, optional:
+
+Not heavy mood tracking, just quick context
+
+Start looking at patterns:
+
+Users who open “Why this workout” more
+
+Users in specific journeys
+
+Common Copilot questions
+
+Outcome of Next phase
+
+You have a more opinionated, journey driven product
+
+Copilot is starting to feel like a real helper, not a toy
+
+You have enough usage and feedback to iterate on rules and content confidently
+
+8.3 Later, expansion and ecosystem
+
+Timeline: After you see clear pull and trust from the initial wedge.
+
+Focus: Carefully expand scope without losing your edge.
+
+Community and accountability, light but real
+
+Small accountability pods:
+
+3 to 6 people
+
+Weekly check ins and shared challenges
+
+Community informed features:
+
+User tips on exercises, moderated
+
+Optional, opt in only
+
+Transfemme and broader journeys
+
+Add transfemme specific journeys:
+
+Early estrogen based HRT and strength training
+
+Body image and performance framed content for transfemme athletes
+
+Expand surgery coverage:
+
+More detailed tracks for different procedures
+
+Always framed as general outlines, never strict protocols
+
+Coach mode, early
+
+Invite a small set of trans and queer coaches to:
+
+Build programs on top of your safe engine
+
+Deliver them to their clients in the app
+
+Begin testing:
+
+What coach tooling they actually need
+
+How revenue sharing might work in the future
+
+Recovery and nourishment
+
+Add a simple recovery module:
+
+Sleep, stress, and basic recovery check ins
+
+Short nervous system regulation suggestions
+
+Add light nutrition support:
+
+Phase based plate templates
+
+No logging, no calorie math
+
+Integrations and sophistication
+
+Explore:
+
+Apple Health or Google Fit step and heart rate sync, opt in only
+
+More advanced Copilot flows, possibly fine tuned on your Q and A
+
+Outcome of Later phase
+
+The product begins to look like a full ecosystem for trans athletes, not just a workout app
+
+You have multiple revenue paths, direct to consumer subscriptions and coach enablement
+
+You are still grounded in your original wedge, safety and education for trans bodies

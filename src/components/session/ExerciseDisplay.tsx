@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { Exercise } from '../../types';
 import { cacheVideo, getCachedVideo } from '../../services/videoCache';
-import { palette, spacing, typography } from '../../theme';
+import { palette, spacing, colors } from '../../theme';
 
 interface ExerciseDisplayProps {
   exercise: Exercise;
@@ -73,24 +74,34 @@ const ExerciseDisplay: React.FC<ExerciseDisplayProps> = ({
   return (
     <View style={styles.container}>
       {!lowSensoryMode && videoUri && (
-        <Video
-          style={styles.video}
-          source={{ uri: videoUri }}
-          shouldPlay
-          isLooping
-          resizeMode={ResizeMode.COVER}
-          useNativeControls
-        />
+        <View style={styles.videoContainer}>
+          <Video
+            style={styles.video}
+            source={{ uri: videoUri }}
+            shouldPlay
+            isLooping
+            resizeMode={ResizeMode.COVER}
+            useNativeControls
+          />
+        </View>
       )}
 
       {lowSensoryMode && (
         <View style={styles.lowSensoryNotice}>
+          <LinearGradient
+            colors={['rgba(25, 25, 30, 0.9)', 'rgba(18, 18, 22, 0.95)']}
+            style={StyleSheet.absoluteFill}
+          />
           <Text style={styles.lowSensoryText}>Video hidden for low-sensory mode</Text>
         </View>
       )}
 
       {!lowSensoryMode && loadingVideo && (
         <View style={styles.lowSensoryNotice}>
+          <LinearGradient
+            colors={['rgba(25, 25, 30, 0.9)', 'rgba(18, 18, 22, 0.95)']}
+            style={StyleSheet.absoluteFill}
+          />
           <Text style={styles.lowSensoryText}>Loading exercise video...</Text>
         </View>
       )}
@@ -100,32 +111,53 @@ const ExerciseDisplay: React.FC<ExerciseDisplayProps> = ({
 
         {exercise.neutral_cues?.length ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Neutral Cues</Text>
-            {renderList(exercise.neutral_cues)}
+            <LinearGradient
+              colors={['rgba(25, 25, 30, 0.7)', 'rgba(18, 18, 22, 0.8)']}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.sectionGlassHighlight} />
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionTitle}>Neutral Cues</Text>
+              {renderList(exercise.neutral_cues)}
+            </View>
           </View>
         ) : null}
 
         {exercise.breathing_cues?.length ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Breathing Cues</Text>
-            {renderList(exercise.breathing_cues)}
+            <LinearGradient
+              colors={['rgba(25, 25, 30, 0.7)', 'rgba(18, 18, 22, 0.8)']}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.sectionGlassHighlight} />
+            <View style={styles.sectionContent}>
+              <Text style={styles.sectionTitle}>Breathing Cues</Text>
+              {renderList(exercise.breathing_cues)}
+            </View>
           </View>
         ) : null}
 
         {showTransNotes && (
           <View style={styles.transNotes}>
-            <Text style={styles.transNotesTitle}>Trans-Specific Notes</Text>
-            {exercise.trans_notes?.binder ? (
-              <Text style={styles.transNotesItem}>
-                <Text style={styles.transNoteLabel}>Binder:</Text> {exercise.trans_notes.binder}
-              </Text>
-            ) : null}
-            {exercise.trans_notes?.pelvic_floor ? (
-              <Text style={styles.transNotesItem}>
-                <Text style={styles.transNoteLabel}>Pelvic Floor:</Text>{' '}
-                {exercise.trans_notes.pelvic_floor}
-              </Text>
-            ) : null}
+            <LinearGradient
+              colors={['rgba(91, 206, 250, 0.1)', 'rgba(91, 206, 250, 0.05)']}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.transNotesGlassHighlight} />
+            <View style={styles.sectionContent}>
+              <Text style={styles.transNotesTitle}>Trans-Specific Notes</Text>
+              {exercise.trans_notes?.binder ? (
+                <Text style={styles.transNotesItem}>
+                  <Text style={styles.transNoteLabel}>Binder:</Text> {exercise.trans_notes.binder}
+                </Text>
+              ) : null}
+              {exercise.trans_notes?.pelvic_floor ? (
+                <Text style={styles.transNotesItem}>
+                  <Text style={styles.transNoteLabel}>Pelvic Floor:</Text>{' '}
+                  {exercise.trans_notes.pelvic_floor}
+                </Text>
+              ) : null}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -138,20 +170,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.deepBlack,
   },
-  video: {
+  videoContainer: {
     width: '100%',
     height: 180,
-    backgroundColor: palette.darkerCard,
+    backgroundColor: 'rgba(15, 15, 18, 0.9)',
+    overflow: 'hidden',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
   },
   lowSensoryNotice: {
-    padding: spacing.s,
-    backgroundColor: palette.darkCard,
+    padding: spacing.m,
+    overflow: 'hidden',
     borderBottomWidth: 1,
-    borderBottomColor: palette.border,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
   lowSensoryText: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.tertiary,
     textAlign: 'center',
   },
   content: {
@@ -159,54 +198,100 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: spacing.m,
-    gap: spacing.s,
+    gap: spacing.m,
   },
   exerciseName: {
-    ...typography.h3,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
     marginBottom: spacing.xs,
     textAlign: 'center',
   },
   section: {
     borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 8,
-    padding: spacing.s,
-    backgroundColor: palette.darkCard,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 14,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  sectionGlassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 12,
+    right: 12,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  sectionContent: {
+    padding: spacing.m,
   },
   sectionTitle: {
-    ...typography.bodyLarge,
-    color: palette.tealPrimary,
-    marginBottom: spacing.xs,
+    fontFamily: 'Poppins',
+    fontSize: 14,
     fontWeight: '600',
+    color: colors.accent.primary,
+    marginBottom: spacing.s,
   },
   listItem: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.secondary,
     marginBottom: spacing.xxs,
     marginLeft: spacing.xs,
+    lineHeight: 20,
   },
   transNotes: {
-    borderRadius: 8,
-    padding: spacing.s,
-    backgroundColor: palette.darkerCard,
+    borderRadius: 14,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: palette.tealPrimary,
+    borderColor: 'rgba(91, 206, 250, 0.2)',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  transNotesGlassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 12,
+    right: 12,
+    height: 1,
+    backgroundColor: 'rgba(91, 206, 250, 0.15)',
   },
   transNotesTitle: {
-    ...typography.bodyLarge,
-    color: palette.tealPrimary,
-    marginBottom: spacing.xs,
+    fontFamily: 'Poppins',
+    fontSize: 14,
     fontWeight: '600',
+    color: colors.accent.primary,
+    marginBottom: spacing.s,
   },
   transNotesItem: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
-    marginBottom: spacing.xxs,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
+    lineHeight: 20,
   },
   transNoteLabel: {
+    fontFamily: 'Poppins',
     fontWeight: '600',
-    color: palette.tealPrimary,
+    color: colors.accent.primary,
   },
 });
 
