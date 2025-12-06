@@ -26,7 +26,7 @@ export default function WelcomeSection({ userName }: WelcomeSectionProps) {
     return 'Good evening';
   }, []);
 
-  const displayName = userName || 'Champion';
+  const displayName = userName || 'Dakotah';
 
   const motivationalMessage = useMemo(() => {
     const dayOfWeek = new Date().getDay();
@@ -47,7 +47,7 @@ export default function WelcomeSection({ userName }: WelcomeSectionProps) {
         <View style={styles.iconContainer}>
           <Ionicons
             name={getTimeIcon()}
-            size={20}
+            size={16}
             color={colors.accent.primary}
           />
         </View>
@@ -62,18 +62,18 @@ export default function WelcomeSection({ userName }: WelcomeSectionProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   greetingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 6,
+    gap: 8,
+    marginBottom: 4,
   },
   iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: colors.glass.bgHero,
     borderWidth: 1,
     borderColor: colors.glass.borderCyan,
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: 'Poppins',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '300',
     color: colors.text.primary,
     letterSpacing: -0.3,
@@ -102,10 +102,10 @@ const styles = StyleSheet.create({
   },
   motivation: {
     fontFamily: 'Poppins',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '400',
     color: colors.text.secondary,
     letterSpacing: -0.1,
-    marginLeft: 42, // Align with text after icon
+    marginLeft: 34, // Align with text after icon
   },
 });

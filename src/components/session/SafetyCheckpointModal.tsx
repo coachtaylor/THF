@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable, Platform, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { palette, spacing, typography } from '../../theme';
+import { spacing, colors } from '../../theme';
 
 interface SafetyCheckpointModalProps {
   visible: boolean;
@@ -29,6 +30,29 @@ export default function SafetyCheckpointModal({
   const [breakTimerActive, setBreakTimerActive] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(breakDurationMinutes * 60);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Pulse animation for warning icon
+    if (visible && !breakTimerActive) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [visible, breakTimerActive]);
 
   useEffect(() => {
     if (breakTimerActive && remainingSeconds > 0) {
@@ -73,50 +97,118 @@ export default function SafetyCheckpointModal({
   const handleBreakComplete = () => {
     setBreakTimerActive(false);
     setRemainingSeconds(breakDurationMinutes * 60);
-    // Break timer completed, user can continue
   };
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onTakeBreakLater}
     >
       <View style={styles.overlay}>
         <View style={styles.modal}>
+          {/* Glass background */}
+          <LinearGradient
+            colors={['rgba(35, 30, 25, 0.98)', 'rgba(25, 22, 18, 0.99)']}
+            style={StyleSheet.absoluteFill}
+          />
+
+          {/* Warning amber glow */}
+          <LinearGradient
+            colors={['rgba(251, 191, 36, 0.2)', 'rgba(251, 191, 36, 0.08)', 'transparent']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 0.6 }}
+            style={styles.warningGlow}
+          />
+
+          {/* Glass highlight */}
+          <View style={styles.glassHighlight} />
+
+          {/* Header */}
           <View style={styles.header}>
-            <Ionicons name="warning" size={32} color={palette.warning} />
-            <Text style={styles.title}>⚠️ Safety Checkpoint</Text>
+            <Animated.View
+              style={[
+                styles.iconContainer,
+                { transform: [{ scale: pulseAnim }] },
+              ]}
+            >
+              <LinearGradient
+                colors={['rgba(251, 191, 36, 0.3)', 'rgba(251, 191, 36, 0.1)']}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name="warning" size={32} color={colors.warning} />
+            </Animated.View>
+            <Text style={styles.title}>Safety Checkpoint</Text>
           </View>
 
           <Text style={styles.message}>{message}</Text>
 
           {!breakTimerActive ? (
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.startBreakButton} onPress={handleStartBreak}>
+              {/* Start Break Button - Warning styled */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.startBreakButton,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={handleStartBreak}
+              >
+                <LinearGradient
+                  colors={[colors.warning, '#E5A400']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.buttonGlassOverlay} />
                 <Text style={styles.startBreakButtonText}>
-                  Start {breakDurationMinutes}-Minute Break Timer
+                  Start {breakDurationMinutes}-Minute Break
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
-              <TouchableOpacity style={styles.laterButton} onPress={onTakeBreakLater}>
+              {/* Later Button - Glass styled */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.laterButton,
+                  pressed && styles.buttonPressed,
+                ]}
+                onPress={onTakeBreakLater}
+              >
+                <LinearGradient
+                  colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.03)']}
+                  style={StyleSheet.absoluteFill}
+                />
                 <Text style={styles.laterButtonText}>Take Break Later</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           ) : (
             <View style={styles.timerContainer}>
               <Text style={styles.timerLabel}>Break Timer</Text>
+
+              {/* Timer display with glass effect */}
               <View style={styles.timerDisplay}>
+                <LinearGradient
+                  colors={['rgba(20, 20, 24, 0.9)', 'rgba(15, 15, 18, 0.95)']}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.timerGlassHighlight} />
                 <Text style={styles.timerText}>{formatTime(remainingSeconds)}</Text>
               </View>
+
               {remainingSeconds === 0 && (
-                <Text style={styles.completeText}>Break complete! You can continue your workout.</Text>
+                <View style={styles.completeContainer}>
+                  <Ionicons name="checkmark-circle" size={20} color={colors.accent.primary} />
+                  <Text style={styles.completeText}>Break complete! You can continue.</Text>
+                </View>
               )}
+
               <View style={styles.timerButtons}>
                 {remainingSeconds > 0 && (
-                  <TouchableOpacity
-                    style={styles.pauseButton}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.pauseButton,
+                      pressed && styles.buttonPressed,
+                    ]}
                     onPress={() => {
                       setBreakTimerActive(false);
                       if (intervalRef.current) {
@@ -125,20 +217,36 @@ export default function SafetyCheckpointModal({
                       }
                     }}
                   >
+                    <LinearGradient
+                      colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.03)']}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <Ionicons name="pause" size={18} color={colors.text.primary} />
                     <Text style={styles.pauseButtonText}>Pause</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
-                <TouchableOpacity
-                  style={styles.continueButton}
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.continueButton,
+                    pressed && styles.buttonPressed,
+                  ]}
                   onPress={() => {
                     handleBreakComplete();
                     onTakeBreakLater();
                   }}
                 >
+                  <LinearGradient
+                    colors={[colors.accent.primary, colors.accent.primaryDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.buttonGlassOverlay} />
+                  <Ionicons name="play" size={18} color={colors.text.inverse} />
                   <Text style={styles.continueButtonText}>
-                    {remainingSeconds === 0 ? 'Continue Workout' : 'Skip & Continue'}
+                    {remainingSeconds === 0 ? 'Continue' : 'Skip'}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             </View>
           )}
@@ -151,87 +259,175 @@ export default function SafetyCheckpointModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.l,
   },
   modal: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 16,
+    borderRadius: 24,
     padding: spacing.xl,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 360,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.5,
+        shadowRadius: 40,
+      },
+      android: { elevation: 24 },
+    }),
+  },
+  warningGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 1,
   },
   header: {
     alignItems: 'center',
+    marginBottom: spacing.l,
+  },
+  iconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
     marginBottom: spacing.m,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
   },
   title: {
-    ...typography.h2,
-    color: palette.white,
-    marginTop: spacing.s,
+    fontFamily: 'Poppins',
+    fontSize: 22,
+    fontWeight: '600',
+    color: colors.text.primary,
     textAlign: 'center',
   },
   message: {
-    ...typography.bodyLarge,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
+    lineHeight: 22,
   },
   buttonContainer: {
     gap: spacing.m,
   },
   startBreakButton: {
-    backgroundColor: palette.warning,
-    borderRadius: 12,
-    padding: spacing.m,
+    borderRadius: 14,
+    padding: spacing.l,
     alignItems: 'center',
+    overflow: 'hidden',
+  },
+  buttonGlassOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  buttonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   startBreakButtonText: {
-    ...typography.button,
-    color: palette.deepBlack,
-    fontWeight: '700',
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.inverse,
   },
   laterButton: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
-    padding: spacing.m,
+    borderRadius: 14,
+    padding: spacing.l,
     alignItems: 'center',
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   laterButtonText: {
-    ...typography.body,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
   timerContainer: {
     alignItems: 'center',
   },
   timerLabel: {
-    ...typography.bodyLarge,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.secondary,
     marginBottom: spacing.m,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   timerDisplay: {
-    backgroundColor: palette.darkerCard,
-    borderRadius: 16,
-    padding: spacing.xl,
-    marginBottom: spacing.m,
-    minWidth: 150,
+    borderRadius: 20,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing['2xl'],
+    marginBottom: spacing.l,
+    minWidth: 180,
     alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.3,
+        shadowRadius: 16,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  timerGlassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 16,
+    right: 16,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   timerText: {
-    ...typography.h1,
-    color: palette.tealPrimary,
+    fontFamily: 'Poppins',
     fontSize: 48,
-    fontWeight: '700',
+    fontWeight: '300',
+    color: colors.accent.primary,
+    letterSpacing: 2,
+  },
+  completeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: spacing.m,
   },
   completeText: {
-    ...typography.body,
-    color: palette.tealPrimary,
-    textAlign: 'center',
-    marginBottom: spacing.m,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.accent.primary,
   },
   timerButtons: {
     flexDirection: 'row',
@@ -240,29 +436,36 @@ const styles = StyleSheet.create({
   },
   pauseButton: {
     flex: 1,
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
+    flexDirection: 'row',
+    borderRadius: 14,
     padding: spacing.m,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   pauseButtonText: {
-    ...typography.button,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 14,
     fontWeight: '600',
+    color: colors.text.primary,
   },
   continueButton: {
     flex: 1,
-    backgroundColor: palette.tealPrimary,
-    borderRadius: 12,
+    flexDirection: 'row',
+    borderRadius: 14,
     padding: spacing.m,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    overflow: 'hidden',
   },
   continueButtonText: {
-    ...typography.button,
-    color: palette.deepBlack,
-    fontWeight: '700',
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.inverse,
   },
 });
-

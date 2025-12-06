@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius } from '../theme/theme'
-import { glassStyles, textStyles } from '../theme/components';
+import { colors, spacing, borderRadius } from '../theme/theme';
 
 interface ScheduleCardProps {
   day: string;
@@ -39,24 +39,47 @@ export default function ScheduleCard({
   isCompleted,
   onPress,
 }: ScheduleCardProps) {
-  // Determine card state
-  const isDisabled = isPast && !hasWorkout; // Past rest days are just disabled
+  const isDisabled = isPast && !hasWorkout;
   const isMissed = isPast && hasWorkout && !isCompleted;
   const isActive = !isPast;
 
+  const getCardColors = (): [string, string] => {
+    if (isCompleted) {
+      return ['rgba(34, 197, 94, 0.08)', 'rgba(34, 197, 94, 0.03)'];
+    }
+    if (isMissed) {
+      return ['rgba(245, 158, 11, 0.08)', 'rgba(245, 158, 11, 0.03)'];
+    }
+    return ['rgba(25, 25, 30, 0.7)', 'rgba(18, 18, 22, 0.8)'];
+  };
+
+  const getBorderColor = () => {
+    if (isCompleted) return 'rgba(34, 197, 94, 0.25)';
+    if (isMissed) return 'rgba(245, 158, 11, 0.25)';
+    if (hasWorkout && isActive) return 'rgba(91, 206, 250, 0.15)';
+    return 'rgba(255, 255, 255, 0.06)';
+  };
+
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={isDisabled}
-      activeOpacity={0.7}
-      style={[
-        glassStyles.card,
+      style={({ pressed }) => [
         styles.card,
-        isCompleted && styles.cardCompleted,
-        isMissed && styles.cardMissed,
+        { borderColor: getBorderColor() },
         isDisabled && styles.cardDisabled,
+        pressed && styles.cardPressed,
       ]}
     >
+      {/* Glass background */}
+      <LinearGradient
+        colors={getCardColors()}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Glass highlight */}
+      <View style={styles.glassHighlight} />
+
       <View style={styles.cardContent}>
         {/* Day Circle */}
         <View style={[
@@ -65,6 +88,18 @@ export default function ScheduleCard({
           isCompleted && styles.dayCircleCompleted,
           isMissed && styles.dayCircleMissed,
         ]}>
+          {isCompleted && (
+            <LinearGradient
+              colors={[colors.semantic.success, '#16A34A']}
+              style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+            />
+          )}
+          {hasWorkout && isActive && !isCompleted && (
+            <LinearGradient
+              colors={['rgba(91, 206, 250, 0.2)', 'rgba(91, 206, 250, 0.1)']}
+              style={[StyleSheet.absoluteFill, { borderRadius: 20 }]}
+            />
+          )}
           {isCompleted ? (
             <Ionicons name="checkmark" size={20} color={colors.text.primary} />
           ) : (
@@ -81,9 +116,7 @@ export default function ScheduleCard({
         {/* Workout Info */}
         <View style={styles.workoutInfo}>
           <View style={styles.titleRow}>
-            <Text style={[textStyles.caption, styles.dayText]}>
-              {day}
-            </Text>
+            <Text style={styles.dayText}>{day}</Text>
             {!hasWorkout && (
               <View style={styles.restBadge}>
                 <Text style={styles.restBadgeText}>REST</Text>
@@ -98,7 +131,6 @@ export default function ScheduleCard({
           </View>
 
           <Text style={[
-            textStyles.body,
             styles.workoutName,
             isDisabled && styles.textDisabled,
           ]}>
@@ -109,15 +141,11 @@ export default function ScheduleCard({
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
                 <Ionicons name="time" size={12} color={colors.text.tertiary} />
-                <Text style={[textStyles.caption, styles.metaText]}>
-                  {duration} min
-                </Text>
+                <Text style={styles.metaText}>{duration} min</Text>
               </View>
               <View style={styles.metaItem}>
                 <Ionicons name="barbell" size={12} color={colors.text.tertiary} />
-                <Text style={[textStyles.caption, styles.metaText]}>
-                  {exercises} exercises
-                </Text>
+                <Text style={styles.metaText}>{exercises} exercises</Text>
               </View>
             </View>
           )}
@@ -125,10 +153,12 @@ export default function ScheduleCard({
           {/* Motivational Quote for Missed Workouts */}
           {isMissed && (
             <View style={styles.motivationalRow}>
+              <LinearGradient
+                colors={['rgba(245, 158, 11, 0.15)', 'rgba(245, 158, 11, 0.08)']}
+                style={[StyleSheet.absoluteFill, { borderRadius: borderRadius.sm }]}
+              />
               <Ionicons name="flame" size={14} color={colors.semantic.warning} />
-              <Text style={[textStyles.caption, styles.motivationalText]}>
-                {getRandomQuote()}
-              </Text>
+              <Text style={styles.motivationalText}>{getRandomQuote()}</Text>
             </View>
           )}
         </View>
@@ -136,69 +166,70 @@ export default function ScheduleCard({
         {/* Chevron / Status Icon */}
         <View style={styles.rightIcon}>
           {isCompleted ? (
-            <View style={styles.completedIcon}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.semantic.success} />
-            </View>
+            <Ionicons name="checkmark-circle" size={24} color={colors.semantic.success} />
           ) : isMissed ? (
-            <View style={styles.missedIcon}>
-              <Ionicons name="alert-circle" size={20} color={colors.semantic.warning} />
-            </View>
+            <Ionicons name="alert-circle" size={20} color={colors.semantic.warning} />
           ) : hasWorkout ? (
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.cyan[500]}
-            />
+            <Ionicons name="chevron-forward" size={20} color={colors.accent.primary} />
           ) : (
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.text.tertiary}
-            />
+            <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
           )}
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    padding: spacing.base,
-  },
-  cardCompleted: {
-    backgroundColor: 'rgba(34, 197, 94, 0.05)',
+    borderRadius: borderRadius['2xl'],
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.2)',
-  },
-  cardMissed: {
-    backgroundColor: 'rgba(245, 158, 11, 0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.2)',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+    }),
   },
   cardDisabled: {
     opacity: 0.5,
+  },
+  cardPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 16,
+    right: 16,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    padding: spacing.base,
   },
   dayCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.bg.mid,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   dayCircleActive: {
-    backgroundColor: colors.glass.bgHero,
     borderWidth: 2,
-    borderColor: colors.cyan[500],
+    borderColor: colors.accent.primary,
   },
   dayCircleCompleted: {
-    backgroundColor: colors.semantic.success,
     borderWidth: 0,
   },
   dayCircleMissed: {
@@ -207,12 +238,13 @@ const styles = StyleSheet.create({
     borderColor: colors.semantic.warning,
   },
   dayNumberText: {
+    fontFamily: 'Poppins',
     fontSize: 18,
     fontWeight: '700',
     color: colors.text.primary,
   },
   dayNumberTextActive: {
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   dayNumberTextCompleted: {
     color: colors.text.primary,
@@ -227,10 +259,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   dayText: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '600',
     color: colors.text.tertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    fontWeight: '600',
   },
   restBadge: {
     paddingHorizontal: 6,
@@ -241,6 +275,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(34, 197, 94, 0.3)',
   },
   restBadgeText: {
+    fontFamily: 'Poppins',
     fontSize: 9,
     fontWeight: '600',
     color: colors.semantic.success,
@@ -259,6 +294,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(34, 197, 94, 0.3)',
   },
   completedBadgeText: {
+    fontFamily: 'Poppins',
     fontSize: 9,
     fontWeight: '600',
     color: colors.semantic.success,
@@ -266,7 +302,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   workoutName: {
+    fontFamily: 'Poppins',
     fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
   textDisabled: {
     opacity: 0.5,
@@ -282,6 +321,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   metaText: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '400',
     color: colors.text.tertiary,
   },
   motivationalRow: {
@@ -291,23 +333,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
     paddingVertical: 4,
     paddingHorizontal: spacing.xs,
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
     borderRadius: borderRadius.sm,
     alignSelf: 'flex-start',
+    overflow: 'hidden',
   },
   motivationalText: {
-    color: colors.semantic.warning,
-    fontWeight: '600',
+    fontFamily: 'Poppins',
     fontSize: 11,
+    fontWeight: '600',
+    color: colors.semantic.warning,
   },
   rightIcon: {
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  completedIcon: {
-    // Completed icon styling
-  },
-  missedIcon: {
-    // Missed icon styling
   },
 });

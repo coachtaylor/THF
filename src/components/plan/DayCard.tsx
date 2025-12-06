@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Button } from 'react-native-paper';
-import { palette, spacing, typography } from '../../theme';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { palette, spacing, colors } from '../../theme';
 import { Day, Workout, Exercise } from '../../types/plan';
 import { getExerciseLibrary } from '../../data/exercises';
 import { formatEquipmentLabel } from '../../utils/equipment';
 import SafetyTag from '../ui/SafetyTag';
-import Card from '../ui/Card';
 import TimeVariantSelector from './TimeVariantSelector';
 
 interface DayCardProps {
@@ -118,82 +117,105 @@ export default function DayCard({ day, workout, onStartWorkout, onPreview, onExe
           const targetMuscles = exercise?.target_muscles;
 
           return (
-            <TouchableOpacity
+            <Pressable
               key={index}
               onPress={() => onExercisePress?.(exerciseInstance.exerciseId)}
-              activeOpacity={0.7}
+              style={({ pressed }) => [
+                styles.exerciseCard,
+                pressed && styles.exerciseCardPressed,
+              ]}
             >
-              <Card style={styles.exerciseCard} variant="outlined" padding="medium">
-                <View style={styles.exerciseContent}>
-                  <View style={styles.exerciseHeader}>
-                    <Text style={styles.exerciseName} numberOfLines={2}>{exerciseName}</Text>
-                    <View style={[
-                      styles.difficultyBadge,
-                      difficulty === 'beginner' && styles.difficultyBeginner,
-                      difficulty === 'intermediate' && styles.difficultyIntermediate,
-                      difficulty === 'advanced' && styles.difficultyAdvanced,
+              {/* Glass background */}
+              <LinearGradient
+                colors={['rgba(25, 25, 30, 0.7)', 'rgba(18, 18, 22, 0.8)']}
+                style={StyleSheet.absoluteFill}
+              />
+
+              {/* Glass highlight */}
+              <View style={styles.cardGlassHighlight} />
+
+              <View style={styles.exerciseContent}>
+                <View style={styles.exerciseHeader}>
+                  <Text style={styles.exerciseName} numberOfLines={2}>{exerciseName}</Text>
+                  <View style={[
+                    styles.difficultyBadge,
+                    difficulty === 'beginner' && styles.difficultyBeginner,
+                    difficulty === 'intermediate' && styles.difficultyIntermediate,
+                    difficulty === 'advanced' && styles.difficultyAdvanced,
+                  ]}>
+                    <Text style={[
+                      styles.difficultyText,
+                      difficulty === 'beginner' && styles.difficultyTextBeginner,
+                      difficulty === 'intermediate' && styles.difficultyTextIntermediate,
+                      difficulty === 'advanced' && styles.difficultyTextAdvanced,
                     ]}>
-                      <Text style={[
-                        styles.difficultyText,
-                        difficulty === 'beginner' && styles.difficultyTextBeginner,
-                        difficulty === 'intermediate' && styles.difficultyTextIntermediate,
-                        difficulty === 'advanced' && styles.difficultyTextAdvanced,
-                      ]}>
-                        {difficulty}
-                      </Text>
-                    </View>
-                  </View>
-                  {targetMuscles && (
-                    <View style={styles.targetMusclesRow}>
-                      <Text style={styles.targetMusclesLabel}>Target: </Text>
-                      <Text style={styles.targetMusclesText}>{targetMuscles}</Text>
-                    </View>
-                  )}
-                  <View style={styles.exerciseDetailsRow}>
-                    <View style={styles.detailItem}>
-                      {equipment ? (
-                        <Text style={styles.equipmentText}>{equipment}</Text>
-                      ) : (
-                        <Text style={styles.exerciseDetails}>—</Text>
-                      )}
-                    </View>
-                    <View style={styles.detailItem}>
-                      <Text style={styles.exerciseDetails}>
-                        {exerciseInstance.sets}×{exerciseInstance.reps}
-                      </Text>
-                    </View>
-                    <View style={styles.detailItem}>
-                      <Text style={styles.exerciseDetails}>
-                        {exerciseInstance.restSeconds}s rest
-                      </Text>
-                    </View>
+                      {difficulty}
+                    </Text>
                   </View>
                 </View>
-              </Card>
-            </TouchableOpacity>
+                {targetMuscles && (
+                  <View style={styles.targetMusclesRow}>
+                    <Text style={styles.targetMusclesLabel}>Target: </Text>
+                    <Text style={styles.targetMusclesText}>{targetMuscles}</Text>
+                  </View>
+                )}
+                <View style={styles.exerciseDetailsRow}>
+                  <View style={styles.detailItem}>
+                    {equipment ? (
+                      <Text style={styles.equipmentText}>{equipment}</Text>
+                    ) : (
+                      <Text style={styles.exerciseDetails}>—</Text>
+                    )}
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.exerciseDetails}>
+                      {exerciseInstance.sets}×{exerciseInstance.reps}
+                    </Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.exerciseDetails}>
+                      {exerciseInstance.restSeconds}s rest
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
           );
         })}
       </ScrollView>
 
       <View style={styles.actions}>
-        <Button
-          mode="contained"
+        <Pressable
           onPress={onPreview}
-          style={[styles.button, styles.previewButton]}
-          contentStyle={styles.buttonContent}
-          labelStyle={styles.buttonLabel}
+          style={({ pressed }) => [
+            styles.button,
+            styles.previewButton,
+            pressed && styles.buttonPressed,
+          ]}
         >
-          Preview
-        </Button>
-        <Button
-          mode="contained"
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.03)']}
+            style={StyleSheet.absoluteFill}
+          />
+          <Text style={styles.previewButtonLabel}>Preview</Text>
+        </Pressable>
+        <Pressable
           onPress={onStartWorkout}
-          style={[styles.button, styles.startButton]}
-          contentStyle={styles.buttonContent}
-          labelStyle={styles.buttonLabel}
+          style={({ pressed }) => [
+            styles.button,
+            styles.startButton,
+            pressed && styles.buttonPressed,
+          ]}
         >
-          Start Workout
-        </Button>
+          <LinearGradient
+            colors={[colors.accent.primary, colors.accent.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.buttonGlassOverlay} />
+          <Text style={styles.startButtonLabel}>Start Workout</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -217,8 +239,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateText: {
-    ...typography.h3,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   headerMeta: {
@@ -228,8 +252,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   exerciseCount: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.tertiary,
   },
   safetyTags: {
     flexDirection: 'row',
@@ -247,11 +273,34 @@ const styles = StyleSheet.create({
   exerciseCard: {
     marginBottom: spacing.s,
     borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.darkCard,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+      },
+      android: { elevation: 3 },
+    }),
+  },
+  exerciseCardPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  cardGlassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 12,
+    right: 12,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   exerciseContent: {
     flex: 1,
+    padding: spacing.m,
   },
   exerciseHeader: {
     flexDirection: 'row',
@@ -261,9 +310,10 @@ const styles = StyleSheet.create({
     gap: spacing.s,
   },
   exerciseName: {
-    ...typography.bodyLarge,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 15,
     fontWeight: '600',
+    color: colors.text.primary,
     flex: 1,
     lineHeight: 22,
   },
@@ -275,31 +325,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   difficultyBeginner: {
-    backgroundColor: 'rgba(0, 217, 192, 0.15)',
-    borderColor: palette.tealPrimary,
+    backgroundColor: 'rgba(91, 206, 250, 0.15)',
+    borderColor: colors.accent.primary,
   },
   difficultyIntermediate: {
-    backgroundColor: 'rgba(255, 184, 77, 0.15)',
-    borderColor: palette.warning,
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    borderColor: colors.warning,
   },
   difficultyAdvanced: {
-    backgroundColor: 'rgba(255, 107, 107, 0.15)',
-    borderColor: palette.error,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderColor: colors.error,
   },
   difficultyText: {
+    fontFamily: 'Poppins',
     fontSize: 10,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   difficultyTextBeginner: {
-    color: palette.tealPrimary,
+    color: colors.accent.primary,
   },
   difficultyTextIntermediate: {
-    color: palette.warning,
+    color: colors.warning,
   },
   difficultyTextAdvanced: {
-    color: palette.error,
+    color: colors.error,
   },
   targetMusclesRow: {
     flexDirection: 'row',
@@ -308,13 +359,16 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxs,
   },
   targetMusclesLabel: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
     fontWeight: '500',
+    color: colors.text.tertiary,
   },
   targetMusclesText: {
-    ...typography.bodySmall,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.secondary,
     flex: 1,
   },
   exerciseDetailsRow: {
@@ -327,17 +381,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   exerciseDetails: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.tertiary,
   },
   equipmentText: {
-    ...typography.bodySmall,
-    color: palette.tealPrimary,
+    fontFamily: 'Poppins',
+    fontSize: 13,
     fontWeight: '600',
-  },
-  separator: {
-    ...typography.bodySmall,
-    color: palette.border,
+    color: colors.accent.primary,
   },
   actions: {
     flexDirection: 'row',
@@ -345,33 +398,53 @@ const styles = StyleSheet.create({
     paddingTop: spacing.l,
     paddingBottom: spacing.s,
     borderTopWidth: 1,
-    borderTopColor: palette.border,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
     marginTop: spacing.xs,
   },
   button: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   previewButton: {
-    backgroundColor: palette.darkCard,
-    borderWidth: 1.5,
-    borderColor: palette.border,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   startButton: {
-    backgroundColor: palette.tealPrimary,
+    // Background handled by gradient
   },
-  buttonContent: {
-    paddingVertical: spacing.s,
+  buttonGlassOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
-  buttonLabel: {
+  previewButtonLabel: {
+    fontFamily: 'Poppins',
     fontSize: 15,
-    fontWeight: '700',
-    color: palette.white,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  startButtonLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.inverse,
   },
   noWorkoutText: {
-    ...typography.body,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '400',
+    color: colors.text.tertiary,
     textAlign: 'center',
     padding: spacing.xl,
   },
