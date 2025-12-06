@@ -115,7 +115,7 @@ export function Hero() {
                   <div className="relative rounded-[40px] overflow-hidden bg-background aspect-[9/19.5]">
                     {/* App Screenshot */}
                     <Image
-                      src="/app-mockup.png"
+                      src="/app-mockup2.png"
                       alt="TransFitness app showing workout session"
                       fill
                       className="object-cover object-top"
