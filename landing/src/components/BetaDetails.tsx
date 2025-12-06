@@ -20,14 +20,14 @@ const programSteps = [
 
 export function BetaDetails() {
   return (
-    <section id="beta" className="py-24 md:py-32">
+    <section id="beta" className="py-16 md:py-24 lg:py-32">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10 md:mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
             Founding Athlete Details
@@ -37,7 +37,7 @@ export function BetaDetails() {
           </p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-5 md:gap-8">
           {/* What You Get */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
