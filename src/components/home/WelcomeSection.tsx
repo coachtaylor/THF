@@ -48,7 +48,7 @@ export default function WelcomeSection({ userName }: WelcomeSectionProps) {
           <Ionicons
             name={getTimeIcon()}
             size={16}
-            color={colors.accent.primary}
+            color={colors.text.primary}
           />
         </View>
         <Text style={styles.greeting}>
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: colors.glass.bgHero,
     borderWidth: 1,
-    borderColor: colors.glass.borderCyan,
+    borderColor: colors.text.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
     ...Platform.select({
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontFamily: 'Poppins',
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: '300',
     color: colors.text.primary,
     letterSpacing: -0.3,
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   motivation: {
     fontFamily: 'Poppins',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '400',
     color: colors.text.secondary,
     letterSpacing: -0.1,

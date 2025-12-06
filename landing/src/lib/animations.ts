@@ -68,6 +68,6 @@ export const accordionContent = {
 
 export const viewportSettings = {
   once: true,
-  margin: "-100px",
-  amount: 0.2,
+  margin: "0px",
+  amount: 0.1,
 };
