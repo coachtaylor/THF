@@ -113,7 +113,9 @@ export function buildSessionData(
   planId: string,
   workoutDuration: number,
   startedAt: string,
-  completedAt: string
+  completedAt: string,
+  swappedExercises?: Map<string, string>,
+  painFlaggedExercises?: Set<string>
 ): SessionData {
   // Group sets by exercise
   const exerciseMap = new Map<string, SessionData['exercises'][0]>();
@@ -123,8 +125,8 @@ export function buildSessionData(
       exerciseMap.set(set.exerciseId, {
         exerciseId: set.exerciseId,
         sets: [],
-        swappedTo: null,
-        painFlagged: false,
+        swappedTo: swappedExercises?.get(set.exerciseId) || null,
+        painFlagged: painFlaggedExercises?.has(set.exerciseId) || false,
       });
     }
 

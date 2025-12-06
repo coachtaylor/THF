@@ -214,3 +214,126 @@ body {
   background: rgba(91, 206, 250, 0.3);
   color: white;
 }
+
+/* Phone Mockup - Enhanced with layered depth */
+.phone-mockup {
+  filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.5));
+}
+
+.phone-mockup-enhanced {
+  position: relative;
+}
+
+.phone-mockup-enhanced::before {
+  content: '';
+  position: absolute;
+  inset: -20px;
+  background: linear-gradient(
+    135deg,
+    rgba(91, 206, 250, 0.15) 0%,
+    rgba(245, 169, 184, 0.1) 50%,
+    rgba(91, 206, 250, 0.05) 100%
+  );
+  border-radius: 70px;
+  filter: blur(40px);
+  z-index: -1;
+  opacity: 0.8;
+}
+
+.phone-shadow-stack {
+  position: relative;
+}
+
+/* Layered shadow effect */
+.phone-shadow-stack::before,
+.phone-shadow-stack::after {
+  content: '';
+  position: absolute;
+  border-radius: 50px;
+  pointer-events: none;
+}
+
+/* Bottom shadow layer - largest, most diffuse */
+.phone-shadow-stack::before {
+  inset: 10px -5px -30px -5px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.4) 100%
+  );
+  filter: blur(30px);
+  z-index: -2;
+}
+
+/* Mid shadow layer */
+.phone-shadow-stack::after {
+  inset: 5px -2px -15px -2px;
+  background: rgba(0, 0, 0, 0.3);
+  filter: blur(15px);
+  z-index: -1;
+}
+
+/* Glass reflection on phone screen */
+.phone-reflection {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 100%
+  );
+  border-radius: 40px 40px 0 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Subtle edge highlight */
+.phone-edge-glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: 51px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Floating animation for phone with tilt */
+@keyframes float-tilted {
+  0%, 100% {
+    transform: rotateY(-15deg) rotateX(5deg) rotateZ(2deg) translateY(0);
+  }
+  50% {
+    transform: rotateY(-15deg) rotateX(5deg) rotateZ(2deg) translateY(-10px);
+  }
+}
+
+.phone-tilted {
+  transform-style: preserve-3d;
+  transform: rotateY(-15deg) rotateX(5deg) rotateZ(2deg);
+  animation: float-tilted 6s ease-in-out infinite;
+}
+
+/* Floating animation for phone tilted right (opposite direction) */
+@keyframes float-tilted-right {
+  0%, 100% {
+    transform: rotateY(15deg) rotateX(5deg) rotateZ(-2deg) translateY(0);
+  }
+  50% {
+    transform: rotateY(15deg) rotateX(5deg) rotateZ(-2deg) translateY(-10px);
+  }
+}
+
+.phone-tilted-right {
+  transform-style: preserve-3d;
+  transform: rotateY(15deg) rotateX(5deg) rotateZ(-2deg);
+  animation: float-tilted-right 6s ease-in-out infinite;
+}

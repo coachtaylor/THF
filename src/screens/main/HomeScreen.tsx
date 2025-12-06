@@ -173,10 +173,11 @@ export default function HomeScreen() {
   }, [todayWorkout, plan, exerciseMap, profile, getWorkoutName]);
 
   const handleStartWorkout = () => {
-    if (todayWorkoutDetails) {
-      navigation.navigate('SessionPlayer', {
-        workout: todayWorkoutDetails,
-        planId: plan?.id
+    if (plan && todayWorkout?.dayNumber !== undefined) {
+      const workoutId = `${plan.id}_${todayWorkout.dayNumber}`;
+      navigation.navigate('WorkoutOverview', {
+        workoutId,
+        isToday: true
       });
     }
   };
@@ -293,7 +294,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Safe area spacer */}
-        <View style={{ height: insets.top + 8 }} />
+        <View style={{ height: insets.top + 4 }} />
 
         {/* 1. Welcome Section */}
         <WelcomeSection />
@@ -352,6 +353,17 @@ export default function HomeScreen() {
             exerciseMap={exerciseMap}
             userId={userId}
             planId={plan.id}
+            onWorkoutPress={(workoutData) => {
+              // workoutData is { workout: Workout, workoutName: string, day: Day }
+              const dayNumber = workoutData?.day?.dayNumber;
+              if (dayNumber === undefined) {
+                console.warn('⚠️ Cannot open workout: no day number found', workoutData);
+                return;
+              }
+              // Navigate to WorkoutOverview with workoutId format: planId_dayNumber
+              const workoutId = `${plan.id}_${dayNumber}`;
+              navigation.navigate('WorkoutOverview', { workoutId, isToday: false });
+            }}
           />
         )}
       </ScrollView>
@@ -368,33 +380,34 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   weekSection: {
     marginBottom: 0,
   },
   workoutSection: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   statsSection: {
     marginBottom: 4,
   },
   restDayCard: {
-    height: 180,
-    borderRadius: 28,
+    height: 150,
+    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.glass.borderPink,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(25, 25, 30, 0.7)',
     ...Platform.select({
       ios: {
-        shadowColor: colors.accent.secondary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.35,
         shadowRadius: 24,
       },
-      android: { elevation: 6 },
+      android: { elevation: 8 },
     }),
   },
   restDayGlow: {
@@ -406,22 +419,15 @@ const styles = StyleSheet.create({
   },
   restDayTitle: {
     fontFamily: 'Poppins',
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '300',
-    color: colors.accent.secondary,
+    color: colors.text.secondary,
     letterSpacing: 2,
-    marginBottom: 8,
-    ...Platform.select({
-      ios: {
-        textShadowColor: colors.accent.secondaryGlow,
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 12,
-      },
-    }),
+    marginBottom: 6,
   },
   restDaySubtitle: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '400',
     color: colors.text.disabled,
   },

@@ -2,6 +2,7 @@
 // FIXED: Properly parses equipment from Supabase
 
 import { Exercise } from '../types';
+import { Swap } from '../types/plan';
 
 /**
  * Parse equipment field from Supabase
@@ -56,6 +57,64 @@ function parseTextArray(field: any): string[] {
 }
 
 /**
+ * Parse swaps field from Supabase
+ * Handles: arrays of slugs/IDs, JSON strings, or Swap objects
+ */
+function parseSwaps(swapsField: any): Swap[] {
+  if (!swapsField) return [];
+
+  // Handle array of strings (exercise slugs) or Swap objects
+  if (Array.isArray(swapsField)) {
+    return swapsField
+      .filter(s => s != null)
+      .map(item => {
+        // If it's already a Swap object
+        if (typeof item === 'object' && item.exercise_id) {
+          return item as Swap;
+        }
+        // If it's a string (slug or ID)
+        if (typeof item === 'string' && item.trim()) {
+          return {
+            exercise_id: item.trim(),
+            rationale: 'Alternative exercise with similar muscle activation',
+          };
+        }
+        return null;
+      })
+      .filter((swap): swap is Swap => swap !== null);
+  }
+
+  // Handle JSON string
+  if (typeof swapsField === 'string') {
+    try {
+      const parsed = JSON.parse(swapsField);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter(item => item != null)
+          .map(item => {
+            if (typeof item === 'string' && item.trim()) {
+              return {
+                exercise_id: item.trim(),
+                rationale: 'Alternative exercise with similar muscle activation',
+              };
+            }
+            if (typeof item === 'object' && item.exercise_id) {
+              return item as Swap;
+            }
+            return null;
+          })
+          .filter((swap): swap is Swap => swap !== null);
+      }
+    } catch (e) {
+      // Not valid JSON, return empty
+      return [];
+    }
+  }
+
+  return [];
+}
+
+/**
  * Map a single exercise from Supabase to app format
  */
 export function mapSupabaseExercise(row: any): Exercise {
@@ -102,7 +161,7 @@ export function mapSupabaseExercise(row: any): Exercise {
     version: row.version || '1.0',
     flags_reviewed: row.flags_reviewed || false,
     reviewer: row.reviewer || undefined,
-    swaps: [],
+    swaps: parseSwaps(row.swaps),
     trans_notes: {
       binder: row.trans_notes?.binder || (row.binder_aware ? 'Safe for binding' : 'Use caution with binding'),
       pelvic_floor: row.trans_notes?.pelvic_floor || (row.pelvic_floor_safe ? 'Pelvic floor safe' : 'Use caution with pelvic floor'),

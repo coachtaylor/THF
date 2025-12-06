@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../theme/theme';
@@ -7,7 +7,7 @@ import OptionGrid from './OptionGrid';
 import DaySelector from './DaySelector';
 
 type HRTMethod = 'pills' | 'patches' | 'injections' | 'gel';
-type HRTFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+type HRTFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'twice_weekly';
 type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
 interface MedicationSectionProps {
@@ -19,6 +19,7 @@ interface MedicationSectionProps {
   onMethodChange: (method: HRTMethod) => void;
   onFrequencyChange: (frequency: HRTFrequency) => void;
   onToggleDay: (day: DayOfWeek) => void;
+  isEstrogen?: boolean;
 }
 
 const METHOD_OPTIONS = [
@@ -28,12 +29,57 @@ const METHOD_OPTIONS = [
   { value: 'gel', label: 'Gel/Cream', icon: 'flask' as const },
 ];
 
-const FREQUENCY_OPTIONS = [
+// Default frequency options (used for testosterone)
+const DEFAULT_FREQUENCY_OPTIONS = [
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'biweekly', label: 'Every 2 Weeks' },
   { value: 'monthly', label: 'Monthly' },
 ];
+
+// Get clinically accurate frequency options based on method and hormone type
+const getFrequencyOptionsForMethod = (method: HRTMethod, isEstrogen: boolean) => {
+  if (isEstrogen) {
+    // Estrogen-specific frequency options
+    switch (method) {
+      case 'pills':
+        return [{ value: 'daily', label: 'Daily' }];
+      case 'patches':
+        return [
+          { value: 'twice_weekly', label: '2x per week' },
+          { value: 'weekly', label: 'Weekly' },
+        ];
+      case 'gel':
+        return [{ value: 'daily', label: 'Daily' }];
+      case 'injections':
+        return [
+          { value: 'weekly', label: 'Weekly' },
+          { value: 'biweekly', label: 'Every 2 Weeks' },
+          { value: 'monthly', label: 'Monthly' },
+        ];
+      default:
+        return DEFAULT_FREQUENCY_OPTIONS;
+    }
+  }
+
+  // Testosterone-specific frequency options
+  switch (method) {
+    case 'pills':
+      return [{ value: 'daily', label: 'Daily' }];
+    case 'patches':
+      return [{ value: 'daily', label: 'Daily' }];
+    case 'gel':
+      return [{ value: 'daily', label: 'Daily' }];
+    case 'injections':
+      return [
+        { value: 'weekly', label: 'Weekly' },
+        { value: 'biweekly', label: 'Every 2 Weeks' },
+        { value: 'monthly', label: 'Monthly' },
+      ];
+    default:
+      return DEFAULT_FREQUENCY_OPTIONS;
+  }
+};
 
 export default function MedicationSection({
   title,
@@ -44,7 +90,19 @@ export default function MedicationSection({
   onMethodChange,
   onFrequencyChange,
   onToggleDay,
+  isEstrogen = false,
 }: MedicationSectionProps) {
+  // Get the valid frequency options for the current method
+  const frequencyOptions = getFrequencyOptionsForMethod(method, isEstrogen);
+
+  // Auto-select a valid frequency when method changes and current frequency is invalid
+  useEffect(() => {
+    const isCurrentValid = frequencyOptions.some(opt => opt.value === frequency);
+    if (!isCurrentValid && frequencyOptions.length > 0) {
+      onFrequencyChange(frequencyOptions[0].value as HRTFrequency);
+    }
+  }, [method, isEstrogen, frequency, frequencyOptions, onFrequencyChange]);
+
   return (
     <View style={[glassStyles.card, styles.container]}>
       {/* Header */}
@@ -68,7 +126,7 @@ export default function MedicationSection({
       <View style={styles.section}>
         <Text style={[textStyles.caption, styles.label]}>FREQUENCY</Text>
         <OptionGrid
-          options={FREQUENCY_OPTIONS}
+          options={frequencyOptions}
           selected={frequency}
           onSelect={(value) => onFrequencyChange(value as HRTFrequency)}
           columns={2}

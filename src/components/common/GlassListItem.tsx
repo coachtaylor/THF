@@ -7,6 +7,7 @@ import {
   Platform,
   ViewStyle,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 
@@ -167,6 +168,14 @@ export function GlassList({ children, style }: GlassListProps) {
 
   return (
     <View style={[styles.listContainer, style]}>
+      {/* Glass background */}
+      <LinearGradient
+        colors={['rgba(25, 25, 30, 0.7)', 'rgba(18, 18, 22, 0.8)']}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Glass highlight */}
+      <View style={styles.listGlassHighlight} />
+
       {React.Children.map(children, (child, index) => {
         if (React.isValidElement<GlassListItemProps>(child)) {
           return React.cloneElement(child, {
@@ -182,27 +191,35 @@ export function GlassList({ children, style }: GlassListProps) {
 
 const styles = StyleSheet.create({
   listContainer: {
-    backgroundColor: colors.glass.bg,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.glass.border,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
       },
-      android: { elevation: 4 },
+      android: { elevation: 6 },
     }),
+  },
+  listGlassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 16,
+    right: 16,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    zIndex: 1,
   },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.m,
     paddingHorizontal: spacing.l,
-    borderBottomColor: colors.border.default,
+    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
     minHeight: 52,
   },
   leftAccent: {
@@ -217,13 +234,13 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: colors.glass.bgLight,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.m,
   },
   leftIconDanger: {
-    backgroundColor: `${colors.error}15`,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
   },
   textContainer: {
     flex: 1,
