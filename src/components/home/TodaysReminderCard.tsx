@@ -3,15 +3,8 @@ import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/theme';
-import { useProfile } from '../../hooks/useProfile';
 
 export default function TodaysReminderCard() {
-  const { profile } = useProfile();
-
-  if (!profile?.binds_chest) {
-    return null;
-  }
-
   return (
     <View style={styles.container}>
       {/* Subtle glass background */}

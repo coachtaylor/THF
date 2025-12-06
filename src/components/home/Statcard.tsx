@@ -110,8 +110,8 @@ function CircularStat({ icon, value, label, progress = 0, accentColor }: Circula
         {/* Progress ring */}
         <ProgressRing
           progress={progress}
-          size={44}
-          strokeWidth={2}
+          size={56}
+          strokeWidth={2.5}
           color={accent.color}
         />
 
@@ -123,7 +123,7 @@ function CircularStat({ icon, value, label, progress = 0, accentColor }: Circula
           />
           <Ionicons
             name={icon}
-            size={15}
+            size={20}
             color={accent.color}
             style={[
               styles.icon,
@@ -174,21 +174,6 @@ export function StatsRow({
 
   return (
     <View style={styles.container}>
-      {/* Deep glass background */}
-      <LinearGradient
-        colors={['rgba(25, 25, 30, 0.9)', 'rgba(15, 15, 20, 0.95)']}
-        style={StyleSheet.absoluteFill}
-      />
-      {/* Subtle top highlight */}
-      <View style={styles.glassHighlight} />
-      {/* Subtle glow overlay */}
-      <LinearGradient
-        colors={['rgba(255, 255, 255, 0.04)', 'transparent']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.glassBackground}
-      />
-
       <CircularStat
         icon="flame"
         value={streak}
@@ -237,43 +222,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'flex-start',
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
     paddingHorizontal: 8,
-    borderRadius: 18,
-    backgroundColor: 'rgba(25, 25, 30, 0.7)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-      },
-      android: { elevation: 6 },
-    }),
-  },
-  glassBackground: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 18,
-  },
-  glassHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 16,
-    right: 16,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 1,
   },
   statItem: {
     alignItems: 'center',
     flex: 1,
   },
   circleContainer: {
-    width: 44,
-    height: 44,
+    width: 56,
+    height: 56,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
@@ -282,9 +241,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   innerCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -295,14 +254,14 @@ const styles = StyleSheet.create({
   },
   value: {
     fontFamily: 'Poppins',
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '600',
     letterSpacing: -0.3,
-    marginBottom: 1,
+    marginBottom: 2,
   },
   label: {
     fontFamily: 'Poppins',
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '500',
     color: colors.text.tertiary,
     letterSpacing: 0.3,

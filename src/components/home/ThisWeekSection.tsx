@@ -63,14 +63,6 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
 
   return (
     <View style={styles.container}>
-      {/* Glass background */}
-      <LinearGradient
-        colors={['rgba(25, 25, 30, 0.6)', 'rgba(20, 20, 25, 0.7)']}
-        style={StyleSheet.absoluteFill}
-      />
-      {/* Top highlight */}
-      <View style={styles.glassHighlight} />
-
       {/* Week strip */}
       <View style={styles.weekStrip}>
         {allDays.map((day, index) => (
@@ -112,18 +104,6 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
               </View>
             )}
 
-            {/* Indicator - only show barbell for today */}
-            <View style={styles.indicatorContainer}>
-              {day.isToday && day.hasWorkout && !day.completed && (
-                <View style={styles.workoutIndicatorToday}>
-                  <Ionicons
-                    name="barbell"
-                    size={8}
-                    color={colors.text.primary}
-                  />
-                </View>
-              )}
-            </View>
           </View>
         ))}
       </View>
@@ -135,30 +115,7 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 16,
-    backgroundColor: 'rgba(25, 25, 30, 0.5)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    overflow: 'hidden',
     marginBottom: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.25,
-        shadowRadius: 16,
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  glassHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: 12,
-    right: 12,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: 1,
   },
   weekStrip: {
     flexDirection: 'row',
@@ -236,21 +193,5 @@ const styles = StyleSheet.create({
   },
   dayNumberPast: {
     color: colors.text.disabled,
-  },
-  indicatorContainer: {
-    height: 12,
-    marginTop: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  workoutIndicatorToday: {
-    width: 14,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
