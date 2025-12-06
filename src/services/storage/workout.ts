@@ -157,23 +157,32 @@ export async function getTodaysWorkout(userId: string = 'default'): Promise<Toda
  */
 export async function getWorkout(workoutId: string, userId: string = 'default'): Promise<WorkoutDetailData | null> {
   try {
+    console.log('🔍 getWorkout called with:', { workoutId, userId });
     const plan = await getPlan(userId);
     if (!plan) {
+      console.log('❌ No plan found for user:', userId);
       return null;
     }
+    console.log('✅ Plan found:', plan.id, 'with', plan.days.length, 'days');
 
     // Parse workout ID (format: planId_dayNumber)
     const parts = workoutId.split('_');
     if (parts.length < 2) {
+      console.log('❌ Invalid workoutId format:', workoutId);
       return null;
     }
 
     const dayNumber = parseInt(parts[parts.length - 1]);
+    console.log('🔍 Looking for dayNumber:', dayNumber);
+    console.log('📅 Available days:', plan.days.map((d: Day) => d.dayNumber));
+
     const day = plan.days.find((d: Day) => d.dayNumber === dayNumber);
-    
+
     if (!day) {
+      console.log('❌ Day not found for dayNumber:', dayNumber);
       return null;
     }
+    console.log('✅ Day found, checking variants...');
 
     // Get workout (prefer 30 min, fallback to others)
     let workout: Workout | null = null;

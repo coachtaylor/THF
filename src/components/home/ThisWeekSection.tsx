@@ -63,6 +63,14 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
 
   return (
     <View style={styles.container}>
+      {/* Glass background */}
+      <LinearGradient
+        colors={['rgba(25, 25, 30, 0.6)', 'rgba(20, 20, 25, 0.7)']}
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Top highlight */}
+      <View style={styles.glassHighlight} />
+
       {/* Week strip */}
       <View style={styles.weekStrip}>
         {allDays.map((day, index) => (
@@ -77,7 +85,7 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
             {day.isToday ? (
               <View style={styles.dayCircleToday}>
                 <LinearGradient
-                  colors={[colors.accent.primary, colors.accent.primaryDark]}
+                  colors={['rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.08)']}
                   style={styles.dayCircleTodayGradient}
                 >
                   <Text style={styles.dayNumberToday}>
@@ -92,7 +100,7 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
                 day.completed && styles.dayCircleCompleted,
               ]}>
                 {day.completed ? (
-                  <Ionicons name="checkmark" size={18} color={colors.accent.success} />
+                  <Ionicons name="checkmark" size={14} color={colors.accent.success} />
                 ) : (
                   <Text style={[
                     styles.dayNumber,
@@ -110,8 +118,8 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
                 <View style={styles.workoutIndicatorToday}>
                   <Ionicons
                     name="barbell"
-                    size={10}
-                    color={colors.accent.primary}
+                    size={8}
+                    color={colors.text.primary}
                   />
                 </View>
               )}
@@ -125,7 +133,32 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    backgroundColor: 'rgba(25, 25, 30, 0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    overflow: 'hidden',
+    marginBottom: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 12,
+    right: 12,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 1,
   },
   weekStrip: {
     flexDirection: 'row',
@@ -137,77 +170,86 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     fontFamily: 'Poppins',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
     color: colors.text.disabled,
     letterSpacing: 0.5,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   dayLabelToday: {
-    color: colors.accent.primary,
+    color: colors.text.primary,
     fontWeight: '600',
   },
   dayCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   dayCircleToday: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     ...Platform.select({
       ios: {
-        shadowColor: colors.accent.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.5,
-        shadowRadius: 12,
+        shadowColor: '#fff',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
       },
-      android: { elevation: 6 },
+      android: { elevation: 4 },
     }),
   },
   dayCircleTodayGradient: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
   dayCircleWorkout: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   dayCircleCompleted: {
-    backgroundColor: colors.accent.successMuted,
+    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+    borderColor: 'rgba(52, 199, 89, 0.3)',
   },
   dayNumber: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
-    color: colors.text.secondary,
+    color: colors.text.tertiary,
   },
   dayNumberToday: {
     fontFamily: 'Poppins',
-    fontSize: 14,
-    color: colors.text.inverse,
+    fontSize: 12,
+    color: colors.text.primary,
     fontWeight: '700',
   },
   dayNumberPast: {
     color: colors.text.disabled,
   },
   indicatorContainer: {
-    height: 16,
+    height: 12,
     marginTop: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
   workoutIndicatorToday: {
-    width: 18,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: colors.accent.primaryMuted,
+    width: 14,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
   },

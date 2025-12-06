@@ -12,7 +12,7 @@ import { glassStyles, textStyles } from '../../../theme/components';
 import { updateProfile } from '../../../services/storage/profile';
 
 type HRTMethod = 'pills' | 'patches' | 'injections' | 'gel';
-type HRTFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+type HRTFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'twice_weekly';
 type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 type GenderIdentity = 'mtf' | 'ftm' | 'nonbinary' | 'questioning';
 
@@ -179,6 +179,7 @@ export default function HRTStatus({ navigation, route }: HRTStatusProps) {
                 onMethodChange={setEstrogenMethod}
                 onFrequencyChange={setEstrogenFrequency}
                 onToggleDay={(day) => toggleDay(estrogenDays, setEstrogenDays, day)}
+                isEstrogen={true}
               />
             )}
 
@@ -193,6 +194,7 @@ export default function HRTStatus({ navigation, route }: HRTStatusProps) {
                 onMethodChange={setTestosteroneMethod}
                 onFrequencyChange={setTestosteroneFrequency}
                 onToggleDay={(day) => toggleDay(testosteroneDays, setTestosteroneDays, day)}
+                isEstrogen={false}
               />
             )}
 

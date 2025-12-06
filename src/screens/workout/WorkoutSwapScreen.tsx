@@ -17,6 +17,7 @@ import { usePlan } from '../../hooks/usePlan';
 import { useProfile } from '../../hooks/useProfile';
 import { getWorkoutFromPlan } from '../../services/planGenerator';
 import { recordWorkoutUsage } from '../../services/storage/savedWorkouts';
+import { savePlan } from '../../services/storage/plan';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard } from '../../components/common';
 
@@ -276,10 +277,53 @@ export default function WorkoutSwapScreen() {
 
     await recordWorkoutUsage(savedWorkout.id);
 
+    // Find the selected day info from upcomingDays
+    const selectedDayInfo = upcomingDays.find(
+      d => d.date.toDateString() === selectedDay.toDateString()
+    );
+
+    // Actually modify the plan if in replace mode
+    if (selectedDayInfo && plan && swapMode === 'replace') {
+      try {
+        // Deep clone the plan to avoid mutation issues
+        const updatedPlan = JSON.parse(JSON.stringify(plan));
+
+        // Find the day index in the plan
+        const dayIndex = updatedPlan.days.findIndex(
+          (d: any) => d.dayNumber === selectedDayInfo.day.dayNumber
+        );
+
+        if (dayIndex !== -1) {
+          const duration = (profile?.session_duration && [30, 45, 60, 90].includes(profile.session_duration))
+            ? profile.session_duration as 30 | 45 | 60 | 90
+            : 45;
+
+          // Replace the workout for this duration variant
+          updatedPlan.days[dayIndex].variants[duration] = {
+            duration,
+            exercises: savedWorkout.workout_data.exercises,
+            totalMinutes: savedWorkout.duration,
+          };
+
+          // Convert date strings back to Date objects (they get stringified in JSON.parse/stringify)
+          updatedPlan.startDate = new Date(updatedPlan.startDate);
+          updatedPlan.days = updatedPlan.days.map((day: any) => ({
+            ...day,
+            date: new Date(day.date),
+          }));
+
+          await savePlan(updatedPlan, userId);
+          console.log('✅ Plan updated with swapped workout');
+        }
+      } catch (error) {
+        console.error('❌ Failed to update plan:', error);
+      }
+    }
+
     Alert.alert(
       'Workout Ready',
       swapMode === 'replace'
-        ? `"${savedWorkout.workout_name}" will replace the workout on ${selectedDay.toLocaleDateString()}`
+        ? `"${savedWorkout.workout_name}" has been swapped into ${selectedDay.toLocaleDateString()}`
         : `"${savedWorkout.workout_name}" will be added as an extra workout`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -288,7 +332,7 @@ export default function WorkoutSwapScreen() {
           onPress: () => {
             navigation.navigate('SessionPlayer', {
               workout: savedWorkout.workout_data,
-              planId: null,
+              planId: plan?.id || null,
             });
           },
         },

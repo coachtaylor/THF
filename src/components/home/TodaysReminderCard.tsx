@@ -34,7 +34,7 @@ export default function TodaysReminderCard() {
         ]}
         hitSlop={12}
       >
-        <Ionicons name="close" size={14} color={colors.text.disabled} />
+        <Ionicons name="close" size={12} color={colors.text.disabled} />
       </Pressable>
     </View>
   );
@@ -44,19 +44,19 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     backgroundColor: colors.glass.bg,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.glass.border,
-    marginBottom: 12,
+    marginBottom: 8,
     overflow: 'hidden',
   },
   indicator: {
     width: 3,
-    height: 20,
+    height: 16,
     borderRadius: 1.5,
     backgroundColor: colors.accent.secondary,
     ...Platform.select({
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: 'Poppins',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '400',
     color: colors.text.secondary,
     letterSpacing: -0.1,

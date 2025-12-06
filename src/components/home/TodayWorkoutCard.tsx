@@ -68,25 +68,25 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
 
   return (
     <View style={styles.container}>
-      {/* Base gradient background - liquid glass effect */}
+      {/* Base gradient background - deep glass effect */}
       <LinearGradient
-        colors={['#141418', '#0A0A0C']}
+        colors={['rgba(25, 25, 30, 0.95)', 'rgba(15, 15, 20, 0.98)']}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Trans pride gradient glow - blue in corner */}
+      {/* Warm orange/amber glow - like the reference image */}
       <LinearGradient
-        colors={['rgba(91, 206, 250, 0.2)', 'rgba(91, 206, 250, 0.08)', 'transparent']}
+        colors={['rgba(255, 140, 50, 0.15)', 'rgba(255, 100, 50, 0.08)', 'transparent']}
         start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
+        end={{ x: 0.2, y: 0.8 }}
         style={styles.glowOverlay}
       />
 
-      {/* Pink accent glow - opposite corner */}
+      {/* Secondary warm glow - bottom */}
       <LinearGradient
-        colors={['rgba(245, 169, 184, 0.12)', 'transparent']}
-        start={{ x: 0, y: 1 }}
-        end={{ x: 1, y: 0 }}
+        colors={['rgba(255, 120, 50, 0.1)', 'transparent']}
+        start={{ x: 0.3, y: 1 }}
+        end={{ x: 0.7, y: 0.3 }}
         style={styles.glowOverlayPink}
       />
 
@@ -128,7 +128,7 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
               >
                 <Ionicons
                   name={isSaved ? 'bookmark' : 'bookmark-outline'}
-                  size={20}
+                  size={18}
                   color={isSaved ? colors.accent.primary : colors.text.tertiary}
                 />
               </Pressable>
@@ -175,18 +175,18 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
           style={({ pressed }) => [styles.startButton, pressed && styles.startButtonPressed]}
           onPress={onStartWorkout}
         >
-          {/* Base gradient */}
+          {/* Frosted glass background */}
           <LinearGradient
-            colors={[colors.accent.primary, colors.accent.primaryDark]}
+            colors={['rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.05)']}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            end={{ x: 0, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
           {/* Glass overlay - top highlight */}
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.25)', 'rgba(255, 255, 255, 0.05)', 'transparent']}
+            colors={['rgba(255, 255, 255, 0.2)', 'transparent']}
             start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
+            end={{ x: 0.5, y: 0.5 }}
             style={styles.buttonGlassOverlay}
           />
           {/* Shimmer effect */}
@@ -197,7 +197,7 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
             ]}
           >
             <LinearGradient
-              colors={['transparent', 'rgba(255, 255, 255, 0.15)', 'transparent']}
+              colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={StyleSheet.absoluteFill}
@@ -205,7 +205,7 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
           </Animated.View>
           {/* Content */}
           <View style={styles.startButtonContent}>
-            <Ionicons name="play" size={18} color={colors.text.inverse} style={styles.playIcon} />
+            <Ionicons name="play" size={15} color={colors.text.primary} style={styles.playIcon} />
             <Text style={styles.startButtonText}>Start Workout</Text>
           </View>
         </Pressable>
@@ -220,30 +220,33 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 1,
-    borderColor: colors.glass.borderCyan,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(30, 30, 35, 0.7)',
     ...Platform.select({
       ios: {
-        shadowColor: colors.accent.primary,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 16 },
+        shadowOpacity: 0.4,
         shadowRadius: 32,
       },
-      android: { elevation: 8 },
+      android: { elevation: 12 },
     }),
   },
   glowOverlay: {
     position: 'absolute',
-    top: 0,
-    right: 0,
-    width: '70%',
-    height: '70%',
+    top: -20,
+    right: -20,
+    width: '80%',
+    height: '60%',
+    borderRadius: 100,
   },
   glowOverlayPink: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '50%',
+    bottom: -30,
+    left: -30,
+    width: '60%',
     height: '50%',
+    borderRadius: 100,
   },
   shimmerOverlay: {
     position: 'absolute',
@@ -256,29 +259,30 @@ const styles = StyleSheet.create({
   glassHighlight: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    left: 20,
+    right: 20,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 1,
   },
   content: {
-    padding: 20,
+    padding: 16,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   dayBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: colors.accent.primary,
     ...Platform.select({
       ios: {
@@ -291,7 +295,7 @@ const styles = StyleSheet.create({
   },
   dayLabel: {
     fontFamily: 'Poppins',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
     color: colors.text.primary,
     letterSpacing: 2,
@@ -299,11 +303,11 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   meta: {
     fontFamily: 'Poppins',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '400',
     color: colors.text.tertiary,
   },
@@ -315,21 +319,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Poppins',
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '300',
     color: colors.text.primary,
     letterSpacing: 0.5,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   tagsRow: {
     flexDirection: 'row',
-    gap: 16,
-    marginBottom: 4,
+    gap: 12,
+    marginBottom: 2,
   },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
   tagDot: {
     width: 4,
@@ -339,70 +343,74 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontFamily: 'Poppins',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '400',
     color: colors.text.secondary,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    marginVertical: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginVertical: 12,
+    marginHorizontal: 4,
   },
   exerciseList: {
-    gap: 10,
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 14,
   },
   exerciseRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
   },
   exerciseNumber: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
     borderRadius: 6,
-    backgroundColor: 'rgba(91, 206, 250, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   exerciseNumberText: {
     fontFamily: 'Poppins',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
-    color: colors.accent.primary,
+    color: colors.text.secondary,
   },
   exerciseName: {
     flex: 1,
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '400',
     color: colors.text.secondary,
   },
   exerciseSets: {
     fontFamily: 'Poppins',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '500',
     color: colors.text.tertiary,
   },
   moreText: {
     fontFamily: 'Poppins',
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '400',
     color: colors.text.tertiary,
-    marginLeft: 36,
+    marginLeft: 30,
     marginTop: 2,
   },
   startButton: {
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     ...Platform.select({
       ios: {
-        shadowColor: colors.accent.primary,
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
       },
       android: { elevation: 6 },
     }),
@@ -429,17 +437,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    gap: 8,
+    paddingVertical: 12,
+    gap: 6,
   },
   playIcon: {
     marginLeft: 2,
   },
   startButtonText: {
     fontFamily: 'Poppins',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
-    color: colors.text.inverse,
+    color: colors.text.primary,
     letterSpacing: 0.5,
   },
 });

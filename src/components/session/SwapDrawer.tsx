@@ -1,11 +1,12 @@
 // src/components/session/SwapDrawer.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal } from 'react-native';
-import { Button, Portal, Card, Divider } from 'react-native-paper';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Platform, Pressable } from 'react-native';
+import { Portal } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Swap } from '../../types/plan';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { Exercise } from '../../types';
-import { palette, spacing, typography } from '../../theme';
+import { palette, spacing, colors } from '../../theme';
 import { fetchAllExercises } from '../../services/exerciseService';
 
 interface SwapDrawerProps {
@@ -18,7 +19,7 @@ interface SwapDrawerProps {
 
 interface SwapOption {
   exercise_id: string;
-  exerciseId?: string; // For backward compatibility
+  exerciseId?: string;
   rationale: string;
   exerciseName?: string;
   exerciseDetails?: Exercise;
@@ -33,6 +34,7 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
 }) => {
   const [swaps, setSwaps] = useState<SwapOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showFAQInfo, setShowFAQInfo] = useState(false);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -49,21 +51,19 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
 
     setLoading(true);
     try {
-      // Fetch all exercises to get swap details
       const allExercises = await fetchAllExercises();
-      
+
       const swapOptions: SwapOption[] = exercise.swaps
-        .filter(swap => swap.exercise_id != null || swap.exerciseId != null) // Filter out undefined
+        .filter(swap => swap.exercise_id != null || swap.exerciseId != null)
         .map((swap): SwapOption | null => {
           const exerciseId = swap.exercise_id || swap.exerciseId;
           if (!exerciseId) {
             return null;
           }
-          // Find the swap exercise details
           const swapExercise = allExercises.find(
             (ex) => ex.id === String(exerciseId) || ex.id === exerciseId.toString()
           );
-          
+
           return {
             exercise_id: String(exerciseId),
             rationale: swap.rationale,
@@ -76,7 +76,6 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
       setSwaps(swapOptions);
     } catch (error) {
       console.error('Failed to load swap details:', error);
-      // Fallback to swaps without details
       setSwaps(
         exercise.swaps
           .filter(swap => swap.exercise_id != null || swap.exerciseId != null)
@@ -99,18 +98,17 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
   const handleViewFAQ = () => {
     if (onViewFAQ) {
       onViewFAQ();
+      onDismiss();
     } else {
-      // Default behavior - could navigate to FAQ screen
-      console.log('Navigate to FAQ page (v2.2)');
+      setShowFAQInfo(prev => !prev);
     }
-    onDismiss();
   };
 
   return (
     <Portal>
       <Modal
         visible={visible}
-        onDismiss={onDismiss}
+        onRequestClose={onDismiss}
         transparent
         animationType="slide"
       >
@@ -126,6 +124,23 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
               { paddingBottom: Math.max(insets.bottom, spacing.m) },
             ]}
           >
+            {/* Glass background */}
+            <LinearGradient
+              colors={['rgba(30, 30, 35, 0.98)', 'rgba(20, 20, 25, 0.99)']}
+              style={StyleSheet.absoluteFill}
+            />
+
+            {/* Cyan glow overlay */}
+            <LinearGradient
+              colors={['rgba(91, 206, 250, 0.12)', 'rgba(91, 206, 250, 0.04)', 'transparent']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 0.4 }}
+              style={styles.glowOverlay}
+            />
+
+            {/* Glass highlight at top */}
+            <View style={styles.glassHighlight} />
+
             {/* Handle bar */}
             <View style={styles.handleBar} />
 
@@ -137,7 +152,32 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
               </Text>
             </View>
 
-            <Divider style={styles.divider} />
+            {/* Divider */}
+            <View style={styles.divider} />
+
+            {/* FAQ Info Section */}
+            {showFAQInfo && (
+              <View style={styles.faqInfo}>
+                <LinearGradient
+                  colors={['rgba(91, 206, 250, 0.15)', 'rgba(91, 206, 250, 0.05)']}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Text style={styles.faqTitle}>About Exercise Swaps</Text>
+                <Text style={styles.faqText}>
+                  Swaps are alternative exercises that target similar muscle groups with comparable movement patterns.
+                </Text>
+                <Text style={styles.faqText}>
+                  Use swaps when:{'\n'}
+                  • Equipment isn't available{'\n'}
+                  • You need a modification for comfort{'\n'}
+                  • You want variety in your routine{'\n'}
+                  • An exercise causes discomfort
+                </Text>
+                <Text style={styles.faqText}>
+                  Your swap choice will be tracked and saved with your session data.
+                </Text>
+              </View>
+            )}
 
             {/* Swap Options */}
             <ScrollView
@@ -157,12 +197,24 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
                 </View>
               ) : (
                 swaps.map((swap, index) => (
-                  <Card
+                  <Pressable
                     key={swap.exercise_id || index}
-                    style={styles.swapCard}
+                    style={({ pressed }) => [
+                      styles.swapCard,
+                      pressed && styles.swapCardPressed,
+                    ]}
                     onPress={() => handleSwapSelect(swap.exercise_id)}
                   >
-                    <Card.Content>
+                    {/* Card glass background */}
+                    <LinearGradient
+                      colors={['rgba(25, 25, 30, 0.8)', 'rgba(18, 18, 22, 0.9)']}
+                      style={StyleSheet.absoluteFill}
+                    />
+
+                    {/* Card glass highlight */}
+                    <View style={styles.cardGlassHighlight} />
+
+                    <View style={styles.swapCardContent}>
                       <View style={styles.swapHeader}>
                         <Text style={styles.swapExerciseName}>
                           {swap.exerciseName || 'Unknown Exercise'}
@@ -170,12 +222,7 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
                         {swap.exerciseDetails && (
                           <View style={styles.exerciseBadges}>
                             {swap.exerciseDetails.difficulty && (
-                              <View
-                                style={[
-                                  styles.badge,
-                                  styles.difficultyBadge,
-                                ]}
-                              >
+                              <View style={[styles.badge, styles.difficultyBadge]}>
                                 <Text style={styles.badgeText}>
                                   {swap.exerciseDetails.difficulty}
                                 </Text>
@@ -195,31 +242,40 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
 
                       <Text style={styles.swapRationale}>{swap.rationale}</Text>
 
-                      <Button
-                        mode="contained"
-                        onPress={() => handleSwapSelect(swap.exercise_id)}
-                        style={styles.selectButton}
-                        buttonColor={palette.tealPrimary}
-                        textColor={palette.deepBlack}
-                      >
-                        Select This Swap
-                      </Button>
-                    </Card.Content>
-                  </Card>
+                      {/* Glass button */}
+                      <View style={styles.selectButton}>
+                        <LinearGradient
+                          colors={[colors.accent.primary, colors.accent.primaryDark]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={StyleSheet.absoluteFill}
+                        />
+                        <Text style={styles.selectButtonText}>Select This Swap</Text>
+                      </View>
+                    </View>
+                  </Pressable>
                 ))
               )}
             </ScrollView>
 
             {/* Footer with FAQ link */}
             <View style={styles.footer}>
-              <Button
-                mode="text"
+              <Pressable
+                style={({ pressed }) => [
+                  styles.faqButton,
+                  pressed && styles.faqButtonPressed,
+                ]}
                 onPress={handleViewFAQ}
-                textColor={palette.tealPrimary}
-                style={styles.faqButton}
               >
-                Learn more about swaps (FAQ)
-              </Button>
+                <Text style={styles.faqButtonText}>
+                  {showFAQInfo ? 'Hide info' : 'Learn more about swaps'}
+                </Text>
+                <Ionicons
+                  name={showFAQInfo ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={colors.accent.primary}
+                />
+              </Pressable>
             </View>
           </View>
         </View>
@@ -235,19 +291,47 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   drawer: {
-    backgroundColor: palette.darkCard,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',
     paddingTop: spacing.m,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 24,
+      },
+      android: { elevation: 16 },
+    }),
+  },
+  glowOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 1,
   },
   handleBar: {
     width: 40,
     height: 4,
-    backgroundColor: palette.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: spacing.m,
@@ -257,17 +341,23 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.m,
   },
   title: {
-    ...typography.h3,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   subtitle: {
-    ...typography.bodyMedium,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.secondary,
   },
   divider: {
-    backgroundColor: palette.border,
-    marginVertical: spacing.m,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    marginHorizontal: spacing.l,
+    marginBottom: spacing.m,
   },
   content: {
     flex: 1,
@@ -282,23 +372,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    ...typography.bodyMedium,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.tertiary,
   },
   emptyContainer: {
     padding: spacing.xl,
     alignItems: 'center',
   },
   emptyText: {
-    ...typography.bodyMedium,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.tertiary,
     textAlign: 'center',
   },
   swapCard: {
-    backgroundColor: palette.darkerCard,
+    borderRadius: 16,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: palette.border,
-    marginBottom: spacing.m,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  swapCardPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  cardGlassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 12,
+    right: 12,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  swapCardContent: {
+    padding: spacing.l,
   },
   swapHeader: {
     flexDirection: 'row',
@@ -307,8 +425,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.s,
   },
   swapExerciseName: {
-    ...typography.h4,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text.primary,
     flex: 1,
     marginRight: spacing.s,
   },
@@ -323,35 +443,84 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   difficultyBadge: {
-    backgroundColor: palette.tealPrimary + '30',
+    backgroundColor: 'rgba(91, 206, 250, 0.2)',
   },
   equipmentBadge: {
-    backgroundColor: palette.border,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   badgeText: {
-    ...typography.caption,
-    color: palette.white,
+    fontFamily: 'Poppins',
     fontSize: 11,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
   swapRationale: {
-    ...typography.body,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.secondary,
     marginBottom: spacing.m,
     lineHeight: 20,
   },
   selectButton: {
-    marginTop: spacing.s,
+    borderRadius: 12,
+    overflow: 'hidden',
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.inverse,
   },
   footer: {
     paddingHorizontal: spacing.l,
     paddingTop: spacing.m,
     borderTopWidth: 1,
-    borderTopColor: palette.border,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   faqButton: {
-    marginVertical: spacing.s,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.m,
+  },
+  faqButtonPressed: {
+    opacity: 0.7,
+  },
+  faqButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.accent.primary,
+  },
+  faqInfo: {
+    marginHorizontal: spacing.l,
+    marginBottom: spacing.m,
+    padding: spacing.m,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(91, 206, 250, 0.2)',
+  },
+  faqTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.accent.primary,
+    marginBottom: spacing.s,
+  },
+  faqText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    marginBottom: spacing.s,
+    lineHeight: 20,
   },
 });
 
 export default SwapDrawer;
-

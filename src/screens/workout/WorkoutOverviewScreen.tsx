@@ -17,7 +17,7 @@ import { SelectedSnippets, UserSnippetContext } from '../../services/education/t
 import { WorkoutExplanation } from '../../types/explanations';
 
 type RootStackParamList = {
-  WorkoutOverview: { workoutId: string };
+  WorkoutOverview: { workoutId: string; isToday?: boolean };
   SessionPlayer: {
     workout: any;
     planId?: string;
@@ -26,13 +26,14 @@ type RootStackParamList = {
     safetyCheckpoints?: any[];
   };
   ExerciseDetail: { exerciseId: string };
+  Saved: { selectMode?: boolean; targetWorkoutId?: string };
   [key: string]: any;
 };
 
 type WorkoutOverviewScreenRouteProp = {
   key: string;
   name: 'WorkoutOverview';
-  params: { workoutId: string };
+  params: { workoutId: string; isToday?: boolean };
 };
 
 type WorkoutOverviewScreenNavigationProp = StackNavigationProp<RootStackParamList, 'WorkoutOverview'>;
@@ -51,7 +52,7 @@ export default function WorkoutOverviewScreen() {
   const navigation = useNavigation<WorkoutOverviewScreenNavigationProp>();
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
-  const { workoutId } = route.params;
+  const { workoutId, isToday = false } = route.params;
 
   const [workout, setWorkout] = useState<WorkoutDetailData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,7 +70,7 @@ export default function WorkoutOverviewScreen() {
         Animated.timing(shimmerAnim, { toValue: 0, duration: 3000, useNativeDriver: true }),
       ])
     ).start();
-  }, [workoutId]);
+  }, [workoutId, profile?.user_id, profile?.id]);
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -79,7 +80,9 @@ export default function WorkoutOverviewScreen() {
   const loadWorkout = async () => {
     try {
       const userId = profile?.user_id || profile?.id || 'default';
+      console.log('📋 Loading workout with ID:', workoutId, 'userId:', userId);
       const data = await getWorkout(workoutId, userId);
+      console.log('📋 Workout data received:', data ? 'Found' : 'NULL');
       setWorkout(data);
 
       // Load education snippets based on user profile
@@ -255,19 +258,55 @@ export default function WorkoutOverviewScreen() {
     }
   };
 
-  if (loading || !workout) {
+  const headerTitle = isToday ? "Today's Workout" : "Upcoming Workout";
+
+  const handleSwapWorkout = () => {
+    navigation.navigate('Saved', {
+      selectMode: true,
+      targetWorkoutId: workoutId
+    });
+  };
+
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Today's Workout</Text>
+          <Text style={styles.headerTitle}>{headerTitle}</Text>
           <View style={styles.spacer} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.accent.primary} />
           <Text style={styles.loadingText}>Loading workout...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!workout) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>{headerTitle}</Text>
+          <View style={styles.spacer} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <Ionicons name="alert-circle-outline" size={48} color={colors.text.tertiary} />
+          <Text style={styles.loadingText}>Workout not found</Text>
+          <Text style={[styles.loadingText, { fontSize: 12, marginTop: 8 }]}>
+            ID: {workoutId}
+          </Text>
+          <Pressable
+            style={{ marginTop: 16, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: colors.accent.primary, borderRadius: 8 }}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={{ color: colors.text.inverse, fontWeight: '600' }}>Go Back</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -282,8 +321,10 @@ export default function WorkoutOverviewScreen() {
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Today's Workout</Text>
-        <View style={styles.spacer} />
+        <Text style={styles.headerTitle}>{headerTitle}</Text>
+        <Pressable onPress={handleSwapWorkout} hitSlop={8}>
+          <Ionicons name="swap-horizontal" size={24} color={colors.accent.primary} />
+        </Pressable>
       </View>
 
       <ScrollView
