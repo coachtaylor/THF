@@ -8,15 +8,6 @@ import Image from "next/image";
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background Image with Opacity */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('/hero.png')",
-          opacity: 0.35,
-        }}
-      />
-
       {/* Gradient Overlays */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
       <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
