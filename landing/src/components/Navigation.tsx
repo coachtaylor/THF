@@ -78,7 +78,7 @@ export function Navigation() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="md:hidden mt-4 pb-4 border-t border-white/[0.08] pt-4"
+            className="md:hidden absolute left-0 right-0 top-full bg-background/95 backdrop-blur-xl border-b border-white/[0.08] px-6 py-4"
           >
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
