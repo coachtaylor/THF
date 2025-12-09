@@ -11,6 +11,8 @@ import { deleteProfile } from '../../services/storage/profile';
 import { signalLogout } from '../../services/events/onboardingEvents';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard, GlassButton, GlassListItem, GlassList, GlassModal } from '../../components/common';
+import { BetaSurveyModal, SurveyResponse } from '../../components/feedback';
+import { saveSurveyResponse } from '../../services/feedback';
 
 type MainTabParamList = {
   Home: undefined;
@@ -21,8 +23,14 @@ type MainTabParamList = {
 
 type SettingsScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Settings'>;
 
+type RootStackParamList = {
+  BinderSafetyGuide: undefined;
+  PostOpMovementGuide: undefined;
+  Copilot: undefined;
+};
+
 export default function SettingsScreen() {
-  const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const navigation = useNavigation<SettingsScreenNavigationProp & { navigate: (screen: keyof RootStackParamList) => void }>();
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
   const { logout } = useAuth();
@@ -30,6 +38,7 @@ export default function SettingsScreen() {
   // Modal states
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showSurveyModal, setShowSurveyModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
 
@@ -126,6 +135,24 @@ export default function SettingsScreen() {
       setShowResetModal(false);
       Alert.alert('Error', 'Failed to reset onboarding. Please try again.');
     }
+  };
+
+  const handleOpenCopilot = () => {
+    navigation.navigate('Copilot');
+  };
+
+  const handleGiveFeedback = () => {
+    setShowSurveyModal(true);
+  };
+
+  const handleSurveySubmit = async (response: SurveyResponse) => {
+    await saveSurveyResponse(response, 'settings');
+    setShowSurveyModal(false);
+    Alert.alert('Thank you!', 'Your feedback helps us make TransFitness better for everyone.');
+  };
+
+  const handleSurveySkip = () => {
+    setShowSurveyModal(false);
   };
 
   return (
@@ -359,6 +386,55 @@ export default function SettingsScreen() {
           </GlassCard>
         </View>
 
+        {/* Ask Copilot */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.secondaryMuted }]}>
+                <Ionicons name="chatbubbles" size={16} color={colors.accent.secondary} />
+              </View>
+              <Text style={styles.sectionTitle}>Ask Copilot</Text>
+            </View>
+          </View>
+          <GlassList>
+            <GlassListItem
+              title="Chat with Copilot"
+              subtitle="Questions about binding, HRT, workouts, and more"
+              leftIcon="chatbubble-ellipses-outline"
+              onPress={handleOpenCopilot}
+              showChevron
+            />
+          </GlassList>
+        </View>
+
+        {/* Education & Guides */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+                <Ionicons name="book" size={16} color={colors.accent.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>Education & Guides</Text>
+            </View>
+          </View>
+          <GlassList>
+            <GlassListItem
+              title="Binder Safety Basics"
+              subtitle="Safe exercise while binding"
+              leftIcon="shield-checkmark-outline"
+              onPress={() => navigation.navigate('BinderSafetyGuide')}
+              showChevron
+            />
+            <GlassListItem
+              title="Post-Op Movement Guide"
+              subtitle="Returning to training after surgery"
+              leftIcon="trending-up-outline"
+              onPress={() => navigation.navigate('PostOpMovementGuide')}
+              showChevron
+            />
+          </GlassList>
+        </View>
+
         {/* App Settings */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -470,8 +546,9 @@ export default function SettingsScreen() {
             />
             <GlassListItem
               title="Give feedback"
-              leftIcon="chatbubble-outline"
-              onPress={() => console.log('Feedback')}
+              subtitle="Help us improve TransFitness"
+              leftIcon="star-outline"
+              onPress={handleGiveFeedback}
               showChevron
             />
           </GlassList>
@@ -535,6 +612,13 @@ export default function SettingsScreen() {
             variant: 'secondary',
           },
         ]}
+      />
+
+      {/* Beta Survey Modal */}
+      <BetaSurveyModal
+        visible={showSurveyModal}
+        onSubmit={handleSurveySubmit}
+        onSkip={handleSurveySkip}
       />
     </View>
   );

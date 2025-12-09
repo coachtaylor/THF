@@ -160,8 +160,13 @@ export default function PlanView({ navigation }: PlanViewProps) {
   // Format workout title
   const formatWorkoutTitle = (workout: Workout | null): string => {
     if (!workout) return 'No Workout';
-    
-    // Try to infer from exercises or use generic title
+
+    // First, check if workout has a name set from generation
+    if (workout.name) {
+      return workout.name;
+    }
+
+    // Fallback: Try to infer from exercises or use generic title
     const hasUpperPush = workout.exercises.some(ex => {
       const exercise = exerciseMap[ex.exerciseId];
       return exercise?.tags?.some(tag => tag.includes('upper_push') || tag.includes('push'));
@@ -185,7 +190,7 @@ export default function PlanView({ navigation }: PlanViewProps) {
     if (hasLower && hasCore) return 'Lower Body & Core';
     if (hasLower) return 'Lower Body';
     if (hasCore) return 'Core';
-    
+
     return 'Full Body';
   };
 

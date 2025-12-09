@@ -115,6 +115,12 @@ export default function HomeScreen() {
   }, [plan]);
 
   const getWorkoutName = useCallback((workout: any): string => {
+    // First, check if workout has a name set from generation
+    if (workout?.name) {
+      return workout.name;
+    }
+
+    // Fallback: derive name from exercise muscles
     if (!workout?.exercises || workout.exercises.length === 0) return 'Workout';
     const exerciseIds = workout.exercises.map((e: any) => e.exerciseId);
     const exercises = exerciseIds
@@ -125,21 +131,37 @@ export default function HomeScreen() {
     const allMuscles: string[] = [];
     exercises.forEach((ex: Exercise) => {
       if (ex.target_muscles) {
-        allMuscles.push(...ex.target_muscles.split(',').map(m => m.trim()));
+        allMuscles.push(...ex.target_muscles.split(',').map(m => m.trim().toLowerCase()));
       }
     });
     const uniqueMuscles = [...new Set(allMuscles)];
 
-    if (uniqueMuscles.some(m => m.includes('Chest')) && uniqueMuscles.some(m => m.includes('Triceps'))) {
-      return 'Chest & Arms';
-    } else if (uniqueMuscles.some(m => m.includes('Back')) && uniqueMuscles.some(m => m.includes('Biceps'))) {
-      return 'Back & Biceps';
-    } else if (uniqueMuscles.some(m => m.includes('Quadriceps') || m.includes('Glutes'))) {
-      return 'Lower Body';
-    } else if (uniqueMuscles.some(m => m.includes('Chest'))) {
+    // Check for muscle groups (case-insensitive)
+    const hasChest = uniqueMuscles.some(m => m.includes('chest') || m.includes('pec'));
+    const hasBack = uniqueMuscles.some(m => m.includes('back') || m.includes('lat'));
+    const hasTriceps = uniqueMuscles.some(m => m.includes('tricep'));
+    const hasBiceps = uniqueMuscles.some(m => m.includes('bicep'));
+    const hasLegs = uniqueMuscles.some(m =>
+      m.includes('quad') || m.includes('glute') || m.includes('hamstring') || m.includes('leg')
+    );
+    const hasShoulders = uniqueMuscles.some(m => m.includes('shoulder') || m.includes('delt'));
+    const hasCore = uniqueMuscles.some(m => m.includes('core') || m.includes('ab'));
+
+    // Determine workout type based on muscle combinations
+    if (hasChest && hasTriceps && hasShoulders) {
       return 'Push Day';
-    } else if (uniqueMuscles.some(m => m.includes('Back'))) {
+    } else if (hasBack && hasBiceps) {
       return 'Pull Day';
+    } else if (hasLegs && !hasChest && !hasBack) {
+      return 'Lower Body';
+    } else if (hasChest && hasTriceps) {
+      return 'Chest & Arms';
+    } else if ((hasChest || hasBack || hasShoulders) && !hasLegs) {
+      return 'Upper Body';
+    } else if (hasLegs && (hasChest || hasBack)) {
+      return 'Full Body';
+    } else if (hasCore && uniqueMuscles.length <= 3) {
+      return 'Core Focus';
     }
     return 'Full Body';
   }, [exerciseMap]);
