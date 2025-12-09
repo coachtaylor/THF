@@ -15,6 +15,7 @@ import EducationSnippets from '../../components/education/EducationSnippets';
 import { selectSnippetsForUser, initEducationSnippets } from '../../services/education/snippets';
 import { SelectedSnippets, UserSnippetContext } from '../../services/education/types';
 import { WorkoutExplanation } from '../../types/explanations';
+import { trackWorkoutStarted, trackWhyThisWorkoutOpened } from '../../services/analytics';
 
 type RootStackParamList = {
   WorkoutOverview: { workoutId: string; isToday?: boolean };
@@ -234,6 +235,13 @@ export default function WorkoutOverviewScreen() {
     if (!workout) return;
 
     try {
+      // Track workout started
+      await trackWorkoutStarted(
+        workout.id,
+        workout.workout_name,
+        workout.estimated_duration_minutes
+      );
+
       const workoutForSession = {
         duration: workout.estimated_duration_minutes as 5 | 15 | 30 | 45,
         exercises: workout.main_workout.map((ex, index) => ({
@@ -256,6 +264,11 @@ export default function WorkoutOverviewScreen() {
     } catch (error) {
       console.error('Failed to start workout:', error);
     }
+  };
+
+  const handleOpenWhyThisWorkout = () => {
+    trackWhyThisWorkoutOpened(workout?.id);
+    setWhySheetVisible(true);
   };
 
   const headerTitle = isToday ? "Today's Workout" : "Upcoming Workout";
@@ -372,7 +385,7 @@ export default function WorkoutOverviewScreen() {
           {/* Why this workout? Button */}
           <Pressable
             style={styles.whyButton}
-            onPress={() => setWhySheetVisible(true)}
+            onPress={handleOpenWhyThisWorkout}
           >
             <Ionicons name="bulb-outline" size={16} color={colors.accent.primary} />
             <Text style={styles.whyButtonText}>Why this workout?</Text>
