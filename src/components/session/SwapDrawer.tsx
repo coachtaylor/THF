@@ -15,6 +15,7 @@ interface SwapDrawerProps {
   exercise: Exercise;
   onSwapSelect: (swapExerciseId: string) => void;
   onViewFAQ?: () => void;
+  onBrowseLibrary?: () => void;
 }
 
 interface SwapOption {
@@ -31,6 +32,7 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
   exercise,
   onSwapSelect,
   onViewFAQ,
+  onBrowseLibrary,
 }) => {
   const [swaps, setSwaps] = useState<SwapOption[]>([]);
   const [loading, setLoading] = useState(false);
@@ -185,17 +187,55 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
               contentContainerStyle={styles.contentContainer}
               showsVerticalScrollIndicator={false}
             >
+              {/* Browse All Exercises Button */}
+              {onBrowseLibrary && (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.browseLibraryCard,
+                    pressed && styles.swapCardPressed,
+                  ]}
+                  onPress={() => {
+                    onDismiss();
+                    onBrowseLibrary();
+                  }}
+                >
+                  <LinearGradient
+                    colors={['rgba(245, 169, 184, 0.15)', 'rgba(91, 206, 250, 0.1)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.browseLibraryContent}>
+                    <View style={styles.browseLibraryIcon}>
+                      <Ionicons name="library-outline" size={24} color={colors.accent.primary} />
+                    </View>
+                    <View style={styles.browseLibraryText}>
+                      <Text style={styles.browseLibraryTitle}>Browse All Exercises</Text>
+                      <Text style={styles.browseLibrarySubtitle}>
+                        Filter by muscle, equipment, safety flags & more
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+                  </View>
+                </Pressable>
+              )}
+
+              {/* Recommended Swaps Section */}
+              {swaps.length > 0 && (
+                <Text style={styles.sectionTitle}>Recommended Alternatives</Text>
+              )}
+
               {loading ? (
                 <View style={styles.loadingContainer}>
                   <Text style={styles.loadingText}>Loading swap options...</Text>
                 </View>
-              ) : swaps.length === 0 ? (
+              ) : swaps.length === 0 && !onBrowseLibrary ? (
                 <View style={styles.emptyContainer}>
                   <Text style={styles.emptyText}>
                     No swap options available for this exercise.
                   </Text>
                 </View>
-              ) : (
+              ) : swaps.length === 0 ? null : (
                 swaps.map((swap, index) => (
                   <Pressable
                     key={swap.exercise_id || index}
@@ -387,6 +427,53 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: colors.text.tertiary,
     textAlign: 'center',
+  },
+  browseLibraryCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.accent.primaryMuted,
+    marginBottom: spacing.s,
+  },
+  browseLibraryContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.m,
+    gap: spacing.m,
+  },
+  browseLibraryIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.accent.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  browseLibraryText: {
+    flex: 1,
+  },
+  browseLibraryTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  browseLibrarySubtitle: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    marginTop: spacing.xxs,
+  },
+  sectionTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: spacing.s,
+    marginBottom: spacing.xs,
   },
   swapCard: {
     borderRadius: 16,

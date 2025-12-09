@@ -164,7 +164,10 @@ export async function selectSnippetsForUser(context: UserSnippetContext): Promis
     result.binder = selectBestMatch(snippets, 'binder', context, binderStatus);
     result.hrt = selectBestMatch(snippets, 'hrt', context, binderStatus);
     result.post_op = selectBestMatch(snippets, 'post_op', context, binderStatus, activePostOpSurgery);
-    result.recovery_general = selectBestMatch(snippets, 'recovery_general', context, binderStatus);
+    // Skip recovery_general snippets on workout days - they're only relevant for rest days
+    if (!context.isWorkoutDay) {
+      result.recovery_general = selectBestMatch(snippets, 'recovery_general', context, binderStatus);
+    }
   });
 
   return result;

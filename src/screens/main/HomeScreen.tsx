@@ -30,7 +30,7 @@ type MainTabParamList = {
 
 type MainStackParamList = {
   MainTabs: undefined;
-  WorkoutOverview: { workoutId: string };
+  WorkoutOverview: { workoutId: string; isToday?: boolean };
   SessionPlayer: { workout: any; planId?: string };
   Profile: undefined;
 };

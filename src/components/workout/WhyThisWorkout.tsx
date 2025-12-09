@@ -194,6 +194,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.tertiary,
     borderTopLeftRadius: borderRadius.xl,
     borderTopRightRadius: borderRadius.xl,
+    minHeight: 350,
     maxHeight: '80%',
     overflow: 'hidden',
     ...Platform.select({

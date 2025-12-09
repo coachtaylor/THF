@@ -47,6 +47,8 @@ export interface UserSnippetContext {
   }>;
   // Environment
   training_environment?: TrainingEnvironment;
+  // Workout day flag - when true, recovery_general snippets are skipped
+  isWorkoutDay?: boolean;
 }
 
 // Snippet selection result
