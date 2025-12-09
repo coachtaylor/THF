@@ -21,6 +21,7 @@ export interface WorkoutLog {
   average_rpe: number;
   workout_rating?: number;
   performance_notes?: string;
+  body_checkin?: 'connected' | 'neutral' | 'disconnected' | 'skip';
   sets: SetLogEntry[];
 }
 
@@ -59,7 +60,8 @@ export async function initWorkoutLogStorage(): Promise<void> {
           total_volume REAL DEFAULT 0,
           average_rpe REAL DEFAULT 0,
           workout_rating INTEGER,
-          performance_notes TEXT
+          performance_notes TEXT,
+          body_checkin TEXT
         );
       `);
 
@@ -86,14 +88,24 @@ export async function initWorkoutLogStorage(): Promise<void> {
       `);
 
       workoutLogDb.execSync(`
-        CREATE INDEX IF NOT EXISTS idx_workout_logs_user_id 
+        CREATE INDEX IF NOT EXISTS idx_workout_logs_user_id
         ON workout_logs(user_id);
       `);
 
       workoutLogDb.execSync(`
-        CREATE INDEX IF NOT EXISTS idx_workout_logs_workout_date 
+        CREATE INDEX IF NOT EXISTS idx_workout_logs_workout_date
         ON workout_logs(workout_date);
       `);
+
+      // Migration: Add body_checkin column if it doesn't exist
+      // This handles existing databases that don't have the column yet
+      try {
+        workoutLogDb.execSync(`
+          ALTER TABLE workout_logs ADD COLUMN body_checkin TEXT;
+        `);
+      } catch {
+        // Column already exists, ignore error
+      }
     });
     console.log('✓ Workout log storage initialized');
   } catch (error) {
@@ -180,6 +192,7 @@ export async function completeWorkoutLog(
     exercises_completed: number;
     workout_rating?: number;
     performance_notes?: string;
+    body_checkin?: 'connected' | 'neutral' | 'disconnected' | 'skip';
   }
 ): Promise<void> {
   try {
@@ -204,8 +217,8 @@ export async function completeWorkoutLog(
 
       // Update workout log
       const updateStmt = workoutLogDb.prepareSync(
-        `UPDATE workout_logs 
-         SET 
+        `UPDATE workout_logs
+         SET
            status = 'completed',
            completed_at = ?,
            duration_minutes = ?,
@@ -213,7 +226,8 @@ export async function completeWorkoutLog(
            total_volume = ?,
            average_rpe = ?,
            workout_rating = ?,
-           performance_notes = ?
+           performance_notes = ?,
+           body_checkin = ?
          WHERE id = ?`
       );
       updateStmt.executeSync([
@@ -224,6 +238,7 @@ export async function completeWorkoutLog(
         avgRpe,
         data.workout_rating || null,
         data.performance_notes || null,
+        data.body_checkin || null,
         workoutLogId,
       ]);
       updateStmt.finalizeSync();
@@ -293,6 +308,7 @@ export async function getWorkoutLog(workoutLogId: string): Promise<WorkoutLog | 
       average_rpe: log.average_rpe,
       workout_rating: log.workout_rating,
       performance_notes: log.performance_notes,
+      body_checkin: log.body_checkin,
       sets: log.sets || [],
     };
   } catch (error) {
@@ -336,6 +352,7 @@ export async function getWorkoutHistory(
       average_rpe: log.average_rpe,
       workout_rating: log.workout_rating,
       performance_notes: log.performance_notes,
+      body_checkin: log.body_checkin,
       sets: [], // Load separately if needed for performance
     }));
   } catch (error) {
@@ -486,6 +503,7 @@ export async function getWeekWorkoutLogs(
       average_rpe: log.average_rpe,
       workout_rating: log.workout_rating,
       performance_notes: log.performance_notes,
+      body_checkin: log.body_checkin,
       sets: [], // Load separately if needed for performance
     }));
   } catch (error) {
@@ -537,6 +555,7 @@ export async function getWorkoutLogByDate(
       average_rpe: log.average_rpe,
       workout_rating: log.workout_rating,
       performance_notes: log.performance_notes,
+      body_checkin: log.body_checkin,
       sets: [],
     };
   } catch (error) {
