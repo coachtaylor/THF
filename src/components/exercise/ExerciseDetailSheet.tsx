@@ -18,12 +18,16 @@ type Props = {
   exerciseId: number | null;
   profile: Profile;
   onClose: () => void;
+  onAddToWorkout?: (exerciseId: number) => void;
+  onSwapExercise?: (exerciseId: number) => void;
 };
 
-export function ExerciseDetailSheet({ exerciseId, profile, onClose }: Props) {
+export function ExerciseDetailSheet({ exerciseId, profile, onClose, onAddToWorkout, onSwapExercise }: Props) {
   const { exercise, loading } = useExerciseDetail(exerciseId, profile);
 
   const visible = exerciseId !== null;
+
+  console.log('📋 ExerciseDetailSheet render:', { exerciseId, visible, loading, hasExercise: !!exercise, exerciseName: exercise?.name });
 
   if (!visible) {
     return null;
@@ -56,6 +60,7 @@ export function ExerciseDetailSheet({ exerciseId, profile, onClose }: Props) {
               <Text style={styles.loadingText}>Loading exercise details...</Text>
             </View>
           ) : exercise ? (
+            <>
             <ScrollView
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
@@ -212,6 +217,29 @@ export function ExerciseDetailSheet({ exerciseId, profile, onClose }: Props) {
                 </View>
               )}
             </ScrollView>
+
+            {/* Action Buttons - Fixed at bottom */}
+            {(onAddToWorkout || onSwapExercise) && (
+              <View style={styles.actionsContainer}>
+                {onSwapExercise && (
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => { onSwapExercise(exerciseId!); onClose(); }}
+                  >
+                    <Text style={styles.actionButtonText}>Swap Exercise</Text>
+                  </TouchableOpacity>
+                )}
+                {onAddToWorkout && (
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => { onAddToWorkout(exerciseId!); onClose(); }}
+                  >
+                    <Text style={styles.actionButtonText}>Add to Workout</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </>
           ) : (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>Failed to load exercise details</Text>
@@ -242,6 +270,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.s,
     paddingHorizontal: spacing.l,
     paddingBottom: spacing.xxl,
+    minHeight: '50%',
     maxHeight: '90%',
     borderTopWidth: 1,
     borderTopColor: palette.border,
@@ -273,6 +302,7 @@ const styles = StyleSheet.create({
     margin: 0,
   },
   loadingContainer: {
+    flex: 1,
     paddingVertical: spacing.xxl,
     alignItems: 'center',
     justifyContent: 'center',
@@ -418,6 +448,26 @@ const styles = StyleSheet.create({
   errorButtonText: {
     ...typography.button,
     color: palette.deepBlack,
+  },
+  actionsContainer: {
+    marginTop: spacing.l,
+    paddingTop: spacing.l,
+    borderTopWidth: 1,
+    borderTopColor: palette.border,
+    gap: spacing.m,
+  },
+  actionButton: {
+    backgroundColor: palette.tealPrimary,
+    paddingVertical: spacing.m,
+    paddingHorizontal: spacing.l,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButtonText: {
+    ...typography.button,
+    color: palette.deepBlack,
+    fontWeight: '600',
   },
 });
 

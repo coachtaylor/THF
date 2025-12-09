@@ -306,6 +306,7 @@ export async function filterByConstraints(constraints: string[]): Promise<Exerci
 // ============================================================================
 
 // Type for exercise data from Supabase public.exercises table (detailed version)
+// Only includes columns that actually exist in the database
 interface DatabaseExerciseDetail {
   id: number;
   slug: string;
@@ -318,14 +319,9 @@ interface DatabaseExerciseDetail {
   pelvic_floor_safe: boolean;
   target_muscles: string | null;
   secondary_muscles: string | null;
-  media_thumb?: string | null; // Optional - column may not exist in database
+  media_thumb?: string | null;
   cue_primary: string | null;
-  cues: string[] | null;
   breathing: string | null;
-  coaching_points: string[] | null;
-  common_errors: string[] | null;
-  progressions: string[] | null;
-  regressions: string[] | null;
 }
 
 // Type for trans tips from Supabase exercise_trans_tips table
@@ -413,7 +409,10 @@ export async function getExerciseDetail(
   }
 
   try {
+    console.log(`📋 Fetching exercise detail for ID: ${exerciseId}`);
+
     // Fetch exercise from public.exercises by ID
+    // Only select columns that exist in the database
     const { data: exerciseData, error: exerciseError } = await supabase
       .from('exercises')
       .select(`
@@ -428,21 +427,19 @@ export async function getExerciseDetail(
         pelvic_floor_safe,
         target_muscles,
         secondary_muscles,
+        media_thumb,
         cue_primary,
-        cues,
-        breathing,
-        coaching_points,
-        common_errors,
-        progressions,
-        regressions
+        breathing
       `)
       .eq('id', exerciseId)
       .single();
 
     if (exerciseError) {
-      console.error(`❌ Error fetching exercise ${exerciseId}:`, exerciseError);
+      console.error(`❌ Error fetching exercise ${exerciseId}:`, JSON.stringify(exerciseError));
       return null;
     }
+
+    console.log(`✅ Exercise data fetched:`, exerciseData?.name);
 
     if (!exerciseData) {
       console.warn(`⚠️ Exercise ${exerciseId} not found`);
@@ -495,7 +492,7 @@ export async function getExerciseDetail(
 
     // Map database exercise to ExerciseDetail
     const dbExercise = exerciseData as unknown as DatabaseExerciseDetail;
-    
+
     const exerciseDetail: ExerciseDetail = {
       id: dbExercise.id,
       slug: dbExercise.slug,
@@ -510,12 +507,12 @@ export async function getExerciseDetail(
       secondaryMuscles: dbExercise.secondary_muscles,
       mediaThumb: dbExercise.media_thumb,
       cuePrimary: dbExercise.cue_primary,
-      cues: dbExercise.cues || [],
+      cues: [], // Column doesn't exist in database yet
       breathing: dbExercise.breathing,
-      coachingPoints: dbExercise.coaching_points || [],
-      commonErrors: dbExercise.common_errors || [],
-      progressions: dbExercise.progressions || [],
-      regressions: dbExercise.regressions || [],
+      coachingPoints: [], // Column doesn't exist in database yet
+      commonErrors: [], // Column doesn't exist in database yet
+      progressions: [], // Column doesn't exist in database yet
+      regressions: [], // Column doesn't exist in database yet
       transTips: filteredTips,
     };
 

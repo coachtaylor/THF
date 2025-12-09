@@ -142,6 +142,7 @@ export default function WorkoutOverviewScreen() {
       binding_today: userProfile.binding_today,
       surgeries,
       training_environment: userProfile.training_environment,
+      isWorkoutDay: true, // This screen shows a workout, so skip recovery_general snippets
     };
   };
 
@@ -274,9 +275,8 @@ export default function WorkoutOverviewScreen() {
   const headerTitle = isToday ? "Today's Workout" : "Upcoming Workout";
 
   const handleSwapWorkout = () => {
-    navigation.navigate('Saved', {
-      selectMode: true,
-      targetWorkoutId: workoutId
+    navigation.navigate('ExerciseLibrary', {
+      mode: 'browse',
     });
   };
 
@@ -347,8 +347,8 @@ export default function WorkoutOverviewScreen() {
       >
         {/* Hero Section */}
         <GlassCard variant="hero" shimmer style={styles.heroCard}>
-          <Text style={styles.workoutName}>{workout.workout_name}</Text>
-          <Text style={styles.dateText}>{formatDate()}</Text>
+          <Text style={styles.workoutName}>{headerTitle}</Text>
+          <Text style={styles.dateText}>{workout.scheduled_date ? new Date(workout.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : formatDate()}</Text>
 
           {/* Stats Row */}
           <View style={styles.statsRow}>

@@ -64,6 +64,7 @@ interface SessionPlayerProps extends OnboardingScreenProps<'SessionPlayer'> {
       warmUp?: WarmUpData;
       coolDown?: CoolDownData;
       safetyCheckpoints?: SafetyCheckpoint[];
+      selectedSwapExerciseId?: string; // From ExerciseLibraryScreen
     };
   };
 }
@@ -100,7 +101,7 @@ const formatTime = (seconds: number): string => {
 };
 
 export default function SessionPlayer({ navigation, route }: SessionPlayerProps) {
-  const { workout, planId = 'default', warmUp, coolDown, safetyCheckpoints = [] } = route.params;
+  const { workout, planId = 'default', warmUp, coolDown, safetyCheckpoints = [], selectedSwapExerciseId } = route.params;
   const { profile } = useProfile();
   const insets = useSafeAreaInsets();
 
@@ -140,6 +141,15 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     console.log('🚀 SessionPlayer mounted, loading exercises...');
     loadExercises();
   }, []);
+
+  // Handle swap selection from ExerciseLibraryScreen
+  useEffect(() => {
+    if (selectedSwapExerciseId && exercises.length > 0) {
+      handleSwapSelect(selectedSwapExerciseId);
+      // Clear the param to prevent re-triggering
+      navigation.setParams({ selectedSwapExerciseId: undefined });
+    }
+  }, [selectedSwapExerciseId, exercises.length]);
 
   // Debug phase changes
   useEffect(() => {
@@ -1057,6 +1067,18 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           onDismiss={() => setShowSwapDrawer(false)}
           exercise={currentExercise}
           onSwapSelect={handleSwapSelect}
+          onBrowseLibrary={() => {
+            navigation.dispatch(
+              CommonActions.navigate({
+                name: 'ExerciseLibrary',
+                params: {
+                  mode: 'swap',
+                  currentExerciseId: currentExercise?.id,
+                  returnRoute: 'SessionPlayer',
+                },
+              })
+            );
+          }}
         />
 
         {/* Skip Exercise Confirmation Modal */}
@@ -1263,15 +1285,13 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
         {/* Action Buttons */}
         <View style={styles.actions}>
-          {currentExercise.swaps && currentExercise.swaps.length > 0 && (
-            <Button
-              mode="outlined"
-              onPress={() => setShowSwapDrawer(true)}
-              style={styles.actionButton}
-            >
-              Swap Exercise
-            </Button>
-          )}
+          <Button
+            mode="outlined"
+            onPress={() => setShowSwapDrawer(true)}
+            style={styles.actionButton}
+          >
+            Swap Exercise
+          </Button>
           <PainFlagButton
             exercise={currentExercise}
             exerciseInstance={currentExerciseInstance}
@@ -1280,14 +1300,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           />
         </View>
       </ScrollView>
-
-      {/* Swap Drawer */}
-      <SwapDrawer
-        visible={showSwapDrawer}
-        onDismiss={() => setShowSwapDrawer(false)}
-        exercise={currentExercise}
-        onSwapSelect={handleSwapSelect}
-      />
 
       {/* Skip Exercise Confirmation Modal */}
       <Portal>
