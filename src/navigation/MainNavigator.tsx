@@ -16,6 +16,10 @@ import SessionPlayer from '../screens/SessionPlayer';
 import ActiveWorkoutScreen from '../screens/workout/ActiveWorkoutScreen';
 import WorkoutSummaryScreen from '../screens/workout/WorkoutSummaryScreen';
 import WorkoutSwapScreen from '../screens/workout/WorkoutSwapScreen';
+import { BinderSafetyGuide, PostOpMovementGuide } from '../screens/guides';
+import { CopilotScreen } from '../screens/copilot';
+import { ExerciseLibraryScreen } from '../screens/exercise';
+import RestDayOverviewScreen from '../screens/workout/RestDayOverviewScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -145,6 +149,26 @@ export default function MainNavigator() {
       <Stack.Screen
         name="WorkoutSwap"
         component={WorkoutSwapScreen}
+      />
+      <Stack.Screen
+        name="BinderSafetyGuide"
+        component={BinderSafetyGuide}
+      />
+      <Stack.Screen
+        name="PostOpMovementGuide"
+        component={PostOpMovementGuide}
+      />
+      <Stack.Screen
+        name="Copilot"
+        component={CopilotScreen}
+      />
+      <Stack.Screen
+        name="ExerciseLibrary"
+        component={ExerciseLibraryScreen}
+      />
+      <Stack.Screen
+        name="RestDayOverview"
+        component={RestDayOverviewScreen}
       />
     </Stack.Navigator>
   );

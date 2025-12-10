@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { getWorkout, WorkoutDetailData } from '../../services/storage/workout';
+import { getWorkout, WorkoutDetailData, removeExerciseFromWorkout } from '../../services/storage/workout';
 import { useProfile } from '../../hooks/useProfile';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard, GlassButton, ProgressRing } from '../../components/common';
@@ -15,6 +15,7 @@ import EducationSnippets from '../../components/education/EducationSnippets';
 import { selectSnippetsForUser, initEducationSnippets } from '../../services/education/snippets';
 import { SelectedSnippets, UserSnippetContext } from '../../services/education/types';
 import { WorkoutExplanation } from '../../types/explanations';
+import { trackWorkoutStarted, trackWhyThisWorkoutOpened } from '../../services/analytics';
 
 type RootStackParamList = {
   WorkoutOverview: { workoutId: string; isToday?: boolean };
@@ -71,6 +72,17 @@ export default function WorkoutOverviewScreen() {
       ])
     ).start();
   }, [workoutId, profile?.user_id, profile?.id]);
+
+  // Reload workout when screen comes into focus (e.g., after adding exercise)
+  useFocusEffect(
+    useCallback(() => {
+      // Only reload if we already have data (skip initial load)
+      if (workout) {
+        console.log('📋 Screen focused, reloading workout...');
+        loadWorkout();
+      }
+    }, [workout?.id, profile?.user_id, profile?.id])
+  );
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -141,6 +153,7 @@ export default function WorkoutOverviewScreen() {
       binding_today: userProfile.binding_today,
       surgeries,
       training_environment: userProfile.training_environment,
+      isWorkoutDay: true, // This screen shows a workout, so skip recovery_general snippets
     };
   };
 
@@ -234,6 +247,13 @@ export default function WorkoutOverviewScreen() {
     if (!workout) return;
 
     try {
+      // Track workout started
+      await trackWorkoutStarted(
+        workout.id,
+        workout.workout_name,
+        workout.estimated_duration_minutes
+      );
+
       const workoutForSession = {
         duration: workout.estimated_duration_minutes as 5 | 15 | 30 | 45,
         exercises: workout.main_workout.map((ex, index) => ({
@@ -258,12 +278,32 @@ export default function WorkoutOverviewScreen() {
     }
   };
 
+  const handleOpenWhyThisWorkout = () => {
+    trackWhyThisWorkoutOpened(workout?.id);
+    setWhySheetVisible(true);
+  };
+
   const headerTitle = isToday ? "Today's Workout" : "Upcoming Workout";
 
+  const handleRemoveExercise = async (exerciseId: string) => {
+    const userId = profile?.user_id || profile?.id || 'default';
+    console.log('🗑️ Removing exercise:', exerciseId);
+
+    const success = await removeExerciseFromWorkout(workoutId, exerciseId, userId);
+    if (success) {
+      // Reload workout to reflect changes
+      loadWorkout();
+    }
+  };
+
   const handleSwapWorkout = () => {
-    navigation.navigate('Saved', {
-      selectMode: true,
-      targetWorkoutId: workoutId
+    // Get exercise IDs already in the workout
+    const workoutExerciseIds = workout?.main_workout.map(ex => ex.exercise_id) || [];
+
+    navigation.navigate('ExerciseLibrary', {
+      mode: 'browse',
+      workoutId: workoutId,
+      workoutExerciseIds: workoutExerciseIds,
     });
   };
 
@@ -334,8 +374,8 @@ export default function WorkoutOverviewScreen() {
       >
         {/* Hero Section */}
         <GlassCard variant="hero" shimmer style={styles.heroCard}>
-          <Text style={styles.workoutName}>{workout.workout_name}</Text>
-          <Text style={styles.dateText}>{formatDate()}</Text>
+          <Text style={styles.workoutName}>{headerTitle}</Text>
+          <Text style={styles.dateText}>{workout.scheduled_date ? new Date(workout.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : formatDate()}</Text>
 
           {/* Stats Row */}
           <View style={styles.statsRow}>
@@ -372,7 +412,7 @@ export default function WorkoutOverviewScreen() {
           {/* Why this workout? Button */}
           <Pressable
             style={styles.whyButton}
-            onPress={() => setWhySheetVisible(true)}
+            onPress={handleOpenWhyThisWorkout}
           >
             <Ionicons name="bulb-outline" size={16} color={colors.accent.primary} />
             <Text style={styles.whyButtonText}>Why this workout?</Text>
@@ -431,11 +471,8 @@ export default function WorkoutOverviewScreen() {
               style={styles.exerciseCard}
             >
               <View style={styles.exerciseRow}>
-                <View style={styles.exerciseThumbnail}>
-                  <Ionicons name="barbell-outline" size={24} color={colors.text.tertiary} />
-                  <View style={styles.numberBadge}>
-                    <Text style={styles.numberBadgeText}>{index + 1}</Text>
-                  </View>
+                <View style={styles.exerciseNumber}>
+                  <Text style={styles.exerciseNumberText}>{index + 1}</Text>
                 </View>
 
                 <View style={styles.exerciseInfo}>
@@ -461,7 +498,13 @@ export default function WorkoutOverviewScreen() {
                   </View>
                 </View>
 
-                <Ionicons name="chevron-forward" size={18} color={colors.text.tertiary} />
+                <Pressable
+                  style={styles.removeButton}
+                  onPress={() => handleRemoveExercise(ex.exercise_id)}
+                  hitSlop={12}
+                >
+                  <Ionicons name="close-circle" size={22} color={colors.text.tertiary} />
+                </Pressable>
               </View>
             </GlassCard>
           ))}
@@ -741,40 +784,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.m,
   },
-  exerciseThumbnail: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    backgroundColor: colors.glass.bgLight,
+  exerciseNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.accent.primaryMuted,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
   },
-  numberBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.accent.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.accent.primary,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.4,
-        shadowRadius: 4,
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  numberBadgeText: {
+  exerciseNumberText: {
     fontFamily: 'Poppins',
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: '700',
-    color: colors.text.inverse,
+    color: colors.accent.primary,
   },
   exerciseInfo: {
     flex: 1,
@@ -831,6 +853,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '500',
     color: colors.accent.primary,
+  },
+  removeButton: {
+    padding: spacing.xs,
   },
   checkpointCard: {
     borderColor: `${colors.warning}40`,

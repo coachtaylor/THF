@@ -13,6 +13,12 @@ import { getPlan } from "../../../services/storage/plan";
 import { getExerciseLibrary } from "../../../data/exercises";
 import { signalOnboardingComplete } from "../../../services/events/onboardingEvents";
 import { Platform } from "react-native";
+import { BetaSurveyModal, SurveyResponse } from "../../../components/feedback";
+import {
+  shouldShowOnboardingSurvey,
+  saveSurveyResponse,
+  trackSurveySkipped,
+} from "../../../services/feedback";
 
 type ProgramSetupNavigationProp = StackNavigationProp<OnboardingStackParamList>;
 
@@ -34,12 +40,46 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [exerciseMap, setExerciseMap] = useState<Record<string, Exercise>>({});
   const [error, setError] = useState<string | null>(null);
+  const [showSurvey, setShowSurvey] = useState(false);
+  const [surveyChecked, setSurveyChecked] = useState(false);
 
   useEffect(() => {
     if (profile) {
       loadProgram();
     }
   }, [profile]);
+
+  // Check if we should show onboarding survey after program loads
+  useEffect(() => {
+    const checkSurvey = async () => {
+      if (surveyChecked || loading || !plan) return;
+      setSurveyChecked(true);
+
+      try {
+        const result = await shouldShowOnboardingSurvey();
+        if (result.shouldShow) {
+          // Small delay to let them see their program first
+          setTimeout(() => {
+            setShowSurvey(true);
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('Error checking survey trigger:', error);
+      }
+    };
+
+    checkSurvey();
+  }, [surveyChecked, loading, plan]);
+
+  const handleSurveySubmit = async (response: SurveyResponse) => {
+    await saveSurveyResponse(response);
+    setShowSurvey(false);
+  };
+
+  const handleSurveyClose = async () => {
+    await trackSurveySkipped('onboarding');
+    setShowSurvey(false);
+  };
 
   const loadProgram = async () => {
     if (!profile) return;
@@ -459,6 +499,14 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
           <Ionicons name="arrow-forward" size={20} color={colors.text.primary} />
         </TouchableOpacity>
       </View>
+
+      {/* Beta Survey Modal */}
+      <BetaSurveyModal
+        visible={showSurvey}
+        onClose={handleSurveyClose}
+        onSubmit={handleSurveySubmit}
+        triggerPoint="onboarding"
+      />
     </ScrollView>
   );
 }

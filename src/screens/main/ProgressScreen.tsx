@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -7,6 +7,8 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard, ProgressRing } from '../../components/common';
+import { useProfile } from '../../hooks/useProfile';
+import { getCurrentStreak, getWeeklyStats, type WeeklyStats } from '../../services/storage/stats';
 
 type MainTabParamList = {
   Home: undefined;
@@ -44,6 +46,53 @@ function FeatureCard({ icon, title, description, accentColor }: FeatureCardProps
 export default function ProgressScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<ProgressScreenNavigationProp>();
+  const { profile } = useProfile();
+
+  // State for stats
+  const [isLoading, setIsLoading] = useState(true);
+  const [streak, setStreak] = useState(0);
+  const [weeklyStats, setWeeklyStats] = useState<WeeklyStats>({
+    completedWorkouts: 0,
+    scheduledWorkouts: 4,
+    totalVolume: 0,
+    averageRPE: 0,
+    totalWorkouts: 0,
+  });
+
+  // Load stats on mount
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      setIsLoading(true);
+      const userId = profile?.user_id || 'default';
+      const [currentStreak, stats] = await Promise.all([
+        getCurrentStreak(userId),
+        getWeeklyStats(userId),
+      ]);
+      setStreak(currentStreak);
+      setWeeklyStats(stats);
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Calculate weekly completion percentage
+  const weeklyProgress = weeklyStats.scheduledWorkouts > 0
+    ? weeklyStats.completedWorkouts / weeklyStats.scheduledWorkouts
+    : 0;
+
+  // Format volume for display
+  const formatVolume = (vol: number): string => {
+    if (vol >= 1000) {
+      return `${(vol / 1000).toFixed(1)}k`;
+    }
+    return vol.toString();
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -64,30 +113,113 @@ export default function ProgressScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Coming Soon Card */}
+        {/* Weekly Progress Hero */}
         <GlassCard variant="hero" shimmer style={styles.heroCard}>
-          {/* Decorative rings */}
+          {/* Progress rings */}
           <View style={styles.decorativeRings}>
-            <ProgressRing progress={0.7} size={100} strokeWidth={4} color="primary" />
+            <ProgressRing
+              progress={weeklyProgress}
+              size={100}
+              strokeWidth={4}
+              color="primary"
+            />
             <View style={styles.ringOverlay}>
-              <ProgressRing progress={0.5} size={70} strokeWidth={3} color="secondary" />
+              <ProgressRing
+                progress={streak > 0 ? Math.min(streak / 7, 1) : 0}
+                size={70}
+                strokeWidth={3}
+                color="secondary"
+              />
               <View style={styles.ringCenter}>
-                <Ionicons name="analytics" size={24} color={colors.accent.primary} />
+                {isLoading ? (
+                  <ActivityIndicator size="small" color={colors.accent.primary} />
+                ) : (
+                  <Text style={styles.streakNumber}>{streak}</Text>
+                )}
               </View>
             </View>
           </View>
 
           <View style={styles.heroContent}>
-            <Text style={styles.heroTitle}>Progress Tracking</Text>
-            <Text style={styles.heroSubtitle}>Coming in Phase 6</Text>
+            <Text style={styles.heroTitle}>
+              {streak > 0 ? `${streak} Day Streak` : 'Start Your Streak'}
+            </Text>
+            <Text style={styles.heroSubtitle}>
+              {weeklyStats.completedWorkouts}/{weeklyStats.scheduledWorkouts} This Week
+            </Text>
             <Text style={styles.heroDescription}>
-              Track your fitness journey with detailed analytics, personal records, and body composition insights.
+              {streak >= 7
+                ? "A full week! You're building lasting habits."
+                : streak > 0
+                  ? "Keep it going! Consistency is your superpower."
+                  : weeklyStats.completedWorkouts > 0
+                    ? "You're making progress! Start a new streak today."
+                    : "Your first workout starts your journey."}
             </Text>
           </View>
         </GlassCard>
 
-        {/* Feature Preview */}
-        <Text style={styles.sectionTitle}>What's Coming</Text>
+        {/* Your Journey Stats */}
+        <Text style={styles.sectionTitle}>Your Journey</Text>
+
+        <View style={styles.statsGrid}>
+          <GlassCard variant="default" style={styles.statCard}>
+            <View style={[styles.statIconContainer, { backgroundColor: colors.accent.primaryMuted }]}>
+              <Ionicons name="barbell" size={20} color={colors.accent.primary} />
+            </View>
+            {isLoading ? (
+              <ActivityIndicator size="small" color={colors.accent.primary} />
+            ) : (
+              <Text style={styles.statValue}>
+                {weeklyStats.totalVolume > 0 ? formatVolume(weeklyStats.totalVolume) : '--'}
+              </Text>
+            )}
+            <Text style={styles.statLabel}>Week Volume</Text>
+          </GlassCard>
+
+          <GlassCard variant="default" style={styles.statCard}>
+            <View style={[styles.statIconContainer, { backgroundColor: colors.accent.secondaryMuted }]}>
+              <Ionicons name="flame" size={20} color={colors.accent.secondary} />
+            </View>
+            {isLoading ? (
+              <ActivityIndicator size="small" color={colors.accent.secondary} />
+            ) : (
+              <Text style={styles.statValue}>{streak > 0 ? streak : '--'}</Text>
+            )}
+            <Text style={styles.statLabel}>Day Streak</Text>
+          </GlassCard>
+
+          <GlassCard variant="default" style={styles.statCard}>
+            <View style={[styles.statIconContainer, { backgroundColor: colors.accent.successMuted }]}>
+              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            </View>
+            {isLoading ? (
+              <ActivityIndicator size="small" color={colors.success} />
+            ) : (
+              <Text style={styles.statValue}>
+                {weeklyStats.totalWorkouts > 0 ? weeklyStats.totalWorkouts : '--'}
+              </Text>
+            )}
+            <Text style={styles.statLabel}>Total Workouts</Text>
+          </GlassCard>
+
+          <GlassCard variant="default" style={styles.statCard}>
+            <View style={[styles.statIconContainer, { backgroundColor: colors.glass.bgLight }]}>
+              <Ionicons name="pulse" size={20} color={colors.text.secondary} />
+            </View>
+            {isLoading ? (
+              <ActivityIndicator size="small" color={colors.text.secondary} />
+            ) : (
+              <Text style={styles.statValue}>
+                {weeklyStats.averageRPE > 0 ? weeklyStats.averageRPE.toFixed(1) : '--'}
+              </Text>
+            )}
+            <Text style={styles.statLabel}>Avg RPE</Text>
+          </GlassCard>
+        </View>
+
+        {/* Coming Soon Features */}
+        <Text style={styles.sectionTitle}>Coming Soon</Text>
 
         <GlassCard variant="default" style={styles.featuresCard}>
           <FeatureCard
@@ -114,62 +246,28 @@ export default function ProgressScreen() {
             description="Optional body measurements and progress photos"
             accentColor="primary"
           />
-
-          <View style={styles.featureDivider} />
-
-          <FeatureCard
-            icon="calendar"
-            title="Workout Streaks"
-            description="Detailed streak analytics and consistency tracking"
-            accentColor="secondary"
-          />
         </GlassCard>
 
-        {/* Teaser Stats */}
-        <Text style={styles.sectionTitle}>Your Journey So Far</Text>
-
-        <View style={styles.statsGrid}>
-          <GlassCard variant="default" style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="barbell" size={20} color={colors.accent.primary} />
-            </View>
-            <Text style={styles.statPlaceholder}>--</Text>
-            <Text style={styles.statLabel}>Total Volume</Text>
-          </GlassCard>
-
-          <GlassCard variant="default" style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="flame" size={20} color={colors.accent.secondary} />
-            </View>
-            <Text style={styles.statPlaceholder}>--</Text>
-            <Text style={styles.statLabel}>Best Streak</Text>
-          </GlassCard>
-
-          <GlassCard variant="default" style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="trophy" size={20} color={colors.success} />
-            </View>
-            <Text style={styles.statPlaceholder}>--</Text>
-            <Text style={styles.statLabel}>Total PRs</Text>
-          </GlassCard>
-
-          <GlassCard variant="default" style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="time" size={20} color={colors.text.secondary} />
-            </View>
-            <Text style={styles.statPlaceholder}>--</Text>
-            <Text style={styles.statLabel}>Hours Trained</Text>
-          </GlassCard>
-        </View>
-
-        {/* Stay Tuned */}
+        {/* Motivation Card - Small Wins Celebration */}
         <GlassCard variant="heroPink" style={styles.stayTunedCard}>
           <View style={styles.stayTunedContent}>
-            <Ionicons name="notifications" size={24} color={colors.accent.secondary} />
+            <Ionicons name="heart" size={24} color={colors.accent.secondary} />
             <View style={styles.stayTunedText}>
-              <Text style={styles.stayTunedTitle}>Stay Tuned!</Text>
+              <Text style={styles.stayTunedTitle}>
+                {weeklyStats.totalWorkouts === 0
+                  ? "Every Rep Counts"
+                  : streak > 0
+                    ? "You're on Fire!"
+                    : "You're Doing Great!"}
+              </Text>
               <Text style={styles.stayTunedDescription}>
-                We're working hard to bring you these features. Keep training and your data will be ready when they launch!
+                {weeklyStats.totalWorkouts === 0
+                  ? "Start your journey today. Your first workout is the hardest—after that, momentum takes over. Even showing up counts as a win."
+                  : weeklyStats.totalWorkouts === 1
+                    ? "You completed your first workout! That's the hardest part. Partial workouts count too—any movement is progress."
+                    : streak >= 3
+                      ? `${streak} days in a row! You're building real momentum. Remember: consistency beats intensity.`
+                      : `${weeklyStats.totalWorkouts} workouts logged. Every session—even shortened ones—builds your foundation.`}
               </Text>
             </View>
           </View>
@@ -338,12 +436,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.s,
   },
+  statValue: {
+    fontFamily: 'Poppins',
+    fontSize: 24,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
   statPlaceholder: {
     fontFamily: 'Poppins',
     fontSize: 24,
     fontWeight: '600',
     color: colors.text.tertiary,
     marginBottom: spacing.xs,
+  },
+  streakNumber: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.accent.primary,
   },
   statLabel: {
     fontFamily: 'Poppins',

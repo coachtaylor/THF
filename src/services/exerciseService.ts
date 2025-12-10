@@ -82,6 +82,33 @@ export async function fetchExercisesByIds(ids: string[]): Promise<Exercise[]> {
 }
 
 /**
+ * Fetch a single exercise by ID
+ */
+export async function fetchExerciseById(id: string): Promise<Exercise | null> {
+  try {
+    if (!supabase) {
+      throw new Error('Supabase not initialized');
+    }
+    const { data, error } = await supabase
+      .from('exercises')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('❌ Error fetching exercise by ID:', error);
+      return null;
+    }
+
+    const exercises = mapSupabaseExercises([data]);
+    return exercises.length > 0 ? exercises[0] : null;
+  } catch (error) {
+    console.error('❌ Error fetching exercise by ID:', error);
+    return null;
+  }
+}
+
+/**
  * Get exercise count
  */
 export async function getExerciseCount(): Promise<number> {

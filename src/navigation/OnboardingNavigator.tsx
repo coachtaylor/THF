@@ -12,6 +12,7 @@ import Surgery from '../screens/onboarding/intake/Surgery';
 import Goals from '../screens/onboarding/intake/Goals';
 import TrainingEnvironment from '../screens/onboarding/intake/TrainingEnvironment';
 import Experience from '../screens/onboarding/intake/Experience';
+import WorkoutDays from '../screens/onboarding/intake/WorkoutDays';
 import DysphoriaTriggers from '../screens/onboarding/intake/DysphoriaTriggers';
 import Review from '../screens/onboarding/intake/Review';
 import ProgramSetup from '../screens/onboarding/intake/ProgramSetup';
@@ -51,6 +52,7 @@ export default function OnboardingNavigator() {
       <Stack.Screen name="Goals" component={Goals} />
       <Stack.Screen name="TrainingEnvironment" component={TrainingEnvironment} />
       <Stack.Screen name="Experience" component={Experience} />
+      <Stack.Screen name="WorkoutDays" component={WorkoutDays} />
       <Stack.Screen name="DysphoriaTriggers" component={DysphoriaTriggers} />
       <Stack.Screen name="Review" component={Review} />
       <Stack.Screen name="ProgramSetup" component={ProgramSetup} />

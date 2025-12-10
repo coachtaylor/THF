@@ -46,12 +46,26 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
         return wdDate.getTime() === date.getTime();
       });
 
+      // Check if this is a rest day:
+      // 1. Explicitly marked as rest day (isRestDay: true)
+      // 2. Has day entry but no workout (null workout means rest day)
+      // 3. All variants are null (legacy plans without isRestDay field)
+      const hasNullVariants = workoutDay?.day?.variants &&
+        workoutDay.day.variants[30] === null &&
+        workoutDay.day.variants[45] === null &&
+        workoutDay.day.variants[60] === null &&
+        workoutDay.day.variants[90] === null;
+      const isRestDay = workoutDay?.day?.isRestDay === true ||
+        (workoutDay && !workoutDay.workout) ||
+        hasNullVariants;
+
       days.push({
         label: dayLabels[i],
         date: date.getDate(),
         isToday,
         isPast,
         hasWorkout: !!workoutDay?.workout,
+        isRestDay: isRestDay || false,
         workout: workoutDay,
         completed: workoutDay?.completed || false,
       });
@@ -89,10 +103,13 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
               <View style={[
                 styles.dayCircle,
                 day.hasWorkout && styles.dayCircleWorkout,
+                day.isRestDay && styles.dayCircleRest,
                 day.completed && styles.dayCircleCompleted,
               ]}>
                 {day.completed ? (
                   <Ionicons name="checkmark" size={14} color={colors.accent.success} />
+                ) : day.isRestDay ? (
+                  <Ionicons name="moon-outline" size={12} color="rgba(245, 169, 184, 0.6)" />
                 ) : (
                   <Text style={[
                     styles.dayNumber,
@@ -178,6 +195,10 @@ const styles = StyleSheet.create({
   dayCircleCompleted: {
     backgroundColor: 'rgba(52, 199, 89, 0.15)',
     borderColor: 'rgba(52, 199, 89, 0.3)',
+  },
+  dayCircleRest: {
+    backgroundColor: 'rgba(245, 169, 184, 0.05)',
+    borderColor: 'rgba(245, 169, 184, 0.15)',
   },
   dayNumber: {
     fontFamily: 'Poppins',

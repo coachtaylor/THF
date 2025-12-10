@@ -139,8 +139,8 @@ export default function DysphoriaTriggers({ navigation }: DysphoriaTriggersProps
 
   return (
     <OnboardingLayout
-      currentStep={8}
-      totalSteps={9}
+      currentStep={9}
+      totalSteps={10}
       title="Dysphoria Considerations"
       subtitle="Help us create a comfortable, affirming experience. This is completely optional and private."
       onBack={handleBack}

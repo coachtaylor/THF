@@ -73,12 +73,16 @@ export function generateWorkout(
     );
   }
 
+  // Generate workout name from template
+  const workoutName = dayTemplate?.name;
+
   // Structure into a workout (sets, reps, rest, format)
   const workout = structureWorkout(
     selectedExercises,
     duration,
     profile,
-    volumeAdjustments
+    volumeAdjustments,
+    workoutName
   );
 
   return workout;
@@ -395,7 +399,8 @@ export function structureWorkout(
   exercises: Exercise[],
   duration: number,
   profile: Profile,
-  volumeAdjustments?: VolumeAdjustments
+  volumeAdjustments?: VolumeAdjustments,
+  workoutName?: string
 ): Workout {
   const exerciseInstances: ExerciseInstance[] = exercises.map((exercise, index) => {
     // Calculate sets with consideration for compound/accessory placement
@@ -438,6 +443,7 @@ export function structureWorkout(
   });
 
   return {
+    name: workoutName,
     duration: duration as 30 | 45 | 60 | 90,
     exercises: exerciseInstances,
     totalMinutes: duration,

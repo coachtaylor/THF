@@ -172,7 +172,7 @@ export default function Experience({ navigation }: ExperienceProps) {
           );
         }
 
-        navigation.navigate("DysphoriaTriggers");
+        navigation.navigate("WorkoutDays");
       }
     } catch (error) {
       console.error("Error saving experience:", error);
@@ -188,7 +188,7 @@ export default function Experience({ navigation }: ExperienceProps) {
   return (
     <OnboardingLayout
       currentStep={7}
-      totalSteps={9}
+      totalSteps={10}
       title="Experience & Preferences"
       subtitle="Tailor your program to your current fitness level and available resources."
       onBack={handleBack}

@@ -271,6 +271,7 @@ export type OnboardingStackParamList = {
   Goals: undefined;
   TrainingEnvironment: undefined;
   Experience: undefined;
+  WorkoutDays: undefined;
   DysphoriaTriggers: undefined;
   Review: undefined;
   ProgramSetup: undefined;

@@ -18,6 +18,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useWorkoutSafe } from '../../contexts/WorkoutContext';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard, ProgressRing } from '../../components/common';
+import { trackWorkoutCompleted } from '../../services/analytics';
+import { BetaSurveyModal, SurveyResponse } from '../../components/feedback';
+import {
+  shouldShowWorkoutSurvey,
+  saveSurveyResponse,
+  trackSurveySkipped,
+  incrementWorkoutCount,
+} from '../../services/feedback';
+import { PostWorkoutCheckin, BodyCheckinData } from '../../components/session/PostWorkoutCheckin';
 
 type RootStackParamList = {
   WorkoutSummary: {
@@ -202,6 +211,68 @@ export default function WorkoutSummaryScreen() {
   const [rating, setRating] = useState<WorkoutRating | null>(null);
   const [notes, setNotes] = useState('');
   const [notesFocused, setNotesFocused] = useState(false);
+  const [showSurvey, setShowSurvey] = useState(false);
+  const [surveyChecked, setSurveyChecked] = useState(false);
+  const [showBodyCheckin, setShowBodyCheckin] = useState(false);
+  const [bodyCheckinData, setBodyCheckinData] = useState<BodyCheckinData | null>(null);
+  const [bodyCheckinShown, setBodyCheckinShown] = useState(false);
+
+  // Show body check-in after celebration animation
+  useEffect(() => {
+    if (!bodyCheckinShown) {
+      setBodyCheckinShown(true);
+      // Show body check-in after a short delay for the celebration
+      setTimeout(() => {
+        setShowBodyCheckin(true);
+      }, 1500);
+    }
+  }, [bodyCheckinShown]);
+
+  // Check if we should show the survey after workout
+  useEffect(() => {
+    const checkSurvey = async () => {
+      if (surveyChecked) return;
+      setSurveyChecked(true);
+
+      try {
+        // Increment workout count
+        await incrementWorkoutCount();
+
+        // Check if we should show survey
+        const result = await shouldShowWorkoutSurvey();
+        if (result.shouldShow) {
+          // Small delay to let the celebration animation play first
+          setTimeout(() => {
+            setShowSurvey(true);
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Error checking survey trigger:', error);
+      }
+    };
+
+    checkSurvey();
+  }, [surveyChecked]);
+
+  const handleBodyCheckinSubmit = (data: BodyCheckinData) => {
+    setBodyCheckinData(data);
+    setShowBodyCheckin(false);
+    console.log('Body check-in response:', data.response);
+  };
+
+  const handleBodyCheckinSkip = () => {
+    setShowBodyCheckin(false);
+  };
+
+  const handleSurveySubmit = async (response: SurveyResponse) => {
+    await saveSurveyResponse(response);
+    setShowSurvey(false);
+  };
+
+  const handleSurveyClose = async () => {
+    await trackSurveySkipped('workout');
+    setShowSurvey(false);
+  };
 
   const stats = useMemo(() => {
     if (!completedSets || completedSets.length === 0) {
@@ -281,6 +352,14 @@ export default function WorkoutSummaryScreen() {
       if (notes.trim()) {
         console.log('Workout notes:', notes);
       }
+
+      // Track workout completion
+      await trackWorkoutCompleted(
+        workout?.id || routeData?.workoutName || 'unknown',
+        workoutDuration,
+        exercisesCompleted,
+        totalExercises
+      );
 
       await completeWorkout();
       clearWorkout();
@@ -532,6 +611,21 @@ export default function WorkoutSummaryScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Post-Workout Body Check-in */}
+      <PostWorkoutCheckin
+        visible={showBodyCheckin}
+        onSubmit={handleBodyCheckinSubmit}
+        onSkip={handleBodyCheckinSkip}
+      />
+
+      {/* Beta Survey Modal */}
+      <BetaSurveyModal
+        visible={showSurvey}
+        onClose={handleSurveyClose}
+        onSubmit={handleSurveySubmit}
+        triggerPoint="workout"
+      />
     </View>
   );
 }

@@ -12,6 +12,7 @@ import { generatePlan } from "../../../services/planGenerator";
 import { savePlan } from "../../../services/storage/plan";
 import { formatEquipmentLabel } from "../../../utils/equipment";
 import { Platform } from "react-native";
+import { trackOnboardingCompleted, trackWorkoutGenerated } from "../../../services/analytics";
 
 type ReviewNavigationProp = StackNavigationProp<OnboardingStackParamList, "Review">;
 
@@ -195,8 +196,22 @@ export default function Review({ navigation }: ReviewProps) {
       console.log('💾 Saving plan for userId:', userId);
       await savePlan(plan as any, userId);
 
+      // Track onboarding completion
+      await trackOnboardingCompleted();
+
+      // Track workout generation for each day in the plan
+      if (plan.days && plan.days.length > 0) {
+        const firstWorkout = plan.days[0];
+        await trackWorkoutGenerated(
+          plan.id,
+          firstWorkout.workout?.name || 'Generated Workout',
+          profile.session_duration || 45,
+          firstWorkout.workout?.exercises?.length || 0
+        );
+      }
+
       setIsGenerating(false);
-      
+
       // Navigate to ProgramSetup to show the generated program
       navigation.navigate("ProgramSetup");
     } catch (error) {
@@ -213,8 +228,8 @@ export default function Review({ navigation }: ReviewProps) {
   return (
     <>
       <OnboardingLayout
-        currentStep={9}
-        totalSteps={9}
+        currentStep={10}
+        totalSteps={10}
         title="Review & Generate"
         subtitle="Review your profile and generate your personalized program."
         onBack={handleBack}

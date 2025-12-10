@@ -157,16 +157,17 @@ export async function getWeeklyStats(userId: string = 'default'): Promise<Weekly
     try {
       const plan = await getPlan(userId);
       if (plan) {
-        // Count days in current week that have workouts scheduled
+        // Count days in current week that have workouts scheduled (exclude rest days)
         const weekEnd = new Date(startOfWeek);
         weekEnd.setDate(weekEnd.getDate() + 7);
-        
+
         const scheduledDays = plan.days.filter(day => {
           const dayDate = new Date(day.date);
           dayDate.setHours(0, 0, 0, 0);
-          return dayDate >= startOfWeek && dayDate < weekEnd;
+          // Only count days that are in this week AND are not rest days
+          return dayDate >= startOfWeek && dayDate < weekEnd && !day.isRestDay;
         });
-        
+
         scheduledWorkouts = scheduledDays.length;
       }
     } catch (error) {
@@ -272,14 +273,15 @@ export async function getMonthWorkouts(
       };
     });
 
-    // Also get scheduled workouts from plan for this month
+    // Also get scheduled workouts from plan for this month (exclude rest days)
     try {
       const plan = await getPlan(userId);
       if (plan) {
         const scheduledDays = plan.days.filter(day => {
           const dayDate = new Date(day.date);
           dayDate.setHours(0, 0, 0, 0);
-          return dayDate >= startOfMonth && dayDate <= endOfMonth;
+          // Only include days that are in this month AND are not rest days
+          return dayDate >= startOfMonth && dayDate <= endOfMonth && !day.isRestDay;
         });
 
         scheduledDays.forEach(day => {

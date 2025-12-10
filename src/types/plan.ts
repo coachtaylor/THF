@@ -5,11 +5,15 @@ export interface Plan {
   goals: string[]; // e.g., ["strength", "endurance"]
   goalWeighting: { primary: number; secondary: number }; // e.g., { primary: 70, secondary: 30 }
   days: Day[];
+  workoutDays?: number[]; // User's selected workout days (0=Sun, 1=Mon, ..., 6=Sat)
 }
 
 export interface Day {
-  dayNumber: number; // 0-6 for 1-week, 0-27 for 4-week
+  dayNumber: number; // 1-7 for 1-week, 1-28 for 4-week
   date: Date;
+  dayOfWeek: number; // 0=Sunday, 1=Monday, ..., 6=Saturday
+  isRestDay: boolean; // true if this is an intentional rest day
+  wasRestDay?: boolean; // true if this was originally a rest day but user generated a workout
   variants: {
     30: Workout | null;
     45: Workout | null;
@@ -19,6 +23,7 @@ export interface Day {
 }
 
 export interface Workout {
+  name?: string;
   duration: 30 | 45 | 60 | 90;
   exercises: ExerciseInstance[];
   totalMinutes: number;
