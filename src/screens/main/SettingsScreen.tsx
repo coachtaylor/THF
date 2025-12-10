@@ -9,6 +9,9 @@ import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../contexts/AuthContext';
 import { deleteProfile } from '../../services/storage/profile';
 import { signalLogout } from '../../services/events/onboardingEvents';
+import { generatePlan } from '../../services/planGenerator';
+import { savePlan } from '../../services/storage/plan';
+import { usePlan } from '../../hooks/usePlan';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard, GlassButton, GlassListItem, GlassList, GlassModal } from '../../components/common';
 import { BetaSurveyModal, SurveyResponse } from '../../components/feedback';
@@ -34,6 +37,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
   const { logout } = useAuth();
+  const { refreshPlan } = usePlan(profile?.user_id || profile?.id || 'default');
 
   // Modal states
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -41,6 +45,7 @@ export default function SettingsScreen() {
   const [showSurveyModal, setShowSurveyModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
 
   const handleEdit = (section: string) => {
     console.log('Edit section:', section);
@@ -153,6 +158,31 @@ export default function SettingsScreen() {
 
   const handleSurveySkip = () => {
     setShowSurveyModal(false);
+  };
+
+  const handleRegeneratePlan = async () => {
+    if (!profile) return;
+
+    try {
+      setIsRegenerating(true);
+      const userId = profile.user_id || profile.id || 'default';
+
+      // Generate new plan with current profile (uses new workout day scheduling)
+      const newPlan = await generatePlan(profile);
+
+      // Save the new plan
+      await savePlan(newPlan, userId);
+
+      // Refresh the plan in context
+      await refreshPlan?.();
+
+      setIsRegenerating(false);
+      Alert.alert('Success', 'Your workout plan has been regenerated with the new scheduling!');
+    } catch (error) {
+      console.error('Error regenerating plan:', error);
+      setIsRegenerating(false);
+      Alert.alert('Error', 'Failed to regenerate plan. Please try again.');
+    }
   };
 
   return (
@@ -510,6 +540,13 @@ export default function SettingsScreen() {
             </View>
           </View>
           <GlassList>
+            <GlassListItem
+              title="Regenerate Plan"
+              subtitle={isRegenerating ? "Regenerating..." : "Create new plan with current settings"}
+              leftIcon="sync-outline"
+              onPress={handleRegeneratePlan}
+              showChevron
+            />
             <GlassListItem
               title="Reset Onboarding"
               subtitle="Delete profile and restart"

@@ -56,6 +56,8 @@ export async function generateQuickStartPlan(): Promise<Plan> {
   const day: Day = {
     dayNumber: 1,
     date: new Date(),
+    dayOfWeek: new Date().getDay(),
+    isRestDay: false,
     variants: {
       30: workout,
       45: null,
@@ -110,22 +112,57 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
   const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
   const startDate = new Date();
 
+  // Get user's preferred workout days (or generate smart defaults)
+  const workoutDays = profile.preferred_workout_days && profile.preferred_workout_days.length > 0
+    ? profile.preferred_workout_days
+    : getDefaultWorkoutDays(profile.workout_frequency || 3);
+
+  console.log(`📆 Workout days: ${workoutDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`);
+  console.log(`😴 Rest days: ${[0,1,2,3,4,5,6].filter(d => !workoutDays.includes(d)).map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}\n`);
+
   // Generate workouts for each day with variety tracking
   const days: Day[] = [];
   const usedExerciseIds = new Set<string>();
   const VARIETY_WINDOW = 3; // Don't reuse exercises for 3 days
+  let templateIndex = 0; // Track which template to use for workout days
 
   for (let i = 0; i < daysCount; i++) {
     const dayNumber = i + 1;
     const dayDate = new Date(startDate);
     dayDate.setDate(startDate.getDate() + i);
+    const dayOfWeek = dayDate.getDay(); // 0=Sunday, 1=Monday, etc.
 
-    console.log(`\n📅 Generating Day ${dayNumber} (${dayDate.toLocaleDateString()})`);
+    // Check if this is a workout day or rest day
+    const isWorkoutDay = workoutDays.includes(dayOfWeek);
+    const isRestDay = !isWorkoutDay;
+
+    console.log(`\n📅 Day ${dayNumber} (${dayDate.toLocaleDateString()}) - ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek]}`);
     console.log('─────────────────────────────────────────');
 
-    // Get day template (cycle through template days)
-    const dayTemplate = template.days[i % template.days.length];
-    console.log(`  Day ${dayNumber}: ${dayTemplate.name} (${dayTemplate.focus})`);
+    if (isRestDay) {
+      // REST DAY - no workout variants
+      console.log(`  😴 REST DAY - Recovery is progress!`);
+
+      days.push({
+        dayNumber,
+        date: dayDate,
+        dayOfWeek,
+        isRestDay: true,
+        variants: {
+          30: null,
+          45: null,
+          60: null,
+          90: null,
+        },
+      });
+      continue;
+    }
+
+    // WORKOUT DAY - generate workouts
+    // Get day template (cycle through template days only for workout days)
+    const dayTemplate = template.days[templateIndex % template.days.length];
+    templateIndex++; // Only increment for workout days
+    console.log(`  🏋️ WORKOUT: ${dayTemplate.name} (${dayTemplate.focus})`);
 
     // Filter out recently used exercises (last 3 days)
     const availableExercises = exercises.filter(ex => !usedExerciseIds.has(ex.id));
@@ -139,7 +176,6 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
 
     // Generate all 4 workout variants for this day
     const variants: Day['variants'] = {
-      5: null,   // Will be set if user has 5-min in their preferences
       30: generateWorkout(profile, 30, exercisesToUse, dayTemplate),
       45: generateWorkout(profile, 45, exercisesToUse, dayTemplate),
       60: generateWorkout(profile, 60, exercisesToUse, dayTemplate),
@@ -180,6 +216,8 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     days.push({
       dayNumber,
       date: dayDate,
+      dayOfWeek,
+      isRestDay: false,
       variants,
     });
   }
@@ -188,11 +226,12 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     id: generatePlanId(),
     blockLength: (profile.block_length || 1) as 1 | 4,
     startDate,
-    goals: (profile.goals || []).filter((g): g is Goal => 
+    goals: (profile.goals || []).filter((g): g is Goal =>
       g === 'strength' || g === 'cardio' || g === 'flexibility' || g === 'mobility'
     ),
     goalWeighting: profile.goal_weighting || { primary: 70, secondary: 30 },
     days,
+    workoutDays, // Store user's selected workout days
   };
 
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -212,7 +251,7 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
  */
 export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
   const exercises = await fetchAllExercises();
-  
+
   if (exercises.length === 0) {
     throw new Error('No exercises available');
   }
@@ -221,6 +260,11 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
   const startDate = new Date();
   const days: Day[] = [];
 
+  // Get user's preferred workout days (or generate smart defaults)
+  const workoutDays = profile.preferred_workout_days && profile.preferred_workout_days.length > 0
+    ? profile.preferred_workout_days
+    : getDefaultWorkoutDays(profile.workout_frequency || 3);
+
   // Track which exercises have been used to ensure variety
   const usedExerciseIds = new Set<string>();
 
@@ -228,7 +272,29 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
     const dayNumber = i + 1;
     const dayDate = new Date(startDate);
     dayDate.setDate(startDate.getDate() + i);
+    const dayOfWeek = dayDate.getDay();
 
+    // Check if this is a workout day or rest day
+    const isWorkoutDay = workoutDays.includes(dayOfWeek);
+
+    if (!isWorkoutDay) {
+      // REST DAY
+      days.push({
+        dayNumber,
+        date: dayDate,
+        dayOfWeek,
+        isRestDay: true,
+        variants: {
+          30: null,
+          45: null,
+          60: null,
+          90: null,
+        },
+      });
+      continue;
+    }
+
+    // WORKOUT DAY
     // Filter out exercises that were used in the last 2 days
     const availableExercises = exercises.filter(ex => !usedExerciseIds.has(ex.id));
 
@@ -256,6 +322,8 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
     days.push({
       dayNumber,
       date: dayDate,
+      dayOfWeek,
+      isRestDay: false,
       variants,
     });
   }
@@ -267,12 +335,14 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
     goals: (profile.goals || []) as Goal[],
     goalWeighting: profile.goal_weighting || { primary: 70, secondary: 30 },
     days,
+    workoutDays,
   };
 }
 
 /**
  * Regenerate a single day within an existing plan
  * Useful when user wants to refresh a specific day's workouts
+ * Can also be used to generate a workout for a rest day (override rest day)
  */
 export async function regenerateDay(
   plan: Plan,
@@ -280,7 +350,7 @@ export async function regenerateDay(
   profile: Profile
 ): Promise<Day> {
   const exercises = await fetchAllExercises();
-  
+
   const existingDay = plan.days.find(d => d.dayNumber === dayNumber);
   if (!existingDay) {
     throw new Error(`Day ${dayNumber} not found in plan`);
@@ -297,6 +367,9 @@ export async function regenerateDay(
 
   return {
     ...existingDay,
+    dayOfWeek: existingDay.dayOfWeek ?? new Date(existingDay.date).getDay(),
+    isRestDay: false, // Mark as no longer a rest day since we're generating a workout
+    wasRestDay: existingDay.isRestDay, // Remember if this was originally a rest day
     variants,
   };
 }
@@ -424,4 +497,31 @@ export function calculatePlanTotalMinutes(plan: Plan, duration: 5 | 15 | 30 | 45
     }
   });
   return total;
+}
+
+/**
+ * Get default workout days based on frequency
+ * Spreads workouts evenly throughout the week for optimal recovery
+ * @param frequency - Number of workout days per week (1-7)
+ * @returns Array of day numbers (0=Sunday, 1=Monday, ..., 6=Saturday)
+ */
+export function getDefaultWorkoutDays(frequency: number): number[] {
+  switch (frequency) {
+    case 1:
+      return [1]; // Monday
+    case 2:
+      return [1, 4]; // Monday, Thursday
+    case 3:
+      return [1, 3, 5]; // Monday, Wednesday, Friday
+    case 4:
+      return [1, 2, 4, 5]; // Monday, Tuesday, Thursday, Friday
+    case 5:
+      return [1, 2, 3, 5, 6]; // Monday-Wednesday, Friday, Saturday
+    case 6:
+      return [1, 2, 3, 4, 5, 6]; // Monday-Saturday
+    case 7:
+      return [0, 1, 2, 3, 4, 5, 6]; // Every day
+    default:
+      return [1, 3, 5]; // Default to Mon/Wed/Fri
+  }
 }

@@ -228,8 +228,8 @@ export default function Review({ navigation }: ReviewProps) {
   return (
     <>
       <OnboardingLayout
-        currentStep={9}
-        totalSteps={9}
+        currentStep={10}
+        totalSteps={10}
         title="Review & Generate"
         subtitle="Review your profile and generate your personalized program."
         onBack={handleBack}

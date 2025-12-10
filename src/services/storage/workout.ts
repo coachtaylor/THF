@@ -1,6 +1,6 @@
-import { getPlan } from './plan';
-import { Plan, Day, Workout } from '../../types/plan';
-import { fetchExercisesByIds } from '../exerciseService';
+import { getPlan, savePlan } from './plan';
+import { Plan, Day, Workout, ExerciseInstance } from '../../types/plan';
+import { fetchExercisesByIds, fetchExerciseById } from '../exerciseService';
 import { Exercise } from '../../types';
 
 export interface TodaysWorkoutData {
@@ -341,6 +341,146 @@ function generateCooldownExercises(focus: string): Array<{ name: string; duratio
       { name: 'Chest Stretch', duration: '45 seconds' },
       { name: "Child's Pose", duration: '60 seconds' },
     ];
+  }
+}
+
+/**
+ * Add an exercise to a workout
+ * @param workoutId - The workout ID (format: planId_dayNumber)
+ * @param exerciseId - The exercise ID to add
+ * @param userId - The user ID
+ * @returns true if successful, false otherwise
+ */
+export async function addExerciseToWorkout(
+  workoutId: string,
+  exerciseId: string,
+  userId: string = 'default'
+): Promise<boolean> {
+  try {
+    console.log('📥 Adding exercise to workout:', { workoutId, exerciseId, userId });
+
+    const plan = await getPlan(userId);
+    if (!plan) {
+      console.log('❌ No plan found for user:', userId);
+      return false;
+    }
+
+    // Parse workout ID (format: planId_dayNumber)
+    const parts = workoutId.split('_');
+    if (parts.length < 2) {
+      console.log('❌ Invalid workoutId format:', workoutId);
+      return false;
+    }
+
+    const dayNumber = parseInt(parts[parts.length - 1]);
+    const dayIndex = plan.days.findIndex((d: Day) => d.dayNumber === dayNumber);
+
+    if (dayIndex === -1) {
+      console.log('❌ Day not found for dayNumber:', dayNumber);
+      return false;
+    }
+
+    // Fetch exercise to verify it exists
+    const exercise = await fetchExerciseById(exerciseId);
+    if (!exercise) {
+      console.log('❌ Exercise not found:', exerciseId);
+      return false;
+    }
+
+    // Create new exercise instance with sensible defaults
+    const newExercise: ExerciseInstance = {
+      exerciseId: exerciseId,
+      sets: 3,
+      reps: 10,
+      format: 'straight_sets',
+      restSeconds: 60,
+    };
+
+    // Add to all workout variants for this day
+    const day = plan.days[dayIndex];
+    const durations = [30, 45, 60, 90] as const;
+
+    for (const duration of durations) {
+      if (day.variants[duration]) {
+        day.variants[duration]!.exercises.push(newExercise);
+      }
+    }
+
+    // Save updated plan
+    await savePlan(plan, userId);
+    console.log('✅ Exercise added to workout:', exercise.name);
+    return true;
+  } catch (error) {
+    console.error('❌ Error adding exercise to workout:', error);
+    return false;
+  }
+}
+
+/**
+ * Remove an exercise from a workout
+ * @param workoutId - The workout ID (format: planId_dayNumber)
+ * @param exerciseId - The exercise ID to remove
+ * @param userId - The user ID
+ * @returns true if successful, false otherwise
+ */
+export async function removeExerciseFromWorkout(
+  workoutId: string,
+  exerciseId: string,
+  userId: string = 'default'
+): Promise<boolean> {
+  try {
+    console.log('🗑️ Removing exercise from workout:', { workoutId, exerciseId, userId });
+
+    const plan = await getPlan(userId);
+    if (!plan) {
+      console.log('❌ No plan found for user:', userId);
+      return false;
+    }
+
+    // Parse workout ID (format: planId_dayNumber)
+    const parts = workoutId.split('_');
+    if (parts.length < 2) {
+      console.log('❌ Invalid workoutId format:', workoutId);
+      return false;
+    }
+
+    const dayNumber = parseInt(parts[parts.length - 1]);
+    const dayIndex = plan.days.findIndex((d: Day) => d.dayNumber === dayNumber);
+
+    if (dayIndex === -1) {
+      console.log('❌ Day not found for dayNumber:', dayNumber);
+      return false;
+    }
+
+    // Remove from all workout variants for this day
+    const day = plan.days[dayIndex];
+    const durations = [30, 45, 60, 90] as const;
+    let removed = false;
+
+    for (const duration of durations) {
+      if (day.variants[duration]) {
+        const originalLength = day.variants[duration]!.exercises.length;
+        day.variants[duration]!.exercises = day.variants[duration]!.exercises.filter(
+          ex => ex.exerciseId !== exerciseId
+        );
+        if (day.variants[duration]!.exercises.length < originalLength) {
+          removed = true;
+        }
+      }
+    }
+
+    if (!removed) {
+      console.log('⚠️ Exercise not found in workout:', exerciseId);
+      return false;
+    }
+
+    // Save updated plan
+    await savePlan(plan, userId);
+    console.log('✅ Exercise removed from workout');
+    return true;
+  } catch (error) {
+    console.error('❌ Error removing exercise from workout:', error);
+    return false;
   }
 }
 
