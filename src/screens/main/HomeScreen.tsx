@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar, Platform, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -28,9 +28,12 @@ type MainTabParamList = {
   Settings: undefined;
 };
 
+import type { Day } from '../../types/plan';
+
 type MainStackParamList = {
   MainTabs: undefined;
   WorkoutOverview: { workoutId: string; isToday?: boolean };
+  RestDayOverview: { day: Day; planId?: string };
   SessionPlayer: { workout: any; planId?: string };
   Profile: undefined;
 };
@@ -269,7 +272,8 @@ export default function HomeScreen() {
     });
 
     return daysInWeek.map(day => {
-      const workout = getWorkoutFromPlan(plan as any, day.dayNumber, duration);
+      // Only fetch workout for non-rest days
+      const workout = day.isRestDay ? null : getWorkoutFromPlan(plan as any, day.dayNumber, duration);
       return {
         day,
         workout,
@@ -332,7 +336,7 @@ export default function HomeScreen() {
         <View style={styles.statsSection}>
           <StatsRow
             streak={currentStreak}
-            weekProgress={`${weeklyStats?.completedWorkouts || weekProgress || 0}/5`}
+            weekProgress={`${weeklyStats?.completedWorkouts || weekProgress || 0}/${profile?.workout_frequency || 5}`}
             total={workoutsCompleted}
           />
         </View>
@@ -349,8 +353,16 @@ export default function HomeScreen() {
               onSaveWorkout={handleSaveWorkout}
               isSaved={isTodayWorkoutSaved}
             />
-          ) : (
-            <View style={styles.restDayCard}>
+          ) : plan && todayWorkout ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.restDayCard,
+                pressed && styles.restDayCardPressed
+              ]}
+              onPress={() => {
+                navigation.navigate('RestDayOverview', { day: todayWorkout, planId: plan.id });
+              }}
+            >
               <LinearGradient
                 colors={['#141418', '#0A0A0C']}
                 style={StyleSheet.absoluteFill}
@@ -363,7 +375,16 @@ export default function HomeScreen() {
                 style={styles.restDayGlow}
               />
               <Text style={styles.restDayTitle}>REST DAY</Text>
-              <Text style={styles.restDaySubtitle}>Recovery is part of progress</Text>
+              <Text style={styles.restDaySubtitle}>Tap to generate a workout anyway</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.restDayCard}>
+              <LinearGradient
+                colors={['#141418', '#0A0A0C']}
+                style={StyleSheet.absoluteFill}
+              />
+              <Text style={styles.restDayTitle}>No Workout Scheduled</Text>
+              <Text style={styles.restDaySubtitle}>Check back tomorrow or regenerate your plan</Text>
             </View>
           )}
         </View>
@@ -385,6 +406,9 @@ export default function HomeScreen() {
               // Navigate to WorkoutOverview with workoutId format: planId_dayNumber
               const workoutId = `${plan.id}_${dayNumber}`;
               navigation.navigate('WorkoutOverview', { workoutId, isToday: false });
+            }}
+            onRestDayPress={(day) => {
+              navigation.navigate('RestDayOverview', { day, planId: plan.id });
             }}
           />
         )}
@@ -452,6 +476,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '400',
     color: colors.text.disabled,
+  },
+  restDayCardPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
   loadingContainer: {
     flex: 1,

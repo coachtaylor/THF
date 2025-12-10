@@ -18,6 +18,7 @@ import { colors, spacing, borderRadius } from '../../theme';
 import { Exercise } from '../../types';
 import { fetchAllExercises } from '../../services/exerciseService';
 import { getProfile } from '../../services/storage/profile';
+import { addExerciseToWorkout } from '../../services/storage/workout';
 import ExerciseFilterBar, { ExerciseFilters } from '../../components/exercise/ExerciseFilterBar';
 import ExerciseLibraryCard from '../../components/exercise/ExerciseLibraryCard';
 import { ExerciseDetailSheet } from '../../components/exercise/ExerciseDetailSheet';
@@ -27,6 +28,8 @@ type RouteParams = {
     mode?: 'browse' | 'swap';
     currentExerciseId?: string;
     returnRoute?: string; // Route to navigate back to with selection
+    workoutId?: string; // Workout to add exercises to (for browse mode)
+    workoutExerciseIds?: string[]; // Exercise IDs already in the workout
   };
 };
 
@@ -35,7 +38,7 @@ const ExerciseLibraryScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<RouteParams, 'ExerciseLibrary'>>();
 
-  const { mode = 'browse', currentExerciseId, returnRoute } = route.params || {};
+  const { mode = 'browse', currentExerciseId, returnRoute, workoutId, workoutExerciseIds = [] } = route.params || {};
 
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,11 +173,31 @@ const ExerciseLibraryScreen: React.FC = () => {
     });
   }, [returnRoute, navigation]);
 
-  const handleAddToWorkout = useCallback((exerciseId: number) => {
-    // For now, just go back - can be enhanced later to actually add to workout
-    console.log('Add to workout:', exerciseId);
+  const handleAddToWorkout = useCallback(async (exerciseId: number) => {
+    if (!workoutId) {
+      console.log('⚠️ No workoutId provided, cannot add exercise');
+      // Just navigate back without adding
+      navigation.goBack();
+      return;
+    }
+
+    console.log('📥 Adding exercise to workout:', { exerciseId, workoutId });
+
+    try {
+      const userId = userProfile?.user_id || userProfile?.id || 'default';
+      const success = await addExerciseToWorkout(workoutId, String(exerciseId), userId);
+
+      if (success) {
+        console.log('✅ Exercise added successfully');
+      } else {
+        console.log('❌ Failed to add exercise to workout');
+      }
+    } catch (error) {
+      console.error('❌ Error adding exercise:', error);
+    }
+
     navigation.goBack();
-  }, [navigation]);
+  }, [navigation, workoutId, userProfile]);
 
   const handleClearFilters = useCallback(() => {
     setFilters({
@@ -204,8 +227,9 @@ const ExerciseLibraryScreen: React.FC = () => {
       exercise={item}
       onPress={() => handleSelectExercise(item)}
       isSwapMode={mode === 'swap'}
+      isInWorkout={workoutExerciseIds.includes(item.id)}
     />
-  ), [handleSelectExercise, mode]);
+  ), [handleSelectExercise, mode, workoutExerciseIds]);
 
   const keyExtractor = useCallback((item: Exercise) => item.id, []);
 

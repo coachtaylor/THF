@@ -91,7 +91,7 @@ export default function TrainingEnvironment({
   return (
     <OnboardingLayout
       currentStep={6}
-      totalSteps={9}
+      totalSteps={10}
       title="Where do you train?"
       subtitle="We'll customize your workouts based on where you feel most comfortable moving."
       onBack={handleBack}

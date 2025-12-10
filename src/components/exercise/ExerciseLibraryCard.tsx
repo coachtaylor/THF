@@ -12,16 +12,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme';
 import { Exercise } from '../../types';
 
-interface ExerciseLibraryCardProps {
+export interface ExerciseLibraryCardProps {
   exercise: Exercise;
   onPress: () => void;
   isSwapMode?: boolean;
+  isInWorkout?: boolean;
 }
 
 const ExerciseLibraryCard: React.FC<ExerciseLibraryCardProps> = ({
   exercise,
   onPress,
   isSwapMode = false,
+  isInWorkout = false,
 }) => {
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -72,9 +74,17 @@ const ExerciseLibraryCard: React.FC<ExerciseLibraryCardProps> = ({
         {/* Header Row */}
         <View style={styles.headerRow}>
           <View style={styles.titleContainer}>
-            <Text style={styles.exerciseName} numberOfLines={1}>
-              {exercise.name}
-            </Text>
+            <View style={styles.nameRow}>
+              <Text style={styles.exerciseName} numberOfLines={1}>
+                {exercise.name}
+              </Text>
+              {isInWorkout && (
+                <View style={styles.inWorkoutBadge}>
+                  <Ionicons name="checkmark-circle" size={12} color={colors.accent.primary} />
+                  <Text style={styles.inWorkoutText}>In Workout</Text>
+                </View>
+              )}
+            </View>
             {exercise.target_muscles && (
               <Text style={styles.muscleText} numberOfLines={1}>
                 {formatMuscles(exercise.target_muscles)}
@@ -202,11 +212,32 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: spacing.s,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.s,
+  },
   exerciseName: {
     fontFamily: 'Poppins',
     fontSize: 15,
     fontWeight: '600',
     color: colors.text.primary,
+  },
+  inWorkoutBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.accent.primaryMuted,
+    paddingHorizontal: spacing.s,
+    paddingVertical: 2,
+    borderRadius: borderRadius.s,
+    gap: 4,
+  },
+  inWorkoutText: {
+    fontFamily: 'Poppins',
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.accent.primary,
   },
   muscleText: {
     fontFamily: 'Poppins',

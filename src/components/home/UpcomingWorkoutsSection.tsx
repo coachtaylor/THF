@@ -22,6 +22,7 @@ interface UpcomingWorkoutsSectionProps {
   userId?: string;
   planId?: string;
   onWorkoutPress?: (workout: any) => void;
+  onRestDayPress?: (day: Day) => void;
 }
 
 type ViewMode = 'upcoming' | 'history';
@@ -168,7 +169,8 @@ export default function UpcomingWorkoutsSection({
   exerciseMap,
   userId,
   planId,
-  onWorkoutPress
+  onWorkoutPress,
+  onRestDayPress
 }: UpcomingWorkoutsSectionProps) {
   const { profile } = useProfile();
   const [viewMode, setViewMode] = useState<ViewMode>('upcoming');
@@ -259,7 +261,16 @@ export default function UpcomingWorkoutsSection({
     const monday = new Date(today);
     monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
 
-    const days = [];
+    const days: Array<{
+      dayName: string;
+      date: number;
+      month: string;
+      isToday: boolean;
+      isRestDay: boolean;
+      workout?: WeekDayWithWorkout;
+      day?: Day;
+      fullDate: Date;
+    }> = [];
     const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
     for (let i = 0; i < 7; i++) {
@@ -273,25 +284,57 @@ export default function UpcomingWorkoutsSection({
       const isPast = date.getTime() < todayDate.getTime();
       const isToday = date.getTime() === todayDate.getTime();
 
-      // Check if this day has a workout
+      // Check if this day has a workout in the plan
       const workoutDay = weekDays.find(wd => {
         const wdDate = new Date(wd.day.date);
         wdDate.setHours(0, 0, 0, 0);
         return wdDate.getTime() === date.getTime();
       });
 
-      // Only show future workouts (not past, not today - today is in TodayWorkoutCard)
-      if (workoutDay?.workout && !isPast && !isToday) {
-        days.push({
-          dayName: dayNames[i],
-          date: date.getDate(),
-          month: date.toLocaleDateString('en-US', { month: 'short' }),
-          isToday: false,
-          workout: workoutDay,
-          fullDate: date,
-        });
+      // Only show future days (not past, not today - today is in TodayWorkoutCard)
+      if (!isPast && !isToday) {
+        // Check if this is a rest day:
+        // 1. Explicitly marked as rest day (isRestDay: true)
+        // 2. Has day entry but no workout (null workout means rest day)
+        // 3. All variants are null (legacy plans without isRestDay field)
+        const hasNullVariants = workoutDay?.day?.variants &&
+          workoutDay.day.variants[30] === null &&
+          workoutDay.day.variants[45] === null &&
+          workoutDay.day.variants[60] === null &&
+          workoutDay.day.variants[90] === null;
+        const isRestDay = workoutDay?.day?.isRestDay === true ||
+          (workoutDay && !workoutDay.workout) ||
+          hasNullVariants;
+
+        if (workoutDay?.workout) {
+          // Workout day
+          days.push({
+            dayName: dayNames[i],
+            date: date.getDate(),
+            month: date.toLocaleDateString('en-US', { month: 'short' }),
+            isToday: false,
+            isRestDay: false,
+            workout: workoutDay,
+            fullDate: date,
+          });
+        } else if (isRestDay && workoutDay?.day) {
+          // Rest day - include in upcoming
+          days.push({
+            dayName: dayNames[i],
+            date: date.getDate(),
+            month: date.toLocaleDateString('en-US', { month: 'short' }),
+            isToday: false,
+            isRestDay: true,
+            day: workoutDay.day,
+            fullDate: date,
+          });
+        }
       }
     }
+
+    // Ensure days are sorted by date (chronological order)
+    days.sort((a, b) => a.fullDate.getTime() - b.fullDate.getTime());
+
     return days;
   };
 
@@ -416,7 +459,51 @@ export default function UpcomingWorkoutsSection({
             </View>
           ) : (
             upcomingWorkouts.map((day, index) => {
-              const exercises = day.workout.workout?.exercises || [];
+              // Render REST DAY card
+              if (day.isRestDay && day.day) {
+                return (
+                  <Pressable
+                    key={index}
+                    style={({ pressed }) => [
+                      styles.restDayCard,
+                      pressed && styles.workoutCardPressed,
+                    ]}
+                    onPress={() => onRestDayPress?.(day.day!)}
+                  >
+                    <LinearGradient
+                      colors={['rgba(245, 169, 184, 0.05)', 'transparent']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+
+                    {/* Left section - Date */}
+                    <View style={styles.restDayDateSection}>
+                      <Text style={styles.dayName}>
+                        {day.dayName.slice(0, 3).toUpperCase()}
+                      </Text>
+                      <Text style={styles.restDayDateNumber}>{day.date}</Text>
+                      <Text style={styles.monthName}>{day.month}</Text>
+                    </View>
+
+                    {/* Right section - Rest day info */}
+                    <View style={styles.detailsSection}>
+                      <View style={styles.restDayContent}>
+                        <Ionicons name="moon-outline" size={18} color="rgba(245, 169, 184, 0.8)" />
+                        <Text style={styles.restDayTitle}>Rest Day</Text>
+                      </View>
+                      <Text style={styles.restDaySubtitle}>Recovery is part of progress</Text>
+                    </View>
+
+                    <View style={styles.chevronContainer}>
+                      <Ionicons name="chevron-forward" size={18} color={colors.text.disabled} />
+                    </View>
+                  </Pressable>
+                );
+              }
+
+              // Render WORKOUT card
+              const exercises = day.workout?.workout?.exercises || [];
               const muscleGroups = getMuscleGroups(exercises);
               const exercisePreview = getExercisePreview(exercises);
               const totalSets = exercises.reduce((sum: number, ex: any) => sum + (ex.sets || 0), 0);
@@ -451,16 +538,22 @@ export default function UpcomingWorkoutsSection({
                   <View style={styles.detailsSection}>
                     <View style={styles.workoutNameRow}>
                       <Text style={styles.workoutName}>
-                        {day.workout.workoutName || 'Workout'}
+                        {day.workout?.workoutName || 'Workout'}
                       </Text>
-                      {planId && (
+                      {day.workout?.day?.wasRestDay && (
+                        <View style={styles.bonusWorkoutBadge}>
+                          <Ionicons name="add-circle" size={10} color="rgba(245, 169, 184, 0.9)" />
+                          <Text style={styles.bonusWorkoutText}>Bonus</Text>
+                        </View>
+                      )}
+                      {planId && day.workout && (
                         <Pressable
                           onPress={(e) => {
                             e.stopPropagation();
                             handleSaveWorkout(
-                              day.workout.day.dayNumber,
-                              day.workout.workoutName || 'Workout',
-                              day.workout.workout
+                              day.workout!.day.dayNumber,
+                              day.workout!.workoutName || 'Workout',
+                              day.workout!.workout
                             );
                           }}
                           hitSlop={8}
@@ -868,5 +961,68 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: colors.text.secondary,
+  },
+  // Rest day card styles
+  restDayCard: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(25, 25, 30, 0.4)',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 169, 184, 0.15)',
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  restDayDateSection: {
+    width: 65,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(245, 169, 184, 0.1)',
+    backgroundColor: 'rgba(245, 169, 184, 0.03)',
+  },
+  restDayDateNumber: {
+    fontFamily: 'Poppins',
+    fontSize: 22,
+    fontWeight: '600',
+    color: 'rgba(245, 169, 184, 0.7)',
+    lineHeight: 26,
+  },
+  restDayContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  restDayTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(245, 169, 184, 0.9)',
+  },
+  restDaySubtitle: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: colors.text.disabled,
+  },
+  // Bonus workout badge (for workouts generated on rest days)
+  bonusWorkoutBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(245, 169, 184, 0.15)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  bonusWorkoutText: {
+    fontFamily: 'Poppins',
+    fontSize: 9,
+    fontWeight: '600',
+    color: 'rgba(245, 169, 184, 0.9)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
