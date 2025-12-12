@@ -4,11 +4,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard, ProgressRing } from '../../components/common';
+import { VolumeChart, FrequencyChart, ExerciseProgressChart } from '../../components/progress';
+import { PremiumGate } from '../../components/paywall/PremiumGate';
 import { useProfile } from '../../hooks/useProfile';
-import { getCurrentStreak, getWeeklyStats, type WeeklyStats } from '../../services/storage/stats';
+import {
+  getCurrentStreak,
+  getWeeklyStats,
+  getVolumeByWeek,
+  getWorkoutFrequency,
+  getExerciseProgress,
+  getExercisesWithData,
+  type WeeklyStats,
+  type WeeklyVolumeData,
+  type FrequencyData,
+  type ExerciseProgressData,
+} from '../../services/storage/stats';
 
 type MainTabParamList = {
   Home: undefined;
@@ -59,25 +71,85 @@ export default function ProgressScreen() {
     totalWorkouts: 0,
   });
 
+  // Chart data state
+  const [volumeData, setVolumeData] = useState<WeeklyVolumeData[]>([]);
+  const [frequencyData, setFrequencyData] = useState<FrequencyData[]>([]);
+  const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgressData | null>(null);
+  const [availableExercises, setAvailableExercises] = useState<{ exerciseId: string; exerciseName: string; sessionCount: number }[]>([]);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<4 | 8 | 12>(8); // weeks
+
   // Load stats on mount
   useEffect(() => {
     loadStats();
   }, []);
 
+  // Load chart data when time range changes
+  useEffect(() => {
+    if (!isLoading) {
+      loadChartData();
+    }
+  }, [timeRange]);
+
+  // Load exercise progress when selected exercise changes
+  useEffect(() => {
+    if (selectedExerciseId) {
+      loadExerciseProgress(selectedExerciseId);
+    }
+  }, [selectedExerciseId]);
+
   const loadStats = async () => {
     try {
       setIsLoading(true);
       const userId = profile?.user_id || 'default';
-      const [currentStreak, stats] = await Promise.all([
+
+      const [currentStreak, stats, volume, frequency, exercises] = await Promise.all([
         getCurrentStreak(userId),
         getWeeklyStats(userId),
+        getVolumeByWeek(userId, timeRange),
+        getWorkoutFrequency(userId, timeRange),
+        getExercisesWithData(userId),
       ]);
+
       setStreak(currentStreak);
       setWeeklyStats(stats);
+      setVolumeData(volume);
+      setFrequencyData(frequency);
+      setAvailableExercises(exercises);
+
+      // Load progress for most logged exercise if available
+      if (exercises.length > 0 && !selectedExerciseId) {
+        setSelectedExerciseId(exercises[0].exerciseId);
+      }
     } catch (error) {
       console.error('Failed to load stats:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadChartData = async () => {
+    try {
+      const userId = profile?.user_id || 'default';
+      const [volume, frequency] = await Promise.all([
+        getVolumeByWeek(userId, timeRange),
+        getWorkoutFrequency(userId, timeRange),
+      ]);
+      setVolumeData(volume);
+      setFrequencyData(frequency);
+    } catch (error) {
+      console.error('Failed to load chart data:', error);
+    }
+  };
+
+  const loadExerciseProgress = async (exerciseId: string) => {
+    try {
+      const userId = profile?.user_id || 'default';
+      const exercise = availableExercises.find(e => e.exerciseId === exerciseId);
+      const progress = await getExerciseProgress(userId, exerciseId, exercise?.exerciseName);
+      setExerciseProgress(progress);
+    } catch (error) {
+      console.error('Failed to load exercise progress:', error);
     }
   };
 
@@ -218,19 +290,96 @@ export default function ProgressScreen() {
           </GlassCard>
         </View>
 
+        {/* Progress Charts - Premium Feature */}
+        <PremiumGate
+          feature="progress_charts"
+          message="Track your workout volume, consistency, and exercise progress over time with detailed charts."
+        >
+          {/* Time Range Selector */}
+          <View style={styles.timeRangeRow}>
+            <Text style={styles.sectionTitle}>Progress Charts</Text>
+            <View style={styles.timeRangePills}>
+              {[4, 8, 12].map((weeks) => (
+                <Pressable
+                  key={weeks}
+                  style={[
+                    styles.timeRangePill,
+                    timeRange === weeks && styles.timeRangePillActive,
+                  ]}
+                  onPress={() => setTimeRange(weeks as 4 | 8 | 12)}
+                >
+                  <Text style={[
+                    styles.timeRangePillText,
+                    timeRange === weeks && styles.timeRangePillTextActive,
+                  ]}>
+                    {weeks}w
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* Volume Chart */}
+          <GlassCard variant="default" style={styles.chartCard}>
+            <View style={styles.chartHeader}>
+              <Ionicons name="barbell" size={18} color={colors.accent.primary} />
+              <Text style={styles.chartTitle}>Weekly Volume</Text>
+            </View>
+            <VolumeChart data={volumeData} height={180} />
+          </GlassCard>
+
+          {/* Frequency Chart */}
+          <GlassCard variant="default" style={styles.chartCard}>
+            <View style={styles.chartHeader}>
+              <Ionicons name="calendar" size={18} color={colors.accent.secondary} />
+              <Text style={styles.chartTitle}>Workout Consistency</Text>
+            </View>
+            <FrequencyChart data={frequencyData} height={160} />
+          </GlassCard>
+
+          {/* Exercise Progress */}
+          <GlassCard variant="default" style={styles.chartCard}>
+            <View style={styles.chartHeader}>
+              <Ionicons name="trending-up" size={18} color={colors.success} />
+              <Text style={styles.chartTitle}>Exercise Progress</Text>
+            </View>
+
+            {/* Exercise selector */}
+            {availableExercises.length > 0 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.exerciseSelector}
+                contentContainerStyle={styles.exerciseSelectorContent}
+              >
+                {availableExercises.slice(0, 5).map((exercise) => (
+                  <Pressable
+                    key={exercise.exerciseId}
+                    style={[
+                      styles.exercisePill,
+                      selectedExerciseId === exercise.exerciseId && styles.exercisePillActive,
+                    ]}
+                    onPress={() => setSelectedExerciseId(exercise.exerciseId)}
+                  >
+                    <Text style={[
+                      styles.exercisePillText,
+                      selectedExerciseId === exercise.exerciseId && styles.exercisePillTextActive,
+                    ]}>
+                      {exercise.exerciseName}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+
+            <ExerciseProgressChart data={exerciseProgress} height={160} />
+          </GlassCard>
+        </PremiumGate>
+
         {/* Coming Soon Features */}
         <Text style={styles.sectionTitle}>Coming Soon</Text>
 
         <GlassCard variant="default" style={styles.featuresCard}>
-          <FeatureCard
-            icon="trending-up"
-            title="Progress Charts"
-            description="Visualize your strength gains and workout trends over time"
-            accentColor="primary"
-          />
-
-          <View style={styles.featureDivider} />
-
           <FeatureCard
             icon="trophy"
             title="Personal Records"
@@ -488,5 +637,83 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: colors.text.secondary,
     lineHeight: 20,
+  },
+  // Chart styles
+  timeRangeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.m,
+  },
+  timeRangePills: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  timeRangePill: {
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  timeRangePillActive: {
+    backgroundColor: colors.accent.primaryMuted,
+    borderColor: colors.accent.primary,
+  },
+  timeRangePillText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+  },
+  timeRangePillTextActive: {
+    color: colors.accent.primary,
+    fontWeight: '600',
+  },
+  chartCard: {
+    marginBottom: spacing.m,
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+    marginBottom: spacing.s,
+  },
+  chartTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  exerciseSelector: {
+    marginBottom: spacing.s,
+    marginHorizontal: -spacing.m,
+  },
+  exerciseSelectorContent: {
+    paddingHorizontal: spacing.m,
+    gap: spacing.xs,
+  },
+  exercisePill: {
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  exercisePillActive: {
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderColor: colors.success,
+  },
+  exercisePillText: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+  },
+  exercisePillTextActive: {
+    color: colors.success,
+    fontWeight: '600',
   },
 });

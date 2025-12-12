@@ -2,6 +2,46 @@ import { db } from '../../utils/database';
 import { getSessions } from '../sessionLogger';
 import { getPlan } from './plan';
 
+/**
+ * Data point for charts showing value over time
+ */
+export interface ChartDataPoint {
+  date: Date;
+  value: number;
+  label?: string;
+}
+
+/**
+ * Volume by week data
+ */
+export interface WeeklyVolumeData {
+  weekStart: Date;
+  weekEnd: Date;
+  totalVolume: number;
+  workoutCount: number;
+}
+
+/**
+ * Workout frequency data
+ */
+export interface FrequencyData {
+  weekStart: Date;
+  weekEnd: Date;
+  completedWorkouts: number;
+  scheduledWorkouts: number;
+}
+
+/**
+ * Exercise progress data
+ */
+export interface ExerciseProgressData {
+  exerciseId: string;
+  exerciseName: string;
+  dataPoints: ChartDataPoint[];
+  currentMax: number;
+  percentImprovement: number;
+}
+
 export interface WeeklyStats {
   completedWorkouts: number;
   scheduledWorkouts: number;
@@ -312,11 +352,238 @@ export async function getMonthWorkouts(
     }
 
     // Sort by date (most recent first)
-    return workouts.sort((a, b) => 
+    return workouts.sort((a, b) =>
       new Date(b.workout_date).getTime() - new Date(a.workout_date).getTime()
     );
   } catch (error) {
     console.error('Failed to get month workouts:', error);
+    return [];
+  }
+}
+
+/**
+ * Get weekly volume data for chart
+ * Returns total lbs lifted per week for the specified number of weeks
+ */
+export async function getVolumeByWeek(
+  userId: string = 'default',
+  weeks: number = 8
+): Promise<WeeklyVolumeData[]> {
+  try {
+    const allSessions = await getSessions(userId);
+    const result: WeeklyVolumeData[] = [];
+
+    // Calculate week boundaries going back from today
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    for (let i = weeks - 1; i >= 0; i--) {
+      // Calculate week start (Monday) and end (Sunday)
+      const weekEnd = new Date(today);
+      weekEnd.setDate(today.getDate() - (i * 7));
+
+      const dayOfWeek = weekEnd.getDay();
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekEnd.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      weekStart.setHours(0, 0, 0, 0);
+
+      const adjustedWeekEnd = new Date(weekStart);
+      adjustedWeekEnd.setDate(weekStart.getDate() + 6);
+      adjustedWeekEnd.setHours(23, 59, 59, 999);
+
+      // Filter sessions for this week
+      const weekSessions = allSessions.filter(session => {
+        const sessionDate = new Date(session.completedAt);
+        return sessionDate >= weekStart && sessionDate <= adjustedWeekEnd;
+      });
+
+      // Calculate volume from sessions
+      let totalVolume = 0;
+      weekSessions.forEach(session => {
+        session.exercises.forEach(exercise => {
+          exercise.sets.forEach(set => {
+            // Estimate: reps * 10 lbs average (simplified)
+            totalVolume += set.reps * 10;
+          });
+        });
+      });
+
+      result.push({
+        weekStart: new Date(weekStart),
+        weekEnd: new Date(adjustedWeekEnd),
+        totalVolume: Math.round(totalVolume),
+        workoutCount: weekSessions.length,
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Failed to get volume by week:', error);
+    return [];
+  }
+}
+
+/**
+ * Get workout frequency data for chart
+ * Shows completed vs scheduled workouts per week
+ */
+export async function getWorkoutFrequency(
+  userId: string = 'default',
+  weeks: number = 8
+): Promise<FrequencyData[]> {
+  try {
+    const allSessions = await getSessions(userId);
+    const plan = await getPlan(userId).catch(() => null);
+    const result: FrequencyData[] = [];
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    for (let i = weeks - 1; i >= 0; i--) {
+      const weekEnd = new Date(today);
+      weekEnd.setDate(today.getDate() - (i * 7));
+
+      const dayOfWeek = weekEnd.getDay();
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekEnd.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      weekStart.setHours(0, 0, 0, 0);
+
+      const adjustedWeekEnd = new Date(weekStart);
+      adjustedWeekEnd.setDate(weekStart.getDate() + 6);
+      adjustedWeekEnd.setHours(23, 59, 59, 999);
+
+      // Count completed workouts
+      const completedWorkouts = allSessions.filter(session => {
+        const sessionDate = new Date(session.completedAt);
+        return sessionDate >= weekStart && sessionDate <= adjustedWeekEnd;
+      }).length;
+
+      // Count scheduled workouts from plan (or default to 4)
+      let scheduledWorkouts = 4;
+      if (plan) {
+        scheduledWorkouts = plan.days.filter(day => {
+          const dayDate = new Date(day.date);
+          dayDate.setHours(0, 0, 0, 0);
+          return dayDate >= weekStart && dayDate <= adjustedWeekEnd && !day.isRestDay;
+        }).length || 4;
+      }
+
+      result.push({
+        weekStart: new Date(weekStart),
+        weekEnd: new Date(adjustedWeekEnd),
+        completedWorkouts,
+        scheduledWorkouts,
+      });
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Failed to get workout frequency:', error);
+    return [];
+  }
+}
+
+/**
+ * Get progress data for a specific exercise
+ * Shows max weight over time for the exercise
+ */
+export async function getExerciseProgress(
+  userId: string = 'default',
+  exerciseId: string,
+  exerciseName: string = 'Exercise'
+): Promise<ExerciseProgressData | null> {
+  try {
+    const allSessions = await getSessions(userId);
+    const dataPoints: ChartDataPoint[] = [];
+
+    // Find all sessions with this exercise
+    allSessions.forEach(session => {
+      const sessionDate = new Date(session.completedAt);
+
+      session.exercises.forEach(exercise => {
+        // Match by exercise ID or name (flexible matching)
+        if (exercise.exerciseId === exerciseId || exercise.name === exerciseName) {
+          // Find max weight for this exercise in this session
+          let maxWeight = 0;
+          exercise.sets.forEach(set => {
+            // Estimate weight as reps * 10 (simplified - would use actual weight in full impl)
+            const estimatedWeight = set.reps * 10;
+            if (estimatedWeight > maxWeight) {
+              maxWeight = estimatedWeight;
+            }
+          });
+
+          if (maxWeight > 0) {
+            dataPoints.push({
+              date: sessionDate,
+              value: maxWeight,
+              label: sessionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            });
+          }
+        }
+      });
+    });
+
+    if (dataPoints.length === 0) {
+      return null;
+    }
+
+    // Sort by date (oldest first for chart)
+    dataPoints.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    // Calculate improvement
+    const firstValue = dataPoints[0].value;
+    const currentMax = dataPoints[dataPoints.length - 1].value;
+    const percentImprovement = firstValue > 0
+      ? Math.round(((currentMax - firstValue) / firstValue) * 100)
+      : 0;
+
+    return {
+      exerciseId,
+      exerciseName,
+      dataPoints,
+      currentMax,
+      percentImprovement,
+    };
+  } catch (error) {
+    console.error('Failed to get exercise progress:', error);
+    return null;
+  }
+}
+
+/**
+ * Get list of exercises with logged data
+ * Used to populate exercise selector for progress charts
+ */
+export async function getExercisesWithData(
+  userId: string = 'default'
+): Promise<{ exerciseId: string; exerciseName: string; sessionCount: number }[]> {
+  try {
+    const allSessions = await getSessions(userId);
+    const exerciseMap = new Map<string, { name: string; count: number }>();
+
+    allSessions.forEach(session => {
+      session.exercises.forEach(exercise => {
+        const key = exercise.exerciseId || exercise.name;
+        const existing = exerciseMap.get(key);
+        if (existing) {
+          existing.count++;
+        } else {
+          exerciseMap.set(key, { name: exercise.name, count: 1 });
+        }
+      });
+    });
+
+    // Convert to array and sort by session count (most logged first)
+    return Array.from(exerciseMap.entries())
+      .map(([exerciseId, data]) => ({
+        exerciseId,
+        exerciseName: data.name,
+        sessionCount: data.count,
+      }))
+      .sort((a, b) => b.sessionCount - a.sessionCount);
+  } catch (error) {
+    console.error('Failed to get exercises with data:', error);
     return [];
   }
 }

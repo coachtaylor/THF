@@ -19,6 +19,7 @@ import { initializeApp } from './src/services/init';
 import { setupDeepLinking } from './src/services/auth/deepLinking';
 import { onOnboardingComplete, clearOnboardingCallback, onLogout, clearLogoutCallback } from './src/services/events/onboardingEvents';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { SubscriptionProvider } from './src/contexts/SubscriptionContext';
 import { theme } from './src/theme';
 
 export default function App() {
@@ -122,9 +123,11 @@ export default function App() {
     <SafeAreaProvider style={{ backgroundColor: theme.colors.background }}>
       <PaperProvider theme={theme}>
         <AuthProvider>
-          <NavigationContainer ref={navigationRef}>
-            {hasCompletedOnboarding ? <MainNavigator /> : <OnboardingNavigator />}
-          </NavigationContainer>
+          <SubscriptionProvider>
+            <NavigationContainer ref={navigationRef}>
+              {hasCompletedOnboarding ? <MainNavigator /> : <OnboardingNavigator />}
+            </NavigationContainer>
+          </SubscriptionProvider>
         </AuthProvider>
       </PaperProvider>
     </SafeAreaProvider>
