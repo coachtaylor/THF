@@ -16,9 +16,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import Slider from '@react-native-community/slider';
-import { useWorkout } from '../../contexts/WorkoutContext';
+import { useWorkout, WorkoutPhase } from '../../contexts/WorkoutContext';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard, GlassButton } from '../../components/common';
+import { WarmupExerciseCard, CooldownExerciseCard, PhaseTransition, WeightSuggestion, ExerciseDemoPlaceholder } from '../../components/workout';
 
 type RootStackParamList = {
   ActiveWorkout: undefined;
@@ -156,13 +157,46 @@ export default function ActiveWorkoutScreen() {
     totalExercises,
     exercisesCompleted,
     isWorkoutComplete,
+    // Phase tracking
+    currentPhase,
+    phaseExerciseIndex,
+    completedWarmupExercises,
+    completedCooldownExercises,
+    currentWarmupExercise,
+    currentCooldownExercise,
+    warmupExerciseCount,
+    cooldownExerciseCount,
+    // Exercise history for weight suggestions
+    getExerciseLastPerformance,
+    getSuggestedWeight,
+    // Actions
     updateSetData,
     completeSet,
     skipSet,
     skipRest,
     pauseWorkout,
     resumeWorkout,
+    completeWarmupExercise,
+    skipWarmupPhase,
+    completeCooldownExercise,
+    skipCooldownPhase,
   } = useWorkout();
+
+  // Phase transition state
+  const [showPhaseTransition, setShowPhaseTransition] = useState(false);
+  const [transitionFromPhase, setTransitionFromPhase] = useState<WorkoutPhase>('warmup');
+  const [transitionToPhase, setTransitionToPhase] = useState<WorkoutPhase>('main');
+  const prevPhaseRef = useRef<WorkoutPhase>(currentPhase);
+
+  // Detect phase changes and show transition
+  useEffect(() => {
+    if (prevPhaseRef.current !== currentPhase && workout) {
+      setTransitionFromPhase(prevPhaseRef.current);
+      setTransitionToPhase(currentPhase);
+      setShowPhaseTransition(true);
+      prevPhaseRef.current = currentPhase;
+    }
+  }, [currentPhase, workout]);
 
   // Shimmer animation
   useEffect(() => {
@@ -207,8 +241,11 @@ export default function ActiveWorkoutScreen() {
     );
   }
 
-  const currentExercise = workout.main_workout[currentExerciseIndex];
-  if (!currentExercise) {
+  // Get current exercise only for main phase
+  const currentExercise = currentPhase === 'main' ? workout.main_workout[currentExerciseIndex] : null;
+
+  // For main phase, verify exercise exists
+  if (currentPhase === 'main' && !currentExercise) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <GlassCard variant="default" style={styles.errorCard}>
@@ -219,9 +256,32 @@ export default function ActiveWorkoutScreen() {
     );
   }
 
-  const currentExerciseSets = completedSets.filter(
-    s => s.exercise_id === currentExercise.exerciseId
-  );
+  // Get phase-specific display info
+  const getPhaseTitle = (): string => {
+    switch (currentPhase) {
+      case 'warmup':
+        return 'Warm-Up';
+      case 'cooldown':
+        return 'Cool-Down';
+      default:
+        return workout.workout_name;
+    }
+  };
+
+  const getPhaseProgress = (): string => {
+    switch (currentPhase) {
+      case 'warmup':
+        return `Warm-up ${phaseExerciseIndex + 1} of ${warmupExerciseCount}`;
+      case 'cooldown':
+        return `Cool-down ${phaseExerciseIndex + 1} of ${cooldownExerciseCount}`;
+      default:
+        return `Exercise ${currentExerciseIndex + 1} of ${totalExercises}`;
+    }
+  };
+
+  const currentExerciseSets = currentExercise
+    ? completedSets.filter(s => s.exercise_id === currentExercise.exerciseId)
+    : [];
 
   const canCompleteSet =
     currentSetData.reps > 0 &&
@@ -257,65 +317,138 @@ export default function ActiveWorkoutScreen() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const exerciseName = currentExercise.exercise_name || 'Exercise';
-  const targetMuscle = (currentExercise as any).target_muscle || 'Full body';
-  const restSeconds = currentExercise.restSeconds || 60;
+  // Only get exercise info for main phase
+  const exerciseName = currentExercise?.exercise_name || 'Exercise';
+  const targetMuscle = (currentExercise as any)?.target_muscle || 'Full body';
+  const restSeconds = currentExercise?.restSeconds || 60;
 
-  return (
-    <View style={styles.container}>
-      {/* Background gradient */}
-      <LinearGradient
-        colors={[colors.bg.primary, colors.bg.secondary]}
-        style={StyleSheet.absoluteFill}
-      />
+  // Render warmup phase content
+  const renderWarmupContent = () => {
+    const warmupExercises = workout.warm_up?.exercises || [];
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + spacing.s }]}>
-        <Pressable
-          onPress={handleExit}
-          style={({ pressed }) => [
-            styles.headerButton,
-            pressed && styles.buttonPressed,
-          ]}
-          hitSlop={8}
-        >
-          <Ionicons name="close" size={24} color={colors.text.primary} />
-        </Pressable>
-
-        <View style={styles.headerCenter}>
-          <Text style={styles.workoutName} numberOfLines={1}>
-            {workout.workout_name}
-          </Text>
-          <View style={styles.timerContainer}>
-            <Ionicons name="time-outline" size={14} color={colors.accent.primary} />
-            <Text style={styles.timerText}>{formatTime(workoutDuration)}</Text>
+    return (
+      <>
+        {/* Progress header */}
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>{getPhaseProgress()}</Text>
+          <View style={styles.progressDots}>
+            {warmupExercises.map((_, index) => (
+              <ProgressDot
+                key={index}
+                isActive={index === phaseExerciseIndex}
+                isComplete={completedWarmupExercises.includes(warmupExercises[index]?.name)}
+              />
+            ))}
           </View>
         </View>
 
+        {/* Phase title */}
+        <View style={styles.phaseHeader}>
+          <View style={[styles.phaseIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+            <Ionicons name="flame-outline" size={24} color={colors.accent.primary} />
+          </View>
+          <View>
+            <Text style={styles.phaseTitle}>Warm-Up</Text>
+            <Text style={styles.phaseSubtitle}>Prepare your body for the workout</Text>
+          </View>
+        </View>
+
+        {/* Warmup exercises list */}
+        {warmupExercises.map((exercise, index) => (
+          <WarmupExerciseCard
+            key={`warmup-${index}`}
+            exercise={exercise}
+            index={index}
+            total={warmupExercises.length}
+            isCompleted={completedWarmupExercises.includes(exercise.name)}
+            isActive={index === phaseExerciseIndex}
+            onComplete={completeWarmupExercise}
+          />
+        ))}
+
+        {/* Skip warmup button */}
         <Pressable
           style={({ pressed }) => [
-            styles.headerButton,
+            styles.skipPhaseButton,
             pressed && styles.buttonPressed,
           ]}
-          hitSlop={8}
+          onPress={skipWarmupPhase}
         >
-          <Ionicons name="ellipsis-vertical" size={20} color={colors.text.primary} />
+          <Text style={styles.skipPhaseButtonText}>Skip Warm-Up</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.text.secondary} />
         </Pressable>
-      </View>
+      </>
+    );
+  };
 
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 }
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
+  // Render cooldown phase content
+  const renderCooldownContent = () => {
+    const cooldownExercises = workout.cool_down?.exercises || [];
+
+    return (
+      <>
+        {/* Progress header */}
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>{getPhaseProgress()}</Text>
+          <View style={styles.progressDots}>
+            {cooldownExercises.map((_, index) => (
+              <ProgressDot
+                key={index}
+                isActive={index === phaseExerciseIndex}
+                isComplete={completedCooldownExercises.includes(cooldownExercises[index]?.name)}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Phase title */}
+        <View style={styles.phaseHeader}>
+          <View style={[styles.phaseIcon, { backgroundColor: 'rgba(245, 169, 184, 0.2)' }]}>
+            <Ionicons name="leaf-outline" size={24} color={colors.accent.secondary} />
+          </View>
+          <View>
+            <Text style={[styles.phaseTitle, { color: colors.accent.secondary }]}>Cool-Down</Text>
+            <Text style={styles.phaseSubtitle}>Stretch and recover</Text>
+          </View>
+        </View>
+
+        {/* Cooldown exercises list */}
+        {cooldownExercises.map((exercise, index) => (
+          <CooldownExerciseCard
+            key={`cooldown-${index}`}
+            exercise={exercise}
+            index={index}
+            total={cooldownExercises.length}
+            isCompleted={completedCooldownExercises.includes(exercise.name)}
+            isActive={index === phaseExerciseIndex}
+            onComplete={completeCooldownExercise}
+          />
+        ))}
+
+        {/* Skip cooldown button */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.skipPhaseButton,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={skipCooldownPhase}
+        >
+          <Text style={styles.skipPhaseButtonText}>Finish Workout</Text>
+          <Ionicons name="checkmark-circle" size={16} color={colors.text.secondary} />
+        </Pressable>
+      </>
+    );
+  };
+
+  // Render main workout phase content
+  const renderMainWorkoutContent = () => {
+    if (!currentExercise) return null;
+
+    return (
+      <>
         {/* Progress */}
         <View style={styles.progressContainer}>
-          <Text style={styles.progressText}>
-            Exercise {currentExerciseIndex + 1} of {totalExercises}
-          </Text>
+          <Text style={styles.progressText}>{getPhaseProgress()}</Text>
 
           <View style={styles.progressDots}>
             {Array.from({ length: totalExercises }).map((_, index) => (
@@ -342,6 +475,24 @@ export default function ActiveWorkoutScreen() {
             <Text style={styles.targetMuscle}>{targetMuscle}</Text>
           </View>
         </View>
+
+        {/* Exercise Demo Placeholder (shown only on first set) */}
+        {currentSetNumber === 1 && (
+          <ExerciseDemoPlaceholder
+            exerciseName={exerciseName}
+            targetMuscles={targetMuscle}
+          />
+        )}
+
+        {/* Weight Suggestion based on history */}
+        {currentSetNumber === 1 && (
+          <WeightSuggestion
+            lastPerformance={getExerciseLastPerformance(currentExercise.exerciseId)}
+            suggestedWeight={getSuggestedWeight(currentExercise.exerciseId) || currentSetData.weight}
+            currentWeight={currentSetData.weight}
+            onApplySuggestion={(weight) => updateSetData('weight', weight)}
+          />
+        )}
 
         <View style={styles.setIndicator}>
           <View style={styles.setIndicatorLine} />
@@ -560,22 +711,6 @@ export default function ActiveWorkoutScreen() {
           </GlassCard>
         )}
 
-        {/* Last Workout Reference */}
-        {(currentExercise as any).last_performed && (
-          <View style={styles.lastWorkout}>
-            <LinearGradient
-              colors={[colors.accent.primaryMuted, 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <Ionicons name="flash" size={16} color={colors.accent.primary} />
-            <Text style={styles.lastWorkoutText}>
-              Last workout: {(currentExercise as any).last_performed.sets} × {(currentExercise as any).last_performed.reps} @ {(currentExercise as any).last_performed.weight} lbs
-            </Text>
-          </View>
-        )}
-
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <Pressable
@@ -619,6 +754,132 @@ export default function ActiveWorkoutScreen() {
           <Ionicons name="alert-circle" size={20} color={colors.accent.secondary} />
           <Text style={styles.emergencyButtonText}>Stop if experiencing pain or discomfort</Text>
         </Pressable>
+      </>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* Background gradient */}
+      <LinearGradient
+        colors={[colors.bg.primary, colors.bg.secondary]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Phase Transition Overlay */}
+      <PhaseTransition
+        fromPhase={transitionFromPhase}
+        toPhase={transitionToPhase}
+        visible={showPhaseTransition}
+        onComplete={() => setShowPhaseTransition(false)}
+      />
+
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + spacing.s }]}>
+        <Pressable
+          onPress={handleExit}
+          style={({ pressed }) => [
+            styles.headerButton,
+            pressed && styles.buttonPressed,
+          ]}
+          hitSlop={8}
+        >
+          <Ionicons name="close" size={24} color={colors.text.primary} />
+        </Pressable>
+
+        <View style={styles.headerCenter}>
+          <Text style={styles.workoutName} numberOfLines={1}>
+            {getPhaseTitle()}
+          </Text>
+          <View style={styles.timerContainer}>
+            <Ionicons name="time-outline" size={14} color={colors.accent.primary} />
+            <Text style={styles.timerText}>{formatTime(workoutDuration)}</Text>
+          </View>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.headerButton,
+            pressed && styles.buttonPressed,
+          ]}
+          hitSlop={8}
+        >
+          <Ionicons name="ellipsis-vertical" size={20} color={colors.text.primary} />
+        </Pressable>
+      </View>
+
+      {/* Phase indicator pills */}
+      <View style={styles.phaseIndicatorRow}>
+        <View style={[
+          styles.phasePill,
+          currentPhase === 'warmup' && styles.phasePillActive,
+          (currentPhase === 'main' || currentPhase === 'cooldown') && styles.phasePillComplete,
+        ]}>
+          <Ionicons
+            name="flame-outline"
+            size={14}
+            color={currentPhase === 'warmup' ? colors.accent.primary : colors.text.tertiary}
+          />
+          <Text style={[
+            styles.phasePillText,
+            currentPhase === 'warmup' && styles.phasePillTextActive,
+          ]}>
+            Warm-Up
+          </Text>
+        </View>
+
+        <View style={styles.phaseConnector} />
+
+        <View style={[
+          styles.phasePill,
+          currentPhase === 'main' && styles.phasePillActive,
+          currentPhase === 'cooldown' && styles.phasePillComplete,
+        ]}>
+          <Ionicons
+            name="barbell-outline"
+            size={14}
+            color={currentPhase === 'main' ? colors.accent.primary : colors.text.tertiary}
+          />
+          <Text style={[
+            styles.phasePillText,
+            currentPhase === 'main' && styles.phasePillTextActive,
+          ]}>
+            Workout
+          </Text>
+        </View>
+
+        <View style={styles.phaseConnector} />
+
+        <View style={[
+          styles.phasePill,
+          currentPhase === 'cooldown' && styles.phasePillActivePink,
+        ]}>
+          <Ionicons
+            name="leaf-outline"
+            size={14}
+            color={currentPhase === 'cooldown' ? colors.accent.secondary : colors.text.tertiary}
+          />
+          <Text style={[
+            styles.phasePillText,
+            currentPhase === 'cooldown' && styles.phasePillTextActivePink,
+          ]}>
+            Cool-Down
+          </Text>
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 100 }
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Render phase-specific content */}
+        {currentPhase === 'warmup' && renderWarmupContent()}
+        {currentPhase === 'main' && renderMainWorkoutContent()}
+        {currentPhase === 'cooldown' && renderCooldownContent()}
       </ScrollView>
     </View>
   );
@@ -1110,24 +1371,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.accent.primary,
   },
-  // Last workout
-  lastWorkout: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s,
-    borderRadius: borderRadius.lg,
-    padding: spacing.m,
-    marginBottom: spacing.l,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.glass.borderCyan,
-  },
-  lastWorkoutText: {
-    fontFamily: 'Poppins',
-    fontSize: 13,
-    color: colors.accent.primary,
-    flex: 1,
-  },
   // Action buttons
   actionButtons: {
     flexDirection: 'row',
@@ -1183,5 +1426,97 @@ const styles = StyleSheet.create({
     color: colors.error,
     textAlign: 'center',
     marginTop: spacing.m,
+  },
+  // Phase indicator row
+  phaseIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.l,
+    paddingVertical: spacing.m,
+    gap: spacing.xs,
+  },
+  phasePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  phasePillActive: {
+    backgroundColor: colors.accent.primaryMuted,
+    borderColor: colors.accent.primary,
+  },
+  phasePillActivePink: {
+    backgroundColor: 'rgba(245, 169, 184, 0.2)',
+    borderColor: colors.accent.secondary,
+  },
+  phasePillComplete: {
+    borderColor: colors.glass.borderCyan,
+  },
+  phasePillText: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+  },
+  phasePillTextActive: {
+    color: colors.accent.primary,
+    fontWeight: '600',
+  },
+  phasePillTextActivePink: {
+    color: colors.accent.secondary,
+    fontWeight: '600',
+  },
+  phaseConnector: {
+    width: 12,
+    height: 1,
+    backgroundColor: colors.border.default,
+  },
+  // Phase header
+  phaseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.m,
+    marginBottom: spacing.xl,
+  },
+  phaseIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  phaseTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.accent.primary,
+    letterSpacing: -0.3,
+  },
+  phaseSubtitle: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginTop: spacing.xxs,
+  },
+  // Skip phase button
+  skipPhaseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.m,
+    marginTop: spacing.m,
+  },
+  skipPhaseButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.secondary,
   },
 });

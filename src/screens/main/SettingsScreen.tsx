@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform, Linking, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
@@ -7,15 +7,26 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../contexts/AuthContext';
-import { deleteProfile } from '../../services/storage/profile';
+import { useSubscription } from '../../contexts/SubscriptionContext';
+import { deleteProfile, updateProfile } from '../../services/storage/profile';
 import { signalLogout } from '../../services/events/onboardingEvents';
 import { generatePlan } from '../../services/planGenerator';
 import { savePlan } from '../../services/storage/plan';
 import { usePlan } from '../../hooks/usePlan';
+import { restorePurchases } from '../../services/payments/revenueCat';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard, GlassButton, GlassListItem, GlassList, GlassModal } from '../../components/common';
 import { BetaSurveyModal, SurveyResponse } from '../../components/feedback';
 import { saveSurveyResponse } from '../../services/feedback';
+import {
+  EditProfileModal,
+  EditHRTModal,
+  EditBindingModal,
+  EditGoalsModal,
+  EditTrainingModal,
+  EditEnvironmentModal,
+} from '../../components/settings';
+import { getWorkoutHistory } from '../../services/storage/workoutLog';
 
 type MainTabParamList = {
   Home: undefined;
@@ -33,30 +44,132 @@ type RootStackParamList = {
 };
 
 export default function SettingsScreen() {
-  const navigation = useNavigation<SettingsScreenNavigationProp & { navigate: (screen: keyof RootStackParamList) => void }>();
+  const navigation = useNavigation<SettingsScreenNavigationProp & { navigate: (screen: keyof RootStackParamList | 'Paywall') => void }>();
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
   const { logout } = useAuth();
   const { refreshPlan } = usePlan(profile?.user_id || profile?.id || 'default');
+  const { isPremium, status, restore, isLoading: subscriptionLoading } = useSubscription();
 
   // Modal states
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [showSurveyModal, setShowSurveyModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  // Edit modal states
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showEditHRT, setShowEditHRT] = useState(false);
+  const [showEditBinding, setShowEditBinding] = useState(false);
+  const [showEditGoals, setShowEditGoals] = useState(false);
+  const [showEditTraining, setShowEditTraining] = useState(false);
+  const [showEditEnvironment, setShowEditEnvironment] = useState(false);
+
+  // App settings state
+  const [restTimerSound, setRestTimerSound] = useState(true);
+  const [units, setUnits] = useState<'lbs' | 'kg'>('lbs');
 
   const handleEdit = (section: string) => {
-    console.log('Edit section:', section);
+    switch (section) {
+      case 'profile':
+        setShowEditProfile(true);
+        break;
+      case 'hrt':
+        setShowEditHRT(true);
+        break;
+      case 'binding':
+        setShowEditBinding(true);
+        break;
+      case 'surgery':
+        // Surgery editing would need a more complex modal - for now show alert
+        Alert.alert(
+          'Edit Surgery History',
+          'To update your surgery history, please use the "Reset Onboarding" option in Debug settings to go through onboarding again.',
+          [{ text: 'OK' }]
+        );
+        break;
+      case 'goals':
+        setShowEditGoals(true);
+        break;
+      case 'training':
+        setShowEditTraining(true);
+        break;
+      case 'environment':
+        setShowEditEnvironment(true);
+        break;
+      default:
+        console.log('Edit section:', section);
+    }
   };
 
+  const handleProfileSaved = useCallback(() => {
+    // Profile will be refreshed automatically via useProfile hook
+    Alert.alert('Success', 'Your profile has been updated.');
+  }, []);
+
   const handleExportData = async () => {
-    console.log('Export data');
+    try {
+      setIsExporting(true);
+      const userId = profile?.user_id || profile?.id || 'default';
+      const history = await getWorkoutHistory(userId, 100);
+
+      if (history.length === 0) {
+        Alert.alert('No Data', 'You have no workout history to export yet.');
+        return;
+      }
+
+      // Format workout data for export
+      const exportData = {
+        exportDate: new Date().toISOString(),
+        totalWorkouts: history.length,
+        workouts: history.map((log) => ({
+          date: log.workout_date.toISOString().split('T')[0],
+          duration: log.duration_minutes,
+          exercisesCompleted: log.exercises_completed,
+          totalVolume: log.total_volume,
+          averageRPE: log.average_rpe,
+          rating: log.workout_rating,
+        })),
+      };
+
+      const jsonString = JSON.stringify(exportData, null, 2);
+
+      // Use Share API to share the data
+      await Share.share({
+        message: jsonString,
+        title: 'TransFitness Workout Data',
+      });
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      Alert.alert('Error', 'Failed to export workout data. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleDeleteAccount = () => {
-    console.log('Delete account');
+    setShowDeleteAccountModal(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    try {
+      setIsDeletingAccount(true);
+      await deleteProfile();
+      await logout();
+      setShowDeleteAccountModal(false);
+      signalLogout();
+    } catch (error) {
+      console.error('Delete account error:', error);
+      setIsDeletingAccount(false);
+      setShowDeleteAccountModal(false);
+      Alert.alert('Error', 'Failed to delete account. Please try again.');
+    }
   };
 
   const formatGenderIdentity = (gender?: string) => {
@@ -185,6 +298,50 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleRestorePurchases = async () => {
+    try {
+      setIsRestoring(true);
+      const restored = await restore();
+      setIsRestoring(false);
+
+      if (restored) {
+        Alert.alert('Success', 'Your subscription has been restored!');
+      } else {
+        Alert.alert('No Subscription Found', 'No previous subscription was found for this account.');
+      }
+    } catch (error) {
+      console.error('Error restoring purchases:', error);
+      setIsRestoring(false);
+      Alert.alert('Error', 'Failed to restore purchases. Please try again.');
+    }
+  };
+
+  const handleManageSubscription = () => {
+    // Open App Store subscription management
+    if (Platform.OS === 'ios') {
+      Linking.openURL('https://apps.apple.com/account/subscriptions');
+    } else {
+      Linking.openURL('https://play.google.com/store/account/subscriptions');
+    }
+  };
+
+  const handleUpgrade = () => {
+    navigation.navigate('Paywall');
+  };
+
+  // Format subscription status for display
+  const getSubscriptionStatusText = () => {
+    if (subscriptionLoading) return 'Loading...';
+    if (isPremium) {
+      if (status.expirationDate) {
+        const expDate = new Date(status.expirationDate);
+        return `Premium (renews ${expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`;
+      }
+      return 'Premium';
+    }
+    return 'Free';
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -234,6 +391,82 @@ export default function SettingsScreen() {
             </Pressable>
           </View>
         </GlassCard>
+
+        {/* Subscription */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: isPremium ? colors.accent.secondaryMuted : colors.accent.primaryMuted }]}>
+                <Ionicons
+                  name={isPremium ? 'star' : 'star-outline'}
+                  size={16}
+                  color={isPremium ? colors.accent.secondary : colors.accent.primary}
+                />
+              </View>
+              <Text style={styles.sectionTitle}>Subscription</Text>
+            </View>
+          </View>
+          <GlassCard variant={isPremium ? 'heroPink' : 'default'}>
+            <View style={styles.subscriptionContent}>
+              <View style={styles.subscriptionStatus}>
+                <Text style={styles.subscriptionPlanLabel}>Current Plan</Text>
+                <View style={styles.subscriptionPlanRow}>
+                  <Text style={[styles.subscriptionPlanName, isPremium && styles.subscriptionPlanNamePremium]}>
+                    {isPremium ? 'Premium' : 'Free'}
+                  </Text>
+                  {isPremium && (
+                    <View style={styles.premiumBadge}>
+                      <Ionicons name="checkmark-circle" size={14} color={colors.accent.secondary} />
+                    </View>
+                  )}
+                </View>
+                {isPremium && status.expirationDate && (
+                  <Text style={styles.subscriptionExpiry}>
+                    {status.willRenew ? 'Renews' : 'Expires'}{' '}
+                    {new Date(status.expirationDate).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                )}
+                {!isPremium && (
+                  <Text style={styles.subscriptionFreeInfo}>
+                    2 workouts/week • Basic features
+                  </Text>
+                )}
+              </View>
+            </View>
+          </GlassCard>
+
+          {/* Subscription Actions */}
+          <View style={styles.subscriptionActions}>
+            {!isPremium && (
+              <GlassButton
+                title="Upgrade to Premium"
+                variant="primary"
+                icon="sparkles"
+                onPress={handleUpgrade}
+              />
+            )}
+            {isPremium && (
+              <GlassListItem
+                title="Manage Subscription"
+                subtitle="Update payment, cancel, or change plan"
+                leftIcon="card-outline"
+                onPress={handleManageSubscription}
+                showChevron
+              />
+            )}
+            <GlassListItem
+              title="Restore Purchases"
+              subtitle={isRestoring ? 'Restoring...' : 'Recover previous subscription'}
+              leftIcon="refresh-outline"
+              onPress={handleRestorePurchases}
+              showChevron
+            />
+          </View>
+        </View>
 
         {/* HRT Status */}
         <View style={styles.section}>
@@ -479,19 +712,36 @@ export default function SettingsScreen() {
             <GlassListItem
               title="Notifications"
               rightIcon="chevron-forward"
-              onPress={() => console.log('Notifications')}
+              onPress={() => {
+                // Open system settings for notifications
+                if (Platform.OS === 'ios') {
+                  Linking.openURL('app-settings:');
+                } else {
+                  Linking.openSettings();
+                }
+              }}
             />
             <GlassListItem
               title="Rest timer sound"
-              rightValue="Enabled"
+              rightValue={restTimerSound ? 'Enabled' : 'Disabled'}
+              onPress={() => {
+                setRestTimerSound(!restTimerSound);
+                // In a real app, you'd persist this to AsyncStorage
+              }}
             />
             <GlassListItem
               title="Units"
-              rightValue="lbs"
+              rightValue={units}
+              onPress={() => {
+                const newUnits = units === 'lbs' ? 'kg' : 'lbs';
+                setUnits(newUnits);
+                // In a real app, you'd persist this to AsyncStorage
+              }}
             />
             <GlassListItem
               title="Theme"
               rightValue="Dark"
+              // Theme switching not implemented yet
             />
           </GlassList>
         </View>
@@ -509,6 +759,7 @@ export default function SettingsScreen() {
           <GlassList>
             <GlassListItem
               title="Export workout data"
+              subtitle={isExporting ? 'Exporting...' : undefined}
               leftIcon="download-outline"
               onPress={handleExportData}
               showChevron
@@ -523,7 +774,7 @@ export default function SettingsScreen() {
             <GlassListItem
               title="Privacy policy"
               leftIcon="document-text-outline"
-              onPress={() => console.log('Privacy policy')}
+              onPress={() => Linking.openURL('https://transfitness.app/privacy')}
               showChevron
             />
           </GlassList>
@@ -572,13 +823,17 @@ export default function SettingsScreen() {
             <GlassListItem
               title="Contact support"
               leftIcon="mail-outline"
-              onPress={() => console.log('Contact support')}
+              onPress={() => {
+                Linking.openURL('mailto:support@transfitness.app?subject=TransFitness Support Request');
+              }}
               showChevron
             />
             <GlassListItem
               title="Report a bug"
               leftIcon="bug-outline"
-              onPress={() => console.log('Report bug')}
+              onPress={() => {
+                Linking.openURL('mailto:support@transfitness.app?subject=TransFitness Bug Report&body=Please describe the bug you encountered:%0A%0ADevice: ' + Platform.OS + '%0AApp Version: 1.0.0');
+              }}
               showChevron
             />
             <GlassListItem
@@ -656,6 +911,77 @@ export default function SettingsScreen() {
         visible={showSurveyModal}
         onSubmit={handleSurveySubmit}
         onSkip={handleSurveySkip}
+      />
+
+      {/* Delete Account Modal */}
+      <GlassModal
+        visible={showDeleteAccountModal}
+        onClose={() => setShowDeleteAccountModal(false)}
+        title="Delete Account"
+        message="This will permanently delete your account, profile, and all workout data. This action cannot be undone."
+        icon="trash-outline"
+        iconColor={colors.error}
+        actions={[
+          {
+            label: 'Delete Account',
+            onPress: confirmDeleteAccount,
+            variant: 'danger',
+            loading: isDeletingAccount,
+          },
+          {
+            label: 'Cancel',
+            onPress: () => setShowDeleteAccountModal(false),
+            variant: 'secondary',
+          },
+        ]}
+      />
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        visible={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+        profile={profile}
+        onSave={handleProfileSaved}
+      />
+
+      {/* Edit HRT Modal */}
+      <EditHRTModal
+        visible={showEditHRT}
+        onClose={() => setShowEditHRT(false)}
+        profile={profile}
+        onSave={handleProfileSaved}
+      />
+
+      {/* Edit Binding Modal */}
+      <EditBindingModal
+        visible={showEditBinding}
+        onClose={() => setShowEditBinding(false)}
+        profile={profile}
+        onSave={handleProfileSaved}
+      />
+
+      {/* Edit Goals Modal */}
+      <EditGoalsModal
+        visible={showEditGoals}
+        onClose={() => setShowEditGoals(false)}
+        profile={profile}
+        onSave={handleProfileSaved}
+      />
+
+      {/* Edit Training Modal */}
+      <EditTrainingModal
+        visible={showEditTraining}
+        onClose={() => setShowEditTraining(false)}
+        profile={profile}
+        onSave={handleProfileSaved}
+      />
+
+      {/* Edit Environment Modal */}
+      <EditEnvironmentModal
+        visible={showEditEnvironment}
+        onClose={() => setShowEditEnvironment(false)}
+        profile={profile}
+        onSave={handleProfileSaved}
       />
     </View>
   );
@@ -742,6 +1068,55 @@ const styles = StyleSheet.create({
     borderColor: colors.glass.borderCyan,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  subscriptionContent: {
+    gap: spacing.m,
+  },
+  subscriptionStatus: {
+    gap: spacing.xs,
+  },
+  subscriptionPlanLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  subscriptionPlanRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+  },
+  subscriptionPlanName: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  subscriptionPlanNamePremium: {
+    color: colors.accent.secondary,
+  },
+  premiumBadge: {
+    marginTop: 2,
+  },
+  subscriptionExpiry: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
+  subscriptionFreeInfo: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
+  },
+  subscriptionActions: {
+    marginTop: spacing.m,
+    gap: spacing.s,
   },
   section: {
     marginBottom: spacing.xl,

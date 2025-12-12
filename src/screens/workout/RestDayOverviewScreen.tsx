@@ -18,6 +18,7 @@ import { useProfile } from '../../hooks/useProfile';
 import { usePlan } from '../../hooks/usePlan';
 import { regenerateDay } from '../../services/planGenerator';
 import { savePlan } from '../../services/storage/plan';
+import { MobilityRoutine } from '../../components/restday';
 import type { Day } from '../../types/plan';
 
 type RootStackParamList = {
@@ -191,6 +192,12 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
               </View>
             ))}
           </View>
+        </View>
+
+        {/* Mobility Routine */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Optional Mobility Routine</Text>
+          <MobilityRoutine />
         </View>
 
         {/* Generate Workout Option */}

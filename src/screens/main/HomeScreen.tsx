@@ -20,6 +20,7 @@ import TodayWorkoutCard from '../../components/home/TodayWorkoutCard';
 import { StatsRow } from '../../components/home/Statcard';
 import TodaysReminderCard from '../../components/home/TodaysReminderCard';
 import UpcomingWorkoutsSection from '../../components/home/UpcomingWorkoutsSection';
+import QuickActions from '../../components/home/QuickActions';
 
 type MainTabParamList = {
   Home: undefined;
@@ -341,7 +342,10 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* 4. Safety Reminder (above workout card) */}
+        {/* 4. Quick Actions (Exercise Library, Saved, Safety) */}
+        <QuickActions />
+
+        {/* 5. Safety Reminder (above workout card) */}
         <TodaysReminderCard />
 
         {/* 5. Today's Workout - Hero Card */}

@@ -9,12 +9,12 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ChatBubble, CopilotInput } from '../../components/copilot';
 import {
   generateResponse,
@@ -24,16 +24,78 @@ import {
   UserContext,
 } from '../../services/copilot';
 import { useProfile } from '../../hooks/useProfile';
+import { useCopilotEntitlement } from '../../hooks/useEntitlement';
 import { colors, spacing, borderRadius } from '../../theme/theme';
+
+// Storage key for daily question count
+const COPILOT_DAILY_COUNT_KEY = 'copilot_daily_count';
+
+interface DailyQuestionCount {
+  date: string; // ISO date string (YYYY-MM-DD)
+  count: number;
+}
+
+// Get today's date as YYYY-MM-DD
+function getTodayDateString(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+// Load daily question count from storage
+async function getDailyQuestionCount(): Promise<number> {
+  try {
+    const stored = await AsyncStorage.getItem(COPILOT_DAILY_COUNT_KEY);
+    if (!stored) return 0;
+
+    const data: DailyQuestionCount = JSON.parse(stored);
+    // Reset count if it's a new day
+    if (data.date !== getTodayDateString()) {
+      return 0;
+    }
+    return data.count;
+  } catch {
+    return 0;
+  }
+}
+
+// Save daily question count to storage
+async function incrementDailyQuestionCount(): Promise<number> {
+  try {
+    const today = getTodayDateString();
+    const currentCount = await getDailyQuestionCount();
+    const newCount = currentCount + 1;
+
+    const data: DailyQuestionCount = {
+      date: today,
+      count: newCount,
+    };
+    await AsyncStorage.setItem(COPILOT_DAILY_COUNT_KEY, JSON.stringify(data));
+    return newCount;
+  } catch {
+    return 0;
+  }
+}
 
 export default function CopilotScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const scrollRef = useRef<ScrollView>(null);
   const { profile } = useProfile();
+  const { isPremium, dailyLimit } = useCopilotEntitlement();
 
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [questionsAskedToday, setQuestionsAskedToday] = useState(0);
+
+  // Load question count on mount
+  useEffect(() => {
+    getDailyQuestionCount().then(setQuestionsAskedToday);
+  }, []);
+
+  // Calculate remaining questions
+  const remainingQuestions = isPremium
+    ? Infinity
+    : Math.max(0, dailyLimit - questionsAskedToday);
+  const canAsk = isPremium || remainingQuestions > 0;
 
   // Build user context from profile
   const userContext: UserContext | undefined = profile
@@ -56,6 +118,12 @@ export default function CopilotScreen() {
   const suggestedQuestions = getSuggestedQuestions(userContext);
 
   const handleSend = async (text: string) => {
+    // Check if user can ask (free tier limit)
+    if (!canAsk) {
+      navigation.navigate('Paywall');
+      return;
+    }
+
     // Add user message
     const userMessage: CopilotMessage = {
       id: `user_${Date.now()}`,
@@ -73,6 +141,12 @@ export default function CopilotScreen() {
     }, 100);
 
     try {
+      // Increment question count for free users
+      if (!isPremium) {
+        const newCount = await incrementDailyQuestionCount();
+        setQuestionsAskedToday(newCount);
+      }
+
       // Generate response
       const response = await generateResponse(text, userContext);
       setMessages(prev => [...prev, response]);
@@ -133,6 +207,31 @@ export default function CopilotScreen() {
           <Ionicons name="refresh" size={22} color={colors.text.secondary} />
         </Pressable>
       </View>
+
+      {/* Questions Remaining Banner (Free users only) */}
+      {!isPremium && (
+        <View style={styles.questionLimitBanner}>
+          {canAsk ? (
+            <>
+              <Ionicons name="chatbubble-outline" size={14} color={colors.text.tertiary} />
+              <Text style={styles.questionLimitText}>
+                {remainingQuestions} question{remainingQuestions !== 1 ? 's' : ''} remaining today
+              </Text>
+            </>
+          ) : (
+            <Pressable
+              style={styles.limitReachedContainer}
+              onPress={() => navigation.navigate('Paywall')}
+            >
+              <Ionicons name="lock-closed" size={14} color={colors.accent.secondary} />
+              <Text style={styles.limitReachedText}>
+                Daily limit reached.{' '}
+                <Text style={styles.upgradeLink}>Upgrade for unlimited</Text>
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      )}
 
       {/* Chat Messages */}
       <ScrollView
@@ -241,6 +340,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.accent.secondary,
     letterSpacing: 0.5,
+  },
+  questionLimitBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.s,
+    backgroundColor: colors.glass.bg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.subtle,
+  },
+  questionLimitText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: colors.text.tertiary,
+  },
+  limitReachedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  limitReachedText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: colors.accent.secondary,
+  },
+  upgradeLink: {
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   messagesContainer: {
     flex: 1,

@@ -20,6 +20,7 @@ import { BinderSafetyGuide, PostOpMovementGuide } from '../screens/guides';
 import { CopilotScreen } from '../screens/copilot';
 import { ExerciseLibraryScreen } from '../screens/exercise';
 import RestDayOverviewScreen from '../screens/workout/RestDayOverviewScreen';
+import PaywallScreen from '../screens/paywall/PaywallScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -169,6 +170,13 @@ export default function MainNavigator() {
       <Stack.Screen
         name="RestDayOverview"
         component={RestDayOverviewScreen}
+      />
+      <Stack.Screen
+        name="Paywall"
+        component={PaywallScreen}
+        options={{
+          presentation: 'modal',
+        }}
       />
     </Stack.Navigator>
   );
