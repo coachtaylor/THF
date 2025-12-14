@@ -16,7 +16,6 @@ import WorkoutDays from '../screens/onboarding/intake/WorkoutDays';
 import DysphoriaTriggers from '../screens/onboarding/intake/DysphoriaTriggers';
 import Review from '../screens/onboarding/intake/Review';
 import ProgramSetup from '../screens/onboarding/intake/ProgramSetup';
-import QuickStart from '../screens/onboarding/QuickStart';
 import PlanView from '../screens/plan/PlanView';
 import HomeScreen from '../screens/main/HomeScreen';
 import TimerTestScreen from '../screens/TimerTestScreen';
@@ -56,7 +55,6 @@ export default function OnboardingNavigator() {
       <Stack.Screen name="DysphoriaTriggers" component={DysphoriaTriggers} />
       <Stack.Screen name="Review" component={Review} />
       <Stack.Screen name="ProgramSetup" component={ProgramSetup} />
-      <Stack.Screen name="QuickStart" component={QuickStart} />
       <Stack.Screen name="PlanView" component={PlanView} />
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="TimerTest" component={TimerTestScreen} />

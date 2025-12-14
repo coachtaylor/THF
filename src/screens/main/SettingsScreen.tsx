@@ -108,10 +108,38 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleProfileSaved = useCallback(() => {
+  const handleProfileSaved = useCallback((affectsWorkout: boolean = false) => {
     // Profile will be refreshed automatically via useProfile hook
-    Alert.alert('Success', 'Your profile has been updated.');
-  }, []);
+    if (affectsWorkout && profile) {
+      Alert.alert(
+        'Profile Updated',
+        'Your profile has been updated. Changes to HRT, binding, or fitness settings may affect your workout plan. Would you like to regenerate your plan now?',
+        [
+          { text: 'Later', style: 'cancel' },
+          {
+            text: 'Regenerate',
+            onPress: async () => {
+              try {
+                setIsRegenerating(true);
+                const userId = profile.user_id || profile.id || 'default';
+                const newPlan = await generatePlan(profile);
+                await savePlan(newPlan, userId);
+                await refreshPlan?.();
+                setIsRegenerating(false);
+                Alert.alert('Success', 'Your workout plan has been updated!');
+              } catch (error) {
+                console.error('Error regenerating plan:', error);
+                setIsRegenerating(false);
+                Alert.alert('Error', 'Failed to regenerate plan. Please try again.');
+              }
+            },
+          },
+        ]
+      );
+    } else {
+      Alert.alert('Success', 'Your profile has been updated.');
+    }
+  }, [profile, refreshPlan]);
 
   const handleExportData = async () => {
     try {
@@ -944,44 +972,44 @@ export default function SettingsScreen() {
         onSave={handleProfileSaved}
       />
 
-      {/* Edit HRT Modal */}
+      {/* Edit HRT Modal - affects workouts */}
       <EditHRTModal
         visible={showEditHRT}
         onClose={() => setShowEditHRT(false)}
         profile={profile}
-        onSave={handleProfileSaved}
+        onSave={() => handleProfileSaved(true)}
       />
 
-      {/* Edit Binding Modal */}
+      {/* Edit Binding Modal - affects workouts */}
       <EditBindingModal
         visible={showEditBinding}
         onClose={() => setShowEditBinding(false)}
         profile={profile}
-        onSave={handleProfileSaved}
+        onSave={() => handleProfileSaved(true)}
       />
 
-      {/* Edit Goals Modal */}
+      {/* Edit Goals Modal - affects workouts */}
       <EditGoalsModal
         visible={showEditGoals}
         onClose={() => setShowEditGoals(false)}
         profile={profile}
-        onSave={handleProfileSaved}
+        onSave={() => handleProfileSaved(true)}
       />
 
-      {/* Edit Training Modal */}
+      {/* Edit Training Modal - affects workouts */}
       <EditTrainingModal
         visible={showEditTraining}
         onClose={() => setShowEditTraining(false)}
         profile={profile}
-        onSave={handleProfileSaved}
+        onSave={() => handleProfileSaved(true)}
       />
 
-      {/* Edit Environment Modal */}
+      {/* Edit Environment Modal - affects workouts */}
       <EditEnvironmentModal
         visible={showEditEnvironment}
         onClose={() => setShowEditEnvironment(false)}
         profile={profile}
-        onSave={handleProfileSaved}
+        onSave={() => handleProfileSaved(true)}
       />
     </View>
   );

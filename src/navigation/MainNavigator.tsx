@@ -5,6 +5,7 @@ import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { palette, spacing } from '../theme';
+import { ErrorBoundary } from '../components/common';
 
 import HomeScreen from '../screens/main/HomeScreen';
 import WorkoutsScreen from '../screens/main/WorkoutsScreen';
@@ -125,60 +126,62 @@ function MainTabs() {
 // Stack Navigator that wraps tabs and includes workout screens
 export default function MainNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen
-        name="WorkoutOverview"
-        component={WorkoutOverviewScreen}
-      />
-      <Stack.Screen
-        name="SessionPlayer"
-        component={SessionPlayer}
-      />
-      <Stack.Screen
-        name="ActiveWorkout"
-        component={ActiveWorkoutScreen}
-      />
-      <Stack.Screen
-        name="WorkoutSummary"
-        component={WorkoutSummaryScreen}
-      />
-      <Stack.Screen
-        name="WorkoutSwap"
-        component={WorkoutSwapScreen}
-      />
-      <Stack.Screen
-        name="BinderSafetyGuide"
-        component={BinderSafetyGuide}
-      />
-      <Stack.Screen
-        name="PostOpMovementGuide"
-        component={PostOpMovementGuide}
-      />
-      <Stack.Screen
-        name="Copilot"
-        component={CopilotScreen}
-      />
-      <Stack.Screen
-        name="ExerciseLibrary"
-        component={ExerciseLibraryScreen}
-      />
-      <Stack.Screen
-        name="RestDayOverview"
-        component={RestDayOverviewScreen}
-      />
-      <Stack.Screen
-        name="Paywall"
-        component={PaywallScreen}
-        options={{
-          presentation: 'modal',
+    <ErrorBoundary>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
         }}
-      />
-    </Stack.Navigator>
+      >
+        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen
+          name="WorkoutOverview"
+          component={WorkoutOverviewScreen}
+        />
+        <Stack.Screen
+          name="SessionPlayer"
+          component={SessionPlayer}
+        />
+        <Stack.Screen
+          name="ActiveWorkout"
+          component={ActiveWorkoutScreen}
+        />
+        <Stack.Screen
+          name="WorkoutSummary"
+          component={WorkoutSummaryScreen}
+        />
+        <Stack.Screen
+          name="WorkoutSwap"
+          component={WorkoutSwapScreen}
+        />
+        <Stack.Screen
+          name="BinderSafetyGuide"
+          component={BinderSafetyGuide}
+        />
+        <Stack.Screen
+          name="PostOpMovementGuide"
+          component={PostOpMovementGuide}
+        />
+        <Stack.Screen
+          name="Copilot"
+          component={CopilotScreen}
+        />
+        <Stack.Screen
+          name="ExerciseLibrary"
+          component={ExerciseLibraryScreen}
+        />
+        <Stack.Screen
+          name="RestDayOverview"
+          component={RestDayOverviewScreen}
+        />
+        <Stack.Screen
+          name="Paywall"
+          component={PaywallScreen}
+          options={{
+            presentation: 'modal',
+          }}
+        />
+      </Stack.Navigator>
+    </ErrorBoundary>
   );
 }
 

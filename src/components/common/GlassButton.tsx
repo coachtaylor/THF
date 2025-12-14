@@ -29,6 +29,8 @@ interface GlassButtonProps {
   fullWidth?: boolean;
   shimmer?: boolean;
   style?: ViewStyle;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 const sizeConfig = {
@@ -67,7 +69,12 @@ export default function GlassButton({
   fullWidth = true,
   shimmer = false,
   style,
+  accessibilityLabel,
+  accessibilityHint,
 }: GlassButtonProps) {
+  // Use title as default accessibility label
+  const a11yLabel = accessibilityLabel || title;
+  const a11yState = { disabled: disabled || loading };
   const sizeStyles = sizeConfig[size];
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
@@ -193,6 +200,10 @@ export default function GlassButton({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
+        accessibilityRole="button"
+        accessibilityLabel={a11yLabel}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={a11yState}
       >
         {/* Base gradient */}
         <LinearGradient
@@ -260,6 +271,10 @@ export default function GlassButton({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
+        accessibilityRole="button"
+        accessibilityLabel={a11yLabel}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={a11yState}
       >
         {renderContent()}
       </Pressable>
@@ -274,6 +289,10 @@ export default function GlassButton({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
+        accessibilityRole="button"
+        accessibilityLabel={a11yLabel}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={a11yState}
       >
         {renderContent()}
       </Pressable>
@@ -297,6 +316,10 @@ export default function GlassButton({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled || loading}
+        accessibilityRole="button"
+        accessibilityLabel={a11yLabel}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={a11yState}
       >
         {renderContent()}
       </Pressable>

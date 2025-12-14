@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { usePlan } from '../../hooks/usePlan';
@@ -227,8 +228,8 @@ export default function PlanView({ navigation }: PlanViewProps) {
   };
 
   const handleMenu = () => {
-    // TODO: Open menu/settings
-    console.log('Menu pressed');
+    // Navigate to Settings tab
+    navigation.navigate('MainTabs', { screen: 'Settings' });
   };
 
   return (

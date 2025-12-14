@@ -3,6 +3,7 @@ import { supabase } from '../../utils/supabase';
 // Profile and Surgery types are now in src/types/index.ts
 export { Profile, Surgery } from '../../types/index';
 import type { Profile, Surgery } from '../../types/index';
+import { logger } from '../../utils/logger';
 
 // Open database connection for profile storage
 const profileDb = SQLite.openDatabaseSync('transfitness.db');
@@ -21,7 +22,7 @@ export async function initProfileStorage(): Promise<void> {
         );
       `);
     });
-    console.log('✅ Profile storage initialized');
+    logger.log('✅ Profile storage initialized');
   } catch (error) {
     console.error('❌ Profile storage initialization failed:', error);
     throw error;
@@ -162,7 +163,7 @@ export async function updateProfile(updates: Partial<Profile>): Promise<void> {
       insertStmt.executeSync([idValue, emailValue, profileDataJson, syncedAtValue]);
       insertStmt.finalizeSync();
 
-      console.log('✅ Profile updated:', updatedProfile);
+      logger.log('✅ Profile updated:', updatedProfile);
     });
   } catch (error) {
     console.error('❌ Error updating profile:', error);
@@ -173,7 +174,7 @@ export async function updateProfile(updates: Partial<Profile>): Promise<void> {
 // Sync profile to Supabase (optional cloud sync)
 export async function syncProfileToCloud(profile: Profile): Promise<void> {
   if (!profile.cloud_sync_enabled) {
-    console.log('Cloud sync disabled, skipping');
+    logger.log('Cloud sync disabled, skipping');
     return;
   }
 
@@ -200,7 +201,7 @@ export async function syncProfileToCloud(profile: Profile): Promise<void> {
       synced_at: new Date().toISOString(),
     });
 
-    console.log('✅ Profile synced to Supabase');
+    logger.log('✅ Profile synced to Supabase');
   } catch (error) {
     console.error('❌ Error syncing profile to cloud:', error);
     throw error;
@@ -214,7 +215,7 @@ export async function syncProfileToCloud(profile: Profile): Promise<void> {
  */
 export async function logEquipmentRequest(equipmentText: string): Promise<void> {
   if (!supabase) {
-    console.log('Supabase not configured, skipping equipment request log');
+    logger.log('Supabase not configured, skipping equipment request log');
     return;
   }
 
@@ -230,7 +231,7 @@ export async function logEquipmentRequest(equipmentText: string): Promise<void> 
     if (error) {
       console.warn('Failed to log equipment request:', error.message);
     } else {
-      console.log('✅ Equipment request logged for analytics');
+      logger.log('✅ Equipment request logged for analytics');
     }
   } catch (error) {
     console.warn('Error logging equipment request:', error);
@@ -247,13 +248,13 @@ export async function debugProfileStorage(): Promise<void> {
       );
       const rows = stmt.executeSync().getAllSync() as any[];
       
-      console.log(`📊 Found ${rows.length} profile(s) in profiles_storage:`);
+      logger.log(`📊 Found ${rows.length} profile(s) in profiles_storage:`);
       rows.forEach((row, index) => {
-        console.log(`\nProfile ${index + 1}:`);
-        console.log(`  ID: ${row.id}`);
-        console.log(`  Email: ${row.email || 'none'}`);
-        console.log(`  Created: ${row.created_at}`);
-        console.log(`  Data: ${row.profile_data ? JSON.parse(row.profile_data) : 'empty'}`);
+        logger.log(`\nProfile ${index + 1}:`);
+        logger.log(`  ID: ${row.id}`);
+        logger.log(`  Email: ${row.email || 'none'}`);
+        logger.log(`  Created: ${row.created_at}`);
+        logger.log(`  Data: ${row.profile_data ? JSON.parse(row.profile_data) : 'empty'}`);
       });
       stmt.finalizeSync();
     });
@@ -275,7 +276,7 @@ export async function deleteProfile(): Promise<void> {
       deleteStmt.executeSync();
       deleteStmt.finalizeSync();
     });
-    console.log('✅ Profile deleted - onboarding will reset on next app start');
+    logger.log('✅ Profile deleted - onboarding will reset on next app start');
   } catch (error) {
     console.error('❌ Error deleting profile:', error);
     throw error;
