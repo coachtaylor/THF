@@ -750,8 +750,24 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   const handlePainFlag = async (result: AutoRegressionResult) => {
     // Track pain flagged exercise
     setPainFlaggedExercises(prev => new Set(prev).add(currentExercise.id));
-    console.log('Pain flag applied:', result);
-    // TODO: Apply auto-regression changes to exercise instance
+
+    // Apply auto-regression changes to the current exercise instance
+    setExercises(prev => prev.map((ex, idx) => {
+      if (idx === currentExerciseIndex) {
+        return {
+          ...ex,
+          exerciseId: result.exerciseId,
+          sets: result.sets,
+          reps: result.reps,
+          exercise: {
+            ...ex.exercise,
+            id: result.exerciseId,
+            name: result.exerciseName,
+          },
+        };
+      }
+      return ex;
+    }));
   };
 
   const handleSaveSession = async () => {
@@ -1247,9 +1263,16 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
               onComplete={handleSetComplete}
               onViewForm={() => setShowCuesModal(true)}
               onViewDetails={() => setShowCuesModal(true)}
-              onStopIfPain={() => {
-                // TODO: Open pain flag modal
-                console.log('Stop if pain clicked');
+              onStopIfPain={async () => {
+                // Trigger pain flag flow - auto-regress and apply changes
+                if (currentExercise && currentExerciseInstance) {
+                  try {
+                    const result = await autoRegress(currentExercise, currentExerciseInstance, profile);
+                    handlePainFlag(result);
+                  } catch (error) {
+                    console.error('Failed to process pain flag:', error);
+                  }
+                }
               }}
               onSkipExercise={handleSkipExercise}
             />

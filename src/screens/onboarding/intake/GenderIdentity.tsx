@@ -56,9 +56,9 @@ export default function GenderIdentity({ navigation, initialData }: GenderIdenti
 
   const handleContinue = () => {
     if (selectedGender) {
-      // TODO: Save to storage/database
-      navigation.navigate('HRTStatus', { 
-        genderIdentity: selectedGender 
+      // Gender identity is passed to next screen and saved as part of full profile in Review screen
+      navigation.navigate('HRTStatus', {
+        genderIdentity: selectedGender
       });
     }
   };

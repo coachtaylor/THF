@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { ExerciseInstance } from '../types/plan';
 import { SafetyCheckpoint } from '../services/rulesEngine/rules/types';
 import { AssembledWorkout } from '../services/workoutGeneration/workoutAssembler';
@@ -7,7 +7,13 @@ import {
   LastPerformance,
   getLastPerformanceForExercises,
   calculateSuggestedWeight,
+  startWorkoutLog,
+  logSet,
+  completeWorkoutLog,
 } from '../services/storage/workoutLog';
+
+// Error callback type for notifying UI of save failures
+type ErrorCallback = (title: string, message?: string) => void;
 
 /**
  * Workout phase type - tracks which section of workout we're in
@@ -55,6 +61,10 @@ interface WorkoutContextType {
   workout: ActiveWorkout | null;
   currentExerciseIndex: number;
   currentSetNumber: number;
+
+  // Error callback registration
+  setErrorCallback: (callback: ErrorCallback | null) => void;
+  hasSaveError: boolean;
 
   // Phase tracking
   currentPhase: WorkoutPhase;
@@ -151,8 +161,27 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [currentCheckpoint, setCurrentCheckpoint] = useState<SafetyCheckpointWithTrigger | null>(null);
   const [isWorkoutComplete, setIsWorkoutComplete] = useState(false);
 
+  // Workout log tracking for database persistence
+  const [workoutLogId, setWorkoutLogId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>('default');
+
   // Exercise history for weight suggestions
   const [exerciseHistory, setExerciseHistory] = useState<Map<string, LastPerformance>>(new Map());
+
+  // Error handling
+  const errorCallbackRef = useRef<ErrorCallback | null>(null);
+  const [hasSaveError, setHasSaveError] = useState(false);
+
+  const setErrorCallback = useCallback((callback: ErrorCallback | null) => {
+    errorCallbackRef.current = callback;
+  }, []);
+
+  const notifyError = useCallback((title: string, message?: string) => {
+    setHasSaveError(true);
+    if (errorCallbackRef.current) {
+      errorCallbackRef.current(title, message);
+    }
+  }, []);
 
   // Derived phase values
   const warmupExercises = workout?.warm_up?.exercises || [];
@@ -235,6 +264,19 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     setSkipWarmup(options?.skipWarmup || false);
     setSkipCooldown(false);
 
+    // Set up user ID and start workout log for persistence
+    const userId = options?.userId || 'default';
+    setCurrentUserId(userId);
+
+    // Create workout log entry in database
+    try {
+      const logId = await startWorkoutLog(userId, newWorkout.id);
+      setWorkoutLogId(logId);
+    } catch (error) {
+      console.error('Failed to start workout log:', error);
+      setWorkoutLogId(null);
+    }
+
     // Load exercise history for weight suggestions
     if (options?.userId && newWorkout.main_workout.length > 0) {
       try {
@@ -287,9 +329,9 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   
   const completeSet = async () => {
     if (!workout) return;
-    
+
     const currentExercise = workout.main_workout[currentExerciseIndex];
-    
+
     // Create set log
     const setLog: SetLog = {
       exercise_id: currentExercise.exerciseId,
@@ -299,9 +341,18 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       rpe: currentSetData.rpe,
       timestamp: new Date(),
     };
-    
+
     // Save set to database
-    await saveSetToDatabase(workout.id, setLog);
+    if (workoutLogId) {
+      try {
+        await logSet(workoutLogId, setLog);
+        setHasSaveError(false); // Clear error state on successful save
+      } catch (error) {
+        console.error('Failed to save set to database:', error);
+        notifyError('Set not saved', 'Your workout data may not be fully recorded');
+        // Continue anyway - don't block UI for database errors
+      }
+    }
     
     // Add to completed sets
     setCompletedSets(prev => [...prev, setLog]);
@@ -487,14 +538,21 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   
   const completeWorkout = async () => {
     if (!workout) return;
-    
+
     // Save workout completion to database
-    await saveWorkoutCompletion(workout.id, {
-      duration_minutes: Math.floor(workoutDuration / 60),
-      completed_sets: completedSets,
-      exercises_completed: currentExerciseIndex + 1,
-    });
-    
+    if (workoutLogId) {
+      try {
+        await completeWorkoutLog(workoutLogId, {
+          duration_minutes: Math.floor(workoutDuration / 60),
+          exercises_completed: currentExerciseIndex + 1,
+        });
+      } catch (error) {
+        console.error('Failed to complete workout log:', error);
+        notifyError('Workout not fully saved', 'Some data may be missing from your history');
+        // Continue anyway - don't block UI for database errors
+      }
+    }
+
     // Mark as complete (don't clear state yet - let summary screen use it)
     setIsWorkoutComplete(true);
   };
@@ -521,6 +579,11 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     setSkipCooldown(false);
     // Clear exercise history
     setExerciseHistory(new Map());
+    // Clear workout log tracking
+    setWorkoutLogId(null);
+    setCurrentUserId('default');
+    // Clear error state
+    setHasSaveError(false);
   };
   
   const checkForSafetyCheckpoints = useCallback((durationSeconds: number) => {
@@ -569,6 +632,9 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     workout,
     currentExerciseIndex,
     currentSetNumber,
+    // Error handling
+    setErrorCallback,
+    hasSaveError,
     // Phase tracking
     currentPhase,
     phaseExerciseIndex,
@@ -640,21 +706,5 @@ export function useWorkout() {
 export function useWorkoutSafe() {
   const context = useContext(WorkoutContext);
   return context || null;
-}
-
-// Helper functions
-
-async function saveSetToDatabase(workoutId: string, setLog: SetLog): Promise<void> {
-  // TODO: Implement database save
-  console.log('Saving set:', setLog);
-}
-
-async function saveWorkoutCompletion(workoutId: string, data: {
-  duration_minutes: number;
-  completed_sets: SetLog[];
-  exercises_completed: number;
-}): Promise<void> {
-  // TODO: Implement database save
-  console.log('Completing workout:', data);
 }
 

@@ -121,6 +121,7 @@ export default function GlassModal({
       animationType="none"
       onRequestClose={handleClose}
       statusBarTranslucent
+      accessibilityViewIsModal={true}
     >
       <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
         <Pressable style={styles.backdrop} onPress={handleClose} />
@@ -149,6 +150,8 @@ export default function GlassModal({
               style={styles.closeButton}
               onPress={handleClose}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Close modal"
             >
               <Ionicons name="close" size={24} color={colors.text.tertiary} />
             </Pressable>
@@ -180,6 +183,9 @@ export default function GlassModal({
                 ]}
                 onPress={action.onPress}
                 disabled={action.loading}
+                accessibilityRole="button"
+                accessibilityLabel={action.label}
+                accessibilityState={{ disabled: action.loading }}
               >
                 {action.variant === 'primary' && (
                   <LinearGradient
