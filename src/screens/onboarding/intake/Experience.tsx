@@ -10,6 +10,8 @@ import { glassStyles, textStyles, inputStyles } from "../../../theme/components"
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile, logEquipmentRequest } from "../../../services/storage/profile";
 import { TrainingEnvironment } from "../../../types";
+import { useSubscription } from "../../../contexts/SubscriptionContext";
+import GlassModal from "../../../components/common/GlassModal";
 
 type ExperienceLevel = "beginner" | "intermediate" | "advanced";
 
@@ -65,13 +67,17 @@ function getDefaultEquipmentForEnvironment(env?: TrainingEnvironment): Set<strin
 
 export default function Experience({ navigation }: ExperienceProps) {
   const { profile } = useProfile();
+  const { isPremium, freeTierLimits } = useSubscription();
+  const maxFreeFrequency = freeTierLimits.WORKOUTS_PER_WEEK; // 2
+
   const [experience, setExperience] = useState<ExperienceLevel | null>(null);
-  const [frequency, setFrequency] = useState<number>(3);
+  const [frequency, setFrequency] = useState<number>(2); // Default to free tier limit
   const [duration, setDuration] = useState<number>(45);
   const [equipment, setEquipment] = useState<Set<string>>(new Set());
   const [otherEquipmentText, setOtherEquipmentText] = useState<string>("");
   const [isOtherInputFocused, setIsOtherInputFocused] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Get training environment from profile
   const trainingEnvironment = profile?.training_environment;
@@ -89,7 +95,9 @@ export default function Experience({ navigation }: ExperienceProps) {
         setExperience(profile.fitness_experience);
       }
       if (profile.workout_frequency) {
-        setFrequency(profile.workout_frequency);
+        // Clamp frequency to free tier limit if not premium
+        const savedFrequency = profile.workout_frequency;
+        setFrequency(isPremium ? savedFrequency : Math.min(savedFrequency, maxFreeFrequency));
       }
       if (profile.session_duration) {
         setDuration(profile.session_duration);
@@ -106,7 +114,7 @@ export default function Experience({ navigation }: ExperienceProps) {
       }
       setInitialized(true);
     }
-  }, [profile, trainingEnvironment, initialized]);
+  }, [profile, trainingEnvironment, initialized, isPremium, maxFreeFrequency]);
 
   // Get environment display name
   const getEnvironmentLabel = (env?: TrainingEnvironment): string => {
@@ -237,15 +245,32 @@ export default function Experience({ navigation }: ExperienceProps) {
             </View>
 
             <TouchableOpacity
-              onPress={() => setFrequency(Math.min(7, frequency + 1))}
-              disabled={frequency >= 7}
+              onPress={() => {
+                // Check if free user is trying to exceed the limit
+                if (!isPremium && frequency >= maxFreeFrequency) {
+                  setShowUpgradeModal(true);
+                } else {
+                  setFrequency(Math.min(7, frequency + 1));
+                }
+              }}
+              disabled={isPremium ? frequency >= 7 : false}
               activeOpacity={0.7}
               style={[
                 styles.frequencyButton,
-                frequency >= 7 && styles.frequencyButtonDisabled
+                isPremium && frequency >= 7 && styles.frequencyButtonDisabled
               ]}
             >
-              <Ionicons name="add" size={24} color={frequency >= 7 ? colors.text.tertiary : colors.cyan[500]} />
+              <Ionicons
+                name={!isPremium && frequency >= maxFreeFrequency ? "sparkles" : "add"}
+                size={24}
+                color={
+                  isPremium && frequency >= 7
+                    ? colors.text.tertiary
+                    : !isPremium && frequency >= maxFreeFrequency
+                    ? colors.accent.primary
+                    : colors.cyan[500]
+                }
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -349,6 +374,33 @@ export default function Experience({ navigation }: ExperienceProps) {
           )}
         </View>
       </View>
+
+      {/* Upgrade Modal for Free Tier Users */}
+      <GlassModal
+        visible={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        icon="sparkles"
+        iconColor={colors.cyan[500]}
+        title="Unlock More Workouts"
+        message={`Free plan includes ${maxFreeFrequency} workouts per week. Upgrade to Premium for unlimited weekly workouts and personalized programming.`}
+        actions={[
+          {
+            label: "Upgrade to Premium",
+            variant: "primary",
+            onPress: () => {
+              setShowUpgradeModal(false);
+              navigation.navigate("Paywall");
+            },
+          },
+          {
+            label: `Keep ${maxFreeFrequency} Workouts`,
+            variant: "ghost",
+            onPress: () => {
+              setShowUpgradeModal(false);
+            },
+          },
+        ]}
+      />
     </OnboardingLayout>
   );
 }

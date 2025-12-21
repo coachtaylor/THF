@@ -10,6 +10,7 @@ import { glassStyles, textStyles, cardStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { generatePlan } from "../../../services/planGenerator";
 import { savePlan } from "../../../services/storage/plan";
+import { updateProfile } from "../../../services/storage/profile";
 import { formatEquipmentLabel } from "../../../utils/equipment";
 import { Platform } from "react-native";
 import { trackOnboardingCompleted, trackWorkoutGenerated } from "../../../services/analytics";
@@ -195,6 +196,11 @@ export default function Review({ navigation }: ReviewProps) {
       const userId = profile.user_id || profile.id || 'default';
       console.log('💾 Saving plan for userId:', userId);
       await savePlan(plan as any, userId);
+
+      // Clean up first_week_substitute_days (one-time use, no longer needed)
+      if (profile.first_week_substitute_days && profile.first_week_substitute_days.length > 0) {
+        await updateProfile({ first_week_substitute_days: undefined });
+      }
 
       // Track onboarding completion
       await trackOnboardingCompleted();

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, useNavigationContainerRef, LinkingOptions } from '@react-navigation/native';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
+import * as Linking from 'expo-linking';
 import {
   Poppins_300Light,
   Poppins_400Regular,
@@ -22,6 +23,28 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { SubscriptionProvider } from './src/contexts/SubscriptionContext';
 import { ToastProvider } from './src/contexts/ToastContext';
 import { theme } from './src/theme';
+
+// Deep linking configuration for React Navigation
+const linking: LinkingOptions<ReactNavigation.RootParamList> = {
+  prefixes: [
+    Linking.createURL('/'),
+    'transfitness://',
+    'https://transfitness.app',
+  ],
+  config: {
+    screens: {
+      // Auth screens (OnboardingNavigator)
+      Login: 'login',
+      EmailVerification: 'verify-email',
+      ResetPassword: 'reset-password',
+      // Main app screens
+      Home: 'home',
+      Workouts: 'workouts',
+      Progress: 'progress',
+      Settings: 'settings',
+    },
+  },
+};
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -51,7 +74,7 @@ export default function App() {
   // Listen for onboarding completion event
   useEffect(() => {
     onOnboardingComplete(() => {
-      console.log('📱 App received onboarding complete signal');
+      if (__DEV__) console.log('📱 App received onboarding complete signal');
       setHasCompletedOnboarding(true);
     });
 
@@ -63,7 +86,7 @@ export default function App() {
   // Listen for logout event
   useEffect(() => {
     onLogout(() => {
-      console.log('📱 App received logout signal');
+      if (__DEV__) console.log('📱 App received logout signal');
       setHasCompletedOnboarding(false);
     });
 
@@ -87,23 +110,25 @@ export default function App() {
 
       // Check if user has completed onboarding
       const completed = await checkOnboardingStatus();
-      console.log('🔍 App initialization - Onboarding status:', completed);
-      
-      // Debug: Check what profile exists
-      const { getProfile, debugProfileStorage } = await import('./src/services/storage/profile');
-      const profile = await getProfile();
-      console.log('🔍 Current profile on app start:', profile ? 'EXISTS' : 'NULL');
-      if (profile) {
-        console.log('🔍 Profile fields check:');
-        console.log('  - gender_identity:', profile.gender_identity);
-        console.log('  - primary_goal:', profile.primary_goal);
-        console.log('  - fitness_experience:', profile.fitness_experience);
-        console.log('  - id:', profile.id || profile.user_id);
-      } else {
-        console.log('🔍 No profile found in database');
+
+      // Debug logging (development only)
+      if (__DEV__) {
+        console.log('🔍 App initialization - Onboarding status:', completed);
+        const { getProfile, debugProfileStorage } = await import('./src/services/storage/profile');
+        const profile = await getProfile();
+        console.log('🔍 Current profile on app start:', profile ? 'EXISTS' : 'NULL');
+        if (profile) {
+          console.log('🔍 Profile fields check:');
+          console.log('  - gender_identity:', profile.gender_identity);
+          console.log('  - primary_goal:', profile.primary_goal);
+          console.log('  - fitness_experience:', profile.fitness_experience);
+          console.log('  - id:', profile.id || profile.user_id);
+        } else {
+          console.log('🔍 No profile found in database');
+        }
+        await debugProfileStorage();
       }
-      await debugProfileStorage();
-      
+
       setHasCompletedOnboarding(completed);
 
       setIsReady(true);
@@ -117,8 +142,10 @@ export default function App() {
     return null; // Wait for fonts and initialization
   }
 
-  console.log('🔍 App render - hasCompletedOnboarding:', hasCompletedOnboarding);
-  console.log('🔍 App render - Rendering:', hasCompletedOnboarding ? 'MainNavigator' : 'OnboardingNavigator');
+  if (__DEV__) {
+    console.log('🔍 App render - hasCompletedOnboarding:', hasCompletedOnboarding);
+    console.log('🔍 App render - Rendering:', hasCompletedOnboarding ? 'MainNavigator' : 'OnboardingNavigator');
+  }
 
   return (
     <SafeAreaProvider style={{ backgroundColor: theme.colors.background }}>
@@ -126,7 +153,7 @@ export default function App() {
         <ToastProvider>
           <AuthProvider>
             <SubscriptionProvider>
-              <NavigationContainer ref={navigationRef}>
+              <NavigationContainer ref={navigationRef} linking={linking}>
                 {hasCompletedOnboarding ? <MainNavigator /> : <OnboardingNavigator />}
               </NavigationContainer>
             </SubscriptionProvider>

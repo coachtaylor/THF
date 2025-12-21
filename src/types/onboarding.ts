@@ -262,6 +262,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 export type OnboardingStackParamList = {
   Splash: undefined;
+  TierSelection: undefined;
   WhyTransFitness: undefined;
   Disclaimer: undefined;
   GenderIdentity: undefined;
@@ -302,6 +303,9 @@ export type OnboardingStackParamList = {
   ForgotPassword: undefined;
   ResetPassword: { token: string };
   Main: undefined;
+
+  // Paywall (for mid-onboarding upgrade)
+  Paywall: undefined;
 };
 
 export type OnboardingScreenProps<T extends keyof OnboardingStackParamList> = {

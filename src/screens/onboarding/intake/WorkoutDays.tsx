@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
@@ -53,6 +53,14 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
   const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set());
   const [initialized, setInitialized] = useState(false);
 
+  // Modal state for handling passed workout days
+  const [showPassedDaysModal, setShowPassedDaysModal] = useState(false);
+  const [passedDays, setPassedDays] = useState<number[]>([]);
+  const [availableSubstituteDays, setAvailableSubstituteDays] = useState<number[]>([]);
+  const [selectedSubstitute, setSelectedSubstitute] = useState<number | null>(null);
+  const [showSkipConfirmation, setShowSkipConfirmation] = useState(false);
+  const [daysArrayForSave, setDaysArrayForSave] = useState<number[]>([]);
+
   const workoutFrequency = profile?.workout_frequency || 3;
 
   // Initialize with profile data or smart defaults
@@ -96,6 +104,30 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
   const handleContinue = async () => {
     try {
       const daysArray = Array.from(selectedDays).sort((a, b) => a - b);
+      const today = new Date().getDay(); // 0=Sun, 1=Mon, etc.
+
+      // Check if any selected days have already passed this week
+      const passed = daysArray.filter(day => day < today);
+
+      if (passed.length > 0) {
+        // Calculate available substitute days: today through end of week, excluding already-selected future days
+        const futureDays = daysArray.filter(day => day >= today);
+        const available: number[] = [];
+        for (let d = today; d <= 6; d++) {
+          if (!futureDays.includes(d)) {
+            available.push(d);
+          }
+        }
+
+        setPassedDays(passed);
+        setAvailableSubstituteDays(available);
+        setSelectedSubstitute(available.length > 0 ? available[0] : null); // Default to first available (today if possible)
+        setDaysArrayForSave(daysArray);
+        setShowPassedDaysModal(true);
+        return;
+      }
+
+      // No passed days - continue normally
       await updateProfile({
         preferred_workout_days: daysArray,
       });
@@ -103,6 +135,51 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
     } catch (error) {
       console.error("Error saving workout days:", error);
     }
+  };
+
+  // Handle when user picks a substitute day
+  const handlePickSubstitute = async () => {
+    try {
+      await updateProfile({
+        preferred_workout_days: daysArrayForSave,
+        first_week_substitute_days: selectedSubstitute !== null ? [selectedSubstitute] : [],
+      });
+      setShowPassedDaysModal(false);
+      navigation.navigate("DysphoriaTriggers");
+    } catch (error) {
+      console.error("Error saving workout days:", error);
+    }
+  };
+
+  // Handle when user wants to skip this week
+  const handleSkipThisWeek = () => {
+    setShowPassedDaysModal(false);
+    setShowSkipConfirmation(true);
+  };
+
+  // Handle skip confirmation
+  const handleSkipConfirmed = async () => {
+    try {
+      await updateProfile({
+        preferred_workout_days: daysArrayForSave,
+        first_week_substitute_days: [], // No substitutes
+      });
+      setShowSkipConfirmation(false);
+      navigation.navigate("DysphoriaTriggers");
+    } catch (error) {
+      console.error("Error saving workout days:", error);
+    }
+  };
+
+  // Get the names of passed days for display
+  const getPassedDaysText = () => {
+    return passedDays.map(d => DAYS_OF_WEEK[d].full).join(" and ");
+  };
+
+  // Get future selected days text for skip confirmation
+  const getFutureSelectedDaysText = () => {
+    const futureDays = daysArrayForSave.filter(day => day >= new Date().getDay());
+    return futureDays.map(d => DAYS_OF_WEEK[d].full).join(" & ");
   };
 
   const handleBack = () => {
@@ -178,11 +255,6 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
                   ]}>
                     {day.full.slice(0, 3)}
                   </Text>
-                  {isSelected && (
-                    <View style={styles.checkmark}>
-                      <Ionicons name="checkmark" size={14} color={colors.text.primary} />
-                    </View>
-                  )}
                 </TouchableOpacity>
               );
             })}
@@ -218,6 +290,111 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
           </View>
         )}
       </View>
+
+      {/* Modal: Passed Days - Pick Substitute */}
+      <Modal
+        visible={showPassedDaysModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPassedDaysModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="calendar-outline" size={32} color={colors.cyan[500]} />
+              <Text style={styles.modalTitle}>
+                Looks like {getPassedDaysText()} already passed!
+              </Text>
+              <Text style={styles.modalSubtitle}>
+                Would you like to pick a different day for this week?
+              </Text>
+            </View>
+
+            {/* Day Selector */}
+            {availableSubstituteDays.length > 0 && (
+              <View style={styles.modalDaysContainer}>
+                {availableSubstituteDays.map((dayId) => {
+                  const day = DAYS_OF_WEEK[dayId];
+                  const isToday = dayId === new Date().getDay();
+                  const isSelected = selectedSubstitute === dayId;
+                  return (
+                    <TouchableOpacity
+                      key={dayId}
+                      onPress={() => setSelectedSubstitute(dayId)}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.modalDayButton,
+                        isSelected && styles.modalDayButtonSelected,
+                      ]}
+                    >
+                      <Text style={[
+                        styles.modalDayText,
+                        isSelected && styles.modalDayTextSelected,
+                      ]}>
+                        {isToday ? "Today" : day.full}
+                      </Text>
+                      {isSelected && (
+                        <Ionicons name="checkmark-circle" size={20} color={colors.cyan[500]} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* Action Buttons */}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handlePickSubstitute}
+                disabled={selectedSubstitute === null}
+              >
+                <Text style={styles.modalButtonTextPrimary}>
+                  {selectedSubstitute !== null
+                    ? `Pick ${selectedSubstitute === new Date().getDay() ? "Today" : DAYS_OF_WEEK[selectedSubstitute].full}`
+                    : "Pick a day"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={handleSkipThisWeek}
+              >
+                <Text style={styles.modalButtonTextSecondary}>Skip this week</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal: Skip Confirmation */}
+      <Modal
+        visible={showSkipConfirmation}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSkipConfirmation(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="checkmark-circle-outline" size={32} color={colors.cyan[500]} />
+              <Text style={styles.modalTitle}>No problem!</Text>
+              <Text style={styles.modalSubtitle}>
+                Your dashboard will show {daysArrayForSave.filter(d => d >= new Date().getDay()).length} workout{daysArrayForSave.filter(d => d >= new Date().getDay()).length !== 1 ? 's' : ''} this week
+                {getFutureSelectedDaysText() && ` (${getFutureSelectedDaysText()})`}, but next week you'll have your full {getSelectedDaysText()} schedule.
+              </Text>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleSkipConfirmed}
+              >
+                <Text style={styles.modalButtonTextPrimary}>Got it</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </OnboardingLayout>
   );
 }
@@ -287,8 +464,8 @@ const styles = StyleSheet.create({
     borderColor: colors.cyan[500],
   },
   dayLetter: {
-    ...textStyles.statMedium,
-    fontSize: 20,
+    fontSize: 16,
+    fontWeight: '500',
     color: colors.text.tertiary,
   },
   dayLetterSelected: {
@@ -302,17 +479,6 @@ const styles = StyleSheet.create({
   },
   dayLabelSelected: {
     color: colors.text.secondary,
-  },
-  checkmark: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.cyan[500],
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   summaryCard: {
     padding: spacing.lg,
@@ -355,5 +521,96 @@ const styles = StyleSheet.create({
     ...textStyles.bodySmall,
     fontSize: 14,
     color: colors.text.tertiary,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: colors.bg.secondary,
+    borderRadius: borderRadius.xl,
+    padding: spacing.xl,
+    gap: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  modalTitle: {
+    ...textStyles.h3,
+    fontSize: 18,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    ...textStyles.body,
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalDaysContainer: {
+    gap: spacing.sm,
+  },
+  modalDayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 2,
+    borderColor: colors.glass.border,
+  },
+  modalDayButtonSelected: {
+    backgroundColor: 'rgba(6, 182, 212, 0.15)',
+    borderColor: colors.cyan[500],
+  },
+  modalDayText: {
+    ...textStyles.body,
+    fontSize: 15,
+    color: colors.text.secondary,
+  },
+  modalDayTextSelected: {
+    color: colors.cyan[500],
+    fontWeight: '600',
+  },
+  modalButtons: {
+    gap: spacing.sm,
+  },
+  modalButton: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonPrimary: {
+    backgroundColor: colors.cyan[500],
+  },
+  modalButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+  },
+  modalButtonTextPrimary: {
+    ...textStyles.label,
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.bg.primary,
+  },
+  modalButtonTextSecondary: {
+    ...textStyles.label,
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.secondary,
   },
 });

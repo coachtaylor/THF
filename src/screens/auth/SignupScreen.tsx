@@ -15,12 +15,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
+import { checkOnboardingStatus } from '../../services/storage/onboarding';
+import { checkTierSelection } from '../../services/storage/tierSelection';
+import { signalOnboardingComplete } from '../../services/events/onboardingEvents';
 import { colors, spacing, borderRadius } from '../../theme/theme';
+import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
+import OrDivider from '../../components/auth/OrDivider';
 
 export default function SignupScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
-  const { signup } = useAuth();
+  const { signup, signInWithGoogle } = useAuth();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -28,6 +33,7 @@ export default function SignupScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [firstNameFocused, setFirstNameFocused] = useState(false);
@@ -113,6 +119,37 @@ export default function SignupScreen({ navigation }: any) {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      setError(null);
+
+      const result = await signInWithGoogle();
+
+      if (result.success) {
+        // Check onboarding status
+        const hasCompletedOnboarding = await checkOnboardingStatus();
+
+        if (hasCompletedOnboarding) {
+          signalOnboardingComplete();
+        } else {
+          const hasTierSelected = await checkTierSelection();
+          if (hasTierSelected) {
+            navigation.replace('WhyTransFitness');
+          } else {
+            navigation.replace('TierSelection');
+          }
+        }
+      } else if (result.error && result.error !== 'Sign-in was cancelled' && result.error !== 'Sign-in was dismissed') {
+        setError(result.error);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -422,8 +459,18 @@ export default function SignupScreen({ navigation }: any) {
             )}
           </Pressable>
 
+          {/* Google Sign-Up */}
+          <OrDivider />
+
+          <GoogleSignInButton
+            onPress={handleGoogleSignIn}
+            loading={googleLoading}
+            disabled={loading}
+            mode="signup"
+          />
+
           {/* Login Link */}
-          <View style={styles.loginContainer}>
+          <View style={[styles.loginContainer, { marginTop: spacing.xl }]}>
             <Text style={styles.loginText}>Already have an account? </Text>
             <Pressable
               onPress={() => navigation.navigate('Login')}
@@ -657,3 +704,5 @@ const styles = StyleSheet.create({
     color: colors.accent.primary,
   },
 });
+
+

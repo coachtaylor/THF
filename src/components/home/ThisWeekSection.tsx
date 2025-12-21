@@ -22,15 +22,15 @@ export default function ThisWeekSection({ weekDays }: ThisWeekSectionProps) {
   const getWeekDays = () => {
     const today = new Date();
     const dayOfWeek = today.getDay();
-    const monday = new Date(today);
-    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    const sunday = new Date(today);
+    sunday.setDate(today.getDate() - dayOfWeek);
 
     const days = [];
-    const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
     for (let i = 0; i < 7; i++) {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + i);
+      const date = new Date(sunday);
+      date.setDate(sunday.getDate() + i);
       date.setHours(0, 0, 0, 0);
 
       const todayDate = new Date();

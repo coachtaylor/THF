@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,12 +27,12 @@ interface GoalCardProps {
 }
 
 function GoalCard({ icon, title, description, selected, onPress }: GoalCardProps) {
-  const borderColor = selected === "primary" 
-    ? colors.cyan[500] 
+  const borderColor = selected === "primary"
+    ? colors.cyan[500]
     : selected === "secondary"
     ? colors.red[500]
     : colors.glass.border;
-  
+
   const backgroundColor = selected === "primary"
     ? colors.glass.bgHero
     : selected === "secondary"
@@ -43,7 +43,7 @@ function GoalCard({ icon, title, description, selected, onPress }: GoalCardProps
     ? colors.cyan[500]
     : selected === "secondary"
     ? colors.red[500]
-    : colors.text.primary;
+    : colors.text.secondary;
 
   return (
     <TouchableOpacity
@@ -59,6 +59,28 @@ function GoalCard({ icon, title, description, selected, onPress }: GoalCardProps
         selected && styles.goalCardSelected
       ]}
     >
+      {/* Icon */}
+      <View style={[
+        styles.iconContainer,
+        selected === "primary" && styles.iconContainerSelected,
+        selected === "secondary" && styles.iconContainerSecondary,
+      ]}>
+        <Ionicons
+          name={icon}
+          size={22}
+          color={iconColor}
+        />
+      </View>
+
+      {/* Content */}
+      <View style={styles.goalContent}>
+        <Text style={[
+          styles.goalTitle,
+          selected && styles.goalTitleSelected
+        ]}>{title}</Text>
+        <Text style={styles.goalDescription}>{description}</Text>
+      </View>
+
       {/* Badge indicator */}
       {selected && (
         <View style={[
@@ -72,20 +94,6 @@ function GoalCard({ icon, title, description, selected, onPress }: GoalCardProps
           </Text>
         </View>
       )}
-
-      {/* Icon */}
-      <View style={styles.iconContainer}>
-        <Ionicons 
-          name={icon} 
-          size={32} 
-          color={iconColor}
-          style={{ opacity: selected ? 1 : 0.7 }}
-        />
-      </View>
-
-      {/* Content */}
-      <Text style={styles.goalTitle}>{title}</Text>
-      <Text style={styles.goalDescription}>{description}</Text>
     </TouchableOpacity>
   );
 }
@@ -95,37 +103,28 @@ export default function Goals({ navigation }: GoalsProps) {
   const [primaryGoal, setPrimaryGoal] = useState<Goal | null>(null);
   const [secondaryGoal, setSecondaryGoal] = useState<Goal | null>(null);
 
-  // Load initial data from profile
-  useEffect(() => {
-    if (profile) {
-      if (profile.primary_goal) {
-        setPrimaryGoal(profile.primary_goal);
-      }
-      if (profile.secondary_goals && profile.secondary_goals.length > 0) {
-        setSecondaryGoal(profile.secondary_goals[0] as Goal);
-      }
-    }
-  }, [profile]);
+  // Note: We intentionally don't pre-populate from profile during onboarding
+  // User should actively choose their goals
 
   const goalInfo: Record<Goal, { description: string; focus: string[] }> = {
     feminization: {
-      description: "Build a curvier, more feminine physique through strategic muscle development",
+      description: "Curvier, feminine physique",
       focus: ["Lower body emphasis (glutes, legs)", "Core strength and definition", "Lighter upper body work", "Flexibility and mobility"]
     },
     masculinization: {
-      description: "Develop a broader, more masculine build through upper body development",
+      description: "Broader, stronger upper body",
       focus: ["Upper body emphasis (chest, shoulders, back)", "Core and arm strength", "Compound movements", "Progressive strength gains"]
     },
     general_fitness: {
-      description: "Overall health, energy, and well-being with balanced training",
+      description: "Balanced health & energy",
       focus: ["Full-body workouts", "Cardiovascular health", "Functional movement", "Sustainable habits"]
     },
     strength: {
-      description: "Build maximum strength and power across all major movements",
+      description: "Maximum power & strength",
       focus: ["Heavy compound lifts", "Progressive overload", "Lower rep ranges", "Adequate recovery"]
     },
     endurance: {
-      description: "Improve cardiovascular fitness and muscular endurance",
+      description: "Cardio & stamina focus",
       focus: ["Higher rep ranges", "Circuit training", "Cardio conditioning", "Active recovery"]
     }
   };
@@ -272,17 +271,31 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
   goalsContainer: {
-    gap: spacing.base,
+    gap: spacing.sm,
   },
   goalCard: {
     ...glassStyles.card,
-    padding: spacing['2xl'],
-    borderRadius: borderRadius['2xl'],
-    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.lg,
+    paddingRight: spacing.xl,
+    borderRadius: borderRadius.xl,
+    gap: spacing.base,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  goalCardSelected: {
+    ...Platform.select({
+      ios: {
         shadowOpacity: 0.25,
         shadowRadius: 12,
       },
@@ -291,66 +304,53 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  goalCardSelected: {
-    ...Platform.select({
-      ios: {
-        shadowOpacity: 0.4,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
-  },
   badge: {
-    position: 'absolute',
-    top: spacing.lg,
-    right: spacing.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
     borderRadius: borderRadius.sm,
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.cyan[500],
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.6,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
   },
   badgeText: {
-    ...textStyles.caption,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '700',
     letterSpacing: 0.5,
-    color: colors.text.primary,
+    color: colors.bg.deep,
     textTransform: 'uppercase',
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.base,
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
     backgroundColor: colors.glass.bg,
     borderWidth: 1,
     borderColor: colors.glass.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.base,
+  },
+  iconContainerSelected: {
+    backgroundColor: 'rgba(91, 206, 250, 0.15)',
+    borderColor: 'rgba(91, 206, 250, 0.3)',
+  },
+  iconContainerSecondary: {
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    borderColor: 'rgba(244, 63, 94, 0.3)',
+  },
+  goalContent: {
+    flex: 1,
   },
   goalTitle: {
-    ...textStyles.h2,
-    fontSize: 22,
-    marginBottom: spacing.sm,
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  goalTitleSelected: {
     color: colors.text.primary,
   },
   goalDescription: {
-    ...textStyles.body,
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.text.secondary,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.tertiary,
+    marginTop: 2,
   },
   focusCard: {
     ...glassStyles.cardHero,

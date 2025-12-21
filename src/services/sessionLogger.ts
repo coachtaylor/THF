@@ -8,9 +8,11 @@ export interface SessionData {
   workoutDuration: number;
   exercises: Array<{
     exerciseId: string;
+    name?: string;
     sets: Array<{
       rpe: number;
       reps: number;
+      weight?: number; // Weight in lbs
       completedAt: string;
     }>;
     swappedTo: string | null;
@@ -134,6 +136,7 @@ export function buildSessionData(
     exercise.sets.push({
       rpe: set.rpe,
       reps: set.reps,
+      weight: set.weight,
       completedAt: set.completedAt,
     });
   });

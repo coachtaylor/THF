@@ -300,6 +300,7 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
   const weeklyWorkouts = plan.days.slice(0, Math.min(7, plan.days.length));
 
   return (
+    <>
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
       {/* Success Animation */}
       <View style={styles.successContainer}>
@@ -500,14 +501,16 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
         </TouchableOpacity>
       </View>
 
-      {/* Beta Survey Modal */}
-      <BetaSurveyModal
-        visible={showSurvey}
-        onClose={handleSurveyClose}
-        onSubmit={handleSurveySubmit}
-        triggerPoint="onboarding"
-      />
     </ScrollView>
+
+    {/* Beta Survey Modal - must be outside ScrollView */}
+    <BetaSurveyModal
+      visible={showSurvey}
+      onClose={handleSurveyClose}
+      onSubmit={handleSurveySubmit}
+      triggerPoint="onboarding"
+    />
+  </>
   );
 }
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User } from '../types/auth';
 import * as authService from '../services/auth/auth';
+import { signInWithGoogle as googleSignIn, GoogleAuthResult } from '../services/auth/googleAuth';
 
 interface AuthContextValue {
   user: User | null;
@@ -11,6 +12,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
+  signInWithGoogle: () => Promise<GoogleAuthResult>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -69,6 +71,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(currentUser);
   }, []);
 
+  const signInWithGoogle = useCallback(async (): Promise<GoogleAuthResult> => {
+    const result = await googleSignIn();
+    if (result.success && result.user) {
+      // Map the Supabase user to our User type
+      const mappedUser: User = {
+        id: result.user.id,
+        email: result.user.email || '',
+        first_name: result.user.user_metadata?.first_name || result.user.user_metadata?.full_name?.split(' ')[0] || '',
+        last_name: result.user.user_metadata?.last_name || result.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+        email_verified: !!result.user.email_confirmed_at,
+        onboarding_completed: result.user.user_metadata?.onboarding_completed || false,
+        created_at: new Date(result.user.created_at),
+        updated_at: new Date(result.user.updated_at || result.user.created_at),
+      };
+      setUser(mappedUser);
+    }
+    return result;
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -80,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         requestPasswordReset,
         refreshUser,
+        signInWithGoogle,
       }}
     >
       {children}

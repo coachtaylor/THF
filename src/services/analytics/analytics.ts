@@ -28,7 +28,10 @@ export type AnalyticsEventType =
   | 'safety_checkpoint_shown'
   // User engagement
   | 'app_opened'
-  | 'session_ended';
+  | 'session_ended'
+  // Survey/feedback events
+  | 'survey_completed'
+  | 'survey_skipped';
 
 /**
  * Event properties that can be attached to analytics events

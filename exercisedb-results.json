@@ -1,0 +1,888 @@
+{
+  "generatedAt": "2025-12-20T22:37:21.183Z",
+  "stats": {
+    "total": 97,
+    "found": 81,
+    "notFound": 16,
+    "successRate": "83.5%"
+  },
+  "matched": [
+    {
+      "id": 1,
+      "slug": "bodyweight-squat",
+      "name": "Bodyweight Squat",
+      "searchTerm": "bodyweight squat",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/udKByDg/41n2hmGR8WuVfe1U__Squat-m_Thighs.png",
+      "exerciseId": "exr_41n2hmGR8WuVfe1U",
+      "matchedName": "Squat"
+    },
+    {
+      "id": 2,
+      "slug": "sumo-squat",
+      "name": "Sumo Squat",
+      "searchTerm": "sumo squat",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/nKmfbcf/41n2hYAP9oGEZk2P__Sumo-Squat-m_Thighs.png",
+      "exerciseId": "exr_41n2hYAP9oGEZk2P",
+      "matchedName": "Sumo Squat"
+    },
+    {
+      "id": 3,
+      "slug": "glute-bridge",
+      "name": "Glute Bridge",
+      "searchTerm": "glute bridge",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/ALLlKpv/41n2hLUqpev5gSzJ__Thoracic-Bridge_Stretching.png",
+      "exerciseId": "exr_41n2hLUqpev5gSzJ",
+      "matchedName": "Thoracic Bridge"
+    },
+    {
+      "id": 4,
+      "slug": "single-leg-glute-bridge",
+      "name": "Single-Leg Glute Bridge",
+      "searchTerm": "single leg glute bridge",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/rLX5AMD/41n2hrHSqBnVWRRB__Bodyweight-Single-Leg-Deadlift_Thighs_720.png",
+      "exerciseId": "exr_41n2hrHSqBnVWRRB",
+      "matchedName": "Bodyweight Single Leg Deadlift"
+    },
+    {
+      "id": 6,
+      "slug": "reverse-lunge",
+      "name": "Reverse Lunge",
+      "searchTerm": "reverse lunge",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/xPs3BlN/41n2hGNrmUnF58Yy__Reverse-Lunge-(leg-kick)_Thighs.png",
+      "exerciseId": "exr_41n2hGNrmUnF58Yy",
+      "matchedName": "Reverse Lunge "
+    },
+    {
+      "id": 7,
+      "slug": "bulgarian-split-squat",
+      "name": "Bulgarian Split Squat",
+      "searchTerm": "bulgarian split squat",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/mCQmkCI/41n2hpLLs1uU5atr__Bulgarian-Split-Squat_Thighs.png",
+      "exerciseId": "exr_41n2hpLLs1uU5atr",
+      "matchedName": "Bulgarian Split Squat"
+    },
+    {
+      "id": 8,
+      "slug": "calf-raise",
+      "name": "Calf Raise",
+      "searchTerm": "calf raise",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/ny7VIEO/41n2hTs4q3ihihZs__Barbell-Seated-Calf-Raise_Calves.png",
+      "exerciseId": "exr_41n2hTs4q3ihihZs",
+      "matchedName": "Seated Calf Raise"
+    },
+    {
+      "id": 9,
+      "slug": "single-leg-calf-raise",
+      "name": "Single-Leg Calf Raise",
+      "searchTerm": "single leg calf raise",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/M7P04gJ/41n2hbLX4XH8xgN7__Dumbbell-Single-Leg-Calf-Raise_Calves.png",
+      "exerciseId": "exr_41n2hbLX4XH8xgN7",
+      "matchedName": "Dumbbell Single Leg Calf Raise"
+    },
+    {
+      "id": 13,
+      "slug": "pike-push-up",
+      "name": "Pike Push-Up",
+      "searchTerm": "pike push up",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/vmbEAFU/41n2hmvGdVRvvnNY__Pike-Push-up-(on-Bench)-(VERSION-2)_Chest.png",
+      "exerciseId": "exr_41n2hmvGdVRvvnNY",
+      "matchedName": "Pike Push up "
+    },
+    {
+      "id": 14,
+      "slug": "pull-up-assisted",
+      "name": "Pull-Up (Assisted)",
+      "searchTerm": "pull up assisted",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/3XMA2St/41n2hU4y6EaYXFhr__Pull-up-(neutral-grip)_Back.png",
+      "exerciseId": "exr_41n2hU4y6EaYXFhr",
+      "matchedName": "Pull up"
+    },
+    {
+      "id": 18,
+      "slug": "plank",
+      "name": "Plank",
+      "searchTerm": "plank",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/SGDtnU7/41n2hXQw5yAbbXL8__Front-Plank_Waist.png",
+      "exerciseId": "exr_41n2hXQw5yAbbXL8",
+      "matchedName": "Front Plank"
+    },
+    {
+      "id": 19,
+      "slug": "side-plank",
+      "name": "Side Plank",
+      "searchTerm": "side plank",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/LPzfTTJ/41n2haAabPyN5t8y__Side-Lunge_Thighs.png",
+      "exerciseId": "exr_41n2haAabPyN5t8y",
+      "matchedName": "Side Lunge"
+    },
+    {
+      "id": 21,
+      "slug": "bird-dog",
+      "name": "Bird Dog",
+      "searchTerm": "bird dog",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/4UQmjHP/41n2hW9gDXAJJMmH__Downward-Facing-Dog_Stretching.png",
+      "exerciseId": "exr_41n2hW9gDXAJJMmH",
+      "matchedName": "Downward Facing Dog"
+    },
+    {
+      "id": 23,
+      "slug": "bicycle-crunch",
+      "name": "Bicycle Crunch",
+      "searchTerm": "bicycle crunch",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/SYasbO5/41n2hskeb9dXgBoC__Crunch-Floor-m_waist.png",
+      "exerciseId": "exr_41n2hskeb9dXgBoC",
+      "matchedName": "Crunch Floor"
+    },
+    {
+      "id": 24,
+      "slug": "goblet-squat",
+      "name": "Goblet Squat",
+      "searchTerm": "goblet squat",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/7zfmW8Q/41n2hQDiSwTZXM4F__Dumbbell-Goblet-Squat_Thighs.png",
+      "exerciseId": "exr_41n2hQDiSwTZXM4F",
+      "matchedName": "Goblet Squat"
+    },
+    {
+      "id": 25,
+      "slug": "dumbbell-rdl",
+      "name": "Dumbbell Romanian Deadlift (RDL)",
+      "searchTerm": "dumbbell rdl",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/9W5kw6w/41n2hTaeNKWhMQHH__Dumbbell-burpee_Cardio.png",
+      "exerciseId": "exr_41n2hTaeNKWhMQHH",
+      "matchedName": "Dumbbell burpee"
+    },
+    {
+      "id": 26,
+      "slug": "dumbbell-sumo-squat",
+      "name": "Dumbbell Sumo Squat",
+      "searchTerm": "dumbbell sumo squat",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/nKmfbcf/41n2hYAP9oGEZk2P__Sumo-Squat-m_Thighs.png",
+      "exerciseId": "exr_41n2hYAP9oGEZk2P",
+      "matchedName": "Sumo Squat"
+    },
+    {
+      "id": 27,
+      "slug": "dumbbell-walking-lunge",
+      "name": "Dumbbell Walking Lunge",
+      "searchTerm": "dumbbell walking lunge",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/vxsAnsy/41n2hQHmRSoUkk9F__Walking-Lunge-Male_Hips.png",
+      "exerciseId": "exr_41n2hQHmRSoUkk9F",
+      "matchedName": "Walking Lunge"
+    },
+    {
+      "id": 29,
+      "slug": "dumbbell-single-leg-rdl",
+      "name": "Dumbbell Single-Leg RDL",
+      "searchTerm": "dumbbell single leg rdl",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/M7P04gJ/41n2hbLX4XH8xgN7__Dumbbell-Single-Leg-Calf-Raise_Calves.png",
+      "exerciseId": "exr_41n2hbLX4XH8xgN7",
+      "matchedName": "Dumbbell Single Leg Calf Raise"
+    },
+    {
+      "id": 31,
+      "slug": "dumbbell-incline-press",
+      "name": "Dumbbell Incline Press",
+      "searchTerm": "dumbbell incline press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/iFeKp3f/41n2haNJ3NA8yCE2__Dumbbell-Incline-One-Arm-Hammer-Press_Upper-Arms.png",
+      "exerciseId": "exr_41n2haNJ3NA8yCE2",
+      "matchedName": "Dumbbell Incline One Arm Hammer Press"
+    },
+    {
+      "id": 32,
+      "slug": "dumbbell-overhead-press",
+      "name": "Dumbbell Overhead Press",
+      "searchTerm": "dumbbell overhead press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/XwJ4aFB/41n2hXfpvSshoXWG__Dumbbell-Clean-and-Press_Weightlifting_720.png",
+      "exerciseId": "exr_41n2hXfpvSshoXWG",
+      "matchedName": "Dumbbell Clean and Press"
+    },
+    {
+      "id": 36,
+      "slug": "dumbbell-single-arm-row",
+      "name": "Dumbbell Single-Arm Row",
+      "searchTerm": "dumbbell single arm row",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/ok68B3e/41n2hY9EdwkdGz9a__Dumbbell-Bent-over-Row_back_Back.png",
+      "exerciseId": "exr_41n2hY9EdwkdGz9a",
+      "matchedName": "Dumbbell One Arm Bent-over Row"
+    },
+    {
+      "id": 37,
+      "slug": "dumbbell-bicep-curl",
+      "name": "Dumbbell Bicep Curl",
+      "searchTerm": "dumbbell bicep curl",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/Yq62mdx/41n2huf7mAC2rhfC__Dumbbell-Jumping-Squat_Plyometric.png",
+      "exerciseId": "exr_41n2huf7mAC2rhfC",
+      "matchedName": "Dumbbell Jumping Squat"
+    },
+    {
+      "id": 39,
+      "slug": "dumbbell-overhead-tricep-extension",
+      "name": "Dumbbell Overhead Tricep Extension",
+      "searchTerm": "extension",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/WoXh4BR/41n2hn2kPMag9WCf__Cable-Seated-Neck-Extension-(with-head-harness)_Neck.png",
+      "exerciseId": "exr_41n2hn2kPMag9WCf",
+      "matchedName": "Cable Seated Neck Extension "
+    },
+    {
+      "id": 40,
+      "slug": "barbell-back-squat",
+      "name": "Barbell Back Squat",
+      "searchTerm": "barbell back squat",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/Yq62mdx/41n2huf7mAC2rhfC__Dumbbell-Jumping-Squat_Plyometric.png",
+      "exerciseId": "exr_41n2huf7mAC2rhfC",
+      "matchedName": "Dumbbell Jumping Squat"
+    },
+    {
+      "id": 42,
+      "slug": "barbell-deadlift",
+      "name": "Barbell Conventional Deadlift",
+      "searchTerm": "barbell deadlift",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/QxA3A5m/41n2hn8rpbYihzEW__Dumbbell-Romanian-Deadlift_Hips.png",
+      "exerciseId": "exr_41n2hn8rpbYihzEW",
+      "matchedName": "Romanian Deadlift"
+    },
+    {
+      "id": 43,
+      "slug": "barbell-hip-thrust",
+      "name": "Barbell Hip Thrust",
+      "searchTerm": "barbell hip thrust",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/6FHKzk5/41n2hxxePSdr5oN1__Hip-Thrusts_Hips.png",
+      "exerciseId": "exr_41n2hxxePSdr5oN1",
+      "matchedName": "Hip Thrusts"
+    },
+    {
+      "id": 45,
+      "slug": "barbell-overhead-press",
+      "name": "Barbell Overhead Press",
+      "searchTerm": "barbell overhead press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/boDyoVc/41n2hxnFMotsXTj3__Barbell-Bench-Press_Chest.png",
+      "exerciseId": "exr_41n2hxnFMotsXTj3",
+      "matchedName": "Bench Press"
+    },
+    {
+      "id": 47,
+      "slug": "barbell-bicep-curl",
+      "name": "Barbell Bicep Curl",
+      "searchTerm": "barbell bicep curl",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/vvtrwNo/41n2hGioS8HumEF7__Cable-Hammer-Curl-(with-rope)-m_Forearms.png",
+      "exerciseId": "exr_41n2hGioS8HumEF7",
+      "matchedName": "Hammer Curl"
+    },
+    {
+      "id": 49,
+      "slug": "band-glute-bridge",
+      "name": "Band Glute Bridge",
+      "searchTerm": "glute bridge",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/ALLlKpv/41n2hLUqpev5gSzJ__Thoracic-Bridge_Stretching.png",
+      "exerciseId": "exr_41n2hLUqpev5gSzJ",
+      "matchedName": "Thoracic Bridge"
+    },
+    {
+      "id": 50,
+      "slug": "band-lateral-walk",
+      "name": "Band Lateral Walk",
+      "searchTerm": "band lateral walk",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/wINC5NY/41n2hjuGpcex14w7__Dumbbell-Lateral-Raise_shoulder.png",
+      "exerciseId": "exr_41n2hjuGpcex14w7",
+      "matchedName": "Lateral Raise"
+    },
+    {
+      "id": 51,
+      "slug": "band-chest-press",
+      "name": "Band Chest Press",
+      "searchTerm": "band chest press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/boDyoVc/41n2hxnFMotsXTj3__Barbell-Bench-Press_Chest.png",
+      "exerciseId": "exr_41n2hxnFMotsXTj3",
+      "matchedName": "Bench Press"
+    },
+    {
+      "id": 52,
+      "slug": "band-pull-apart",
+      "name": "Band Pull-Apart",
+      "searchTerm": "pull apart",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/3XMA2St/41n2hU4y6EaYXFhr__Pull-up-(neutral-grip)_Back.png",
+      "exerciseId": "exr_41n2hU4y6EaYXFhr",
+      "matchedName": "Pull up"
+    },
+    {
+      "id": 53,
+      "slug": "band-overhead-press",
+      "name": "Band Overhead Press",
+      "searchTerm": "band overhead press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/x8gEzvq/41n2hMRXm49mM62z__Dumbbell-Arnold-Press-II_Shoulders.png",
+      "exerciseId": "exr_41n2hMRXm49mM62z",
+      "matchedName": "Arnold Press"
+    },
+    {
+      "id": 54,
+      "slug": "band-bicep-curl",
+      "name": "Band Bicep Curl",
+      "searchTerm": "bicep curl",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/vvtrwNo/41n2hGioS8HumEF7__Cable-Hammer-Curl-(with-rope)-m_Forearms.png",
+      "exerciseId": "exr_41n2hGioS8HumEF7",
+      "matchedName": "Hammer Curl"
+    },
+    {
+      "id": 55,
+      "slug": "walking",
+      "name": "Walking",
+      "searchTerm": "walking",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/vxsAnsy/41n2hQHmRSoUkk9F__Walking-Lunge-Male_Hips.png",
+      "exerciseId": "exr_41n2hQHmRSoUkk9F",
+      "matchedName": "Walking Lunge"
+    },
+    {
+      "id": 57,
+      "slug": "cycling-stationary",
+      "name": "Cycling (Stationary)",
+      "searchTerm": "cycling stationary",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/PXrIZdm/41n2hXYRxFHnQAD4__Stationary-Bike-Run-(version-4)_Cardio.png",
+      "exerciseId": "exr_41n2hXYRxFHnQAD4",
+      "matchedName": "Stationary Bike Run "
+    },
+    {
+      "id": 58,
+      "slug": "jumping-jacks",
+      "name": "Jumping Jacks",
+      "searchTerm": "jumping jacks",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/BUqEMK1/41n2hupxPcdnktBC__Jumping-Jack_Cardio.png",
+      "exerciseId": "exr_41n2hupxPcdnktBC",
+      "matchedName": "Jumping Jack"
+    },
+    {
+      "id": 59,
+      "slug": "high-knees",
+      "name": "High Knees",
+      "searchTerm": "high knees",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/Q89MA5y/41n2hmFcGGUCS289__Walking-High-Knees-Lunge_Cardio.png",
+      "exerciseId": "exr_41n2hmFcGGUCS289",
+      "matchedName": "Walking High Knees Lunge"
+    },
+    {
+      "id": 60,
+      "slug": "cat-cow-stretch",
+      "name": "Cat-Cow Stretch",
+      "searchTerm": "cat cow stretch",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/c0Z6dwV/41n2hNCTCWtWAqzH__Cow-Stretch_Waist.png",
+      "exerciseId": "exr_41n2hNCTCWtWAqzH",
+      "matchedName": "Cow Stretch"
+    },
+    {
+      "id": 61,
+      "slug": "childs-pose",
+      "name": "Child's Pose",
+      "searchTerm": "childs pose",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/zg5sZ1f/41n2hnougzKKhhqu__Butterfly-Yoga-Pose_Thighs.png",
+      "exerciseId": "exr_41n2hnougzKKhhqu",
+      "matchedName": "Butterfly Yoga Pose"
+    },
+    {
+      "id": 62,
+      "slug": "hip-flexor-stretch",
+      "name": "Hip Flexor Stretch",
+      "searchTerm": "hip flexor stretch",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/hveLqiL/41n2hqw5LsDpeE2i__Elbow-Flexor-Stretch_Upper-Arms.png",
+      "exerciseId": "exr_41n2hqw5LsDpeE2i",
+      "matchedName": "Elbow Flexor Stretch"
+    },
+    {
+      "id": 64,
+      "slug": "doorway-chest-stretch",
+      "name": "Doorway Chest Stretch",
+      "searchTerm": "doorway chest stretch",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/1WKr2aI/41n2hbYPY4jLKxW3__Peroneals-Stretch-(female)_Calves.png",
+      "exerciseId": "exr_41n2hbYPY4jLKxW3",
+      "matchedName": "Peroneals Stretch "
+    },
+    {
+      "id": 65,
+      "slug": "90-90-hip-stretch",
+      "name": "90/90 Hip Stretch",
+      "searchTerm": "90/90 hip stretch",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/kZDPjTN/41n2hQeNyCnt3uFh__Back-Pec-Stretch_Back.png",
+      "exerciseId": "exr_41n2hQeNyCnt3uFh",
+      "matchedName": "Back Pec Stretch"
+    },
+    {
+      "id": 66,
+      "slug": "thoracic-spine-rotation",
+      "name": "Thoracic Spine Rotation",
+      "searchTerm": "thoracic spine rotation",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/ALLlKpv/41n2hLUqpev5gSzJ__Thoracic-Bridge_Stretching.png",
+      "exerciseId": "exr_41n2hLUqpev5gSzJ",
+      "matchedName": "Thoracic Bridge"
+    },
+    {
+      "id": 68,
+      "slug": "donkey-kick",
+      "name": "Donkey Kick",
+      "searchTerm": "donkey kick",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/VzOz3fj/41n2hWbP5uF6PQpU__Donkey-Calf-Raise_Calves.png",
+      "exerciseId": "exr_41n2hWbP5uF6PQpU",
+      "matchedName": "Donkey Calf Raise"
+    },
+    {
+      "id": 70,
+      "slug": "scapular-push-up",
+      "name": "Scapular Push-Up",
+      "searchTerm": "scapular push up",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/WuZAdSm/41n2hkmMrSwcHkZ8__Clap-Push-Up_Plyometrics_Chest.png",
+      "exerciseId": "exr_41n2hkmMrSwcHkZ8",
+      "matchedName": "Clap Push Up"
+    },
+    {
+      "id": 72,
+      "slug": "wall-sit",
+      "name": "Wall Sit",
+      "searchTerm": "sit",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/dJWMhvz/41n2hvjrFJ2KjzGm__Sit-(wall)_Thighs.png",
+      "exerciseId": "exr_41n2hvjrFJ2KjzGm",
+      "matchedName": "Sit "
+    },
+    {
+      "id": 75,
+      "slug": "kettlebell-deadlift",
+      "name": "Kettlebell Deadlift",
+      "searchTerm": "deadlift",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/QxA3A5m/41n2hn8rpbYihzEW__Dumbbell-Romanian-Deadlift_Hips.png",
+      "exerciseId": "exr_41n2hn8rpbYihzEW",
+      "matchedName": "Romanian Deadlift"
+    },
+    {
+      "id": 76,
+      "slug": "kettlebell-sumo-deadlift",
+      "name": "Kettlebell Sumo Deadlift",
+      "searchTerm": "sumo deadlift",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/QxA3A5m/41n2hn8rpbYihzEW__Dumbbell-Romanian-Deadlift_Hips.png",
+      "exerciseId": "exr_41n2hn8rpbYihzEW",
+      "matchedName": "Romanian Deadlift"
+    },
+    {
+      "id": 77,
+      "slug": "kettlebell-lunge",
+      "name": "Kettlebell Lunge",
+      "searchTerm": "kettlebell lunge",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/svKtEC0/41n2hYXWwoxiUk57__Lunge_Hips.png",
+      "exerciseId": "exr_41n2hYXWwoxiUk57",
+      "matchedName": "Lunge"
+    },
+    {
+      "id": 78,
+      "slug": "kettlebell-single-leg-rdl",
+      "name": "Kettlebell Single-Leg RDL",
+      "searchTerm": "kettlebell single leg rdl",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/rLX5AMD/41n2hrHSqBnVWRRB__Bodyweight-Single-Leg-Deadlift_Thighs_720.png",
+      "exerciseId": "exr_41n2hrHSqBnVWRRB",
+      "matchedName": "Bodyweight Single Leg Deadlift"
+    },
+    {
+      "id": 79,
+      "slug": "kettlebell-turkish-get-up",
+      "name": "Kettlebell Turkish Get-Up",
+      "searchTerm": "turkish get up",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/ogjysnJ/41n2hnbt5GwwY7gr__Diamond-Push-up-(female)_Upper-Arms.png",
+      "exerciseId": "exr_41n2hnbt5GwwY7gr",
+      "matchedName": "Diamond Push up "
+    },
+    {
+      "id": 80,
+      "slug": "kettlebell-clean",
+      "name": "Kettlebell Clean",
+      "searchTerm": "clean",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/XwJ4aFB/41n2hXfpvSshoXWG__Dumbbell-Clean-and-Press_Weightlifting_720.png",
+      "exerciseId": "exr_41n2hXfpvSshoXWG",
+      "matchedName": "Dumbbell Clean and Press"
+    },
+    {
+      "id": 81,
+      "slug": "kettlebell-press",
+      "name": "Kettlebell Press",
+      "searchTerm": "kettlebell press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/dK1H4xO/41n2hLA8xydD4dzE__Triceps-Press-(Head-Below-Bench)_Upper-Arms.png",
+      "exerciseId": "exr_41n2hLA8xydD4dzE",
+      "matchedName": "Triceps Press "
+    },
+    {
+      "id": 82,
+      "slug": "kettlebell-row",
+      "name": "Kettlebell Row",
+      "searchTerm": "row",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/moTFBCp/41n2hdkBpqwoDmVq__Suspended-Row_back.png",
+      "exerciseId": "exr_41n2hdkBpqwoDmVq",
+      "matchedName": "Suspended Row"
+    },
+    {
+      "id": 88,
+      "slug": "squat-jump",
+      "name": "Squat Jump",
+      "searchTerm": "squat jump",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/xJMWf8O/41n2hbdZww1thMKz__Jump-Squat-II_Thighs.png",
+      "exerciseId": "exr_41n2hbdZww1thMKz",
+      "matchedName": "Jump Squat "
+    },
+    {
+      "id": 89,
+      "slug": "box-step-up",
+      "name": "Box Step-Up",
+      "searchTerm": "box step up",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/3lhkHNQ/41n2homrPqqs8coG__Stair-Up-(female)_Thighs.png",
+      "exerciseId": "exr_41n2homrPqqs8coG",
+      "matchedName": "Stair Up "
+    },
+    {
+      "id": 90,
+      "slug": "curtsy-lunge",
+      "name": "Curtsy Lunge",
+      "searchTerm": "curtsy lunge",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/svKtEC0/41n2hYXWwoxiUk57__Lunge_Hips.png",
+      "exerciseId": "exr_41n2hYXWwoxiUk57",
+      "matchedName": "Lunge"
+    },
+    {
+      "id": 91,
+      "slug": "pistol-squat-assisted",
+      "name": "Pistol Squat (Assisted)",
+      "searchTerm": "pistol squat assisted",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/pgc0Age/41n2hGRSg9WCoTYT__Jumping-Pistol-Squat_Plyometric.png",
+      "exerciseId": "exr_41n2hGRSg9WCoTYT",
+      "matchedName": "Jumping Pistol Squat"
+    },
+    {
+      "id": 93,
+      "slug": "hollow-body-hold",
+      "name": "Hollow Body Hold",
+      "searchTerm": "hold",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/sdRoqxz/41n2hq3Wm6ANkgUz__Lying-Leg-Raise-and-Hold_Hips.png",
+      "exerciseId": "exr_41n2hq3Wm6ANkgUz",
+      "matchedName": "Lying Leg Raise and Hold"
+    },
+    {
+      "id": 95,
+      "slug": "jump-lunge",
+      "name": "Jump Lunge",
+      "searchTerm": "jump lunge",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/svKtEC0/41n2hYXWwoxiUk57__Lunge_Hips.png",
+      "exerciseId": "exr_41n2hYXWwoxiUk57",
+      "matchedName": "Lunge"
+    },
+    {
+      "id": 97,
+      "slug": "bridge-march",
+      "name": "Bridge March",
+      "searchTerm": "bridge march",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/ALLlKpv/41n2hLUqpev5gSzJ__Thoracic-Bridge_Stretching.png",
+      "exerciseId": "exr_41n2hLUqpev5gSzJ",
+      "matchedName": "Thoracic Bridge"
+    },
+    {
+      "id": 98,
+      "slug": "dumbbell-chest-fly",
+      "name": "Dumbbell Chest Fly",
+      "searchTerm": "dumbbell chest fly",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/xneLPAv/41n2hyNf5GebszTf__Dumbbell-Rear-Delt-Fly-(female)_Shoulders.png",
+      "exerciseId": "exr_41n2hyNf5GebszTf",
+      "matchedName": "Dumbbell Rear Delt Fly "
+    },
+    {
+      "id": 99,
+      "slug": "dumbbell-rear-delt-fly",
+      "name": "Dumbbell Rear Delt Fly",
+      "searchTerm": "dumbbell rear delt fly",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/xneLPAv/41n2hyNf5GebszTf__Dumbbell-Rear-Delt-Fly-(female)_Shoulders.png",
+      "exerciseId": "exr_41n2hyNf5GebszTf",
+      "matchedName": "Dumbbell Rear Delt Fly "
+    },
+    {
+      "id": 103,
+      "slug": "dumbbell-tricep-kickback",
+      "name": "Dumbbell Tricep Kickback",
+      "searchTerm": "dumbbell tricep kickback",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/Yq62mdx/41n2huf7mAC2rhfC__Dumbbell-Jumping-Squat_Plyometric.png",
+      "exerciseId": "exr_41n2huf7mAC2rhfC",
+      "matchedName": "Dumbbell Jumping Squat"
+    },
+    {
+      "id": 104,
+      "slug": "dumbbell-split-squat",
+      "name": "Dumbbell Split Squat",
+      "searchTerm": "dumbbell split squat",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/dxVKN2o/41n2hSxsNAV8tGS6__Split-Squat-(female)_Hips.png",
+      "exerciseId": "exr_41n2hSxsNAV8tGS6",
+      "matchedName": "Split Squat "
+    },
+    {
+      "id": 105,
+      "slug": "dumbbell-hip-thrust",
+      "name": "Dumbbell Hip Thrust",
+      "searchTerm": "dumbbell hip thrust",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/Yq62mdx/41n2huf7mAC2rhfC__Dumbbell-Jumping-Squat_Plyometric.png",
+      "exerciseId": "exr_41n2huf7mAC2rhfC",
+      "matchedName": "Dumbbell Jumping Squat"
+    },
+    {
+      "id": 107,
+      "slug": "dumbbell-floor-press",
+      "name": "Dumbbell Floor Press",
+      "searchTerm": "dumbbell floor press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/XwJ4aFB/41n2hXfpvSshoXWG__Dumbbell-Clean-and-Press_Weightlifting_720.png",
+      "exerciseId": "exr_41n2hXfpvSshoXWG",
+      "matchedName": "Dumbbell Clean and Press"
+    },
+    {
+      "id": 110,
+      "slug": "barbell-incline-press",
+      "name": "Barbell Incline Press",
+      "searchTerm": "barbell incline press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/kiVYKNz/41n2hsVHu7B1MTdr__Dumbbell-Palms-In-Incline-Bench-Press_Upper-Arms.png",
+      "exerciseId": "exr_41n2hsVHu7B1MTdr",
+      "matchedName": "Palms In Incline Bench Press"
+    },
+    {
+      "id": 117,
+      "slug": "barbell-landmine-press",
+      "name": "Barbell Landmine Press",
+      "searchTerm": "barbell landmine press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/boDyoVc/41n2hxnFMotsXTj3__Barbell-Bench-Press_Chest.png",
+      "exerciseId": "exr_41n2hxnFMotsXTj3",
+      "matchedName": "Bench Press"
+    },
+    {
+      "id": 118,
+      "slug": "band-squat-with-abduction",
+      "name": "Band Squat with Abduction",
+      "searchTerm": "band squat with abduction",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/1L0ZTtF/41n2hsSnmS946i2k__Single-Leg-Squat-with-Support-(pistol)_Thighs.png",
+      "exerciseId": "exr_41n2hsSnmS946i2k",
+      "matchedName": "Single Leg Squat with Support"
+    },
+    {
+      "id": 119,
+      "slug": "band-romanian-deadlift",
+      "name": "Band Romanian Deadlift",
+      "searchTerm": "band romanian deadlift",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/QxA3A5m/41n2hn8rpbYihzEW__Dumbbell-Romanian-Deadlift_Hips.png",
+      "exerciseId": "exr_41n2hn8rpbYihzEW",
+      "matchedName": "Romanian Deadlift"
+    },
+    {
+      "id": 122,
+      "slug": "band-face-pull",
+      "name": "Band Face Pull",
+      "searchTerm": "face pull",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/3XMA2St/41n2hU4y6EaYXFhr__Pull-up-(neutral-grip)_Back.png",
+      "exerciseId": "exr_41n2hU4y6EaYXFhr",
+      "matchedName": "Pull up"
+    },
+    {
+      "id": 124,
+      "slug": "band-upright-row",
+      "name": "Band Upright Row",
+      "searchTerm": "row",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/moTFBCp/41n2hdkBpqwoDmVq__Suspended-Row_back.png",
+      "exerciseId": "exr_41n2hdkBpqwoDmVq",
+      "matchedName": "Suspended Row"
+    },
+    {
+      "id": 125,
+      "slug": "band-single-arm-row",
+      "name": "Band Single-Arm Row",
+      "searchTerm": "band single arm row",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/3jCUx9e/41n2hHdjQpnyNdie__Dumbbell-Bent-over-Row_back_Back.png",
+      "exerciseId": "exr_41n2hHdjQpnyNdie",
+      "matchedName": "One Arm Bent-over Row"
+    },
+    {
+      "id": 127,
+      "slug": "band-leg-press",
+      "name": "Band Leg Press",
+      "searchTerm": "band leg press",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/ocXAZeF/41n2hdCBvmbCPaVE__Diamond-Press_Back.png",
+      "exerciseId": "exr_41n2hdCBvmbCPaVE",
+      "matchedName": "Diamond Press"
+    },
+    {
+      "id": 130,
+      "slug": "stair-climbing",
+      "name": "Stair Climbing",
+      "searchTerm": "stair climbing",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/3lhkHNQ/41n2homrPqqs8coG__Stair-Up-(female)_Thighs.png",
+      "exerciseId": "exr_41n2homrPqqs8coG",
+      "matchedName": "Stair Up "
+    },
+    {
+      "id": 131,
+      "slug": "elliptical",
+      "name": "Elliptical Training",
+      "searchTerm": "elliptical",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/oo21uwA/41n2hpTMDhTxYkvi__Elliptical-Machine-Walk-(female)_Cardio.png",
+      "exerciseId": "exr_41n2hpTMDhTxYkvi",
+      "matchedName": "Elliptical Machine Walk "
+    },
+    {
+      "id": 132,
+      "slug": "rowing-machine",
+      "name": "Rowing Machine",
+      "searchTerm": "rowing machine",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/oo21uwA/41n2hpTMDhTxYkvi__Elliptical-Machine-Walk-(female)_Cardio.png",
+      "exerciseId": "exr_41n2hpTMDhTxYkvi",
+      "matchedName": "Elliptical Machine Walk "
+    },
+    {
+      "id": 136,
+      "slug": "sled-push",
+      "name": "Sled Push",
+      "searchTerm": "sled push",
+      "imageUrl": "https://cdn.exercisedb.dev/w/images/WuZAdSm/41n2hkmMrSwcHkZ8__Clap-Push-Up_Plyometrics_Chest.png",
+      "exerciseId": "exr_41n2hkmMrSwcHkZ8",
+      "matchedName": "Clap Push Up"
+    }
+  ],
+  "notFound": [
+    {
+      "id": 56,
+      "slug": "jogging",
+      "name": "Jogging",
+      "triedTerms": [
+        "jogging"
+      ]
+    },
+    {
+      "id": 67,
+      "slug": "fire-hydrant",
+      "name": "Fire Hydrant",
+      "triedTerms": [
+        "fire hydrant",
+        "hydrant"
+      ]
+    },
+    {
+      "id": 69,
+      "slug": "clamshell",
+      "name": "Clamshell",
+      "triedTerms": [
+        "clamshell"
+      ]
+    },
+    {
+      "id": 71,
+      "slug": "farmers-carry",
+      "name": "Farmer's Carry",
+      "triedTerms": [
+        "farmers carry",
+        "farmer's carry",
+        "carry"
+      ]
+    },
+    {
+      "id": 83,
+      "slug": "kettlebell-halo",
+      "name": "Kettlebell Halo",
+      "triedTerms": [
+        "kettlebell halo",
+        "halo"
+      ]
+    },
+    {
+      "id": 85,
+      "slug": "kettlebell-snatch",
+      "name": "Kettlebell Snatch",
+      "triedTerms": [
+        "kettlebell snatch",
+        "snatch"
+      ]
+    },
+    {
+      "id": 86,
+      "slug": "kettlebell-farmers-carry",
+      "name": "Kettlebell Farmer's Carry",
+      "triedTerms": [
+        "kettlebell farmers carry",
+        "kettlebell farmer's carry",
+        "farmers carry",
+        "carry"
+      ]
+    },
+    {
+      "id": 96,
+      "slug": "wall-angels",
+      "name": "Wall Angels",
+      "triedTerms": [
+        "wall angels",
+        "angels"
+      ]
+    },
+    {
+      "id": 120,
+      "slug": "band-kickback",
+      "name": "Band Kickback",
+      "triedTerms": [
+        "band kickback",
+        "kickback",
+        "band kickettlebellack"
+      ]
+    },
+    {
+      "id": 121,
+      "slug": "band-clamshell",
+      "name": "Band Clamshell",
+      "triedTerms": [
+        "band clamshell",
+        "clamshell"
+      ]
+    },
+    {
+      "id": 123,
+      "slug": "band-tricep-pushdown",
+      "name": "Band Tricep Pushdown",
+      "triedTerms": [
+        "band tricep pushdown",
+        "tricep pushdown",
+        "pushdown"
+      ]
+    },
+    {
+      "id": 126,
+      "slug": "band-woodchop",
+      "name": "Band Woodchop",
+      "triedTerms": [
+        "band woodchop",
+        "woodchop"
+      ]
+    },
+    {
+      "id": 133,
+      "slug": "battle-ropes",
+      "name": "Battle Ropes",
+      "triedTerms": [
+        "battle ropes",
+        "ropes"
+      ]
+    },
+    {
+      "id": 134,
+      "slug": "box-jumps",
+      "name": "Box Jumps",
+      "triedTerms": [
+        "box jumps",
+        "jumps"
+      ]
+    },
+    {
+      "id": 135,
+      "slug": "sprints",
+      "name": "Sprint Intervals",
+      "triedTerms": [
+        "sprints",
+        "sprint intervals"
+      ]
+    },
+    {
+      "id": 137,
+      "slug": "shadowboxing",
+      "name": "Shadowboxing",
+      "triedTerms": [
+        "shadowboxing"
+      ]
+    }
+  ]
+}

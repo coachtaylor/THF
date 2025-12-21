@@ -11,6 +11,13 @@ import {
   logSet,
   completeWorkoutLog,
 } from '../services/storage/workoutLog';
+import {
+  saveSession,
+  getSession,
+  clearSession,
+  hasResumableSession,
+  ResumableSession,
+} from '../services/storage/workoutSession';
 
 // Error callback type for notifying UI of save failures
 type ErrorCallback = (title: string, message?: string) => void;
@@ -116,7 +123,7 @@ interface WorkoutContextType {
   pauseWorkout: () => void;
   resumeWorkout: () => void;
   completeWorkout: () => Promise<void>;
-  clearWorkout: () => void;
+  clearWorkout: () => Promise<void>;
 
   // Phase actions
   completeWarmupExercise: () => void;
@@ -128,6 +135,11 @@ interface WorkoutContextType {
   checkpointTriggered: boolean;
   currentCheckpoint: SafetyCheckpointWithTrigger | null;
   dismissCheckpoint: () => void;
+
+  // Session persistence
+  checkForResumableSession: (userId: string) => Promise<boolean>;
+  resumeSession: (userId: string) => Promise<boolean>;
+  discardSession: (userId: string) => Promise<void>;
 }
 
 export const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
@@ -181,6 +193,95 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     if (errorCallbackRef.current) {
       errorCallbackRef.current(title, message);
     }
+  }, []);
+
+  // Session persistence - save state periodically when workout is active
+  const lastSaveRef = useRef<number>(0);
+  const SAVE_INTERVAL_MS = 10000; // Save every 10 seconds
+
+  useEffect(() => {
+    if (!workout || isWorkoutComplete) return;
+
+    const now = Date.now();
+    if (now - lastSaveRef.current < SAVE_INTERVAL_MS) return;
+
+    lastSaveRef.current = now;
+
+    // Save session state
+    saveSession(currentUserId, workout, {
+      currentExerciseIndex,
+      currentSetNumber,
+      currentPhase,
+      phaseExerciseIndex,
+      completedSets,
+      completedWarmupExercises,
+      completedCooldownExercises,
+      workoutDuration,
+    }).catch((error) => {
+      console.error('Failed to persist workout session:', error);
+      notifyError('Session backup failed', 'Your workout progress may not be saved if app closes');
+    });
+  }, [
+    workout,
+    currentExerciseIndex,
+    currentSetNumber,
+    currentPhase,
+    phaseExerciseIndex,
+    completedSets,
+    completedWarmupExercises,
+    completedCooldownExercises,
+    workoutDuration,
+    isWorkoutComplete,
+    currentUserId,
+    notifyError,
+  ]);
+
+  // Check if there's a resumable session
+  const checkForResumableSession = useCallback(async (userId: string): Promise<boolean> => {
+    return hasResumableSession(userId);
+  }, []);
+
+  // Resume a saved session
+  const resumeSession = useCallback(async (userId: string): Promise<boolean> => {
+    try {
+      const session = await getSession(userId);
+      if (!session) return false;
+
+      // Restore all state from session
+      setWorkout(session.workout);
+      setCurrentExerciseIndex(session.currentExerciseIndex);
+      setCurrentSetNumber(session.currentSetNumber);
+      setCurrentPhase(session.currentPhase);
+      setPhaseExerciseIndex(session.phaseExerciseIndex);
+      setCompletedSets(session.completedSets);
+      setCompletedWarmupExercises(session.completedWarmupExercises);
+      setCompletedCooldownExercises(session.completedCooldownExercises);
+      setWorkoutDuration(session.workoutDuration);
+      setCurrentUserId(userId);
+      setIsPaused(true); // Start paused so user can review
+      setIsWorkoutComplete(false);
+
+      // Load exercise history
+      if (session.workout.main_workout.length > 0) {
+        try {
+          const exerciseIds = session.workout.main_workout.map(ex => ex.exerciseId);
+          const history = await getLastPerformanceForExercises(userId, exerciseIds);
+          setExerciseHistory(history);
+        } catch {
+          setExerciseHistory(new Map());
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to resume session:', error);
+      return false;
+    }
+  }, []);
+
+  // Discard a saved session without resuming
+  const discardSession = useCallback(async (userId: string): Promise<void> => {
+    await clearSession(userId);
   }, []);
 
   // Derived phase values
@@ -553,11 +654,17 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Clear saved session since workout is complete
+    await clearSession(currentUserId);
+
     // Mark as complete (don't clear state yet - let summary screen use it)
     setIsWorkoutComplete(true);
   };
 
-  const clearWorkout = () => {
+  const clearWorkout = async () => {
+    // Clear saved session
+    await clearSession(currentUserId);
+
     // Clear state after summary screen is done
     setWorkout(null);
     setCurrentExerciseIndex(0);
@@ -685,6 +792,10 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     completeCooldownExercise,
     skipCooldownPhase,
     dismissCheckpoint,
+    // Session persistence
+    checkForResumableSession,
+    resumeSession,
+    discardSession,
   };
   
   return (
