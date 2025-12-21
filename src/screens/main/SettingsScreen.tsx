@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Platform, Linking, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
@@ -27,6 +28,9 @@ import {
   EditEnvironmentModal,
 } from '../../components/settings';
 import { getWorkoutHistory } from '../../services/storage/workoutLog';
+
+// Settings storage keys
+const SETTINGS_STORAGE_KEY = '@transfitness:app_settings';
 
 type MainTabParamList = {
   Home: undefined;
@@ -74,6 +78,39 @@ export default function SettingsScreen() {
   // App settings state
   const [restTimerSound, setRestTimerSound] = useState(true);
   const [units, setUnits] = useState<'lbs' | 'kg'>('lbs');
+
+  // Load settings from AsyncStorage on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settingsJson = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+        if (settingsJson) {
+          const settings = JSON.parse(settingsJson);
+          if (settings.restTimerSound !== undefined) {
+            setRestTimerSound(settings.restTimerSound);
+          }
+          if (settings.units) {
+            setUnits(settings.units);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  // Save settings to AsyncStorage
+  const saveSettings = useCallback(async (newSettings: { restTimerSound?: boolean; units?: 'lbs' | 'kg' }) => {
+    try {
+      const currentJson = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+      const current = currentJson ? JSON.parse(currentJson) : {};
+      const updated = { ...current, ...newSettings };
+      await AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  }, []);
 
   const handleEdit = (section: string) => {
     switch (section) {
@@ -753,8 +790,9 @@ export default function SettingsScreen() {
               title="Rest timer sound"
               rightValue={restTimerSound ? 'Enabled' : 'Disabled'}
               onPress={() => {
-                setRestTimerSound(!restTimerSound);
-                // In a real app, you'd persist this to AsyncStorage
+                const newValue = !restTimerSound;
+                setRestTimerSound(newValue);
+                saveSettings({ restTimerSound: newValue });
               }}
             />
             <GlassListItem
@@ -763,13 +801,13 @@ export default function SettingsScreen() {
               onPress={() => {
                 const newUnits = units === 'lbs' ? 'kg' : 'lbs';
                 setUnits(newUnits);
-                // In a real app, you'd persist this to AsyncStorage
+                saveSettings({ units: newUnits });
               }}
             />
             <GlassListItem
               title="Theme"
+              subtitle="Coming soon"
               rightValue="Dark"
-              // Theme switching not implemented yet
             />
           </GlassList>
         </View>

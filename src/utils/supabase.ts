@@ -32,10 +32,12 @@ const SecureStoreAdapter = {
 
 let supabaseInstance: SupabaseClient | null = null;
 
-// Diagnostic logging
-console.log('🔧 Supabase Configuration Check:');
-console.log(`   SUPABASE_URL: ${supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'NOT SET'}`);
-console.log(`   SUPABASE_ANON_KEY: ${supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'NOT SET'}`);
+// Diagnostic logging (development only)
+if (__DEV__) {
+  console.log('🔧 Supabase Configuration Check:');
+  console.log(`   SUPABASE_URL: ${supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'NOT SET'}`);
+  console.log(`   SUPABASE_ANON_KEY: ${supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'NOT SET'}`);
+}
 
 if (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')) {
   try {
@@ -47,11 +49,11 @@ if (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')) {
         detectSessionInUrl: false, // Important for React Native
       },
     });
-    console.log('✅ Supabase client initialized with secure storage');
+    if (__DEV__) console.log('✅ Supabase client initialized with secure storage');
   } catch (error) {
     console.error('❌ Failed to initialize Supabase client:', error);
   }
-} else {
+} else if (__DEV__) {
   console.warn('⚠️ Supabase not configured - auth will be disabled');
   console.warn('   To fix: Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env');
 }

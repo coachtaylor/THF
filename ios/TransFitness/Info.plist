@@ -37,6 +37,12 @@
           <string>exp+transfitness</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.googleusercontent.apps.590532149610-c7k0i9bp5b2uom336v5ishq7to834nbe</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>

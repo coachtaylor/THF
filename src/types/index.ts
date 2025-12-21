@@ -1,6 +1,9 @@
 // TransFitness - TypeScript Type Definitions
 // UPDATED: Equipment type now accepts any string from database
 
+// Re-export navigation types for convenience
+export * from './navigation';
+
 export interface Profile {
   // REQUIRED FIELDS
   user_id: string;
@@ -12,6 +15,7 @@ export interface Profile {
   fitness_experience: 'beginner' | 'intermediate' | 'advanced';
   workout_frequency: number; // days per week
   preferred_workout_days?: number[]; // 0=Sunday, 1=Monday, ..., 6=Saturday. e.g., [1, 3, 5] = Mon/Wed/Fri
+  first_week_substitute_days?: number[]; // One-time substitute days for first week when user joins mid-week
   session_duration: number; // minutes per workout (replaces block_length) - typically 30, 45, 60, or 90
   equipment: string[];
   created_at: Date;

@@ -45,6 +45,7 @@ export interface ExerciseProgressData {
 export interface WeeklyStats {
   completedWorkouts: number;
   scheduledWorkouts: number;
+  achievableWorkouts: number; // workouts from today onwards (including already completed)
   totalVolume: number; // in lbs
   averageRPE: number;
   totalWorkouts: number; // total completed workouts (all time)
@@ -176,12 +177,11 @@ export async function getWeeklyStats(userId: string = 'default'): Promise<Weekly
     thisWeekSessions.forEach(session => {
       session.exercises.forEach(exercise => {
         exercise.sets.forEach(set => {
-          // Estimate volume (reps * estimated weight - simplified)
-          // In a real implementation, this would use actual weight data
-          // Using a conservative estimate: 10 lbs per rep for bodyweight, 
-          // could be adjusted based on exercise type
-          totalVolume += set.reps * 10;
-          
+          // Calculate volume: reps * weight
+          // Use actual weight if available, otherwise estimate 10 lbs for bodyweight exercises
+          const weight = set.weight ?? 10;
+          totalVolume += set.reps * weight;
+
           if (set.rpe) {
             totalRPE += set.rpe;
             rpeCount++;
@@ -194,6 +194,7 @@ export async function getWeeklyStats(userId: string = 'default'): Promise<Weekly
 
     // Get scheduled workouts from plan (if available)
     let scheduledWorkouts = 4; // Default
+    let achievableWorkouts = 4; // Default
     try {
       const plan = await getPlan(userId);
       if (plan) {
@@ -209,6 +210,20 @@ export async function getWeeklyStats(userId: string = 'default'): Promise<Weekly
         });
 
         scheduledWorkouts = scheduledDays.length;
+
+        // Calculate achievable workouts: days from today onwards that have workouts
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const futureDays = plan.days.filter(day => {
+          const dayDate = new Date(day.date);
+          dayDate.setHours(0, 0, 0, 0);
+          // Only count days that are in this week, from today onwards, and not rest days
+          return dayDate >= startOfWeek && dayDate < weekEnd && dayDate >= today && !day.isRestDay;
+        });
+
+        // Achievable = already completed + future scheduled
+        achievableWorkouts = thisWeekSessions.length + futureDays.length;
       }
     } catch (error) {
       console.warn('Could not get scheduled workouts from plan:', error);
@@ -217,6 +232,7 @@ export async function getWeeklyStats(userId: string = 'default'): Promise<Weekly
     return {
       completedWorkouts: thisWeekSessions.length,
       scheduledWorkouts,
+      achievableWorkouts,
       totalVolume: Math.round(totalVolume),
       averageRPE: Math.round(averageRPE * 10) / 10, // Round to 1 decimal
       totalWorkouts: allSessions.length,
@@ -226,6 +242,7 @@ export async function getWeeklyStats(userId: string = 'default'): Promise<Weekly
     return {
       completedWorkouts: 0,
       scheduledWorkouts: 4,
+      achievableWorkouts: 4,
       totalVolume: 0,
       averageRPE: 0,
       totalWorkouts: 0,
@@ -283,7 +300,9 @@ export async function getMonthWorkouts(
 
       session.exercises.forEach(exercise => {
         exercise.sets.forEach(set => {
-          totalVolume += set.reps * 10; // Estimate: 10 lbs per rep
+          // Use actual weight if available, otherwise estimate 10 lbs for bodyweight
+          const weight = set.weight ?? 10;
+          totalVolume += set.reps * weight;
           if (set.rpe) {
             totalRPE += set.rpe;
             rpeCount++;
@@ -402,8 +421,9 @@ export async function getVolumeByWeek(
       weekSessions.forEach(session => {
         session.exercises.forEach(exercise => {
           exercise.sets.forEach(set => {
-            // Estimate: reps * 10 lbs average (simplified)
-            totalVolume += set.reps * 10;
+            // Use actual weight if available, otherwise estimate 10 lbs for bodyweight
+            const weight = set.weight ?? 10;
+            totalVolume += set.reps * weight;
           });
         });
       });
@@ -506,10 +526,10 @@ export async function getExerciseProgress(
           // Find max weight for this exercise in this session
           let maxWeight = 0;
           exercise.sets.forEach(set => {
-            // Estimate weight as reps * 10 (simplified - would use actual weight in full impl)
-            const estimatedWeight = set.reps * 10;
-            if (estimatedWeight > maxWeight) {
-              maxWeight = estimatedWeight;
+            // Use actual weight if available, otherwise estimate based on reps
+            const weight = set.weight ?? (set.reps * 10);
+            if (weight > maxWeight) {
+              maxWeight = weight;
             }
           });
 

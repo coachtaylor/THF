@@ -118,7 +118,13 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     ? profile.preferred_workout_days
     : getDefaultWorkoutDays(profile.workout_frequency || 3);
 
+  // Get first-week substitute days (one-time workout days for users who join mid-week)
+  const firstWeekSubstituteDays = profile.first_week_substitute_days || [];
+
   logger.log(`📆 Workout days: ${workoutDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`);
+  if (firstWeekSubstituteDays.length > 0) {
+    logger.log(`📆 First-week substitutes: ${firstWeekSubstituteDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`);
+  }
   logger.log(`😴 Rest days: ${[0,1,2,3,4,5,6].filter(d => !workoutDays.includes(d)).map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}\n`);
 
   // Generate workouts for each day with variety tracking
@@ -134,10 +140,13 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     const dayOfWeek = dayDate.getDay(); // 0=Sunday, 1=Monday, etc.
 
     // Check if this is a workout day or rest day
-    const isWorkoutDay = workoutDays.includes(dayOfWeek);
+    // For the first week (days 1-7), also check substitute days
+    const isFirstWeek = dayNumber <= 7;
+    const isSubstituteDay = isFirstWeek && firstWeekSubstituteDays.includes(dayOfWeek);
+    const isWorkoutDay = workoutDays.includes(dayOfWeek) || isSubstituteDay;
     const isRestDay = !isWorkoutDay;
 
-    logger.log(`\n📅 Day ${dayNumber} (${dayDate.toLocaleDateString()}) - ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek]}`);
+    logger.log(`\n📅 Day ${dayNumber} (${dayDate.toLocaleDateString()}) - ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek]}${isSubstituteDay ? ' (substitute)' : ''}`);
     logger.log('─────────────────────────────────────────');
 
     if (isRestDay) {

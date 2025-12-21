@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { palette, spacing } from '../theme';
 import { ErrorBoundary } from '../components/common';
+import type { MainTabParamList, MainStackParamList, MainStackNavigationProp } from '../types/navigation';
 
 import HomeScreen from '../screens/main/HomeScreen';
 import WorkoutsScreen from '../screens/main/WorkoutsScreen';
@@ -23,12 +24,12 @@ import { ExerciseLibraryScreen } from '../screens/exercise';
 import RestDayOverviewScreen from '../screens/workout/RestDayOverviewScreen';
 import PaywallScreen from '../screens/paywall/PaywallScreen';
 
-const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator<MainTabParamList>();
+const Stack = createStackNavigator<MainStackParamList>();
 
 // Profile button component that navigates to Settings
 function ProfileButton() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<MainStackNavigationProp>();
   return (
     <TouchableOpacity
       onPress={() => navigation.navigate('Settings')}

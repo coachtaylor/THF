@@ -6,6 +6,7 @@ import OnboardingLayout from '../../../components/onboarding/OnboardingLayout';
 import SelectionCard from '../../../components/onboarding/SelectionCard';
 import { colors, spacing, borderRadius } from '../../../theme';
 import { inputStyles, textStyles } from '../../../theme/components';
+import { updateProfile } from '../../../services/storage/profile';
 
 type GenderIdentity = 'mtf' | 'ftm' | 'nonbinary' | 'questioning';
 type GenderIdentityNavigationProp = StackNavigationProp<OnboardingStackParamList, 'GenderIdentity'>;
@@ -54,12 +55,25 @@ export default function GenderIdentity({ navigation, initialData }: GenderIdenti
     },
   ];
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (selectedGender) {
-      // Gender identity is passed to next screen and saved as part of full profile in Review screen
-      navigation.navigate('HRTStatus', {
-        genderIdentity: selectedGender
-      });
+      try {
+        // Save gender identity and pronouns to profile
+        await updateProfile({
+          gender_identity: selectedGender,
+          pronouns: pronouns || undefined,
+        });
+
+        navigation.navigate('HRTStatus', {
+          genderIdentity: selectedGender
+        });
+      } catch (error) {
+        console.error('Error saving gender identity:', error);
+        // Still navigate even if save fails
+        navigation.navigate('HRTStatus', {
+          genderIdentity: selectedGender
+        });
+      }
     }
   };
 

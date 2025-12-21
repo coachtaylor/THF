@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { ToastConfig, ToastType, ToastManager } from '../components/common/Toast';
+import { registerToastHandlers, unregisterToastHandlers } from '../utils/toast';
 
 interface ToastContextType {
   showToast: (config: Omit<ToastConfig, 'id'>) => void;
@@ -60,6 +61,20 @@ export function ToastProvider({ children }: ToastProviderProps) {
   const dismissAll = useCallback(() => {
     setToasts([]);
   }, []);
+
+  // Register handlers for non-React toast calls (from services)
+  useEffect(() => {
+    registerToastHandlers({
+      showError,
+      showSuccess,
+      showWarning,
+      showInfo,
+    });
+
+    return () => {
+      unregisterToastHandlers();
+    };
+  }, [showError, showSuccess, showWarning, showInfo]);
 
   return (
     <ToastContext.Provider

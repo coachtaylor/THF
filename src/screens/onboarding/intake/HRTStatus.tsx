@@ -80,8 +80,8 @@ export default function HRTStatus({ navigation, route }: HRTStatusProps) {
   const canContinue =
     onHRT === 'No' ||
     (onHRT === 'Yes' &&
-      ((isMTF && estrogenDays.size > 0) ||
-       (isFTM && testosteroneDays.size > 0)));
+      ((isMTF && (estrogenFrequency === 'daily' || estrogenDays.size > 0)) ||
+       (isFTM && (testosteroneFrequency === 'daily' || testosteroneDays.size > 0))));
 
   const handleContinue = async () => {
     try {

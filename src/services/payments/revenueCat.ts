@@ -45,7 +45,7 @@ let isInitialized = false;
  */
 export async function initializeRevenueCat(userId?: string): Promise<void> {
   if (isInitialized) {
-    console.log('[RevenueCat] Already initialized');
+    if (__DEV__) console.log('[RevenueCat] Already initialized');
     return;
   }
 
@@ -68,7 +68,7 @@ export async function initializeRevenueCat(userId?: string): Promise<void> {
     }
 
     isInitialized = true;
-    console.log('[RevenueCat] Initialized successfully');
+    if (__DEV__) console.log('[RevenueCat] Initialized successfully');
   } catch (error) {
     console.error('[RevenueCat] Initialization failed:', error);
     throw error;
@@ -82,7 +82,7 @@ export async function initializeRevenueCat(userId?: string): Promise<void> {
 export async function identifyUser(userId: string): Promise<CustomerInfo> {
   try {
     const { customerInfo } = await Purchases.logIn(userId);
-    console.log('[RevenueCat] User identified:', userId);
+    if (__DEV__) console.log('[RevenueCat] User identified:', userId);
     return customerInfo;
   } catch (error) {
     console.error('[RevenueCat] Failed to identify user:', error);
@@ -99,17 +99,17 @@ export async function logoutUser(): Promise<CustomerInfo | null> {
     // Check if user is already anonymous before attempting logout
     const customerInfo = await Purchases.getCustomerInfo();
     if (customerInfo.originalAppUserId.startsWith('$RCAnonymousID:')) {
-      console.log('[RevenueCat] User is already anonymous, skipping logout');
+      if (__DEV__) console.log('[RevenueCat] User is already anonymous, skipping logout');
       return customerInfo;
     }
 
     const loggedOutInfo = await Purchases.logOut();
-    console.log('[RevenueCat] User logged out');
+    if (__DEV__) console.log('[RevenueCat] User logged out');
     return loggedOutInfo;
   } catch (error) {
     // Handle the case where logout is called on an anonymous user
     if (error instanceof Error && error.message.includes('anonymous')) {
-      console.log('[RevenueCat] User was already anonymous');
+      if (__DEV__) console.log('[RevenueCat] User was already anonymous');
       return null;
     }
     console.error('[RevenueCat] Failed to logout user:', error);
@@ -186,7 +186,7 @@ export async function purchasePackage(
 
     const isSubscribed = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
 
-    console.log('[RevenueCat] Purchase completed, subscribed:', isSubscribed);
+    if (__DEV__) console.log('[RevenueCat] Purchase completed, subscribed:', isSubscribed);
 
     return {
       success: isSubscribed,
@@ -195,7 +195,7 @@ export async function purchasePackage(
   } catch (error: unknown) {
     // Handle user cancellation gracefully
     if (error && typeof error === 'object' && 'userCancelled' in error && error.userCancelled) {
-      console.log('[RevenueCat] User cancelled purchase');
+      if (__DEV__) console.log('[RevenueCat] User cancelled purchase');
       return {
         success: false,
         customerInfo: null,
@@ -225,7 +225,7 @@ export async function restorePurchases(): Promise<{
     const customerInfo = await Purchases.restorePurchases();
     const isSubscribed = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
 
-    console.log('[RevenueCat] Restore completed, subscribed:', isSubscribed);
+    if (__DEV__) console.log('[RevenueCat] Restore completed, subscribed:', isSubscribed);
 
     return {
       success: true,
