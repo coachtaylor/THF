@@ -17,6 +17,7 @@ import { assembleWorkout, AssembledWorkout } from './workoutAssembler';
 import { saveWorkoutToDatabase } from './databaseStorage';
 import { fetchAllExercises } from '../exerciseService';
 import { SafetyContext } from '../rulesEngine/rules/types';
+import { logger } from '../../utils/logger';
 
 /**
  * MAIN ENTRY POINT: Generate complete workout plan
@@ -36,45 +37,45 @@ export async function generateWorkoutPlan(
   blockLength: 1 | 4 = 4,
   startDate: Date = new Date()
 ): Promise<Plan> {
-  console.log('\n╔════════════════════════════════════════════════════════╗');
-  console.log('║   TRANSFITNESS WORKOUT PLAN GENERATION                 ║');
-  console.log('╚════════════════════════════════════════════════════════╝\n');
+  logger.log('\n╔════════════════════════════════════════════════════════╗');
+  logger.log('║   TRANSFITNESS WORKOUT PLAN GENERATION                 ║');
+  logger.log('╚════════════════════════════════════════════════════════╝\n');
   
-  console.log('📋 Plan Configuration:');
-  console.log(`   User: ${profile.user_id}`);
-  console.log(`   Block Length: ${blockLength} week(s)`);
-  console.log(`   Start Date: ${startDate.toLocaleDateString()}`);
-  console.log(`   Primary Goal: ${profile.primary_goal}`);
-  console.log(`   Gender Identity: ${profile.gender_identity}`);
+  logger.log('📋 Plan Configuration:');
+  logger.log(`   User: ${profile.user_id}`);
+  logger.log(`   Block Length: ${blockLength} week(s)`);
+  logger.log(`   Start Date: ${startDate.toLocaleDateString()}`);
+  logger.log(`   Primary Goal: ${profile.primary_goal}`);
+  logger.log(`   Gender Identity: ${profile.gender_identity}`);
   
   // STEP 1: Fetch exercise library from Supabase
-  console.log('\n📚 STEP 1: Loading Exercise Library');
+  logger.log('\n📚 STEP 1: Loading Exercise Library');
   const allExercises = await fetchAllExercises();
-  console.log(`   ✓ Loaded ${allExercises.length} exercises from database`);
+  logger.log(`   ✓ Loaded ${allExercises.length} exercises from database`);
   
   // STEP 2: Evaluate safety rules (Phase 1)
-  console.log('\n🛡️ STEP 2: Evaluating Safety Rules (Phase 1)');
+  logger.log('\n🛡️ STEP 2: Evaluating Safety Rules (Phase 1)');
   const safetyContext = await evaluateSafetyRules(profile, allExercises);
-  console.log(`   ✓ Applied ${safetyContext.rules_applied.length} safety rules`);
-  console.log(`   ✓ Excluded ${safetyContext.excluded_exercise_ids.length} unsafe exercises`);
-  console.log(`   ✓ Critical blocks: ${safetyContext.critical_blocks.length}`);
-  console.log(`   ✓ Required checkpoints: ${safetyContext.required_checkpoints.length}`);
+  logger.log(`   ✓ Applied ${safetyContext.rules_applied.length} safety rules`);
+  logger.log(`   ✓ Excluded ${safetyContext.excluded_exercise_ids.length} unsafe exercises`);
+  logger.log(`   ✓ Critical blocks: ${safetyContext.critical_blocks.length}`);
+  logger.log(`   ✓ Required checkpoints: ${safetyContext.required_checkpoints.length}`);
   
   // STEP 3: Select workout template (Phase 2A)
-  console.log('\n📋 STEP 3: Selecting Workout Template (Phase 2A)');
+  logger.log('\n📋 STEP 3: Selecting Workout Template (Phase 2A)');
   const template = selectTemplate(profile);
-  console.log(`   ✓ Selected: ${template.name}`);
-  console.log(`   ✓ Frequency: ${template.frequency} days/week`);
-  console.log(`   ✓ HRT adjusted: ${template.adjusted_for_hrt}`);
-  console.log(`   ✓ Volume multiplier: ${template.volume_multiplier}x`);
+  logger.log(`   ✓ Selected: ${template.name}`);
+  logger.log(`   ✓ Frequency: ${template.frequency} days/week`);
+  logger.log(`   ✓ HRT adjusted: ${template.adjusted_for_hrt}`);
+  logger.log(`   ✓ Volume multiplier: ${template.volume_multiplier}x`);
   
   // STEP 4: Filter exercise pool (Phase 2B)
-  console.log('\n🔍 STEP 4: Filtering Exercise Pool (Phase 2B)');
+  logger.log('\n🔍 STEP 4: Filtering Exercise Pool (Phase 2B)');
   const { exercises: filteredExercises } = await getFilteredExercisePool(profile);
-  console.log(`   ✓ Available exercises: ${filteredExercises.length}`);
+  logger.log(`   ✓ Available exercises: ${filteredExercises.length}`);
   
   // STEP 5: Generate workouts for each day
-  console.log('\n🏋️ STEP 5: Generating Workouts');
+  logger.log('\n🏋️ STEP 5: Generating Workouts');
   
   const daysCount = blockLength === 1 ? 7 : 28;
   const days: Day[] = [];
@@ -83,7 +84,7 @@ export async function generateWorkoutPlan(
     const templateDayIndex = (dayNumber - 1) % template.frequency;
     const dayTemplate = template.days[templateDayIndex];
     
-    console.log(`\n   Day ${dayNumber}: ${dayTemplate.name}`);
+    logger.log(`\n   Day ${dayNumber}: ${dayTemplate.name}`);
     
     // Generate 4 time variants (5, 15, 30, 45 min)
     const variants: Day['variants'] = {
@@ -99,7 +100,7 @@ export async function generateWorkoutPlan(
         continue;
       }
       
-      console.log(`     ├─ ${duration}min variant...`);
+      logger.log(`     ├─ ${duration}min variant...`);
       
       try {
         // Phase 2C: Select exercises with scoring
@@ -175,7 +176,7 @@ export async function generateWorkoutPlan(
         };
         
         variants[duration] = workout;
-        console.log(`     ✓ ${duration}min: ${workout.exercises.length} exercises`);
+        logger.log(`     ✓ ${duration}min: ${workout.exercises.length} exercises`);
         
         // Save individual workout to database (optional, can be done in batch later)
         try {
@@ -204,10 +205,10 @@ export async function generateWorkoutPlan(
     });
   }
   
-  console.log(`\n   ✓ Generated ${days.length} days with 4 time variants each`);
+  logger.log(`\n   ✓ Generated ${days.length} days with 4 time variants each`);
   
   // STEP 6: Assemble complete plan
-  console.log('\n📦 STEP 6: Assembling Complete Plan');
+  logger.log('\n📦 STEP 6: Assembling Complete Plan');
   
   const plan: Plan = {
     id: generatePlanId(),
@@ -218,24 +219,24 @@ export async function generateWorkoutPlan(
     days,
   };
   
-  console.log(`   ✓ Plan ID: ${plan.id}`);
-  console.log(`   ✓ Days: ${plan.days.length}`);
-  console.log(`   ✓ Total workouts: ${plan.days.length * 4} (4 variants per day)`);
+  logger.log(`   ✓ Plan ID: ${plan.id}`);
+  logger.log(`   ✓ Days: ${plan.days.length}`);
+  logger.log(`   ✓ Total workouts: ${plan.days.length * 4} (4 variants per day)`);
   
-  console.log('\n╔════════════════════════════════════════════════════════╗');
-  console.log('║   ✅ WORKOUT PLAN GENERATION COMPLETE!                 ║');
-  console.log('╚════════════════════════════════════════════════════════╝\n');
+  logger.log('\n╔════════════════════════════════════════════════════════╗');
+  logger.log('║   ✅ WORKOUT PLAN GENERATION COMPLETE!                 ║');
+  logger.log('╚════════════════════════════════════════════════════════╝\n');
   
-  console.log('📊 Summary:');
-  console.log(`   • Plan ID: ${plan.id}`);
-  console.log(`   • Block Length: ${blockLength} week(s)`);
-  console.log(`   • Total Days: ${plan.days.length}`);
-  console.log(`   • Workouts per Day: 4 time variants`);
-  console.log(`   • Safety Rules Applied: ${safetyContext.rules_applied.length}`);
-  console.log(`   • Exercises Excluded: ${safetyContext.excluded_exercise_ids.length}`);
-  console.log(`   • Template: ${template.name}`);
-  console.log(`   • HRT Adjusted: ${template.adjusted_for_hrt ? 'Yes' : 'No'}`);
-  console.log('');
+  logger.log('📊 Summary:');
+  logger.log(`   • Plan ID: ${plan.id}`);
+  logger.log(`   • Block Length: ${blockLength} week(s)`);
+  logger.log(`   • Total Days: ${plan.days.length}`);
+  logger.log(`   • Workouts per Day: 4 time variants`);
+  logger.log(`   • Safety Rules Applied: ${safetyContext.rules_applied.length}`);
+  logger.log(`   • Exercises Excluded: ${safetyContext.excluded_exercise_ids.length}`);
+  logger.log(`   • Template: ${template.name}`);
+  logger.log(`   • HRT Adjusted: ${template.adjusted_for_hrt ? 'Yes' : 'No'}`);
+  logger.log('');
   
   return plan;
 }

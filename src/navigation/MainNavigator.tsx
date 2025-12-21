@@ -5,6 +5,8 @@ import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { palette, spacing } from '../theme';
+import { ErrorBoundary } from '../components/common';
+import type { MainTabParamList, MainStackParamList, MainStackNavigationProp } from '../types/navigation';
 
 import HomeScreen from '../screens/main/HomeScreen';
 import WorkoutsScreen from '../screens/main/WorkoutsScreen';
@@ -20,13 +22,14 @@ import { BinderSafetyGuide, PostOpMovementGuide } from '../screens/guides';
 import { CopilotScreen } from '../screens/copilot';
 import { ExerciseLibraryScreen } from '../screens/exercise';
 import RestDayOverviewScreen from '../screens/workout/RestDayOverviewScreen';
+import PaywallScreen from '../screens/paywall/PaywallScreen';
 
-const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator<MainTabParamList>();
+const Stack = createStackNavigator<MainStackParamList>();
 
 // Profile button component that navigates to Settings
 function ProfileButton() {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<MainStackNavigationProp>();
   return (
     <TouchableOpacity
       onPress={() => navigation.navigate('Settings')}
@@ -124,53 +127,62 @@ function MainTabs() {
 // Stack Navigator that wraps tabs and includes workout screens
 export default function MainNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="MainTabs" component={MainTabs} />
-      <Stack.Screen
-        name="WorkoutOverview"
-        component={WorkoutOverviewScreen}
-      />
-      <Stack.Screen
-        name="SessionPlayer"
-        component={SessionPlayer}
-      />
-      <Stack.Screen
-        name="ActiveWorkout"
-        component={ActiveWorkoutScreen}
-      />
-      <Stack.Screen
-        name="WorkoutSummary"
-        component={WorkoutSummaryScreen}
-      />
-      <Stack.Screen
-        name="WorkoutSwap"
-        component={WorkoutSwapScreen}
-      />
-      <Stack.Screen
-        name="BinderSafetyGuide"
-        component={BinderSafetyGuide}
-      />
-      <Stack.Screen
-        name="PostOpMovementGuide"
-        component={PostOpMovementGuide}
-      />
-      <Stack.Screen
-        name="Copilot"
-        component={CopilotScreen}
-      />
-      <Stack.Screen
-        name="ExerciseLibrary"
-        component={ExerciseLibraryScreen}
-      />
-      <Stack.Screen
-        name="RestDayOverview"
-        component={RestDayOverviewScreen}
-      />
-    </Stack.Navigator>
+    <ErrorBoundary>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen
+          name="WorkoutOverview"
+          component={WorkoutOverviewScreen}
+        />
+        <Stack.Screen
+          name="SessionPlayer"
+          component={SessionPlayer}
+        />
+        <Stack.Screen
+          name="ActiveWorkout"
+          component={ActiveWorkoutScreen}
+        />
+        <Stack.Screen
+          name="WorkoutSummary"
+          component={WorkoutSummaryScreen}
+        />
+        <Stack.Screen
+          name="WorkoutSwap"
+          component={WorkoutSwapScreen}
+        />
+        <Stack.Screen
+          name="BinderSafetyGuide"
+          component={BinderSafetyGuide}
+        />
+        <Stack.Screen
+          name="PostOpMovementGuide"
+          component={PostOpMovementGuide}
+        />
+        <Stack.Screen
+          name="Copilot"
+          component={CopilotScreen}
+        />
+        <Stack.Screen
+          name="ExerciseLibrary"
+          component={ExerciseLibraryScreen}
+        />
+        <Stack.Screen
+          name="RestDayOverview"
+          component={RestDayOverviewScreen}
+        />
+        <Stack.Screen
+          name="Paywall"
+          component={PaywallScreen}
+          options={{
+            presentation: 'modal',
+          }}
+        />
+      </Stack.Navigator>
+    </ErrorBoundary>
   );
 }
 

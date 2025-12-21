@@ -113,6 +113,8 @@ export default function GlassInput({
             onPress={() => setShowPassword(!showPassword)}
             style={styles.rightIconButton}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
           >
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -128,6 +130,7 @@ export default function GlassInput({
             style={styles.rightIconButton}
             hitSlop={8}
             disabled={!onRightIconPress}
+            accessibilityRole="button"
           >
             <Ionicons
               name={rightIcon}

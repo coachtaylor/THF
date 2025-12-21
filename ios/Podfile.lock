@@ -1,4 +1,14 @@
 PODS:
+  - AppAuth (2.0.0):
+    - AppAuth/Core (= 2.0.0)
+    - AppAuth/ExternalUserAgent (= 2.0.0)
+  - AppAuth/Core (2.0.0)
+  - AppAuth/ExternalUserAgent (2.0.0):
+    - AppAuth/Core
+  - AppCheckCore (11.2.0):
+    - GoogleUtilities/Environment (~> 8.0)
+    - GoogleUtilities/UserDefaults (~> 8.0)
+    - PromisesObjC (~> 2.4)
   - BVLinearGradient (2.8.3):
     - React-Core
   - EXApplication (7.0.7):
@@ -211,7 +221,13 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - ExpoAdapterGoogleSignIn (16.0.0):
+    - ExpoModulesCore
+    - GoogleSignIn (~> 9.0)
+    - React-Core
   - ExpoAsset (12.0.10):
+    - ExpoModulesCore
+  - ExpoCrypto (15.0.8):
     - ExpoModulesCore
   - ExpoFileSystem (19.0.19):
     - ExpoModulesCore
@@ -223,7 +239,7 @@ PODS:
     - ExpoModulesCore
   - ExpoLinearGradient (15.0.7):
     - ExpoModulesCore
-  - ExpoLinking (8.0.9):
+  - ExpoLinking (8.0.10):
     - ExpoModulesCore
   - ExpoModulesCore (3.0.26):
     - hermes-engine
@@ -254,12 +270,38 @@ PODS:
     - ExpoModulesCore
   - ExpoSQLite (16.0.9):
     - ExpoModulesCore
+  - ExpoWebBrowser (15.0.10):
+    - ExpoModulesCore
   - EXUpdatesInterface (2.0.0):
     - ExpoModulesCore
   - FBLazyVector (0.81.5)
+  - GoogleSignIn (9.0.0):
+    - AppAuth (~> 2.0)
+    - AppCheckCore (~> 11.0)
+    - GTMAppAuth (~> 5.0)
+    - GTMSessionFetcher/Core (~> 3.3)
+  - GoogleUtilities/Environment (8.1.0):
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Logger (8.1.0):
+    - GoogleUtilities/Environment
+    - GoogleUtilities/Privacy
+  - GoogleUtilities/Privacy (8.1.0)
+  - GoogleUtilities/UserDefaults (8.1.0):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
+  - GTMAppAuth (5.0.0):
+    - AppAuth/Core (~> 2.0)
+    - GTMSessionFetcher/Core (< 4.0, >= 3.3)
+  - GTMSessionFetcher/Core (3.5.0)
   - hermes-engine (0.81.5):
     - hermes-engine/Pre-built (= 0.81.5)
   - hermes-engine/Pre-built (0.81.5)
+  - PromisesObjC (2.4.0)
+  - PurchasesHybridCommon (17.23.0):
+    - RevenueCat (= 5.50.0)
+  - PurchasesHybridCommonUI (17.23.0):
+    - PurchasesHybridCommon (= 17.23.0)
+    - RevenueCatUI (= 5.50.0)
   - RCTDeprecation (0.81.5)
   - RCTRequired (0.81.5)
   - RCTTypeSafety (0.81.5):
@@ -2025,6 +2067,9 @@ PODS:
     - React-utils (= 0.81.5)
     - ReactNativeDependencies
   - ReactNativeDependencies (0.81.5)
+  - RevenueCat (5.50.0)
+  - RevenueCatUI (5.50.0):
+    - RevenueCat (= 5.50.0)
   - RNCAsyncStorage (2.2.0):
     - hermes-engine
     - RCTRequired
@@ -2135,6 +2180,35 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNGoogleSignin (16.0.0):
+    - GoogleSignIn (~> 9.0)
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - RNPaywalls (9.6.10):
+    - PurchasesHybridCommonUI (= 17.23.0)
+    - React-Core
+  - RNPurchases (9.6.10):
+    - PurchasesHybridCommon (= 17.23.0)
+    - React-Core
   - RNReanimated (3.19.4):
     - hermes-engine
     - RCTRequired
@@ -2362,7 +2436,9 @@ DEPENDENCIES:
   - expo-dev-launcher (from `../node_modules/expo-dev-launcher`)
   - expo-dev-menu (from `../node_modules/expo-dev-menu`)
   - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface/ios`)
+  - "ExpoAdapterGoogleSignIn (from `../node_modules/@react-native-google-signin/google-signin/expo/ios`)"
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
+  - ExpoCrypto (from `../node_modules/expo-crypto/ios`)
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
   - ExpoHaptics (from `../node_modules/expo-haptics/ios`)
@@ -2373,6 +2449,7 @@ DEPENDENCIES:
   - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - ExpoSQLite (from `../node_modules/expo-sqlite/ios`)
+  - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
   - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
@@ -2449,10 +2526,27 @@ DEPENDENCIES:
   - "RNCPicker (from `../node_modules/@react-native-picker/picker`)"
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
+  - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
+  - RNPaywalls (from `../node_modules/react-native-purchases-ui`)
+  - RNPurchases (from `../node_modules/react-native-purchases`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
+
+SPEC REPOS:
+  trunk:
+    - AppAuth
+    - AppCheckCore
+    - GoogleSignIn
+    - GoogleUtilities
+    - GTMAppAuth
+    - GTMSessionFetcher
+    - PromisesObjC
+    - PurchasesHybridCommon
+    - PurchasesHybridCommonUI
+    - RevenueCat
+    - RevenueCatUI
 
 EXTERNAL SOURCES:
   BVLinearGradient:
@@ -2481,8 +2575,12 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-dev-menu"
   expo-dev-menu-interface:
     :path: "../node_modules/expo-dev-menu-interface/ios"
+  ExpoAdapterGoogleSignIn:
+    :path: "../node_modules/@react-native-google-signin/google-signin/expo/ios"
   ExpoAsset:
     :path: "../node_modules/expo-asset/ios"
+  ExpoCrypto:
+    :path: "../node_modules/expo-crypto/ios"
   ExpoFileSystem:
     :path: "../node_modules/expo-file-system/ios"
   ExpoFont:
@@ -2503,6 +2601,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-sharing/ios"
   ExpoSQLite:
     :path: "../node_modules/expo-sqlite/ios"
+  ExpoWebBrowser:
+    :path: "../node_modules/expo-web-browser/ios"
   EXUpdatesInterface:
     :path: "../node_modules/expo-updates-interface/ios"
   FBLazyVector:
@@ -2654,6 +2754,12 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-community/datetimepicker"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
+  RNGoogleSignin:
+    :path: "../node_modules/@react-native-google-signin/google-signin"
+  RNPaywalls:
+    :path: "../node_modules/react-native-purchases-ui"
+  RNPurchases:
+    :path: "../node_modules/react-native-purchases"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -2664,6 +2770,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
+  AppAuth: 1c1a8afa7e12f2ec3a294d9882dfa5ab7d3cb063
+  AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
   BVLinearGradient: cb006ba232a1f3e4f341bb62c42d1098c284da70
   EXApplication: 296622817d459f46b6c5fe8691f4aac44d2b79e7
   EXAV: e3fefaca88f14624bca01d9a128562a5f8e738f8
@@ -2677,20 +2785,30 @@ SPEC CHECKSUMS:
   expo-dev-launcher: 2c7725298ce170ea6fd2186b17cdbb4a585bae6b
   expo-dev-menu: 7b72a6130e42799659ba2cc349e35b22bcbb8aef
   expo-dev-menu-interface: 600df12ea01efecdd822daaf13cc0ac091775533
+  ExpoAdapterGoogleSignIn: 5965ec283d2c0f53c483c4e2080ea055a881dfe9
   ExpoAsset: d839c8eae8124470332408427327e8f88beb2dfd
+  ExpoCrypto: b6105ebaa15d6b38a811e71e43b52cd934945322
   ExpoFileSystem: 77157a101e03150a4ea4f854b4dd44883c93ae0a
   ExpoFont: cf9d90ec1d3b97c4f513211905724c8171f82961
   ExpoHaptics: 807476b0c39e9d82b7270349d6487928ce32df84
   ExpoKeepAwake: 1a2e820692e933c94a565ec3fbbe38ac31658ffe
   ExpoLinearGradient: a464898cb95153125e3b81894fd479bcb1c7dd27
-  ExpoLinking: 77455aa013e9b6a3601de03ecfab09858ee1b031
+  ExpoLinking: f4c4a351523da72a6bfa7e1f4ca92aee1043a3ca
   ExpoModulesCore: e8ec7f8727caf51a49d495598303dd420ca994bf
   ExpoSecureStore: 9c6571fe3fcb045a671c4011c451546eaaab98fd
   ExpoSharing: 032c01bb034319e2374badf082ae935be866d2e9
   ExpoSQLite: b312b02c8b77ab55951396e6cd13992f8db9215f
+  ExpoWebBrowser: 17b064c621789e41d4816c95c93f429b84971f52
   EXUpdatesInterface: 5adf50cb41e079c861da6d9b4b954c3db9a50734
   FBLazyVector: e95a291ad2dadb88e42b06e0c5fb8262de53ec12
+  GoogleSignIn: c7f09cfbc85a1abf69187be091997c317cc33b77
+  GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
+  GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
+  GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
   hermes-engine: 9f4dfe93326146a1c99eb535b1cb0b857a3cd172
+  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
+  PurchasesHybridCommon: e95a0b9bb01f6e9101d44f411343fb91030e26ae
+  PurchasesHybridCommonUI: 476200612e1f5be556ef20327d5da8886d657a3d
   RCTDeprecation: 943572d4be82d480a48f4884f670135ae30bf990
   RCTRequired: 8f3cfc90cc25cf6e420ddb3e7caaaabc57df6043
   RCTTypeSafety: 16a4144ca3f959583ab019b57d5633df10b5e97c
@@ -2758,11 +2876,16 @@ SPEC CHECKSUMS:
   ReactCodegen: 7d4593f7591f002d137fe40cef3f6c11f13c88cc
   ReactCommon: 08810150b1206cc44aecf5f6ae19af32f29151a8
   ReactNativeDependencies: 71ce9c28beb282aa720ea7b46980fff9669f428a
+  RevenueCat: a5fcd0a12b5ec9bbddc0cf0dd20c14b7e6213df6
+  RevenueCatUI: d470454494ecc734ca9b416fea0704613c4cd7a2
   RNCAsyncStorage: 3a4f5e2777dae1688b781a487923a08569e27fe4
   RNCMaskedView: d2578d41c59b936db122b2798ba37e4722d21035
   RNCPicker: c8a3584b74133464ee926224463fcc54dfdaebca
   RNDateTimePicker: be0e44bcb9ed0607c7c5f47dbedd88cf091f6791
   RNGestureHandler: 2914750df066d89bf9d8f48a10ad5f0051108ac3
+  RNGoogleSignin: 5c6ca84f819ce8dc978639b2aea804dffdc92818
+  RNPaywalls: 638800e62194330656c53c34257f3b7fabb17e2e
+  RNPurchases: 393312c7ac9cfb3852e3f14a91520d305fa05be6
   RNReanimated: a5adb9a65b706d404fbdcce2ffd06dc5809f7ad1
   RNScreens: d8d6f1792f6e7ac12b0190d33d8d390efc0c1845
   RNSVG: a8d623813dc86539a49233c31b627fc141ee737e

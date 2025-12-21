@@ -1,0 +1,1330 @@
+[
+  {
+    "id": "2e63a87e-42df-4799-85da-4f59098a6020",
+    "exercise_id": 1,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare provider knowledgeable in transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Stand with feet shoulder-width apart, toes slightly turned out, and keep your chest lifted.",
+        "Initiate the squat by bending at the hips and knees simultaneously, lowering your hips back and down as if sitting into a chair.",
+        "Keep your knees tracking over your toes without collapsing inward, and maintain a neutral spine throughout the movement.",
+        "A good rep feels like controlled mobility through the hips and ankles, with tension in the thighs and glutes but no sharp joint pain."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling as you stand up and inhaling as you lower down.",
+        "Stop or regress the movement if you experience sharp pain or discomfort beyond typical muscle fatigue.",
+        "If mobility or pain issues persist, seek advice from a healthcare provider familiar with transgender health and exercise."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect joint and tendon sensitivity; start with lower volume and gradually increase as tolerated.",
+        "Bone health can be influenced by hormone levels, so prioritize mobility exercises like bodyweight squats to support joint function and bone strength."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space, or with a trusted partner to reduce dysphoria.",
+        "Wear clothing that affirms your gender identity and feels comfortable, such as loose pants or shorts that allow full hip and knee movement.",
+        "Modify depth or use a chair for support if full squatting feels uncomfortable or dysphoric."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:55:30.526136+00:00",
+    "updated_at": "2025-11-18T06:55:30.526136+00:00"
+  },
+  {
+    "id": "a8d3ffe2-7b99-4fda-b8d7-746e09f87841",
+    "exercise_id": 2,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine to ensure safety and appropriateness.",
+      "form_focus": [
+        "Set up facing a sturdy step or box at a height that allows your hips to sit back gently without fully resting on it.",
+        "Keep feet shoulder-width apart, knees tracking over toes, and maintain a neutral spine throughout the movement.",
+        "Lower your hips by bending at the hips and knees simultaneously, feeling a stretch in the hips and thighs, then press through the heels to stand.",
+        "Avoid letting knees collapse inward or rounding the lower back; a good rep feels controlled with stable balance and smooth movement."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling as you stand up and inhaling as you lower down.",
+        "Distinguish between normal muscle stretch and sharp pain; stop or regress if pain occurs in joints or soft tissues.",
+        "Regress by reducing depth or using support for balance if needed, and seek medical advice if persistent pain or unusual symptoms arise."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect joint and tendon sensitivity; start with lower volume and intensity to monitor comfort during box squats.",
+        "Bone health can be influenced by hormone levels, so prioritize proper form and gradual progression to support joint integrity.",
+        "Allow extra recovery time if experiencing unusual joint stiffness or soreness, and adjust training frequency accordingly."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Choose clothing that feels comfortable and affirming, such as loose pants or shorts that do not restrict hip or thigh movement.",
+        "Train in a private or trusted environment to reduce dysphoria and increase focus on movement quality.",
+        "Modify depth or use a higher step if full range of motion feels uncomfortable or dysphoric, allowing gradual mobility improvement."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:55:37.728368+00:00",
+    "updated_at": "2025-11-18T06:55:37.728368+00:00"
+  },
+  {
+    "id": "ba2e83c2-69ae-456d-bfc7-2e11ec3f7d18",
+    "exercise_id": 3,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine to ensure safety and appropriateness.",
+      "form_focus": [
+        "Position your back flat against the wall with feet about hip-width apart and a comfortable distance forward to allow knees to bend at roughly 90 degrees.",
+        "Keep knees aligned over ankles without letting them extend past toes to protect joint integrity during the hold.",
+        "Engage your core and maintain a neutral spine; avoid arching your lower back or leaning forward.",
+        "A good rep feels like a steady tension in the thighs and glutes without sharp pain or knee discomfort."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the hold, avoiding breath-holding to maintain oxygen flow and reduce tension.",
+        "Distinguish between muscle fatigue and joint pain; stop or regress if you experience sharp or persistent discomfort.",
+        "Regress by reducing hold time or knee bend depth if needed, and seek medical advice if pain persists beyond typical muscle soreness."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect joint and tendon sensitivity; start with shorter holds and gradually increase duration to monitor tolerance.",
+        "Bone health can be influenced by hormone levels, so ensure gradual progression and avoid overloading joints to reduce injury risk."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space, or with a trusted partner to support safety and reduce dysphoria.",
+        "Wear clothing that feels affirming and allows unrestricted movement, such as loose pants and supportive tops.",
+        "If the standard wall sit feels uncomfortable, try a modified sit with a higher knee angle or seated chair hold to reduce dysphoria and joint strain."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:55:47.055186+00:00",
+    "updated_at": "2025-11-18T06:55:47.055186+00:00"
+  },
+  {
+    "id": "ad78c9aa-72f3-4b68-a766-e44f05cd9fe7",
+    "exercise_id": 4,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting new exercise routines to ensure safety and appropriateness.",
+      "form_focus": [
+        "Lie on your back with knees bent and feet flat on the floor, hip-width apart.",
+        "Engage your core and squeeze your glutes to lift your hips until your body forms a straight line from shoulders to knees.",
+        "Avoid overarching your lower back; focus on lifting through the hips and feeling activation in the glutes and hamstrings.",
+        "Lower hips slowly with control, maintaining tension in the glutes throughout the movement."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling as you lift hips and inhaling as you lower.",
+        "Stop if you experience sharp pain or unusual discomfort; mild muscle fatigue is normal but pain is not.",
+        "Regress by reducing range of motion or performing pelvic tilts if full bridges feel too challenging.",
+        "Seek medical advice if persistent pain or unusual symptoms occur during or after exercise."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect joint and tendon sensitivity; start with lower volume and gradually increase as tolerated.",
+        "Bone health can be influenced by hormone levels, so prioritize controlled, pain-free movement to support joint integrity.",
+        "Allow extra recovery time if experiencing increased soreness or joint discomfort during early training phases."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space to reduce dysphoria and increase focus.",
+        "Wear clothing that feels affirming and supportive, such as high-waisted leggings or shorts that cover the hips and pelvis.",
+        "If lying on the back feels uncomfortable, try placing a small cushion under the head or neck for added comfort."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:55:56.182017+00:00",
+    "updated_at": "2025-11-18T06:55:56.182017+00:00"
+  },
+  {
+    "id": "0b47f9b7-7192-437e-883d-9f6e1e6405dc",
+    "exercise_id": 5,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Lie on your back with one foot flat on the floor and the other leg extended straight.",
+        "Engage your glutes and core as you lift your hips off the ground, driving through the heel of the planted foot.",
+        "Keep your hips level and avoid arching your lower back; a good rep feels like controlled activation of the glute on the working side.",
+        "Lower your hips slowly back down without losing tension in the glutes."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Maintain steady breathing throughout the movement, exhaling as you lift your hips and inhaling as you lower.",
+        "Stop if you experience sharp pain or discomfort beyond typical muscle fatigue; regress by reducing range of motion or switching to a two-legged bridge.",
+        "Consult a healthcare provider if you notice persistent joint pain or unusual symptoms during or after exercise."
+      ],
+      "hrt_considerations": [
+        "Be mindful of potential joint or tendon sensitivity changes during hormone therapy; start with lower volume and gradually increase.",
+        "Focus on controlled, slow movements to support tendon and bone health, especially if on long-term hormone treatment."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space to reduce dysphoria and increase focus.",
+        "Wear clothing that affirms your gender identity and provides comfort during floor exercises, such as high-waisted leggings or shorts.",
+        "If single-leg variation feels uncomfortable, start with a two-legged glute bridge to build confidence and strength."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:56:07.094125+00:00",
+    "updated_at": "2025-11-18T06:56:07.094125+00:00"
+  },
+  {
+    "id": "62511699-d32d-43a1-b85d-88f7490a5b64",
+    "exercise_id": 6,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start lying on your side with hips and knees bent at about 45 degrees, keeping feet together.",
+        "Lift the top knee upward by externally rotating the hip while keeping the pelvis stable and the feet touching.",
+        "A good rep feels like controlled activation in the outer hip and glute muscles without twisting the pelvis or lower back.",
+        "Avoid letting the hips roll backward or forward and keep movements slow and deliberate."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Maintain steady breathing throughout, avoiding breath-holding to support relaxation and control.",
+        "Stop or regress the exercise if sharp pain occurs; mild muscle activation discomfort is normal.",
+        "Consult a healthcare provider if persistent joint pain or unusual symptoms develop during training."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect joint and tendon sensitivity; prioritize slow, controlled movements to reduce strain.",
+        "Bone health can be impacted by hormone levels, so focus on consistent mobility work to support joint function.",
+        "Allow extra recovery time if experiencing increased joint discomfort or stiffness during or after sessions."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space to reduce dysphoria and increase focus.",
+        "Wear clothing that feels affirming and allows full hip and leg movement without restriction.",
+        "If side-lying is uncomfortable, try a seated hip external rotation stretch as an alternative mobility option."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:56:15.910082+00:00",
+    "updated_at": "2025-11-18T06:56:15.910082+00:00"
+  },
+  {
+    "id": "02a63353-f4bc-45f0-920b-1c7bc3d4c92f",
+    "exercise_id": 7,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine to ensure safety and appropriateness.",
+      "form_focus": [
+        "Start standing tall, step one leg backward lowering your hips until both knees are bent at about 90 degrees.",
+        "Keep your front knee aligned over your ankle and avoid letting it push past your toes to protect the joint.",
+        "Engage your quadriceps and glutes to control the movement and maintain balance throughout the lunge.",
+        "Feel a gentle stretch in the hip flexors of the rear leg and avoid any sharp pain in knees or hips."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling as you lower and inhaling as you return to standing.",
+        "Distinguish between normal muscle stretch and sharp joint pain; stop or regress if pain occurs.",
+        "Regress by reducing range of motion or using support if balance or strength is limited, and seek medical advice if persistent pain arises."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect joint and tendon sensitivity; progress slowly to allow tissues to adapt safely.",
+        "Bone health can be influenced by hormone levels, so prioritize controlled, low-impact movements like this to support mobility.",
+        "Allow extra recovery time if you notice increased joint stiffness or discomfort during or after lunges."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space, or with a trusted partner to reduce dysphoria.",
+        "Wear clothing that feels affirming and allows full range of motion without restriction around the hips and thighs.",
+        "Modify depth or use support (like holding onto a chair) to reduce discomfort or dysphoria related to balance or posture."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:56:26.321744+00:00",
+    "updated_at": "2025-11-18T06:56:26.321744+00:00"
+  },
+  {
+    "id": "94bc1b10-0651-4558-8ddd-d644cda39e37",
+    "exercise_id": 8,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting new exercises to ensure safety and appropriateness.",
+      "form_focus": [
+        "Start in a split stance with one foot forward and one foot back, keeping hips square and torso upright.",
+        "Lower your back knee toward the ground by bending both knees, focusing on controlled hip and knee flexion.",
+        "Feel a gentle stretch and activation in the front hip flexors and stabilizing muscles without forcing depth.",
+        "Avoid leaning forward excessively or letting the front knee track past the toes to protect joints."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Maintain steady breathing throughout the movement, exhaling as you lower and inhaling as you rise.",
+        "Stop if you experience sharp pain or joint instability; mild discomfort from stretching is normal but should not be intense.",
+        "Regress by reducing range of motion or performing static hip flexor stretches if mobility is limited.",
+        "Seek medical advice if persistent pain or unusual joint symptoms occur during or after exercise."
+      ],
+      "hrt_considerations": [
+        "Be mindful of potential joint or tendon sensitivity changes during hormone therapy; progress range and load gradually.",
+        "Incorporate mobility-focused exercises like split squats to support hip joint health and maintain functional movement.",
+        "Allow extra recovery time if experiencing increased soreness or stiffness, especially early in hormone treatment."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Choose clothing that feels comfortable and affirming, such as loose pants or shorts that allow full hip movement.",
+        "Train in a private or trusted environment to reduce dysphoria and increase focus on form and mobility.",
+        "Modify depth or use support (e.g., holding onto a stable surface) to reduce discomfort or anxiety during the movement."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:56:35.657001+00:00",
+    "updated_at": "2025-11-18T06:56:35.657001+00:00"
+  },
+  {
+    "id": "060fc06e-2f63-4b13-a52a-45784a9708fc",
+    "exercise_id": 9,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine to ensure safety and appropriateness.",
+      "form_focus": [
+        "Start facing the step with feet hip-width apart and place one foot fully on the step, ensuring the entire foot is stable.",
+        "Drive through the heel of the foot on the step to lift your body upward, extending the hip and knee joints while keeping the torso upright.",
+        "Avoid pushing off with the trailing leg or letting the knee of the stepping leg collapse inward; maintain alignment over the foot.",
+        "Lower back down slowly with control, feeling a gentle stretch in the hip and thigh muscles without locking the knee."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Maintain steady breathing throughout the movement, exhaling as you step up and inhaling as you lower down.",
+        "Stop or regress the exercise if you experience sharp pain or joint instability; mild muscle fatigue or stretch is normal.",
+        "Use a stable, non-slip step surface and consider support (e.g., wall or rail) if balance is a concern.",
+        "Seek medical advice if persistent pain or unusual symptoms occur during or after exercise."
+      ],
+      "hrt_considerations": [
+        "Be mindful of potential joint or tendon sensitivity during early hormone therapy; start with lower step heights and volume to reduce strain.",
+        "Incorporate gradual progression to support bone health, especially if on hormone regimens affecting bone density.",
+        "Allow extra recovery time if experiencing increased muscle or joint soreness, adjusting intensity accordingly."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Choose a private or comfortable training environment to reduce dysphoria and increase focus during the exercise.",
+        "Wear clothing that feels affirming and allows full range of motion without restriction around the hips and legs.",
+        "Modify step height or use a lower platform to reduce discomfort or anxiety related to balance and body positioning."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:56:45.084888+00:00",
+    "updated_at": "2025-11-18T06:56:45.084888+00:00"
+  },
+  {
+    "id": "cdc8626a-3784-430f-9c2a-4b97ca533c0c",
+    "exercise_id": 10,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start with feet hip-width apart and slowly lift your heels off the ground by pushing through the balls of your feet, focusing on controlled ankle plantarflexion.",
+        "Keep your knees straight but not locked, and maintain an upright posture with your core engaged to avoid leaning forward or backward.",
+        "Feel a gentle stretch and contraction in your calf muscles; avoid bouncing or using momentum to lift.",
+        "Lower your heels slowly back to the floor to complete a smooth, controlled repetition."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling as you lift your heels and inhaling as you lower them.",
+        "Stop or regress the exercise if you experience sharp pain or joint instability; mild muscle fatigue or stretch is normal.",
+        "Consult a healthcare provider if calf pain persists or worsens, especially if you have a history of circulatory or bone health concerns."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect tendon and joint sensitivity; prioritize slow, controlled movements to reduce strain on the Achilles tendon.",
+        "Bone health can be supported by weight-bearing mobility exercises like calf raises, so include them regularly but avoid overtraining.",
+        "Allow adequate recovery time between sessions, especially if experiencing any joint discomfort or increased muscle soreness."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform calf raises in a private or comfortable space to reduce dysphoria and increase focus on movement quality.",
+        "Wear clothing that feels affirming and allows full ankle and foot movement without restriction.",
+        "If standing is uncomfortable, try seated calf raises as a variation to maintain mobility while reducing dysphoria or fatigue."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:56:53.267677+00:00",
+    "updated_at": "2025-11-18T06:56:53.267677+00:00"
+  },
+  {
+    "id": "8f0f35a4-32d3-4a4f-9666-7dceb25a779d",
+    "exercise_id": 11,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare or fitness professional knowledgeable in transgender health before starting new exercises to ensure safety and appropriateness.",
+      "form_focus": [
+        "Start standing tall with one foot flat on the ground and the other leg lifted or bent for balance support.",
+        "Slowly raise your heel on the standing leg by pushing through the ball of your foot, feeling a controlled contraction in the calf muscle.",
+        "Keep the ankle, knee, and hip aligned and avoid locking the knee; lower the heel back down with control to complete one rep.",
+        "A good rep feels like a smooth rise and fall with no wobbling or sharp joint pain."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Maintain steady breathing throughout the movement; avoid holding your breath to support blood flow and muscle function.",
+        "Stop or regress the exercise if you experience sharp pain or joint instability; mild muscle fatigue or stretch is normal.",
+        "If calf pain or swelling persists beyond normal soreness, seek evaluation from a healthcare provider familiar with trans health."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect tendon and joint sensitivity; progress calf raises gradually to allow adaptation and reduce injury risk.",
+        "Bone health can be supported by weight-bearing exercises like calf raises, but monitor for any unusual joint discomfort during training.",
+        "Recovery times might vary; listen to your body and allow adequate rest between sessions to support tissue repair."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform this exercise in a private or comfortable space to reduce dysphoria and increase focus.",
+        "Wear clothing that feels affirming and allows free ankle and foot movement, such as flexible pants or shorts.",
+        "Use a wall or sturdy surface for balance support if preferred, which can reduce stress and improve confidence during the movement."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:57:08.740837+00:00",
+    "updated_at": "2025-11-18T06:57:08.740837+00:00"
+  },
+  {
+    "id": "49d4cba9-5765-4527-80b6-762900c9dd07",
+    "exercise_id": 12,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start with a resistance band looped around your legs just above the knees or at the ankles for more challenge.",
+        "Keep a slight bend in the knees and hips, maintaining a neutral spine and engaged core throughout the lateral steps.",
+        "Step sideways slowly and deliberately, feeling tension in the hip abductors and glutes without letting your knees cave inward.",
+        "Avoid leaning forward or letting your feet cross; a good rep feels controlled with steady muscle engagement around the hips."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Maintain steady breathing throughout the exercise, avoiding breath-holding to support core stability and oxygen flow.",
+        "Stop or regress the exercise if you experience sharp pain or joint discomfort beyond typical muscle fatigue.",
+        "Consult a healthcare provider if you notice unusual joint pain or prolonged soreness that limits your mobility."
+      ],
+      "hrt_considerations": [
+        "Be mindful that hormone therapy can affect tendon and joint sensitivity; start with lighter resistance and progress gradually.",
+        "Increased red blood cell levels from testosterone may impact recovery; ensure adequate rest between sessions.",
+        "Focus on mobility and controlled movement to support joint health and reduce injury risk during training."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Choose clothing that feels comfortable and affirms your gender identity, such as looser pants or compression shorts.",
+        "Train in a private or trusted environment if it helps reduce dysphoria or anxiety during movement practice.",
+        "Modify the range of motion or resistance to suit your comfort level, prioritizing movements that feel safe and affirming."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:57:17.324709+00:00",
+    "updated_at": "2025-11-18T06:57:17.324709+00:00"
+  },
+  {
+    "id": "ccd6ef61-7f8e-49f9-9c4e-4e27bf84e5b8",
+    "exercise_id": 13,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine to ensure safety and appropriateness.",
+      "form_focus": [
+        "Start in a forearm or full plank position with elbows under shoulders and body in a straight line from head to heels.",
+        "Engage your core by drawing the belly button toward the spine and avoid sagging hips or raised buttocks to maintain neutral alignment.",
+        "Keep the neck neutral by looking down or slightly ahead to prevent strain; a good rep feels like steady tension in the abdominal muscles without pain.",
+        "Avoid locking elbows or letting shoulders collapse; maintain active shoulder stability throughout the hold."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Maintain steady breathing throughout the hold; avoid breath-holding to support core engagement and oxygen flow.",
+        "Distinguish between muscle fatigue and sharp pain; stop or regress the exercise if pain occurs.",
+        "Regress by reducing hold time or switching to easier variations if form breaks down or discomfort increases.",
+        "Seek medical advice if experiencing persistent joint pain, unusual swelling, or other concerning symptoms during or after exercise."
+      ],
+      "hrt_considerations": [
+        "Allow extra recovery time if experiencing joint or tendon sensitivity, as hormone therapy can influence tissue response to load.",
+        "Focus on gradual progression to support bone health and avoid overloading connective tissues, especially early in hormone therapy.",
+        "Monitor for any unusual discomfort around joints and adjust intensity accordingly to accommodate changes in muscle and tendon properties."
+      ],
+      "binding_considerations": [
+        "Be mindful that binding can restrict breathing and increase heat; take breaks as needed and avoid holding the plank for extended periods initially.",
+        "Consider loosening or removing the binder during exercise if breathing feels compromised or if discomfort arises in the chest or shoulders.",
+        "Start with shorter holds and gradually increase duration to manage binder-related pressure and avoid excessive strain."
+      ],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Train in a private or comfortable space or with a trusted partner to reduce dysphoria and increase safety.",
+        "Wear clothing that feels affirming and allows full range of motion without restriction, such as compression tops or loose shirts.",
+        "Modify the plank by performing it on knees or against a wall to reduce upper body load and accommodate comfort levels."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:57:29.231952+00:00",
+    "updated_at": "2025-11-18T06:57:29.231952+00:00"
+  },
+  {
+    "id": "eaff88b4-f17b-4e27-bad1-76cd1cc0539c",
+    "exercise_id": 14,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting new exercises to ensure safety and appropriateness.",
+      "form_focus": [
+        "Start on your knees with forearms on the ground, elbows under shoulders, and keep your spine neutral from head to hips.",
+        "Engage your core by drawing your belly button gently toward your spine without holding your breath.",
+        "Avoid sagging hips or raising your buttocks too high; a good rep feels like steady tension in your abdominal muscles without strain in your lower back.",
+        "Keep your neck aligned with your spine by looking down or slightly forward to prevent tension."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the exercise; avoid holding your breath to maintain core engagement and oxygen flow.",
+        "Stop if you experience sharp pain or numbness; mild muscle fatigue or discomfort is normal but pain is a signal to regress.",
+        "Regress by reducing hold time or performing the plank against a wall if needed, and seek medical advice if pain persists."
+      ],
+      "hrt_considerations": [
+        "Testosterone therapy may affect tendon and joint sensitivity; start with shorter holds and gradually increase duration to monitor comfort.",
+        "Bone health benefits from weight-bearing exercises like planks, so consistent practice supports skeletal strength.",
+        "Allow extra recovery time if you notice unusual joint discomfort or fatigue, as hormone changes can influence tissue response."
+      ],
+      "binding_considerations": [
+        "If wearing a binder, ensure it does not restrict breathing during the hold; consider loosening or removing the binder for longer sets.",
+        "Binder heat and compression can increase discomfort; keep sessions brief and take breaks to avoid overheating.",
+        "Shorten plank duration or reduce intensity if you feel chest tightness or breathing difficulty while bound."
+      ],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space, or with a trusted partner to reduce dysphoria.",
+        "Wear clothing that affirms your gender identity and provides comfort, such as loose tops or compression garments that feel safe.",
+        "Modify the plank by widening arm placement or reducing hold time to accommodate body awareness and comfort."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:57:35.241673+00:00",
+    "updated_at": "2025-11-18T06:57:35.241673+00:00"
+  },
+  {
+    "id": "fda23747-6441-473f-a1e0-fd60db4d8598",
+    "exercise_id": 15,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare provider knowledgeable in transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start lying on your back with arms extended toward the ceiling and knees bent at 90 degrees over hips.",
+        "Slowly lower the opposite arm and leg toward the floor while keeping your lower back gently pressed into the ground.",
+        "Focus on controlled, smooth movements to engage the core without arching the lower back or straining the neck.",
+        "Avoid rushing reps; a good repetition feels like steady core engagement and stability through the torso."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263",
+        "10.1080/09540121.2025.2560094"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling during the lowering phase to maintain core engagement.",
+        "Stop or regress the exercise if you experience sharp pain or unusual discomfort in the back or hips.",
+        "If unsure about technique or experiencing persistent discomfort, consult a healthcare provider familiar with trans health."
+      ],
+      "hrt_considerations": [
+        "Testosterone therapy may affect recovery times; allow adequate rest between sets to avoid overfatigue.",
+        "Be mindful of joint or tendon sensitivity, especially if starting or adjusting hormone therapy; progress gradually.",
+        "Maintain bone health with consistent weight-bearing and core exercises like the Dead Bug to support structural integrity."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space to reduce dysphoria and increase focus.",
+        "Wear clothing that feels affirming and allows full range of motion without restriction around the torso.",
+        "Modify arm or leg range of motion if certain positions increase discomfort or dysphoria, prioritizing comfort over full extension."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263",
+      "10.1080/09540121.2025.2560094"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:57:43.417995+00:00",
+    "updated_at": "2025-11-18T06:57:43.417995+00:00"
+  },
+  {
+    "id": "24012f99-9afd-412d-9d4b-563869739cd3",
+    "exercise_id": 16,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start on all fours with wrists under shoulders and knees under hips, maintaining a neutral spine throughout.",
+        "Extend one arm forward and the opposite leg back simultaneously, keeping hips level and avoiding rotation.",
+        "Engage the core to stabilize the pelvis and lower back; a good rep feels controlled without arching or sagging.",
+        "Avoid locking the elbow or knee; maintain a soft bend to protect joints and promote muscle engagement."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling during extension and inhaling when returning to start.",
+        "Stop if you experience sharp pain or numbness; mild muscle fatigue or tension is normal but pain is a signal to regress.",
+        "Regress by reducing range of motion or performing limb extensions separately if balance or coordination is challenging.",
+        "Seek medical advice if joint discomfort persists or worsens despite modifications."
+      ],
+      "hrt_considerations": [
+        "Testosterone therapy may affect tendon and joint sensitivity; prioritize controlled, slow movements to reduce injury risk.",
+        "Allow adequate recovery between sessions as hormone-related changes can influence tissue healing and fatigue.",
+        "Focus on core stability exercises like Bird Dog to support bone health and overall functional strength."
+      ],
+      "binding_considerations": [
+        "If wearing a binder, ensure it does not restrict breathing during the exercise; consider loosening or removing if breath feels limited.",
+        "Binder heat and compression may increase discomfort during floor exercises; keep sessions short and monitor for any chest or shoulder tightness.",
+        "Take breaks as needed to adjust binder fit or to breathe deeply and reset posture."
+      ],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space, or with a trusted partner to reduce dysphoria.",
+        "Wear clothing that affirms your gender identity and allows free movement without drawing unwanted attention.",
+        "Modify range of motion or perform the movement seated or against a wall if floor positioning feels uncomfortable or dysphoric."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:57:53.642145+00:00",
+    "updated_at": "2025-11-18T06:57:53.642145+00:00"
+  },
+  {
+    "id": "ee73c267-6a5c-4d23-a8e8-250ed9f5f204",
+    "exercise_id": 17,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start in a side-lying position with your elbow directly under your shoulder to support your upper body.",
+        "Keep your body in a straight line from head to feet, engaging your core and avoiding hip sagging or rotation.",
+        "Feel the tension in your obliques and shoulder stabilizers; avoid collapsing through the shoulder or letting the hips drop.",
+        "Maintain a neutral neck position by looking straight ahead or slightly down to prevent strain."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the hold, avoiding breath-holding which can increase intra-abdominal pressure.",
+        "Stop or regress the exercise if you feel sharp pain, especially in the shoulder, ribs, or lower back.",
+        "Seek guidance from a healthcare provider if you experience persistent discomfort or unusual symptoms during training."
+      ],
+      "hrt_considerations": [
+        "Allow extra recovery time if you experience joint or tendon sensitivity, as hormone therapy can affect tissue resilience.",
+        "Focus on controlled, slow movements to reduce risk of overuse injuries, especially in early training phases.",
+        "Incorporate weight-bearing exercises regularly to support bone health alongside your hormone regimen."
+      ],
+      "binding_considerations": [
+        "Be mindful of restricted breathing or increased heat when wearing a binder during this exercise.",
+        "Consider shorter set durations or removing the binder if you notice discomfort or difficulty breathing.",
+        "Ensure your binder fits well and does not impede shoulder or rib cage movement during the plank."
+      ],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the side plank in a private or comfortable space to reduce dysphoria and increase focus.",
+        "Wear clothing that feels affirming and allows full range of motion without drawing unwanted attention.",
+        "Modify by lowering the supporting arm to the forearm or dropping the bottom knee for a less intense variation."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:58:03.38988+00:00",
+    "updated_at": "2025-11-18T06:58:03.38988+00:00"
+  },
+  {
+    "id": "72ea9d3c-96cc-45a7-8399-36c213767b46",
+    "exercise_id": 18,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine to ensure safety and appropriateness.",
+      "form_focus": [
+        "Start on your side with knees bent and stacked, supporting your upper body on your forearm directly under the shoulder to avoid joint strain.",
+        "Engage your core and lift your hips to create a straight line from shoulders to knees, feeling tension in the obliques without collapsing the torso.",
+        "Keep your neck neutral and avoid letting your hips sag or rotate forward; a good rep feels controlled and stable without pain."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Maintain steady breathing throughout the movement, avoiding breath-holding to support core engagement and pelvic floor safety.",
+        "Stop or regress the exercise if sharp pain occurs; mild muscle fatigue or discomfort is normal but pain is a signal to adjust.",
+        "Seek medical advice if experiencing persistent joint pain or unusual symptoms during or after exercise."
+      ],
+      "hrt_considerations": [
+        "Allow extra recovery time if experiencing joint or tendon sensitivity, as hormone therapy can affect tissue resilience.",
+        "Focus on controlled movements to support bone health and reduce injury risk, especially if on testosterone therapy.",
+        "Monitor for any unusual discomfort around joints and adjust volume accordingly to support long-term conditioning."
+      ],
+      "binding_considerations": [
+        "Be mindful that binding can restrict breathing and increase heat; take breaks as needed to maintain comfortable breath control.",
+        "Consider shorter sets or reduced intensity if binding causes chest or shoulder discomfort during the exercise."
+      ],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or trusted environment to reduce dysphoria and increase comfort.",
+        "Wear clothing that feels affirming and allows full range of motion without restriction, such as loose tops or compression garments that do not bind tightly.",
+        "Modify the angle by lowering hips slightly or performing the plank on a softer surface to reduce discomfort and increase safety."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:58:13.046822+00:00",
+    "updated_at": "2025-11-18T06:58:13.046822+00:00"
+  },
+  {
+    "id": "8f5a244a-a559-4743-bf68-186b5c718be8",
+    "exercise_id": 19,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Stand with feet shoulder-width apart, holding the band anchored at chest height to one side.",
+        "Engage your core by bracing your abdominals and avoid twisting your hips or shoulders during the press.",
+        "Press the band straight out in front of your chest, keeping your arms extended but not locked, feeling tension in your core.",
+        "Return slowly to the start position with control, maintaining a neutral spine throughout the movement."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling during the press and inhaling on return.",
+        "Stop or regress the exercise if you experience sharp pain or dizziness; mild muscle fatigue is normal.",
+        "Consult a healthcare provider if you notice persistent discomfort or unusual symptoms during training."
+      ],
+      "hrt_considerations": [
+        "Allow extra recovery time if you notice increased joint or tendon sensitivity, as hormone therapy can affect connective tissue.",
+        "Focus on controlled, low-impact movements to support bone health and reduce injury risk during adaptation to hormone changes.",
+        "Monitor for any unusual fatigue or discomfort that may relate to circulatory changes from testosterone therapy."
+      ],
+      "binding_considerations": [
+        "Wear your binder at a comfortable tightness that allows full, unlabored breathing during the exercise.",
+        "Limit set duration and volume if you experience heat buildup or restricted breathing while binding.",
+        "Take breaks as needed to avoid chest discomfort and ensure safe breathing patterns."
+      ],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or trusted environment to reduce dysphoria and increase comfort.",
+        "Choose clothing that feels affirming and allows unrestricted movement of the upper body and core.",
+        "Modify the angle of the band or reduce resistance to accommodate comfort and confidence levels."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:58:20.719796+00:00",
+    "updated_at": "2025-11-18T06:58:20.719796+00:00"
+  },
+  {
+    "id": "7725a063-87ce-4efc-b6fd-86eff5f063fa",
+    "exercise_id": 20,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start lying on your back with your lower back pressed into the floor, engaging your core to maintain a hollow position.",
+        "Keep your shoulders slightly off the ground, arms extended overhead or by your sides, and legs straight but slightly off the floor.",
+        "Focus on feeling tension in your abdominal muscles without overarching your lower back or straining your neck.",
+        "Avoid letting your lower back arch away from the floor or holding your breath during the hold."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263",
+        "10.1080/09540121.2025.2560094"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the hold to avoid unnecessary strain or breath-holding.",
+        "Stop and regress the exercise if you experience sharp pain or significant discomfort beyond typical muscle fatigue.",
+        "Seek medical advice if you notice persistent pain, numbness, or unusual symptoms during or after performing the hold."
+      ],
+      "hrt_considerations": [
+        "Allow extra recovery time if you experience joint or tendon sensitivity, as hormone therapy can influence tissue response.",
+        "Maintain consistent core engagement to support bone health and reduce injury risk, especially during early hormone therapy phases.",
+        "Monitor for any unusual discomfort around joints and adjust intensity accordingly to accommodate changes in connective tissue."
+      ],
+      "binding_considerations": [
+        "If wearing a binder, be mindful of restricted breathing; consider shorter hold times and focus on controlled, steady breaths.",
+        "Binder heat and compression may increase discomfort during core engagement; take breaks as needed to avoid overheating.",
+        "Reduce set duration or intensity if you notice increased chest or rib cage discomfort while holding the position."
+      ],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or trusted environment to reduce dysphoria and increase comfort.",
+        "Wear clothing that feels affirming and allows unrestricted movement, such as high-waisted leggings or supportive tops.",
+        "Modify leg or arm positions (e.g., bent knees or arms by sides) to reduce focus on areas that may cause dysphoria."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263",
+      "10.1080/09540121.2025.2560094"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:58:28.825413+00:00",
+    "updated_at": "2025-11-18T06:58:28.825413+00:00"
+  },
+  {
+    "id": "faad9edb-05c5-475f-a9c5-0d78f0c8449e",
+    "exercise_id": 21,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare or fitness professional knowledgeable in transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start lying on your back with hands lightly supporting your head, elbows wide to avoid neck strain.",
+        "Engage your core by drawing your belly button toward your spine while lifting your shoulder blades off the ground.",
+        "Rotate your torso to bring the opposite elbow toward the raised knee, keeping the movement controlled and avoiding jerking.",
+        "Maintain a neutral neck position to prevent strain; a good rep feels like your abdominal muscles are working without discomfort in your neck or lower back."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263",
+        "10.1080/09540121.2025.2560094"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling during the twist and inhaling when returning to center.",
+        "Stop or regress the exercise if you experience sharp pain, especially in the neck, back, or hips.",
+        "If discomfort persists or worsens, seek advice from a healthcare provider familiar with transgender health and exercise."
+      ],
+      "hrt_considerations": [
+        "Testosterone therapy may affect recovery times; allow adequate rest between sessions to support muscle and tissue repair.",
+        "Be mindful of joint or tendon sensitivity, especially in early hormone therapy stages; reduce range or intensity if discomfort arises.",
+        "Focus on core strengthening to support pelvic floor health, which is important for overall function and comfort."
+      ],
+      "binding_considerations": [],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Choose clothing that feels comfortable and affirming, such as high-waisted leggings or supportive shorts that minimize dysphoria.",
+        "Perform the exercise in a private or trusted environment to enhance comfort and focus.",
+        "Modify the range of motion or perform slower reps if full twisting feels dysphoric or uncomfortable."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263",
+      "10.1080/09540121.2025.2560094"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:58:36.303001+00:00",
+    "updated_at": "2025-11-18T06:58:36.303001+00:00"
+  },
+  {
+    "id": "9e417583-3853-42b7-8150-3e124ac0a76c",
+    "exercise_id": 22,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start in a high plank position with hands shoulder-width apart and elbows slightly bent.",
+        "Lower your body by bending the elbows, keeping them close to the torso to engage the chest and shoulders effectively.",
+        "Maintain a straight line from head to heels, avoiding sagging hips or raised buttocks for proper alignment.",
+        "A good rep feels controlled with tension in the chest and shoulders, without pain in wrists or shoulders."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling on the push phase and inhaling on the lowering phase.",
+        "Distinguish between muscle fatigue and sharp pain; stop and regress if pain occurs in joints or chest.",
+        "Seek medical advice if experiencing persistent pain, unusual swelling, or discomfort that limits daily activities."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect joint and tendon sensitivity; start with lower volume and gradually increase to allow adaptation.",
+        "Bone health can be influenced by hormone levels, so prioritize proper form to reduce injury risk during push-ups.",
+        "Allow extra recovery time if experiencing joint discomfort, and consider incorporating mobility work to support shoulder health."
+      ],
+      "binding_considerations": [
+        "Be mindful that binding can restrict breathing and increase heat; take breaks as needed to avoid breathlessness.",
+        "Reduce set length or intensity if binding causes discomfort in the chest or limits range of motion.",
+        "Consider loosening or removing the binder during exercise sessions to improve comfort and performance."
+      ],
+      "post_op_considerations": [
+        "After chest surgery, avoid push-ups until cleared by a healthcare provider to protect healing tissues and scars.",
+        "When resuming, start with wall or incline push-ups to reduce load on the chest and monitor for any pain or tightness.",
+        "Scar tissue may affect sensation and mobility; gentle stretching and gradual strengthening can support recovery."
+      ],
+      "gender_affirming_modifications": [
+        "Train in a private or comfortable space, or with a trusted partner, to reduce dysphoria during upper body exercises.",
+        "Wear clothing that affirms your gender identity and feels comfortable, such as compression shirts or loose tops.",
+        "Modify push-ups by performing them on knees or against a wall to reduce intensity and increase control."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:58:47.555062+00:00",
+    "updated_at": "2025-11-18T06:58:47.555062+00:00"
+  },
+  {
+    "id": "2d7910ca-8d21-4127-85d4-bef2f87b41e2",
+    "exercise_id": 23,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Always consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Start in a modified plank position with knees on the ground, hands shoulder-width apart, and wrists aligned under shoulders.",
+        "Lower your chest toward the floor by bending elbows while keeping a straight line from head to knees, engaging core and avoiding sagging hips.",
+        "Press back up by extending elbows fully without locking them, feeling controlled movement through shoulders and chest.",
+        "Avoid letting hips drop or pike up; a good rep feels smooth and controlled with tension in the upper body and core."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling on the push phase and inhaling on the lowering phase.",
+        "Stop if you experience sharp pain or numbness; mild discomfort is normal but pain signals should be respected.",
+        "Regress by reducing range of motion or taking longer rest breaks if fatigue or form breakdown occurs.",
+        "Seek medical advice if persistent pain or unusual symptoms develop during or after exercise."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect joint and tendon sensitivity; prioritize slow, controlled reps to reduce strain on shoulders and wrists.",
+        "Bone health can be influenced by hormone levels; maintain consistent mobility work to support joint function and reduce injury risk.",
+        "Allow extra recovery time if experiencing increased joint discomfort, and adjust volume accordingly."
+      ],
+      "binding_considerations": [
+        "If wearing a binder, ensure it is not too tight to restrict breathing during the exercise.",
+        "Limit set duration and volume to prevent overheating and discomfort in the chest and upper body.",
+        "Consider removing the binder for mobility-focused sessions if safe and comfortable to do so."
+      ],
+      "post_op_considerations": [
+        "After chest or top surgery, start with very gentle range of motion and avoid pushing into pain around scars or sensitive areas.",
+        "Modify hand placement or range of motion to reduce pressure on healing tissue and hypertrophic scars.",
+        "Consult your surgical team before resuming upper body loading exercises to ensure safe progression."
+      ],
+      "gender_affirming_modifications": [
+        "Perform the exercise in a private or comfortable space, or with a trusted partner to reduce dysphoria.",
+        "Wear clothing that affirms your gender identity and feels comfortable, such as loose tops or compression garments that do not bind tightly.",
+        "Try alternative positions like wall push-ups or incline push-ups if floor positioning feels dysphoric or uncomfortable."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:58:57.3662+00:00",
+    "updated_at": "2025-11-18T06:58:57.3662+00:00"
+  },
+  {
+    "id": "bb35df8a-da5a-4576-b7fc-6d3cb80f2093",
+    "exercise_id": 24,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine.",
+      "form_focus": [
+        "Stand facing a wall with feet hip-width apart and about an arm’s length away.",
+        "Place hands flat on the wall at shoulder height and width, keeping elbows slightly bent.",
+        "Engage your core and slowly bend elbows to bring your chest toward the wall, feeling a gentle stretch in the shoulders and chest.",
+        "Push back to the starting position without locking elbows; a good rep feels controlled and smooth without pain."
+      ],
+      "source_dois": [
+        "10.5070/d331365362",
+        "10.1177/10668969251363990",
+        "10.1200/po-25-00037",
+        "10.1007/s12664-025-01833-0",
+        "10.26635/6965.7029",
+        "10.1093/jsxmed/qdaf263"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling as you push away from the wall.",
+        "Stop if you feel sharp pain or significant discomfort; mild muscle stretch or fatigue is normal.",
+        "Regress by reducing range of motion or number of repetitions if needed, and seek medical advice if pain persists."
+      ],
+      "hrt_considerations": [
+        "Testosterone therapy may increase joint and tendon sensitivity; start with low reps and progress gradually to avoid overuse.",
+        "Bone health can be supported by consistent, low-impact mobility exercises like wall push-ups to maintain upper body function.",
+        "Allow extra recovery time if experiencing joint stiffness or discomfort, especially early in hormone therapy."
+      ],
+      "binding_considerations": [
+        "Binder wear can increase chest and shoulder heat; keep sets short and take breaks to avoid overheating.",
+        "Focus on controlled breathing to prevent breath restriction; pause or remove the binder if breathing feels compromised.",
+        "Reduce intensity or volume if chest or shoulder discomfort arises due to binding."
+      ],
+      "post_op_considerations": [],
+      "gender_affirming_modifications": [
+        "Perform this exercise in a private or comfortable space, or with a trusted partner to enhance safety and confidence.",
+        "Wear clothing that feels affirming and allows full range of motion without discomfort, such as loose tops or sports bras.",
+        "Modify hand placement or stance width to reduce dysphoria related to chest or shoulder positioning."
+      ]
+    },
+    "source_dois": [
+      "10.5070/d331365362",
+      "10.1177/10668969251363990",
+      "10.1200/po-25-00037",
+      "10.1007/s12664-025-01833-0",
+      "10.26635/6965.7029",
+      "10.1093/jsxmed/qdaf263"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:59:05.735641+00:00",
+    "updated_at": "2025-11-18T06:59:05.735641+00:00"
+  },
+  {
+    "id": "75392439-1333-477e-8b3b-29a6969d515a",
+    "exercise_id": 25,
+    "population": "general",
+    "context": "general",
+    "tips": {
+      "disclaimer": "Consult a healthcare provider familiar with transgender health before starting or modifying your exercise routine to ensure safety and appropriateness.",
+      "form_focus": [
+        "Set up facing a bench with hands placed shoulder-width apart on the edge, keeping wrists aligned under shoulders.",
+        "Maintain a straight line from head to heels by engaging the core and glutes; lower your chest toward the bench by bending elbows while keeping them at about a 45-degree angle from the body.",
+        "A good rep feels controlled with tension in the chest, shoulders, and triceps without pain; avoid sagging hips or flaring elbows excessively."
+      ],
+      "source_dois": [
+        "10.1200/po-25-00037",
+        "10.1097/scs.0000000000011362",
+        "10.1080/26895269.2025.2527825",
+        "10.1097/prs.0000000000012536",
+        "10.1177/14574969251376097",
+        "10.1007/s00266-025-05179-y"
+      ],
+      "general_safety": [
+        "Breathe steadily throughout the movement, exhaling on the push phase and inhaling on the lowering phase.",
+        "Distinguish between muscle fatigue and sharp pain; stop or regress the exercise if pain occurs.",
+        "Regress by increasing the incline height or performing wall push-ups if needed, and seek medical advice if persistent discomfort or unusual symptoms arise."
+      ],
+      "hrt_considerations": [
+        "Hormone therapy may affect joint and tendon sensitivity; start with lower volume and intensity to monitor comfort during movement.",
+        "Bone health can be influenced by hormone levels, so prioritize gradual progression and proper form to reduce injury risk."
+      ],
+      "binding_considerations": [
+        "If wearing a binder, be mindful of restricted breathing and heat buildup; take breaks as needed and consider shorter sets.",
+        "Avoid high volume or maximal effort sets while bound to prevent discomfort or respiratory strain."
+      ],
+      "post_op_considerations": [
+        "After chest or top surgery, allow adequate healing time before performing incline push-ups to avoid stress on incisions or scars.",
+        "Modify hand placement or range of motion to reduce pressure on sensitive scar tissue or areas with altered sensation."
+      ],
+      "gender_affirming_modifications": [
+        "Train in a private or comfortable space or with a trusted partner to reduce dysphoria during upper body exercises.",
+        "Wear clothing that affirms your gender identity and feels comfortable, such as compression shirts or loose tops, depending on preference.",
+        "Consider wall push-ups or reduced incline angles as alternative variations if the standard incline push-up feels dysphoric or physically challenging."
+      ]
+    },
+    "source_dois": [
+      "10.1200/po-25-00037",
+      "10.1097/scs.0000000000011362",
+      "10.1080/26895269.2025.2527825",
+      "10.1097/prs.0000000000012536",
+      "10.1177/14574969251376097",
+      "10.1007/s00266-025-05179-y"
+    ],
+    "needs_review": true,
+    "created_at": "2025-11-18T06:59:14.380664+00:00",
+    "updated_at": "2025-11-18T06:59:14.380664+00:00"
+  }
+]

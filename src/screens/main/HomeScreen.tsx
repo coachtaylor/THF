@@ -256,7 +256,7 @@ export default function HomeScreen() {
     const now = new Date();
     const dayOfWeek = now.getDay();
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    startOfWeek.setDate(now.getDate() - dayOfWeek);
     startOfWeek.setHours(0, 0, 0, 0);
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(endOfWeek.getDate() + 7);
@@ -336,12 +336,13 @@ export default function HomeScreen() {
         <View style={styles.statsSection}>
           <StatsRow
             streak={currentStreak}
-            weekProgress={`${weeklyStats?.completedWorkouts || weekProgress || 0}/${profile?.workout_frequency || 5}`}
+            weekProgress={`${weeklyStats?.completedWorkouts || weekProgress || 0}/${weeklyStats?.achievableWorkouts ?? profile?.workout_frequency ?? 5}`}
             total={workoutsCompleted}
           />
         </View>
 
-        {/* 4. Safety Reminder (above workout card) */}
+
+        {/* 5. Safety Reminder (above workout card) */}
         <TodaysReminderCard />
 
         {/* 5. Today's Workout - Hero Card */}

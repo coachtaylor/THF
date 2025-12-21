@@ -17,18 +17,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { checkOnboardingStatus } from '../../services/storage/onboarding';
+import { checkTierSelection } from '../../services/storage/tierSelection';
 import { signalOnboardingComplete } from '../../services/events/onboardingEvents';
 import { colors, spacing, borderRadius } from '../../theme/theme';
+import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
+import OrDivider from '../../components/auth/OrDivider';
 
 export default function LoginScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
-  const { login } = useAuth();
+  const { login, signInWithGoogle } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -78,8 +82,15 @@ export default function LoginScreen({ navigation }: any) {
         // Returning user - go to main app
         signalOnboardingComplete();
       } else {
-        // New user or incomplete onboarding - continue to onboarding
-        navigation.replace('WhyTransFitness');
+        // Check if user has selected a tier yet
+        const hasTierSelected = await checkTierSelection();
+        if (hasTierSelected) {
+          // Continue onboarding from where they left off
+          navigation.replace('WhyTransFitness');
+        } else {
+          // New user - show tier selection first
+          navigation.replace('TierSelection');
+        }
       }
     } catch (err: any) {
       console.error('Login failed:', err);
@@ -117,6 +128,37 @@ export default function LoginScreen({ navigation }: any) {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      setError(null);
+
+      const result = await signInWithGoogle();
+
+      if (result.success) {
+        // Check onboarding status
+        const hasCompletedOnboarding = await checkOnboardingStatus();
+
+        if (hasCompletedOnboarding) {
+          signalOnboardingComplete();
+        } else {
+          const hasTierSelected = await checkTierSelection();
+          if (hasTierSelected) {
+            navigation.replace('WhyTransFitness');
+          } else {
+            navigation.replace('TierSelection');
+          }
+        }
+      } else if (result.error && result.error !== 'Sign-in was cancelled' && result.error !== 'Sign-in was dismissed') {
+        setError(result.error);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google sign-in failed');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -315,8 +357,18 @@ export default function LoginScreen({ navigation }: any) {
             )}
           </Pressable>
 
+          {/* Google Sign-In */}
+          <OrDivider />
+
+          <GoogleSignInButton
+            onPress={handleGoogleSignIn}
+            loading={googleLoading}
+            disabled={loading}
+            mode="signin"
+          />
+
           {/* Sign Up Link */}
-          <View style={styles.signupContainer}>
+          <View style={[styles.signupContainer, { marginTop: spacing.xl }]}>
             <Text style={styles.signupText}>Don't have an account? </Text>
             <Pressable
               onPress={() => navigation.navigate('Signup')}
@@ -519,3 +571,5 @@ const styles = StyleSheet.create({
     color: colors.accent.primary,
   },
 });
+
+

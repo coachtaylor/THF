@@ -23,9 +23,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 
 export interface SurveyResponse {
-  safetyScore: number;
-  relevanceScore: number;
-  sadnessLevel: 'very' | 'somewhat' | 'not_really' | null;
+  experienceScore: number;
+  clarityScore: number;
   feedback?: string;
   timestamp: string;
   triggerPoint: 'onboarding' | 'workout' | 'manual';
@@ -38,11 +37,6 @@ interface BetaSurveyModalProps {
   triggerPoint: 'onboarding' | 'workout' | 'manual';
 }
 
-const SADNESS_OPTIONS = [
-  { value: 'very' as const, emoji: '😢', label: 'Very sad' },
-  { value: 'somewhat' as const, emoji: '😕', label: 'Somewhat sad' },
-  { value: 'not_really' as const, emoji: '😐', label: 'Not really' },
-];
 
 function ScoreSelector({
   label,
@@ -101,21 +95,19 @@ export default function BetaSurveyModal({
   triggerPoint,
 }: BetaSurveyModalProps) {
   const insets = useSafeAreaInsets();
-  const [safetyScore, setSafetyScore] = useState(0);
-  const [relevanceScore, setRelevanceScore] = useState(0);
-  const [sadnessLevel, setSadnessLevel] = useState<'very' | 'somewhat' | 'not_really' | null>(null);
+  const [experienceScore, setExperienceScore] = useState(0);
+  const [clarityScore, setClarityScore] = useState(0);
   const [feedback, setFeedback] = useState('');
   const [feedbackFocused, setFeedbackFocused] = useState(false);
 
-  const canSubmit = safetyScore > 0 && relevanceScore > 0 && sadnessLevel !== null;
+  const canSubmit = experienceScore > 0 && clarityScore > 0;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
 
     const response: SurveyResponse = {
-      safetyScore,
-      relevanceScore,
-      sadnessLevel,
+      experienceScore,
+      clarityScore,
       feedback: feedback.trim() || undefined,
       timestamp: new Date().toISOString(),
       triggerPoint,
@@ -124,17 +116,15 @@ export default function BetaSurveyModal({
     onSubmit(response);
 
     // Reset form
-    setSafetyScore(0);
-    setRelevanceScore(0);
-    setSadnessLevel(null);
+    setExperienceScore(0);
+    setClarityScore(0);
     setFeedback('');
   };
 
   const handleSkip = () => {
     // Reset form
-    setSafetyScore(0);
-    setRelevanceScore(0);
-    setSadnessLevel(null);
+    setExperienceScore(0);
+    setClarityScore(0);
     setFeedback('');
     onClose();
   };
@@ -183,66 +173,25 @@ export default function BetaSurveyModal({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Question 1: Safety Score */}
+            {/* Question 1: Overall Experience */}
             <ScoreSelector
-              label="How safe do you feel?"
-              description="Following these workouts with your body and situation"
-              value={safetyScore}
-              onChange={setSafetyScore}
+              label="How was your onboarding experience?"
+              description="Setting up your profile and preferences"
+              value={experienceScore}
+              onChange={setExperienceScore}
             />
 
-            {/* Question 2: Relevance Score */}
+            {/* Question 2: Clarity Score */}
             <ScoreSelector
-              label="How well do we understand you?"
-              description="Does the app feel tailored to your specific situation?"
-              value={relevanceScore}
-              onChange={setRelevanceScore}
+              label="How clear were the instructions?"
+              description="Was it easy to understand what to do at each step?"
+              value={clarityScore}
+              onChange={setClarityScore}
             />
-
-            {/* Question 3: Sadness Level */}
-            <View style={styles.questionContainer}>
-              <Text style={styles.questionLabel}>If TransFitness went away...</Text>
-              <Text style={styles.questionDescription}>
-                How would you feel if you could no longer use this app?
-              </Text>
-              <View style={styles.sadnessRow}>
-                {SADNESS_OPTIONS.map((option) => (
-                  <Pressable
-                    key={option.value}
-                    style={[
-                      styles.sadnessOption,
-                      sadnessLevel === option.value && styles.sadnessOptionSelected,
-                    ]}
-                    onPress={() => setSadnessLevel(option.value)}
-                  >
-                    {sadnessLevel === option.value && (
-                      <LinearGradient
-                        colors={[`${colors.accent.secondary}30`, 'transparent']}
-                        style={StyleSheet.absoluteFill}
-                      />
-                    )}
-                    <Text style={styles.sadnessEmoji}>{option.emoji}</Text>
-                    <Text
-                      style={[
-                        styles.sadnessLabel,
-                        sadnessLevel === option.value && styles.sadnessLabelSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                    {sadnessLevel === option.value && (
-                      <View style={styles.checkmark}>
-                        <Ionicons name="checkmark" size={12} color={colors.text.inverse} />
-                      </View>
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            </View>
 
             {/* Optional Feedback */}
             <View style={styles.questionContainer}>
-              <Text style={styles.questionLabel}>Anything else? (optional)</Text>
+              <Text style={styles.questionLabel}>What could we improve? (optional)</Text>
               <View
                 style={[
                   styles.feedbackContainer,
@@ -251,7 +200,7 @@ export default function BetaSurveyModal({
               >
                 <TextInput
                   style={styles.feedbackInput}
-                  placeholder="What's working? What's not? What would you love to see?"
+                  placeholder="Any confusing parts? Missing options? Suggestions?"
                   placeholderTextColor={colors.text.tertiary}
                   value={feedback}
                   onChangeText={setFeedback}
@@ -436,50 +385,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '400',
     color: colors.text.tertiary,
-  },
-  sadnessRow: {
-    flexDirection: 'row',
-    gap: spacing.m,
-  },
-  sadnessOption: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: spacing.l,
-    paddingHorizontal: spacing.s,
-    borderRadius: borderRadius.lg,
-    backgroundColor: colors.glass.bg,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  sadnessOptionSelected: {
-    borderColor: colors.accent.secondary,
-  },
-  sadnessEmoji: {
-    fontSize: 28,
-    marginBottom: spacing.s,
-  },
-  sadnessLabel: {
-    fontFamily: 'Poppins',
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  sadnessLabelSelected: {
-    color: colors.accent.secondary,
-  },
-  checkmark: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.accent.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   feedbackContainer: {
     backgroundColor: colors.glass.bg,

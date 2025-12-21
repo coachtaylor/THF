@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "exportedAt": "2025-12-11T08:02:45.668Z",
+  "tables": [
+    "knowledge_entries",
+    "safety_guides",
+    "exercise_trans_tips"
+  ],
+  "entryCounts": {
+    "knowledge_entries": 15,
+    "safety_guides": 2,
+    "rule_metadata": 0,
+    "education_snippets": 0,
+    "exercise_trans_tips": 25
+  },
+  "schema": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-12-11T08:02:45.670Z"
+  }
+}

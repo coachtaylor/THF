@@ -21,6 +21,8 @@ interface GlassCardProps extends Omit<PressableProps, 'style'> {
   style?: ViewStyle;
   contentStyle?: ViewStyle;
   noPadding?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 const variantConfig = {
@@ -66,6 +68,8 @@ export default function GlassCard({
   contentStyle,
   noPadding = false,
   onPress,
+  accessibilityLabel,
+  accessibilityHint,
   ...pressableProps
 }: GlassCardProps) {
   const config = variantConfig[variant];
@@ -193,6 +197,9 @@ export default function GlassCard({
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           onPress={onPress}
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel}
+          accessibilityHint={accessibilityHint}
           {...pressableProps}
         >
           {renderContent()}

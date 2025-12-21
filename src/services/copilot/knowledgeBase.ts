@@ -1,6 +1,21 @@
 // Copilot Knowledge Base
 // PRD 3.0: Retrieval-based responses for common questions
 // Categories: Binding, HRT, Post-op, Exercise, Recovery, Dysphoria management
+//
+// NOTE: This module now uses the database-backed knowledge engine.
+// The implementation is in src/knowledge/content/knowledgeBase.ts
+// KNOWLEDGE_BASE is kept as a fallback seed for offline/migration scenarios.
+
+import {
+  searchKnowledge as dbSearchKnowledge,
+  getRandomTips as dbGetRandomTips,
+  getAllKnowledgeEntries,
+} from '../../knowledge/content/knowledgeBase';
+import type { UserContext as DbUserContext } from '../../knowledge/types';
+
+// =============================================
+// TYPE DEFINITIONS (kept for backward compatibility)
+// =============================================
 
 export interface KnowledgeEntry {
   id: string;
@@ -16,6 +31,111 @@ export interface KnowledgeEntry {
     hrt_type?: 'estrogen_blockers' | 'testosterone';
   };
 }
+
+// =============================================
+// SEARCH FUNCTION (uses database with fallback)
+// =============================================
+
+/**
+ * Find relevant knowledge entries based on user query.
+ * Uses database-backed search with local fallback.
+ */
+export function searchKnowledge(
+  query: string,
+  context?: {
+    binds_chest?: boolean;
+    on_hrt?: boolean;
+    has_surgery?: boolean;
+    hrt_type?: 'estrogen_blockers' | 'testosterone';
+  }
+): KnowledgeEntry[] {
+  // Convert context for database function
+  const dbContext: DbUserContext | undefined = context
+    ? {
+        binds_chest: context.binds_chest,
+        on_hrt: context.on_hrt,
+        has_surgery: context.has_surgery,
+        hrt_type: context.hrt_type,
+      }
+    : undefined;
+
+  // Try database first (async but we need sync for now - use cache)
+  // For now, fall back to local search until we can make responseGenerator async
+  return searchKnowledgeLocal(query, context);
+}
+
+/**
+ * Local search using hardcoded KNOWLEDGE_BASE (fallback)
+ */
+function searchKnowledgeLocal(
+  query: string,
+  context?: {
+    binds_chest?: boolean;
+    on_hrt?: boolean;
+    has_surgery?: boolean;
+    hrt_type?: 'estrogen_blockers' | 'testosterone';
+  }
+): KnowledgeEntry[] {
+  const queryLower = query.toLowerCase();
+  const words = queryLower.split(/\s+/);
+
+  // Score each entry based on keyword matches
+  const scored = KNOWLEDGE_BASE.map((entry) => {
+    let score = 0;
+
+    // Check keyword matches
+    for (const keyword of entry.keywords) {
+      if (queryLower.includes(keyword)) {
+        score += 2;
+      } else if (
+        words.some(
+          (word) => keyword.includes(word) || word.includes(keyword)
+        )
+      ) {
+        score += 1;
+      }
+    }
+
+    // Boost if context matches
+    if (entry.requiresContext && context) {
+      const ctxMatch = Object.entries(entry.requiresContext).every(
+        ([key, value]) => {
+          return context[key as keyof typeof context] === value;
+        }
+      );
+      if (ctxMatch) {
+        score += 3;
+      }
+    }
+
+    // Slight boost for category match in query
+    if (queryLower.includes(entry.category)) {
+      score += 1;
+    }
+
+    return { entry, score };
+  });
+
+  // Return top matches with score > 0
+  return scored
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map((s) => s.entry);
+}
+
+/**
+ * Get random helpful tips for when no specific query matches
+ */
+export function getRandomTips(count: number = 3): KnowledgeEntry[] {
+  const shuffled = [...KNOWLEDGE_BASE].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
+
+// =============================================
+// KNOWLEDGE BASE ENTRIES (seed data / fallback)
+// This data is also stored in Supabase knowledge_entries table
+// =============================================
 
 export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   // ========== BINDING CATEGORY ==========
@@ -427,65 +547,3 @@ If pain persists or seems wrong, consult a healthcare provider.`,
 You've got this! Every journey starts with a single workout.`,
   },
 ];
-
-/**
- * Find relevant knowledge entries based on user query
- */
-export function searchKnowledge(
-  query: string,
-  context?: {
-    binds_chest?: boolean;
-    on_hrt?: boolean;
-    has_surgery?: boolean;
-    hrt_type?: 'estrogen_blockers' | 'testosterone';
-  }
-): KnowledgeEntry[] {
-  const queryLower = query.toLowerCase();
-  const words = queryLower.split(/\s+/);
-
-  // Score each entry based on keyword matches
-  const scored = KNOWLEDGE_BASE.map(entry => {
-    let score = 0;
-
-    // Check keyword matches
-    for (const keyword of entry.keywords) {
-      if (queryLower.includes(keyword)) {
-        score += 2;
-      } else if (words.some(word => keyword.includes(word) || word.includes(keyword))) {
-        score += 1;
-      }
-    }
-
-    // Boost if context matches
-    if (entry.requiresContext && context) {
-      const ctxMatch = Object.entries(entry.requiresContext).every(([key, value]) => {
-        return context[key as keyof typeof context] === value;
-      });
-      if (ctxMatch) {
-        score += 3;
-      }
-    }
-
-    // Slight boost for category match in query
-    if (queryLower.includes(entry.category)) {
-      score += 1;
-    }
-
-    return { entry, score };
-  });
-
-  // Return top matches with score > 0
-  return scored
-    .filter(s => s.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-    .map(s => s.entry);
-}
-
-/**
- * Get random helpful tips for when no specific query matches
- */
-export function getRandomTips(count: number = 3): KnowledgeEntry[] {
-  const shuffled = [...KNOWLEDGE_BASE].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
-}

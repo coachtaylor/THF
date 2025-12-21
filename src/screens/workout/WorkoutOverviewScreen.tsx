@@ -16,6 +16,7 @@ import { selectSnippetsForUser, initEducationSnippets } from '../../services/edu
 import { SelectedSnippets, UserSnippetContext } from '../../services/education/types';
 import { WorkoutExplanation } from '../../types/explanations';
 import { trackWorkoutStarted, trackWhyThisWorkoutOpened } from '../../services/analytics';
+import { useWorkoutLimit } from '../../hooks/useWorkoutLimit';
 
 type RootStackParamList = {
   WorkoutOverview: { workoutId: string; isToday?: boolean };
@@ -60,6 +61,10 @@ export default function WorkoutOverviewScreen() {
   const [whySheetVisible, setWhySheetVisible] = useState(false);
   const [snippets, setSnippets] = useState<SelectedSnippets>({});
   const [explanations, setExplanations] = useState<WorkoutExplanation[]>([]);
+
+  // Workout limit tracking for free tier
+  const userId = profile?.user_id || profile?.id || 'default';
+  const { canStart, remaining, isPremium, isLoading: limitLoading } = useWorkoutLimit(userId);
 
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
@@ -245,6 +250,12 @@ export default function WorkoutOverviewScreen() {
 
   const handleStartWorkout = async () => {
     if (!workout) return;
+
+    // Check workout limit for free tier users
+    if (!canStart) {
+      navigation.navigate('Paywall');
+      return;
+    }
 
     try {
       // Track workout started

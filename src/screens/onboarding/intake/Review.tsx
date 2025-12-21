@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
@@ -10,6 +10,7 @@ import { glassStyles, textStyles, cardStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { generatePlan } from "../../../services/planGenerator";
 import { savePlan } from "../../../services/storage/plan";
+import { updateProfile } from "../../../services/storage/profile";
 import { formatEquipmentLabel } from "../../../utils/equipment";
 import { Platform } from "react-native";
 import { trackOnboardingCompleted, trackWorkoutGenerated } from "../../../services/analytics";
@@ -196,6 +197,11 @@ export default function Review({ navigation }: ReviewProps) {
       console.log('💾 Saving plan for userId:', userId);
       await savePlan(plan as any, userId);
 
+      // Clean up first_week_substitute_days (one-time use, no longer needed)
+      if (profile.first_week_substitute_days && profile.first_week_substitute_days.length > 0) {
+        await updateProfile({ first_week_substitute_days: undefined });
+      }
+
       // Track onboarding completion
       await trackOnboardingCompleted();
 
@@ -217,7 +223,11 @@ export default function Review({ navigation }: ReviewProps) {
     } catch (error) {
       console.error("Error generating plan:", error);
       setIsGenerating(false);
-      // TODO: Show error message to user
+      Alert.alert(
+        'Error',
+        'Failed to generate your workout program. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 

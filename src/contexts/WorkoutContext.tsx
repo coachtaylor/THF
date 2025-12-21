@@ -1,7 +1,31 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { ExerciseInstance } from '../types/plan';
 import { SafetyCheckpoint } from '../services/rulesEngine/rules/types';
 import { AssembledWorkout } from '../services/workoutGeneration/workoutAssembler';
+import { WarmupExercise } from '../services/workoutGeneration/warmupCooldown';
+import {
+  LastPerformance,
+  getLastPerformanceForExercises,
+  calculateSuggestedWeight,
+  startWorkoutLog,
+  logSet,
+  completeWorkoutLog,
+} from '../services/storage/workoutLog';
+import {
+  saveSession,
+  getSession,
+  clearSession,
+  hasResumableSession,
+  ResumableSession,
+} from '../services/storage/workoutSession';
+
+// Error callback type for notifying UI of save failures
+type ErrorCallback = (title: string, message?: string) => void;
+
+/**
+ * Workout phase type - tracks which section of workout we're in
+ */
+export type WorkoutPhase = 'warmup' | 'main' | 'cooldown';
 
 /**
  * Set log entry for completed sets
@@ -44,7 +68,19 @@ interface WorkoutContextType {
   workout: ActiveWorkout | null;
   currentExerciseIndex: number;
   currentSetNumber: number;
-  
+
+  // Error callback registration
+  setErrorCallback: (callback: ErrorCallback | null) => void;
+  hasSaveError: boolean;
+
+  // Phase tracking
+  currentPhase: WorkoutPhase;
+  phaseExerciseIndex: number; // Index within current phase
+  completedWarmupExercises: string[]; // Track completed warmup exercises by name
+  completedCooldownExercises: string[]; // Track completed cooldown exercises by name
+  skipWarmup: boolean;
+  skipCooldown: boolean;
+
   // Set logging
   currentSetData: {
     reps: number;
@@ -52,21 +88,32 @@ interface WorkoutContextType {
     rpe: number;
   };
   completedSets: SetLog[];
-  
+
   // Timers
   workoutDuration: number; // Total workout time in seconds
   restTimer: number; // Rest countdown in seconds
   isResting: boolean;
-  
+
   // Progress
   totalExercises: number;
   exercisesCompleted: number;
   totalSets: number;
   setsCompleted: number;
-  isWorkoutComplete: boolean; // New: tracks if workout is complete
-  
+  isWorkoutComplete: boolean;
+
+  // Phase-specific getters
+  currentWarmupExercise: WarmupExercise | null;
+  currentCooldownExercise: WarmupExercise | null;
+  warmupExerciseCount: number;
+  cooldownExerciseCount: number;
+
+  // Exercise history for weight suggestions
+  exerciseHistory: Map<string, LastPerformance>;
+  getExerciseLastPerformance: (exerciseId: string) => LastPerformance | null;
+  getSuggestedWeight: (exerciseId: string) => number | null;
+
   // Actions
-  startWorkout: (workout: ActiveWorkout) => void;
+  startWorkout: (workout: ActiveWorkout, options?: { skipWarmup?: boolean; userId?: string }) => Promise<void>;
   updateSetData: (field: 'reps' | 'weight' | 'rpe', value: number) => void;
   completeSet: () => Promise<void>;
   skipSet: () => void;
@@ -76,12 +123,23 @@ interface WorkoutContextType {
   pauseWorkout: () => void;
   resumeWorkout: () => void;
   completeWorkout: () => Promise<void>;
-  clearWorkout: () => void; // New: clears workout state after summary
-  
+  clearWorkout: () => Promise<void>;
+
+  // Phase actions
+  completeWarmupExercise: () => void;
+  skipWarmupPhase: () => void;
+  completeCooldownExercise: () => void;
+  skipCooldownPhase: () => void;
+
   // Safety
   checkpointTriggered: boolean;
   currentCheckpoint: SafetyCheckpointWithTrigger | null;
   dismissCheckpoint: () => void;
+
+  // Session persistence
+  checkForResumableSession: (userId: string) => Promise<boolean>;
+  resumeSession: (userId: string) => Promise<boolean>;
+  discardSession: (userId: string) => Promise<void>;
 }
 
 export const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
@@ -91,21 +149,164 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
   const [completedSets, setCompletedSets] = useState<SetLog[]>([]);
-  
+
+  // Phase tracking state
+  const [currentPhase, setCurrentPhase] = useState<WorkoutPhase>('warmup');
+  const [phaseExerciseIndex, setPhaseExerciseIndex] = useState(0);
+  const [completedWarmupExercises, setCompletedWarmupExercises] = useState<string[]>([]);
+  const [completedCooldownExercises, setCompletedCooldownExercises] = useState<string[]>([]);
+  const [skipWarmup, setSkipWarmup] = useState(false);
+  const [skipCooldown, setSkipCooldown] = useState(false);
+
   const [currentSetData, setCurrentSetData] = useState({
     reps: 0,
     weight: 0,
     rpe: 7,
   });
-  
+
   const [workoutDuration, setWorkoutDuration] = useState(0);
   const [restTimer, setRestTimer] = useState(0);
   const [isResting, setIsResting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  
+
   const [checkpointTriggered, setCheckpointTriggered] = useState(false);
   const [currentCheckpoint, setCurrentCheckpoint] = useState<SafetyCheckpointWithTrigger | null>(null);
   const [isWorkoutComplete, setIsWorkoutComplete] = useState(false);
+
+  // Workout log tracking for database persistence
+  const [workoutLogId, setWorkoutLogId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>('default');
+
+  // Exercise history for weight suggestions
+  const [exerciseHistory, setExerciseHistory] = useState<Map<string, LastPerformance>>(new Map());
+
+  // Error handling
+  const errorCallbackRef = useRef<ErrorCallback | null>(null);
+  const [hasSaveError, setHasSaveError] = useState(false);
+
+  const setErrorCallback = useCallback((callback: ErrorCallback | null) => {
+    errorCallbackRef.current = callback;
+  }, []);
+
+  const notifyError = useCallback((title: string, message?: string) => {
+    setHasSaveError(true);
+    if (errorCallbackRef.current) {
+      errorCallbackRef.current(title, message);
+    }
+  }, []);
+
+  // Session persistence - save state periodically when workout is active
+  const lastSaveRef = useRef<number>(0);
+  const SAVE_INTERVAL_MS = 10000; // Save every 10 seconds
+
+  useEffect(() => {
+    if (!workout || isWorkoutComplete) return;
+
+    const now = Date.now();
+    if (now - lastSaveRef.current < SAVE_INTERVAL_MS) return;
+
+    lastSaveRef.current = now;
+
+    // Save session state
+    saveSession(currentUserId, workout, {
+      currentExerciseIndex,
+      currentSetNumber,
+      currentPhase,
+      phaseExerciseIndex,
+      completedSets,
+      completedWarmupExercises,
+      completedCooldownExercises,
+      workoutDuration,
+    }).catch((error) => {
+      console.error('Failed to persist workout session:', error);
+      notifyError('Session backup failed', 'Your workout progress may not be saved if app closes');
+    });
+  }, [
+    workout,
+    currentExerciseIndex,
+    currentSetNumber,
+    currentPhase,
+    phaseExerciseIndex,
+    completedSets,
+    completedWarmupExercises,
+    completedCooldownExercises,
+    workoutDuration,
+    isWorkoutComplete,
+    currentUserId,
+    notifyError,
+  ]);
+
+  // Check if there's a resumable session
+  const checkForResumableSession = useCallback(async (userId: string): Promise<boolean> => {
+    return hasResumableSession(userId);
+  }, []);
+
+  // Resume a saved session
+  const resumeSession = useCallback(async (userId: string): Promise<boolean> => {
+    try {
+      const session = await getSession(userId);
+      if (!session) return false;
+
+      // Restore all state from session
+      setWorkout(session.workout);
+      setCurrentExerciseIndex(session.currentExerciseIndex);
+      setCurrentSetNumber(session.currentSetNumber);
+      setCurrentPhase(session.currentPhase);
+      setPhaseExerciseIndex(session.phaseExerciseIndex);
+      setCompletedSets(session.completedSets);
+      setCompletedWarmupExercises(session.completedWarmupExercises);
+      setCompletedCooldownExercises(session.completedCooldownExercises);
+      setWorkoutDuration(session.workoutDuration);
+      setCurrentUserId(userId);
+      setIsPaused(true); // Start paused so user can review
+      setIsWorkoutComplete(false);
+
+      // Load exercise history
+      if (session.workout.main_workout.length > 0) {
+        try {
+          const exerciseIds = session.workout.main_workout.map(ex => ex.exerciseId);
+          const history = await getLastPerformanceForExercises(userId, exerciseIds);
+          setExerciseHistory(history);
+        } catch {
+          setExerciseHistory(new Map());
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Failed to resume session:', error);
+      return false;
+    }
+  }, []);
+
+  // Discard a saved session without resuming
+  const discardSession = useCallback(async (userId: string): Promise<void> => {
+    await clearSession(userId);
+  }, []);
+
+  // Derived phase values
+  const warmupExercises = workout?.warm_up?.exercises || [];
+  const cooldownExercises = workout?.cool_down?.exercises || [];
+  const warmupExerciseCount = warmupExercises.length;
+  const cooldownExerciseCount = cooldownExercises.length;
+  const currentWarmupExercise = currentPhase === 'warmup' && phaseExerciseIndex < warmupExercises.length
+    ? warmupExercises[phaseExerciseIndex]
+    : null;
+  const currentCooldownExercise = currentPhase === 'cooldown' && phaseExerciseIndex < cooldownExercises.length
+    ? cooldownExercises[phaseExerciseIndex]
+    : null;
+
+  // Helper to get last performance for an exercise
+  const getExerciseLastPerformance = useCallback((exerciseId: string): LastPerformance | null => {
+    return exerciseHistory.get(exerciseId) || null;
+  }, [exerciseHistory]);
+
+  // Helper to get suggested weight for an exercise
+  const getSuggestedWeight = useCallback((exerciseId: string): number | null => {
+    const lastPerf = exerciseHistory.get(exerciseId);
+    if (!lastPerf) return null;
+    return calculateSuggestedWeight(lastPerf);
+  }, [exerciseHistory]);
   
   // Workout timer (total duration)
   useEffect(() => {
@@ -144,7 +345,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [isResting, restTimer, isPaused]);
   
-  const startWorkout = (newWorkout: ActiveWorkout) => {
+  const startWorkout = async (newWorkout: ActiveWorkout, options?: { skipWarmup?: boolean; userId?: string }) => {
     setWorkout(newWorkout);
     setCurrentExerciseIndex(0);
     setCurrentSetNumber(1);
@@ -156,26 +357,67 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     setCheckpointTriggered(false);
     setCurrentCheckpoint(null);
     setIsWorkoutComplete(false);
-    
-    // Pre-fill with last workout data if available
-    const currentExercise = newWorkout.main_workout[0];
-    if (currentExercise.last_performed) {
-      setCurrentSetData({
-        reps: currentExercise.last_performed.reps,
-        weight: currentExercise.last_performed.weight,
-        rpe: 7,
-      });
+
+    // Reset phase state
+    setCompletedWarmupExercises([]);
+    setCompletedCooldownExercises([]);
+    setPhaseExerciseIndex(0);
+    setSkipWarmup(options?.skipWarmup || false);
+    setSkipCooldown(false);
+
+    // Set up user ID and start workout log for persistence
+    const userId = options?.userId || 'default';
+    setCurrentUserId(userId);
+
+    // Create workout log entry in database
+    try {
+      const logId = await startWorkoutLog(userId, newWorkout.id);
+      setWorkoutLogId(logId);
+    } catch (error) {
+      console.error('Failed to start workout log:', error);
+      setWorkoutLogId(null);
+    }
+
+    // Load exercise history for weight suggestions
+    if (options?.userId && newWorkout.main_workout.length > 0) {
+      try {
+        const exerciseIds = newWorkout.main_workout.map(ex => ex.exerciseId);
+        const history = await getLastPerformanceForExercises(options.userId, exerciseIds);
+        setExerciseHistory(history);
+      } catch (error) {
+        console.error('Failed to load exercise history:', error);
+        setExerciseHistory(new Map());
+      }
     } else {
-      // Default to prescribed values
-      const repsValue = typeof currentExercise.reps === 'number' 
-        ? currentExercise.reps 
-        : parseInt(String(currentExercise.reps).split('-')[0]) || 10;
-      
-      setCurrentSetData({
-        reps: repsValue,
-        weight: currentExercise.suggested_weight || 0,
-        rpe: 7,
-      });
+      setExerciseHistory(new Map());
+    }
+
+    // Determine starting phase
+    const hasWarmup = newWorkout.warm_up?.exercises?.length > 0;
+    const shouldStartWithWarmup = hasWarmup && !options?.skipWarmup;
+
+    if (shouldStartWithWarmup) {
+      setCurrentPhase('warmup');
+    } else {
+      setCurrentPhase('main');
+      // Pre-fill with last workout data if available for main phase
+      const currentExercise = newWorkout.main_workout[0];
+      if (currentExercise?.last_performed) {
+        setCurrentSetData({
+          reps: currentExercise.last_performed.reps,
+          weight: currentExercise.last_performed.weight,
+          rpe: 7,
+        });
+      } else if (currentExercise) {
+        const repsValue = typeof currentExercise.reps === 'number'
+          ? currentExercise.reps
+          : parseInt(String(currentExercise.reps).split('-')[0]) || 10;
+        setCurrentSetData({
+          reps: repsValue,
+          weight: currentExercise.suggested_weight || 0,
+          rpe: 7,
+        });
+      }
     }
   };
   
@@ -188,9 +430,9 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   
   const completeSet = async () => {
     if (!workout) return;
-    
+
     const currentExercise = workout.main_workout[currentExerciseIndex];
-    
+
     // Create set log
     const setLog: SetLog = {
       exercise_id: currentExercise.exerciseId,
@@ -200,9 +442,18 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       rpe: currentSetData.rpe,
       timestamp: new Date(),
     };
-    
+
     // Save set to database
-    await saveSetToDatabase(workout.id, setLog);
+    if (workoutLogId) {
+      try {
+        await logSet(workoutLogId, setLog);
+        setHasSaveError(false); // Clear error state on successful save
+      } catch (error) {
+        console.error('Failed to save set to database:', error);
+        notifyError('Set not saved', 'Your workout data may not be fully recorded');
+        // Continue anyway - don't block UI for database errors
+      }
+    }
     
     // Add to completed sets
     setCompletedSets(prev => [...prev, setLog]);
@@ -248,21 +499,21 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   
   const nextExercise = () => {
     if (!workout) return;
-    
+
     if (currentExerciseIndex < workout.main_workout.length - 1) {
       const nextIndex = currentExerciseIndex + 1;
       const nextEx = workout.main_workout[nextIndex];
-      
+
       setCurrentExerciseIndex(nextIndex);
       setCurrentSetNumber(1);
       setIsResting(false);
       setRestTimer(0);
-      
+
       // Pre-fill next exercise data
-      const repsValue = typeof nextEx.reps === 'number' 
-        ? nextEx.reps 
+      const repsValue = typeof nextEx.reps === 'number'
+        ? nextEx.reps
         : parseInt(String(nextEx.reps).split('-')[0]) || 10;
-      
+
       if (nextEx.last_performed) {
         setCurrentSetData({
           reps: nextEx.last_performed.reps,
@@ -277,10 +528,97 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         });
       }
     } else {
-      // All exercises complete - mark workout as complete
-      setIsWorkoutComplete(true);
+      // Main workout complete - transition to cooldown or finish
+      const hasCooldown = workout.cool_down?.exercises?.length > 0;
+      if (hasCooldown && !skipCooldown) {
+        setCurrentPhase('cooldown');
+        setPhaseExerciseIndex(0);
+      } else {
+        setIsWorkoutComplete(true);
+      }
     }
   };
+
+  // Transition from warmup to main workout
+  const transitionToMainWorkout = useCallback(() => {
+    if (!workout) return;
+
+    setCurrentPhase('main');
+    setPhaseExerciseIndex(0);
+    setCurrentExerciseIndex(0);
+    setCurrentSetNumber(1);
+
+    // Pre-fill with first main exercise data
+    const currentExercise = workout.main_workout[0];
+    if (currentExercise?.last_performed) {
+      setCurrentSetData({
+        reps: currentExercise.last_performed.reps,
+        weight: currentExercise.last_performed.weight,
+        rpe: 7,
+      });
+    } else if (currentExercise) {
+      const repsValue = typeof currentExercise.reps === 'number'
+        ? currentExercise.reps
+        : parseInt(String(currentExercise.reps).split('-')[0]) || 10;
+      setCurrentSetData({
+        reps: repsValue,
+        weight: currentExercise.suggested_weight || 0,
+        rpe: 7,
+      });
+    }
+  }, [workout]);
+
+  // Complete a warmup exercise and move to next or transition to main
+  const completeWarmupExercise = useCallback(() => {
+    if (!workout || currentPhase !== 'warmup') return;
+
+    const warmupExs = workout.warm_up?.exercises || [];
+    const currentEx = warmupExs[phaseExerciseIndex];
+
+    if (currentEx) {
+      setCompletedWarmupExercises(prev => [...prev, currentEx.name]);
+    }
+
+    if (phaseExerciseIndex < warmupExs.length - 1) {
+      // More warmup exercises
+      setPhaseExerciseIndex(prev => prev + 1);
+    } else {
+      // Warmup complete, transition to main workout
+      transitionToMainWorkout();
+    }
+  }, [workout, currentPhase, phaseExerciseIndex, transitionToMainWorkout]);
+
+  // Skip entire warmup phase
+  const skipWarmupPhase = useCallback(() => {
+    setSkipWarmup(true);
+    transitionToMainWorkout();
+  }, [transitionToMainWorkout]);
+
+  // Complete a cooldown exercise and move to next or finish
+  const completeCooldownExercise = useCallback(() => {
+    if (!workout || currentPhase !== 'cooldown') return;
+
+    const cooldownExs = workout.cool_down?.exercises || [];
+    const currentEx = cooldownExs[phaseExerciseIndex];
+
+    if (currentEx) {
+      setCompletedCooldownExercises(prev => [...prev, currentEx.name]);
+    }
+
+    if (phaseExerciseIndex < cooldownExs.length - 1) {
+      // More cooldown exercises
+      setPhaseExerciseIndex(prev => prev + 1);
+    } else {
+      // Cooldown complete, workout finished
+      setIsWorkoutComplete(true);
+    }
+  }, [workout, currentPhase, phaseExerciseIndex]);
+
+  // Skip entire cooldown phase
+  const skipCooldownPhase = useCallback(() => {
+    setSkipCooldown(true);
+    setIsWorkoutComplete(true);
+  }, []);
   
   const previousExercise = () => {
     if (currentExerciseIndex > 0) {
@@ -301,19 +639,32 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   
   const completeWorkout = async () => {
     if (!workout) return;
-    
+
     // Save workout completion to database
-    await saveWorkoutCompletion(workout.id, {
-      duration_minutes: Math.floor(workoutDuration / 60),
-      completed_sets: completedSets,
-      exercises_completed: currentExerciseIndex + 1,
-    });
-    
+    if (workoutLogId) {
+      try {
+        await completeWorkoutLog(workoutLogId, {
+          duration_minutes: Math.floor(workoutDuration / 60),
+          exercises_completed: currentExerciseIndex + 1,
+        });
+      } catch (error) {
+        console.error('Failed to complete workout log:', error);
+        notifyError('Workout not fully saved', 'Some data may be missing from your history');
+        // Continue anyway - don't block UI for database errors
+      }
+    }
+
+    // Clear saved session since workout is complete
+    await clearSession(currentUserId);
+
     // Mark as complete (don't clear state yet - let summary screen use it)
     setIsWorkoutComplete(true);
   };
 
-  const clearWorkout = () => {
+  const clearWorkout = async () => {
+    // Clear saved session
+    await clearSession(currentUserId);
+
     // Clear state after summary screen is done
     setWorkout(null);
     setCurrentExerciseIndex(0);
@@ -326,6 +677,20 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     setCheckpointTriggered(false);
     setCurrentCheckpoint(null);
     setIsWorkoutComplete(false);
+    // Clear phase state
+    setCurrentPhase('warmup');
+    setPhaseExerciseIndex(0);
+    setCompletedWarmupExercises([]);
+    setCompletedCooldownExercises([]);
+    setSkipWarmup(false);
+    setSkipCooldown(false);
+    // Clear exercise history
+    setExerciseHistory(new Map());
+    // Clear workout log tracking
+    setWorkoutLogId(null);
+    setCurrentUserId('default');
+    // Clear error state
+    setHasSaveError(false);
   };
   
   const checkForSafetyCheckpoints = useCallback((durationSeconds: number) => {
@@ -374,18 +739,42 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     workout,
     currentExerciseIndex,
     currentSetNumber,
+    // Error handling
+    setErrorCallback,
+    hasSaveError,
+    // Phase tracking
+    currentPhase,
+    phaseExerciseIndex,
+    completedWarmupExercises,
+    completedCooldownExercises,
+    skipWarmup,
+    skipCooldown,
+    // Set data
     currentSetData,
     completedSets,
+    // Timers
     workoutDuration,
     restTimer,
     isResting,
+    // Progress
     totalExercises,
     exercisesCompleted,
     totalSets,
     setsCompleted,
     isWorkoutComplete,
+    // Phase-specific getters
+    currentWarmupExercise,
+    currentCooldownExercise,
+    warmupExerciseCount,
+    cooldownExerciseCount,
+    // Exercise history for weight suggestions
+    exerciseHistory,
+    getExerciseLastPerformance,
+    getSuggestedWeight,
+    // Safety
     checkpointTriggered,
     currentCheckpoint,
+    // Actions
     startWorkout,
     updateSetData,
     completeSet,
@@ -397,7 +786,16 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     resumeWorkout,
     completeWorkout,
     clearWorkout,
+    // Phase actions
+    completeWarmupExercise,
+    skipWarmupPhase,
+    completeCooldownExercise,
+    skipCooldownPhase,
     dismissCheckpoint,
+    // Session persistence
+    checkForResumableSession,
+    resumeSession,
+    discardSession,
   };
   
   return (
@@ -419,21 +817,5 @@ export function useWorkout() {
 export function useWorkoutSafe() {
   const context = useContext(WorkoutContext);
   return context || null;
-}
-
-// Helper functions
-
-async function saveSetToDatabase(workoutId: string, setLog: SetLog): Promise<void> {
-  // TODO: Implement database save
-  console.log('Saving set:', setLog);
-}
-
-async function saveWorkoutCompletion(workoutId: string, data: {
-  duration_minutes: number;
-  completed_sets: SetLog[];
-  exercises_completed: number;
-}): Promise<void> {
-  // TODO: Implement database save
-  console.log('Completing workout:', data);
 }
 

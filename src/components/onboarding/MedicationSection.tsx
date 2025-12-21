@@ -133,11 +133,13 @@ export default function MedicationSection({
         />
       </View>
 
-      {/* Days */}
-      <View style={styles.section}>
-        <Text style={[textStyles.caption, styles.label]}>DAYS YOU TAKE IT</Text>
-        <DaySelector selectedDays={selectedDays} onToggleDay={onToggleDay} />
-      </View>
+      {/* Days - only show if not daily */}
+      {frequency !== 'daily' && (
+        <View style={styles.section}>
+          <Text style={[textStyles.caption, styles.label]}>DAYS YOU TAKE IT</Text>
+          <DaySelector selectedDays={selectedDays} onToggleDay={onToggleDay} />
+        </View>
+      )}
     </View>
   );
 }

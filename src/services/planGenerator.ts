@@ -8,6 +8,7 @@ import { generateWorkout, printWorkoutSummary } from './workoutGenerator';
 import { fetchAllExercises } from './exerciseService';
 import { selectTemplate } from './workoutGeneration/templateSelection';
 import { DayTemplate } from './workoutGeneration/templates/types';
+import { logger } from '../utils/logger';
 
 
 /**
@@ -84,19 +85,19 @@ export async function generateQuickStartPlan(): Promise<Plan> {
  * Each day has 4 workout variants (30, 45, 60, 90 minutes)
  */
 export async function generatePlan(profile: Profile): Promise<Plan> {
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🏋️ GENERATING WORKOUT PLAN');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`User ID: ${profile.id}`);
-  console.log(`Block length: ${profile.block_length || 1} weeks`);
-  console.log(`Goals: ${profile.goals?.join(', ') || 'none'}`);
-  console.log(`Equipment: ${profile.equipment?.join(', ') || 'none'}`);
-  console.log(`Constraints: ${profile.constraints?.join(', ') || 'none'}`);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  logger.log('🏋️ GENERATING WORKOUT PLAN');
+  logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  logger.log(`User ID: ${profile.id}`);
+  logger.log(`Block length: ${profile.block_length || 1} weeks`);
+  logger.log(`Goals: ${profile.goals?.join(', ') || 'none'}`);
+  logger.log(`Equipment: ${profile.equipment?.join(', ') || 'none'}`);
+  logger.log(`Constraints: ${profile.constraints?.join(', ') || 'none'}`);
+  logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   // Fetch all exercises from Supabase
   const exercises = await fetchAllExercises();
-  console.log(`📚 Loaded ${exercises.length} exercises from database\n`);
+  logger.log(`📚 Loaded ${exercises.length} exercises from database\n`);
 
   if (exercises.length === 0) {
     throw new Error('No exercises available. Please check your database.');
@@ -104,9 +105,9 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
 
   // Select workout template based on profile
   const template = selectTemplate(profile);
-  console.log(`✓ Selected template: ${template.name}`);
-  console.log(`  HRT adjusted: ${template.adjusted_for_hrt}`);
-  console.log(`  Volume multiplier: ${template.volume_multiplier}\n`);
+  logger.log(`✓ Selected template: ${template.name}`);
+  logger.log(`  HRT adjusted: ${template.adjusted_for_hrt}`);
+  logger.log(`  Volume multiplier: ${template.volume_multiplier}\n`);
 
   // Calculate number of days
   const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
@@ -117,8 +118,14 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     ? profile.preferred_workout_days
     : getDefaultWorkoutDays(profile.workout_frequency || 3);
 
-  console.log(`📆 Workout days: ${workoutDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`);
-  console.log(`😴 Rest days: ${[0,1,2,3,4,5,6].filter(d => !workoutDays.includes(d)).map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}\n`);
+  // Get first-week substitute days (one-time workout days for users who join mid-week)
+  const firstWeekSubstituteDays = profile.first_week_substitute_days || [];
+
+  logger.log(`📆 Workout days: ${workoutDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`);
+  if (firstWeekSubstituteDays.length > 0) {
+    logger.log(`📆 First-week substitutes: ${firstWeekSubstituteDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`);
+  }
+  logger.log(`😴 Rest days: ${[0,1,2,3,4,5,6].filter(d => !workoutDays.includes(d)).map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}\n`);
 
   // Generate workouts for each day with variety tracking
   const days: Day[] = [];
@@ -133,15 +140,18 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     const dayOfWeek = dayDate.getDay(); // 0=Sunday, 1=Monday, etc.
 
     // Check if this is a workout day or rest day
-    const isWorkoutDay = workoutDays.includes(dayOfWeek);
+    // For the first week (days 1-7), also check substitute days
+    const isFirstWeek = dayNumber <= 7;
+    const isSubstituteDay = isFirstWeek && firstWeekSubstituteDays.includes(dayOfWeek);
+    const isWorkoutDay = workoutDays.includes(dayOfWeek) || isSubstituteDay;
     const isRestDay = !isWorkoutDay;
 
-    console.log(`\n📅 Day ${dayNumber} (${dayDate.toLocaleDateString()}) - ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek]}`);
-    console.log('─────────────────────────────────────────');
+    logger.log(`\n📅 Day ${dayNumber} (${dayDate.toLocaleDateString()}) - ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek]}${isSubstituteDay ? ' (substitute)' : ''}`);
+    logger.log('─────────────────────────────────────────');
 
     if (isRestDay) {
       // REST DAY - no workout variants
-      console.log(`  😴 REST DAY - Recovery is progress!`);
+      logger.log(`  😴 REST DAY - Recovery is progress!`);
 
       days.push({
         dayNumber,
@@ -162,7 +172,7 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     // Get day template (cycle through template days only for workout days)
     const dayTemplate = template.days[templateIndex % template.days.length];
     templateIndex++; // Only increment for workout days
-    console.log(`  🏋️ WORKOUT: ${dayTemplate.name} (${dayTemplate.focus})`);
+    logger.log(`  🏋️ WORKOUT: ${dayTemplate.name} (${dayTemplate.focus})`);
 
     // Filter out recently used exercises (last 3 days)
     const availableExercises = exercises.filter(ex => !usedExerciseIds.has(ex.id));
@@ -171,7 +181,7 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     const exercisesToUse = availableExercises.length >= 10 ? availableExercises : exercises;
 
     if (availableExercises.length < exercises.length) {
-      console.log(`🔄 Variety filter: ${exercises.length - availableExercises.length} exercises excluded from recent days`);
+      logger.log(`🔄 Variety filter: ${exercises.length - availableExercises.length} exercises excluded from recent days`);
     }
 
     // Generate all 4 workout variants for this day
@@ -193,7 +203,7 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
       }
     });
 
-    console.log(`📊 Exercises used today: ${exercisesUsedToday.size}`);
+    logger.log(`📊 Exercises used today: ${exercisesUsedToday.size}`);
 
     // Clear old exercises after VARIETY_WINDOW days to allow reuse
     if (i >= VARIETY_WINDOW && usedExerciseIds.size > 20) {
@@ -201,7 +211,7 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
       const recentExercises = Array.from(usedExerciseIds).slice(-20);
       usedExerciseIds.clear();
       recentExercises.forEach(id => usedExerciseIds.add(id));
-      console.log(`🔄 Cleared old exercises from variety tracker`);
+      logger.log(`🔄 Cleared old exercises from variety tracker`);
     }
 
     // Validate all workouts generated
@@ -211,7 +221,7 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
       variants[60] ? '✅ 60min' : '❌ 60min (failed)',
       variants[90] ? '✅ 90min' : '❌ 90min (failed)',
     ];
-    console.log(`Variants: ${variantResults.join(', ')}`);
+    logger.log(`Variants: ${variantResults.join(', ')}`);
 
     days.push({
       dayNumber,
@@ -234,13 +244,13 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     workoutDays, // Store user's selected workout days
   };
 
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('✅ PLAN GENERATION COMPLETE');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`Plan ID: ${plan.id}`);
-  console.log(`Total days: ${days.length}`);
-  console.log(`Total workouts: ${days.length * 4} (4 variants per day)`);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  logger.log('✅ PLAN GENERATION COMPLETE');
+  logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  logger.log(`Plan ID: ${plan.id}`);
+  logger.log(`Total days: ${days.length}`);
+  logger.log(`Total workouts: ${days.length * 4} (4 variants per day)`);
+  logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   return plan;
 }
@@ -356,7 +366,7 @@ export async function regenerateDay(
     throw new Error(`Day ${dayNumber} not found in plan`);
   }
 
-  console.log(`\n🔄 Regenerating Day ${dayNumber}`);
+  logger.log(`\n🔄 Regenerating Day ${dayNumber}`);
 
   const variants: Day['variants'] = {
     30: generateWorkout(profile, 30, exercises),
@@ -451,29 +461,29 @@ export function validatePlan(plan: Plan): {
  * Print a summary of the entire plan
  */
 export function printPlanSummary(plan: Plan): void {
-  console.log('\n╔═══════════════════════════════════════════╗');
-  console.log('║           PLAN SUMMARY                    ║');
-  console.log('╚═══════════════════════════════════════════╝');
-  console.log(`Plan ID: ${plan.id}`);
-  console.log(`Duration: ${plan.blockLength} week(s) (${plan.days.length} days)`);
-  console.log(`Start Date: ${plan.startDate.toLocaleDateString()}`);
-  console.log(`Goals: ${plan.goals.join(', ')}`);
-  console.log('');
-  console.log('Workouts per day:');
+  logger.log('\n╔═══════════════════════════════════════════╗');
+  logger.log('║           PLAN SUMMARY                    ║');
+  logger.log('╚═══════════════════════════════════════════╝');
+  logger.log(`Plan ID: ${plan.id}`);
+  logger.log(`Duration: ${plan.blockLength} week(s) (${plan.days.length} days)`);
+  logger.log(`Start Date: ${plan.startDate.toLocaleDateString()}`);
+  logger.log(`Goals: ${plan.goals.join(', ')}`);
+  logger.log('');
+  logger.log('Workouts per day:');
   
   plan.days.slice(0, 3).forEach(day => {
-    console.log(`\n  Day ${day.dayNumber} (${day.date.toLocaleDateString()}):`);
-    console.log(`    30min: ${day.variants[30] ? `${day.variants[30].exercises.length} exercises` : 'N/A'}`);
-    console.log(`    45min: ${day.variants[45] ? `${day.variants[45].exercises.length} exercises` : 'N/A'}`);
-    console.log(`    60min: ${day.variants[60] ? `${day.variants[60].exercises.length} exercises` : 'N/A'}`);
-    console.log(`    90min: ${day.variants[90] ? `${day.variants[90].exercises.length} exercises` : 'N/A'}`);
+    logger.log(`\n  Day ${day.dayNumber} (${day.date.toLocaleDateString()}):`);
+    logger.log(`    30min: ${day.variants[30] ? `${day.variants[30].exercises.length} exercises` : 'N/A'}`);
+    logger.log(`    45min: ${day.variants[45] ? `${day.variants[45].exercises.length} exercises` : 'N/A'}`);
+    logger.log(`    60min: ${day.variants[60] ? `${day.variants[60].exercises.length} exercises` : 'N/A'}`);
+    logger.log(`    90min: ${day.variants[90] ? `${day.variants[90].exercises.length} exercises` : 'N/A'}`);
   });
 
   if (plan.days.length > 3) {
-    console.log(`\n  ... and ${plan.days.length - 3} more days`);
+    logger.log(`\n  ... and ${plan.days.length - 3} more days`);
   }
   
-  console.log('\n╚═══════════════════════════════════════════╝\n');
+  logger.log('\n╚═══════════════════════════════════════════╝\n');
 }
 
 /**

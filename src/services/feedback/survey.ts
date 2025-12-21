@@ -1,17 +1,17 @@
 // Survey Service for TransFitness Beta Feedback
 // PRD 3.0 Section 7.3: User validation metrics
-// Stores survey responses locally with optional Supabase sync
+// Stores survey responses locally and syncs to Supabase
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { trackEvent } from '../analytics';
+import { supabase } from '../../utils/supabase';
 
 const SURVEY_STORAGE_KEY = '@transfitness:survey_responses';
 const SURVEY_STATE_KEY = '@transfitness:survey_state';
 
 export interface SurveyResponse {
-  safetyScore: number;
-  relevanceScore: number;
-  sadnessLevel: 'very' | 'somewhat' | 'not_really' | null;
+  experienceScore: number;
+  clarityScore: number;
   feedback?: string;
   timestamp: string;
   triggerPoint: 'onboarding' | 'workout' | 'manual';
@@ -68,6 +68,34 @@ async function updateSurveyState(updates: Partial<SurveyState>): Promise<void> {
 }
 
 /**
+ * Sync survey response to Supabase
+ */
+async function syncSurveyToSupabase(response: SurveyResponse): Promise<void> {
+  if (!supabase) {
+    console.log('⚠️ Supabase not configured, skipping sync');
+    return;
+  }
+
+  try {
+    const { error } = await supabase.from('onboarding_feedback').insert({
+      experience_score: response.experienceScore,
+      clarity_score: response.clarityScore,
+      feedback_text: response.feedback || null,
+      trigger_point: response.triggerPoint,
+      created_at: response.timestamp,
+    });
+
+    if (error) {
+      console.error('❌ Supabase sync error:', error.message);
+    } else {
+      console.log('✅ Survey synced to Supabase');
+    }
+  } catch (error) {
+    console.error('❌ Error syncing survey to Supabase:', error);
+  }
+}
+
+/**
  * Save a survey response
  */
 export async function saveSurveyResponse(response: SurveyResponse): Promise<void> {
@@ -79,8 +107,11 @@ export async function saveSurveyResponse(response: SurveyResponse): Promise<void
     // Add new response
     responses.push(response);
 
-    // Save updated responses
+    // Save updated responses locally
     await AsyncStorage.setItem(SURVEY_STORAGE_KEY, JSON.stringify(responses));
+
+    // Sync to Supabase (fire and forget)
+    syncSurveyToSupabase(response);
 
     // Update survey state
     const stateUpdates: Partial<SurveyState> = {
@@ -97,9 +128,8 @@ export async function saveSurveyResponse(response: SurveyResponse): Promise<void
 
     // Track analytics event
     await trackEvent('survey_completed', {
-      safety_score: response.safetyScore,
-      relevance_score: response.relevanceScore,
-      sadness_level: response.sadnessLevel,
+      experience_score: response.experienceScore,
+      clarity_score: response.clarityScore,
       trigger_point: response.triggerPoint,
       has_feedback: !!response.feedback,
     });
@@ -155,9 +185,8 @@ export async function incrementWorkoutCount(): Promise<void> {
  * Get survey metrics summary
  */
 export async function getSurveyMetrics(): Promise<{
-  averageSafetyScore: number;
-  averageRelevanceScore: number;
-  sadnessDistribution: { very: number; somewhat: number; not_really: number };
+  averageExperienceScore: number;
+  averageClarityScore: number;
   totalResponses: number;
 }> {
   try {
@@ -165,35 +194,25 @@ export async function getSurveyMetrics(): Promise<{
 
     if (responses.length === 0) {
       return {
-        averageSafetyScore: 0,
-        averageRelevanceScore: 0,
-        sadnessDistribution: { very: 0, somewhat: 0, not_really: 0 },
+        averageExperienceScore: 0,
+        averageClarityScore: 0,
         totalResponses: 0,
       };
     }
 
-    const totalSafety = responses.reduce((sum, r) => sum + r.safetyScore, 0);
-    const totalRelevance = responses.reduce((sum, r) => sum + r.relevanceScore, 0);
-
-    const sadnessDistribution = { very: 0, somewhat: 0, not_really: 0 };
-    responses.forEach(r => {
-      if (r.sadnessLevel) {
-        sadnessDistribution[r.sadnessLevel]++;
-      }
-    });
+    const totalExperience = responses.reduce((sum, r) => sum + r.experienceScore, 0);
+    const totalClarity = responses.reduce((sum, r) => sum + r.clarityScore, 0);
 
     return {
-      averageSafetyScore: totalSafety / responses.length,
-      averageRelevanceScore: totalRelevance / responses.length,
-      sadnessDistribution,
+      averageExperienceScore: totalExperience / responses.length,
+      averageClarityScore: totalClarity / responses.length,
       totalResponses: responses.length,
     };
   } catch (error) {
     console.error('Error getting survey metrics:', error);
     return {
-      averageSafetyScore: 0,
-      averageRelevanceScore: 0,
-      sadnessDistribution: { very: 0, somewhat: 0, not_really: 0 },
+      averageExperienceScore: 0,
+      averageClarityScore: 0,
       totalResponses: 0,
     };
   }

@@ -513,6 +513,215 @@ export async function getWeekWorkoutLogs(
 }
 
 /**
+ * Last performance data for an exercise
+ */
+export interface LastPerformance {
+  date: Date;
+  sets: number;
+  avgReps: number;
+  avgWeight: number;
+  avgRPE: number;
+  maxWeight: number;
+  bestSet: {
+    reps: number;
+    weight: number;
+    rpe: number;
+  };
+}
+
+/**
+ * Get the last performance data for a specific exercise
+ * Returns the most recent performance for the given exercise
+ */
+export async function getLastPerformance(
+  userId: string,
+  exerciseId: string
+): Promise<LastPerformance | null> {
+  try {
+    let lastPerf: LastPerformance | null = null;
+
+    workoutLogDb.withTransactionSync(() => {
+      // Find the most recent completed workout that includes this exercise
+      const findStmt = workoutLogDb.prepareSync(
+        `SELECT DISTINCT wl.id, wl.workout_date
+         FROM workout_logs wl
+         JOIN set_logs sl ON sl.workout_log_id = wl.id
+         WHERE wl.user_id = ?
+           AND wl.status = 'completed'
+           AND sl.exercise_id = ?
+         ORDER BY wl.workout_date DESC
+         LIMIT 1`
+      );
+      const workoutResult = findStmt.executeSync([userId, exerciseId]).getFirstSync() as {
+        id: string;
+        workout_date: string;
+      } | null;
+      findStmt.finalizeSync();
+
+      if (!workoutResult) {
+        return;
+      }
+
+      // Get all sets for this exercise in that workout
+      const setsStmt = workoutLogDb.prepareSync(
+        `SELECT reps, weight, rpe
+         FROM set_logs
+         WHERE workout_log_id = ? AND exercise_id = ?
+         ORDER BY set_number`
+      );
+      const sets = setsStmt.executeSync([workoutResult.id, exerciseId]).getAllSync() as {
+        reps: number;
+        weight: number;
+        rpe: number;
+      }[];
+      setsStmt.finalizeSync();
+
+      if (sets.length === 0) {
+        return;
+      }
+
+      // Calculate aggregates
+      const totalReps = sets.reduce((sum, s) => sum + s.reps, 0);
+      const totalWeight = sets.reduce((sum, s) => sum + s.weight, 0);
+      const totalRPE = sets.reduce((sum, s) => sum + s.rpe, 0);
+      const maxWeight = Math.max(...sets.map(s => s.weight));
+
+      // Find best set (highest weight × reps)
+      let bestSet = sets[0];
+      let bestValue = sets[0].weight * sets[0].reps;
+      for (const set of sets) {
+        const value = set.weight * set.reps;
+        if (value > bestValue) {
+          bestValue = value;
+          bestSet = set;
+        }
+      }
+
+      lastPerf = {
+        date: new Date(workoutResult.workout_date),
+        sets: sets.length,
+        avgReps: Math.round(totalReps / sets.length),
+        avgWeight: Math.round(totalWeight / sets.length),
+        avgRPE: Math.round((totalRPE / sets.length) * 10) / 10,
+        maxWeight,
+        bestSet: {
+          reps: bestSet.reps,
+          weight: bestSet.weight,
+          rpe: bestSet.rpe,
+        },
+      };
+    });
+
+    return lastPerf;
+  } catch (error) {
+    console.error('❌ Failed to get last performance:', error);
+    return null;
+  }
+}
+
+/**
+ * Get last performance for multiple exercises at once (for workout loading)
+ */
+export async function getLastPerformanceForExercises(
+  userId: string,
+  exerciseIds: string[]
+): Promise<Map<string, LastPerformance>> {
+  const results = new Map<string, LastPerformance>();
+
+  // Get performance for each exercise in parallel
+  const promises = exerciseIds.map(async (exerciseId) => {
+    const perf = await getLastPerformance(userId, exerciseId);
+    if (perf) {
+      results.set(exerciseId, perf);
+    }
+  });
+
+  await Promise.all(promises);
+  return results;
+}
+
+/**
+ * Calculate suggested weight based on last performance
+ * Uses RPE-based progression logic
+ */
+export function calculateSuggestedWeight(lastPerf: LastPerformance): number {
+  const { avgWeight, avgRPE, maxWeight } = lastPerf;
+
+  // If RPE was low (< 7), suggest increasing weight
+  if (avgRPE < 7) {
+    // Increase by 5 lbs (2.5kg equivalent)
+    return Math.round((avgWeight + 5) / 5) * 5;
+  }
+
+  // If RPE was moderate (7-8), suggest same weight
+  if (avgRPE <= 8) {
+    return Math.round(avgWeight / 5) * 5;
+  }
+
+  // If RPE was high (> 8), suggest same or slightly lower
+  // (user was working hard, maintain or slight deload)
+  return Math.round(avgWeight / 5) * 5;
+}
+
+/**
+ * Get count of completed workouts in the current week
+ * Used for free tier workout limit enforcement
+ * Week starts on Monday
+ */
+export async function getWeeklyCompletedWorkoutCount(userId: string): Promise<number> {
+  try {
+    // Calculate start of current week (Monday)
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() + mondayOffset);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekStartStr = weekStart.toISOString().split('T')[0];
+
+    let count = 0;
+
+    workoutLogDb.withTransactionSync(() => {
+      const stmt = workoutLogDb.prepareSync(
+        `SELECT COUNT(*) as count
+         FROM workout_logs
+         WHERE user_id = ?
+           AND status = 'completed'
+           AND workout_date >= ?`
+      );
+      const result = stmt.executeSync([userId, weekStartStr]).getFirstSync() as {
+        count: number;
+      } | null;
+      stmt.finalizeSync();
+
+      count = result?.count || 0;
+    });
+
+    return count;
+  } catch (error) {
+    console.error('❌ Failed to get weekly workout count:', error);
+    return 0;
+  }
+}
+
+/**
+ * Check if user can start a new workout (free tier limit check)
+ * Returns true if user can start, false if limit reached
+ */
+export async function canStartWorkout(
+  userId: string,
+  weeklyLimit: number
+): Promise<{ canStart: boolean; currentCount: number; limit: number }> {
+  const currentCount = await getWeeklyCompletedWorkoutCount(userId);
+  return {
+    canStart: currentCount < weeklyLimit,
+    currentCount,
+    limit: weeklyLimit,
+  };
+}
+
+/**
  * Get workout log for a specific date
  * Returns the workout log for the given date, or null if none exists
  */

@@ -12,6 +12,7 @@ import { injectSafetyCheckpoints, convertToPrescriptions } from './checkpointInj
 import { assembleWorkout } from './workoutAssembler';
 import { saveWorkoutToDatabase } from './databaseStorage';
 import { SafetyContext } from '../rulesEngine/rules/types';
+import { logger } from '../../utils/logger';
 
 /**
  * Generate a complete, trans-specific workout with all safety features
@@ -39,54 +40,54 @@ export async function generateWorkout(
 ): Promise<{ workout: AssembledWorkout; workoutId: string }> {
   const workoutDuration = duration || profile.session_duration || 30;
 
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🏋️ STARTING WORKOUT GENERATION');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`User: ${profile.user_id}`);
-  console.log(`Goal: ${profile.primary_goal}`);
-  console.log(`Experience: ${profile.fitness_experience}`);
-  console.log(`HRT: ${profile.on_hrt ? profile.hrt_type || 'yes' : 'none'}`);
-  console.log(`Binds: ${profile.binds_chest ? profile.binding_frequency || 'yes' : 'no'}`);
+  logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  logger.log('🏋️ STARTING WORKOUT GENERATION');
+  logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  logger.log(`User: ${profile.user_id}`);
+  logger.log(`Goal: ${profile.primary_goal}`);
+  logger.log(`Experience: ${profile.fitness_experience}`);
+  logger.log(`HRT: ${profile.on_hrt ? profile.hrt_type || 'yes' : 'none'}`);
+  logger.log(`Binds: ${profile.binds_chest ? profile.binding_frequency || 'yes' : 'no'}`);
 
   // Phase 2A: Select Template
-  console.log('\n📋 Phase 2A: Template Selection');
+  logger.log('\n📋 Phase 2A: Template Selection');
   const template = selectTemplate(profile);
-  console.log(`   ✓ Selected: ${template.name}`);
-  console.log(`   ✓ Frequency: ${template.frequency}x/week`);
-  console.log(`   ✓ HRT adjusted: ${template.adjusted_for_hrt}`);
-  console.log(`   ✓ Volume multiplier: ${template.volume_multiplier}x`);
+  logger.log(`   ✓ Selected: ${template.name}`);
+  logger.log(`   ✓ Frequency: ${template.frequency}x/week`);
+  logger.log(`   ✓ HRT adjusted: ${template.adjusted_for_hrt}`);
+  logger.log(`   ✓ Volume multiplier: ${template.volume_multiplier}x`);
 
   const dayTemplate = template.days[dayIndex % template.days.length];
-  console.log(`   ✓ Day template: ${dayTemplate.name} (${dayTemplate.focus})`);
+  logger.log(`   ✓ Day template: ${dayTemplate.name} (${dayTemplate.focus})`);
 
   // Phase 2B: Filter Exercise Pool
-  console.log('\n🔍 Phase 2B: Exercise Filtering');
+  logger.log('\n🔍 Phase 2B: Exercise Filtering');
   const { exercises, safetyContext } = await getFilteredExercisePool(profile);
-  console.log(`   ✓ Filtered pool: ${exercises.length} exercises`);
-  console.log(`   ✓ Rules applied: ${safetyContext.rules_applied.length}`);
-  console.log(`   ✓ Excluded: ${safetyContext.excluded_exercise_ids.length} unsafe`);
+  logger.log(`   ✓ Filtered pool: ${exercises.length} exercises`);
+  logger.log(`   ✓ Rules applied: ${safetyContext.rules_applied.length}`);
+  logger.log(`   ✓ Excluded: ${safetyContext.excluded_exercise_ids.length} unsafe`);
 
   // Phase 2C: Select Exercises
-  console.log('\n🎯 Phase 2C: Exercise Selection');
+  logger.log('\n🎯 Phase 2C: Exercise Selection');
   const selectedExercises = selectExercisesForDay(
     exercises,
     dayTemplate,
     profile
   );
-  console.log(`   ✓ Selected: ${selectedExercises.length} exercises`);
+  logger.log(`   ✓ Selected: ${selectedExercises.length} exercises`);
 
   // Phase 2D: Volume Adjustments
-  console.log('\n📊 Phase 2D: Volume Adjustment');
+  logger.log('\n📊 Phase 2D: Volume Adjustment');
   const volumeAdjustments = calculateVolumeAdjustments(
     profile,
     template,
     safetyContext
   );
-  console.log(`   ✓ Sets multiplier: ${volumeAdjustments.sets_multiplier.toFixed(2)}x`);
-  console.log(`   ✓ Rest multiplier: ${volumeAdjustments.rest_multiplier.toFixed(2)}x`);
+  logger.log(`   ✓ Sets multiplier: ${volumeAdjustments.sets_multiplier.toFixed(2)}x`);
+  logger.log(`   ✓ Rest multiplier: ${volumeAdjustments.rest_multiplier.toFixed(2)}x`);
 
   // Phase 2E: Prescribe Sets/Reps/Rest
-  console.log('\n💪 Phase 2E: Prescription');
+  logger.log('\n💪 Phase 2E: Prescription');
   const prescriptions = selectedExercises.map((ex, i) =>
     prescribeExercise(
       ex,
@@ -97,17 +98,17 @@ export async function generateWorkout(
       volumeAdjustments
     )
   );
-  console.log(`   ✓ Prescribed ${prescriptions.length} exercises`);
+  logger.log(`   ✓ Prescribed ${prescriptions.length} exercises`);
 
   // Phase 2F: Warm-up & Cool-down
-  console.log('\n🔥 Phase 2F: Warm-up & Cool-down');
+  logger.log('\n🔥 Phase 2F: Warm-up & Cool-down');
   const warmup = generateWarmup(dayTemplate, selectedExercises);
   const cooldown = generateCooldown(dayTemplate, selectedExercises);
-  console.log(`   ✓ Warm-up: ${warmup.exercises.length} exercises`);
-  console.log(`   ✓ Cool-down: ${cooldown.exercises.length} stretches`);
+  logger.log(`   ✓ Warm-up: ${warmup.exercises.length} exercises`);
+  logger.log(`   ✓ Cool-down: ${cooldown.exercises.length} stretches`);
 
   // Phase 2G: Safety Checkpoints
-  console.log('\n🛡️ Phase 2G: Safety Checkpoints');
+  logger.log('\n🛡️ Phase 2G: Safety Checkpoints');
   
   // Build exercise name map for checkpoint injection
   const exerciseNameMap = new Map<string, string>();
@@ -131,10 +132,10 @@ export async function generateWorkout(
     safetyContext,
     totalDuration
   );
-  console.log(`   ✓ Checkpoints: ${checkpoints.length}`);
+  logger.log(`   ✓ Checkpoints: ${checkpoints.length}`);
 
   // Phase 2H: Assemble & Save
-  console.log('\n🔨 Phase 2H: Assembly & Storage');
+  logger.log('\n🔨 Phase 2H: Assembly & Storage');
   const workout = assembleWorkout(
     dayTemplate,
     template,
@@ -162,14 +163,14 @@ export async function generateWorkout(
     workoutId = `test-${Date.now()}`;
   }
 
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('✅ WORKOUT GENERATION COMPLETE!');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`Workout ID: ${workoutId}`);
-  console.log(`Name: ${workout.workout_name}`);
-  console.log(`Duration: ${workout.estimated_duration_minutes} minutes`);
-  console.log(`Exercises: ${workout.main_workout.length}`);
-  console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+  logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  logger.log('✅ WORKOUT GENERATION COMPLETE!');
+  logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  logger.log(`Workout ID: ${workoutId}`);
+  logger.log(`Name: ${workout.workout_name}`);
+  logger.log(`Duration: ${workout.estimated_duration_minutes} minutes`);
+  logger.log(`Exercises: ${workout.main_workout.length}`);
+  logger.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
   return { workout, workoutId };
 }

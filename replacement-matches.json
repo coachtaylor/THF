@@ -1,0 +1,2258 @@
+{
+  "generatedAt": "2025-12-21T01:05:46.050Z",
+  "stats": {
+    "total": 55,
+    "matched": 54,
+    "failed": 1
+  },
+  "matches": [
+    {
+      "originalId": "67",
+      "originalName": "Fire Hydrant",
+      "originalSlug": "fire-hydrant",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "0br45wL",
+        "name": "push-up inside leg kick",
+        "gifUrl": "https://static.exercisedb.dev/media/0br45wL.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Start in a push-up position with your hands slightly wider than shoulder-width apart and your feet together.",
+          "Step:2 Lower your body towards the ground by bending your elbows, keeping your back straight and your core engaged.",
+          "Step:3 As you push back up, lift one leg off the ground and kick it out to the side, keeping it straight.",
+          "Step:4 Lower your leg back down and repeat the push-up, then switch to the other leg.",
+          "Step:5 Continue alternating leg kicks with each push-up repetition."
+        ]
+      },
+      "score": 80,
+      "alternatives": [
+        {
+          "name": "arms apart circular toe touch (male)",
+          "score": 80
+        },
+        {
+          "name": "single leg bridge with outstretched leg",
+          "score": 80
+        },
+        {
+          "name": "curtsey squat",
+          "score": 80
+        }
+      ],
+      "originalMuscles": "glutes, hip abductors",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "69",
+      "originalName": "Clamshell",
+      "originalSlug": "clamshell",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "0br45wL",
+        "name": "push-up inside leg kick",
+        "gifUrl": "https://static.exercisedb.dev/media/0br45wL.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Start in a push-up position with your hands slightly wider than shoulder-width apart and your feet together.",
+          "Step:2 Lower your body towards the ground by bending your elbows, keeping your back straight and your core engaged.",
+          "Step:3 As you push back up, lift one leg off the ground and kick it out to the side, keeping it straight.",
+          "Step:4 Lower your leg back down and repeat the push-up, then switch to the other leg.",
+          "Step:5 Continue alternating leg kicks with each push-up repetition."
+        ]
+      },
+      "score": 80,
+      "alternatives": [
+        {
+          "name": "arms apart circular toe touch (male)",
+          "score": 80
+        },
+        {
+          "name": "single leg bridge with outstretched leg",
+          "score": 80
+        },
+        {
+          "name": "curtsey squat",
+          "score": 80
+        }
+      ],
+      "originalMuscles": "glutes, hip abductors",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "71",
+      "originalName": "Farmer's Carry",
+      "originalSlug": "farmers-carry",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "mWBtgmb",
+        "name": "dumbbell single arm overhead carry",
+        "gifUrl": "https://static.exercisedb.dev/media/mWBtgmb.gif",
+        "targetMuscles": [
+          "delts"
+        ],
+        "equipments": [
+          "dumbbell"
+        ],
+        "instructions": [
+          "Step:1 Stand tall with your feet shoulder-width apart, holding a dumbbell in one hand.",
+          "Step:2 Raise the dumbbell overhead, fully extending your arm.",
+          "Step:3 Engage your core and keep your back straight as you walk forward, maintaining the dumbbell overhead.",
+          "Step:4 Continue walking for the desired distance or time.",
+          "Step:5 Switch hands and repeat the exercise."
+        ]
+      },
+      "score": 105,
+      "alternatives": [
+        {
+          "name": "dumbbell standing alternate raise",
+          "score": 72.5
+        },
+        {
+          "name": "dumbbell incline t-raise",
+          "score": 65
+        },
+        {
+          "name": "dumbbell full can lateral raise",
+          "score": 65
+        }
+      ],
+      "originalMuscles": "core, forearms, traps, shoulders",
+      "originalEquipment": "dumbbells"
+    },
+    {
+      "originalId": "83",
+      "originalName": "Kettlebell Halo",
+      "originalSlug": "kettlebell-halo",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "7Ba7bQ2",
+        "name": "kettlebell two arm clean",
+        "gifUrl": "https://static.exercisedb.dev/media/7Ba7bQ2.gif",
+        "targetMuscles": [
+          "delts"
+        ],
+        "equipments": [
+          "kettlebell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart, holding a kettlebell in front of your thighs with both hands, palms facing towards you.",
+          "Step:2 Bend your knees slightly and hinge at the hips, lowering the kettlebell towards the ground.",
+          "Step:3 Explosively extend your hips and knees, using the momentum to pull the kettlebell up towards your shoulders.",
+          "Step:4 As the kettlebell reaches shoulder height, rotate your wrists and catch the kettlebell in the rack position, with your elbows tucked in and the kettlebell resting on the back of your forearm.",
+          "Step:5 Lower the kettlebell back down to the starting position and repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 105,
+      "alternatives": [
+        {
+          "name": "kettlebell alternating press",
+          "score": 97.5
+        },
+        {
+          "name": "kettlebell double windmill",
+          "score": 97.5
+        },
+        {
+          "name": "kettlebell one arm jerk",
+          "score": 97.5
+        }
+      ],
+      "originalMuscles": "shoulders, core, upper back",
+      "originalEquipment": "kettlebell"
+    },
+    {
+      "originalId": "85",
+      "originalName": "Kettlebell Snatch",
+      "originalSlug": "kettlebell-snatch",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "aXcUyKb",
+        "name": "kettlebell one arm snatch",
+        "gifUrl": "https://static.exercisedb.dev/media/aXcUyKb.gif",
+        "targetMuscles": [
+          "delts"
+        ],
+        "equipments": [
+          "kettlebell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart, holding a kettlebell in one hand between your legs.",
+          "Step:2 Bend your knees slightly and hinge at the hips, lowering the kettlebell towards the ground.",
+          "Step:3 Explosively extend your hips and knees, using the momentum to swing the kettlebell up towards your shoulder.",
+          "Step:4 As the kettlebell reaches shoulder height, rotate your hand and punch it straight up overhead, fully extending your arm.",
+          "Step:5 Lower the kettlebell back down between your legs and repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 245,
+      "alternatives": [
+        {
+          "name": "kettlebell double snatch",
+          "score": 245
+        },
+        {
+          "name": "barbell one arm snatch",
+          "score": 155
+        },
+        {
+          "name": "dumbbell one arm snatch",
+          "score": 120
+        }
+      ],
+      "originalMuscles": "full body, hips, shoulders, core",
+      "originalEquipment": "kettlebell"
+    },
+    {
+      "originalId": "86",
+      "originalName": "Kettlebell Farmer's Carry",
+      "originalSlug": "kettlebell-farmers-carry",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "7Ba7bQ2",
+        "name": "kettlebell two arm clean",
+        "gifUrl": "https://static.exercisedb.dev/media/7Ba7bQ2.gif",
+        "targetMuscles": [
+          "delts"
+        ],
+        "equipments": [
+          "kettlebell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart, holding a kettlebell in front of your thighs with both hands, palms facing towards you.",
+          "Step:2 Bend your knees slightly and hinge at the hips, lowering the kettlebell towards the ground.",
+          "Step:3 Explosively extend your hips and knees, using the momentum to pull the kettlebell up towards your shoulders.",
+          "Step:4 As the kettlebell reaches shoulder height, rotate your wrists and catch the kettlebell in the rack position, with your elbows tucked in and the kettlebell resting on the back of your forearm.",
+          "Step:5 Lower the kettlebell back down to the starting position and repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 99.16666666666666,
+      "alternatives": [
+        {
+          "name": "kettlebell one arm snatch",
+          "score": 91.66666666666666
+        },
+        {
+          "name": "kettlebell pirate supper legs",
+          "score": 91.66666666666666
+        },
+        {
+          "name": "kettlebell double snatch",
+          "score": 91.66666666666666
+        }
+      ],
+      "originalMuscles": "core, forearms, traps, shoulders",
+      "originalEquipment": "kettlebell"
+    },
+    {
+      "originalId": "96",
+      "originalName": "Wall Angels",
+      "originalSlug": "wall-angels",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "ZZTGMKh",
+        "name": "one arm against wall",
+        "gifUrl": "https://static.exercisedb.dev/media/ZZTGMKh.gif",
+        "targetMuscles": [
+          "lats"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Stand facing a wall with your feet shoulder-width apart.",
+          "Step:2 Extend one arm straight out in front of you and place your palm against the wall.",
+          "Step:3 Engage your core and lean your body forward, keeping your arm straight and your back flat.",
+          "Step:4 Slowly push against the wall with your palm, activating your lat muscles.",
+          "Step:5 Hold the position for a few seconds, then release and repeat with the other arm."
+        ]
+      },
+      "score": 70,
+      "alternatives": [
+        {
+          "name": "one arm against wall compressed",
+          "score": 70
+        },
+        {
+          "name": "dumbbell incline t-raise",
+          "score": 40
+        },
+        {
+          "name": "dumbbell single arm overhead carry",
+          "score": 40
+        }
+      ],
+      "originalMuscles": "shoulders, upper back",
+      "originalEquipment": "wall"
+    },
+    {
+      "originalId": "120",
+      "originalName": "Band Kickback",
+      "originalSlug": "band-kickback",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "0br45wL",
+        "name": "push-up inside leg kick",
+        "gifUrl": "https://static.exercisedb.dev/media/0br45wL.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Start in a push-up position with your hands slightly wider than shoulder-width apart and your feet together.",
+          "Step:2 Lower your body towards the ground by bending your elbows, keeping your back straight and your core engaged.",
+          "Step:3 As you push back up, lift one leg off the ground and kick it out to the side, keeping it straight.",
+          "Step:4 Lower your leg back down and repeat the push-up, then switch to the other leg.",
+          "Step:5 Continue alternating leg kicks with each push-up repetition."
+        ]
+      },
+      "score": 145,
+      "alternatives": [
+        {
+          "name": "kick out sit",
+          "score": 145
+        },
+        {
+          "name": "exercise ball one legged diagonal kick hamstring curl",
+          "score": 145
+        },
+        {
+          "name": "outside leg kick push-up",
+          "score": 145
+        }
+      ],
+      "originalMuscles": "glutes, hamstrings",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "121",
+      "originalName": "Band Clamshell",
+      "originalSlug": "band-clamshell",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "kuMiR2T",
+        "name": "band stiff leg deadlift",
+        "gifUrl": "https://static.exercisedb.dev/media/kuMiR2T.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart and place the band around your ankles.",
+          "Step:2 Hold the band with both hands in front of your thighs, palms facing your body.",
+          "Step:3 Keeping your back straight and your core engaged, hinge at the hips and slowly lower your upper body towards the ground.",
+          "Step:4 As you lower, push your hips back and allow your knees to bend slightly.",
+          "Step:5 Lower the band towards the ground, feeling a stretch in your hamstrings.",
+          "Step:6 Pause for a moment at the bottom, then engage your glutes and hamstrings to lift your upper body back up to the starting position.",
+          "Step:7 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 120,
+      "alternatives": [
+        {
+          "name": "band step-up",
+          "score": 120
+        },
+        {
+          "name": "band hip lift",
+          "score": 120
+        },
+        {
+          "name": "resistance band hip thrusts on knees (female)",
+          "score": 120
+        }
+      ],
+      "originalMuscles": "glutes, hip abductors",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "123",
+      "originalName": "Band Tricep Pushdown",
+      "originalSlug": "band-tricep-pushdown",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "obe5LMq",
+        "name": "band side triceps extension",
+        "gifUrl": "https://static.exercisedb.dev/media/obe5LMq.gif",
+        "targetMuscles": [
+          "triceps"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart and hold the band with both hands, palms facing down.",
+          "Step:2 Extend your arms straight out to the sides, keeping them parallel to the ground.",
+          "Step:3 Slowly bend your elbows and bring your hands towards your shoulders, keeping your upper arms still.",
+          "Step:4 Pause for a moment, then slowly extend your arms back out to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 116.66666666666666,
+      "alternatives": [
+        {
+          "name": "band close-grip push-up",
+          "score": 116.66666666666666
+        },
+        {
+          "name": "dynamic style band side triceps extension",
+          "score": 116.66666666666666
+        },
+        {
+          "name": "band one arm twisting chest press",
+          "score": 86.66666666666666
+        }
+      ],
+      "originalMuscles": "triceps",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "126",
+      "originalName": "Band Woodchop",
+      "originalSlug": "band-woodchop",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "Kzg30R7",
+        "name": "band standing crunch",
+        "gifUrl": "https://static.exercisedb.dev/media/Kzg30R7.gif",
+        "targetMuscles": [
+          "abs"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Attach the band to a sturdy anchor point at waist height.",
+          "Step:2 Stand facing away from the anchor point with your feet shoulder-width apart.",
+          "Step:3 Hold the band with both hands and bring it up to your chest, keeping your elbows bent and close to your body.",
+          "Step:4 Engage your abs and slowly crunch forward, bringing your chest towards your knees.",
+          "Step:5 Pause for a moment at the top of the crunch, then slowly return to the starting position.",
+          "Step:6 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 105,
+      "alternatives": [
+        {
+          "name": "band horizontal pallof press",
+          "score": 105
+        },
+        {
+          "name": "band standing rear delt row",
+          "score": 105
+        },
+        {
+          "name": "band bicycle crunch",
+          "score": 105
+        }
+      ],
+      "originalMuscles": "obliques, core, shoulders",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "133",
+      "originalName": "Battle Ropes",
+      "originalSlug": "battle-ropes",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "RJa4tCo",
+        "name": "battling ropes",
+        "gifUrl": "https://static.exercisedb.dev/media/RJa4tCo.gif",
+        "targetMuscles": [
+          "delts"
+        ],
+        "equipments": [
+          "rope"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart and knees slightly bent.",
+          "Step:2 Hold one end of the rope in each hand, with your palms facing each other.",
+          "Step:3 Raise your arms to shoulder height, keeping your elbows slightly bent.",
+          "Step:4 Begin making alternating waves with the ropes by rapidly raising and lowering each arm.",
+          "Step:5 Continue for the desired duration or number of repetitions."
+        ]
+      },
+      "score": 75,
+      "alternatives": [
+        {
+          "name": "athletic style battling ropes",
+          "score": 75
+        },
+        {
+          "name": "cable kneeling rear delt row (with rope) (male)",
+          "score": 50
+        },
+        {
+          "name": "cable rear delt row (with rope)",
+          "score": 50
+        }
+      ],
+      "originalMuscles": "shoulders, core, cardiovascular system",
+      "originalEquipment": "battle_ropes"
+    },
+    {
+      "originalId": "134",
+      "originalName": "Box Jumps",
+      "originalSlug": "box-jumps",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "iPm26QU",
+        "name": "box jump down with one leg stabilization",
+        "gifUrl": "https://static.exercisedb.dev/media/iPm26QU.gif",
+        "targetMuscles": [
+          "calves"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Stand in front of a box or platform with your feet shoulder-width apart.",
+          "Step:2 Bend your knees and jump onto the box, landing softly with one foot on the box and the other foot hanging off the edge.",
+          "Step:3 Stabilize yourself on the box with the foot that is on it, while keeping the other foot off the ground.",
+          "Step:4 Hold this position for a few seconds, engaging your calf muscles to maintain balance.",
+          "Step:5 Slowly step down with the foot that is on the box, returning to the starting position.",
+          "Step:6 Repeat the exercise with the other leg."
+        ]
+      },
+      "score": 95,
+      "alternatives": [
+        {
+          "name": "barbell squat jump step rear lunge",
+          "score": 65
+        },
+        {
+          "name": "forward jump",
+          "score": 65
+        },
+        {
+          "name": "backward jump",
+          "score": 65
+        }
+      ],
+      "originalMuscles": "quads, glutes, calves, cardiovascular system",
+      "originalEquipment": "box"
+    },
+    {
+      "originalId": "135",
+      "originalName": "Sprint Intervals",
+      "originalSlug": "sprints",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "Qoujh3Q",
+        "name": "wind sprints",
+        "gifUrl": "https://static.exercisedb.dev/media/Qoujh3Q.gif",
+        "targetMuscles": [
+          "abs"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Find an open space or a track to perform the exercise.",
+          "Step:2 Start by standing with your feet shoulder-width apart.",
+          "Step:3 Begin running as fast as you can, pumping your arms and driving your knees up.",
+          "Step:4 Continue sprinting for a specific distance or time period.",
+          "Step:5 Rest and repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 45,
+      "alternatives": [],
+      "originalMuscles": "cardiovascular system, legs",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "137",
+      "originalName": "Shadowboxing",
+      "originalSlug": "shadowboxing",
+      "source": "not_found",
+      "replacement": {
+        "exerciseId": "hoXt6wv",
+        "name": "left hook. boxing",
+        "gifUrl": "https://static.exercisedb.dev/media/hoXt6wv.gif",
+        "targetMuscles": [
+          "delts"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart and your knees slightly bent.",
+          "Step:2 Keep your left hand up to protect your face and your right hand by your chin.",
+          "Step:3 Rotate your hips and pivot on your left foot as you extend your left arm forward in a punching motion.",
+          "Step:4 Twist your torso and engage your core muscles to generate power in the punch.",
+          "Step:5 Snap your arm back to the starting position and repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 95,
+      "alternatives": [
+        {
+          "name": "bottoms-up",
+          "score": 65
+        },
+        {
+          "name": "tuck crunch",
+          "score": 65
+        },
+        {
+          "name": "bodyweight incline side plank",
+          "score": 65
+        }
+      ],
+      "originalMuscles": "cardiovascular system, shoulders, core",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "3",
+      "originalName": "Glute Bridge",
+      "originalSlug": "glute-bridge",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "aWedzZX",
+        "name": "glute bridge two legs on bench (male)",
+        "gifUrl": "https://static.exercisedb.dev/media/aWedzZX.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Sit on the edge of a bench with your back against it and your feet flat on the ground.",
+          "Step:2 Place your hands on the bench beside your hips for support.",
+          "Step:3 Engage your glutes and hamstrings, then lift your hips off the bench until your body forms a straight line from your knees to your shoulders.",
+          "Step:4 Pause for a moment at the top, then slowly lower your hips back down to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 450,
+      "alternatives": [
+        {
+          "name": "glute bridge march",
+          "score": 450
+        },
+        {
+          "name": "low glute bridge on floor",
+          "score": 450
+        },
+        {
+          "name": "barbell glute bridge",
+          "score": 400
+        }
+      ],
+      "originalMuscles": "glutes, hamstrings, core",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "4",
+      "originalName": "Single-Leg Glute Bridge",
+      "originalSlug": "single-leg-glute-bridge",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "aWedzZX",
+        "name": "glute bridge two legs on bench (male)",
+        "gifUrl": "https://static.exercisedb.dev/media/aWedzZX.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Sit on the edge of a bench with your back against it and your feet flat on the ground.",
+          "Step:2 Place your hands on the bench beside your hips for support.",
+          "Step:3 Engage your glutes and hamstrings, then lift your hips off the bench until your body forms a straight line from your knees to your shoulders.",
+          "Step:4 Pause for a moment at the top, then slowly lower your hips back down to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 450,
+      "alternatives": [
+        {
+          "name": "glute bridge march",
+          "score": 450
+        },
+        {
+          "name": "low glute bridge on floor",
+          "score": 450
+        },
+        {
+          "name": "barbell glute bridge",
+          "score": 400
+        }
+      ],
+      "originalMuscles": "glutes, hamstrings, core",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "19",
+      "originalName": "Side Plank",
+      "originalSlug": "side-plank",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "5VXmnV5",
+        "name": "bodyweight incline side plank",
+        "gifUrl": "https://static.exercisedb.dev/media/5VXmnV5.gif",
+        "targetMuscles": [
+          "abs"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Start by lying on your side with your legs extended and stacked on top of each other.",
+          "Step:2 Place your forearm on the ground directly below your shoulder, with your elbow bent at a 90-degree angle.",
+          "Step:3 Engage your core and lift your hips off the ground, creating a straight line from your head to your feet.",
+          "Step:4 Hold this position for the desired amount of time.",
+          "Step:5 Lower your hips back down to the ground and repeat on the other side."
+        ]
+      },
+      "score": 445,
+      "alternatives": [
+        {
+          "name": "push-up to side plank",
+          "score": 445
+        },
+        {
+          "name": "push-up to side plank - athletic variation",
+          "score": 445
+        },
+        {
+          "name": "side plank hip adduction",
+          "score": 410
+        }
+      ],
+      "originalMuscles": "obliques, core, shoulders",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "21",
+      "originalName": "Bird Dog",
+      "originalSlug": "bird-dog",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "75Bgtjy",
+        "name": "potty squat",
+        "gifUrl": "https://static.exercisedb.dev/media/75Bgtjy.gif",
+        "targetMuscles": [
+          "abs"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart, toes pointing slightly outward.",
+          "Step:2 Lower your body down by bending your knees and pushing your hips back as if you were sitting on a chair.",
+          "Step:3 Keep your chest up and your back straight throughout the movement.",
+          "Step:4 Lower yourself until your thighs are parallel to the ground or as low as you can comfortably go.",
+          "Step:5 Pause for a moment at the bottom, then push through your heels to return to the starting position.",
+          "Step:6 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 70,
+      "alternatives": [
+        {
+          "name": "side bridge v. 2",
+          "score": 70
+        },
+        {
+          "name": "flutter kicks",
+          "score": 70
+        },
+        {
+          "name": "bridge - mountain climber (cross body)",
+          "score": 70
+        }
+      ],
+      "originalMuscles": "core, glutes, shoulders",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "23",
+      "originalName": "Bicycle Crunch",
+      "originalSlug": "bicycle-crunch",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "tZkGYZ9",
+        "name": "band bicycle crunch",
+        "gifUrl": "https://static.exercisedb.dev/media/tZkGYZ9.gif",
+        "targetMuscles": [
+          "abs"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Lie flat on your back with your hands behind your head and your knees bent.",
+          "Step:2 Lift your feet off the ground and bring your right knee towards your chest while simultaneously twisting your torso to bring your left elbow towards your right knee.",
+          "Step:3 Straighten your right leg while bringing your left knee towards your chest and twisting your torso to bring your right elbow towards your left knee.",
+          "Step:4 Continue alternating the twisting motion, as if you are pedaling a bicycle, while keeping your core engaged throughout the movement.",
+          "Step:5 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 410,
+      "alternatives": [
+        {
+          "name": "tuck crunch",
+          "score": 220
+        },
+        {
+          "name": "reverse crunch",
+          "score": 220
+        },
+        {
+          "name": "crunch (hands overhead)",
+          "score": 220
+        }
+      ],
+      "originalMuscles": "abs, obliques",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "25",
+      "originalName": "Dumbbell Romanian Deadlift (RDL)",
+      "originalSlug": "dumbbell-rdl",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "rR0LJzx",
+        "name": "dumbbell romanian deadlift",
+        "gifUrl": "https://static.exercisedb.dev/media/rR0LJzx.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "dumbbell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart, holding a dumbbell in each hand with an overhand grip.",
+          "Step:2 Keeping your back straight and your core engaged, hinge at the hips and lower the dumbbells towards the ground, allowing your knees to bend slightly.",
+          "Step:3 Lower the dumbbells until you feel a stretch in your hamstrings, then push through your heels and engage your glutes to return to the starting position.",
+          "Step:4 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 430,
+      "alternatives": [
+        {
+          "name": "dumbbell straight leg deadlift",
+          "score": 210
+        },
+        {
+          "name": "dumbbell single leg deadlift with stepbox support",
+          "score": 210
+        },
+        {
+          "name": "dumbbell single leg deadlift",
+          "score": 210
+        }
+      ],
+      "originalMuscles": "hamstrings, glutes, lower back, core",
+      "originalEquipment": "dumbbells"
+    },
+    {
+      "originalId": "29",
+      "originalName": "Dumbbell Single-Leg RDL",
+      "originalSlug": "dumbbell-single-leg-rdl",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "ecl28tP",
+        "name": "dumbbell contralateral forward lunge",
+        "gifUrl": "https://static.exercisedb.dev/media/ecl28tP.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "dumbbell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart, holding a dumbbell in each hand.",
+          "Step:2 Take a step forward with your right foot, keeping your back straight and core engaged.",
+          "Step:3 Lower your body by bending both knees until your right thigh is parallel to the ground.",
+          "Step:4 Push through your right heel to return to the starting position.",
+          "Step:5 Repeat with your left leg.",
+          "Step:6 Alternate legs for the desired number of repetitions."
+        ]
+      },
+      "score": 110,
+      "alternatives": [
+        {
+          "name": "dumbbell single leg squat",
+          "score": 110
+        },
+        {
+          "name": "dumbbell straight leg deadlift",
+          "score": 110
+        },
+        {
+          "name": "dumbbell single leg deadlift with stepbox support",
+          "score": 110
+        }
+      ],
+      "originalMuscles": "hamstrings, glutes, core, balance",
+      "originalEquipment": "dumbbells"
+    },
+    {
+      "originalId": "37",
+      "originalName": "Dumbbell Bicep Curl",
+      "originalSlug": "dumbbell-bicep-curl",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "uSkDMYl",
+        "name": "dumbbell bicep curl with stork stance",
+        "gifUrl": "https://static.exercisedb.dev/media/uSkDMYl.gif",
+        "targetMuscles": [
+          "biceps"
+        ],
+        "equipments": [
+          "dumbbell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart and hold a dumbbell in each hand, palms facing forward.",
+          "Step:2 Extend one leg behind you, balancing on the toes of that foot.",
+          "Step:3 Keeping your upper arms stationary, exhale and curl the weights while contracting your biceps.",
+          "Step:4 Continue to raise the weights until your biceps are fully contracted and the dumbbells are at shoulder level.",
+          "Step:5 Hold the contracted position for a brief pause as you squeeze your biceps.",
+          "Step:6 Inhale and slowly begin to lower the dumbbells back to the starting position.",
+          "Step:7 Repeat for the desired number of repetitions, then switch legs and repeat."
+        ]
+      },
+      "score": 460,
+      "alternatives": [
+        {
+          "name": "dumbbell bicep curl lunge with bowling motion",
+          "score": 460
+        },
+        {
+          "name": "dumbbell bicep curl on exercise ball with leg raised",
+          "score": 460
+        },
+        {
+          "name": "dumbbell kneeling bicep curl exercise ball",
+          "score": 260
+        }
+      ],
+      "originalMuscles": "biceps, forearms",
+      "originalEquipment": "dumbbells"
+    },
+    {
+      "originalId": "39",
+      "originalName": "Dumbbell Overhead Tricep Extension",
+      "originalSlug": "dumbbell-overhead-tricep-extension",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "5fKX7wi",
+        "name": "dumbbell seated reverse grip one arm overhead tricep extension",
+        "gifUrl": "https://static.exercisedb.dev/media/5fKX7wi.gif",
+        "targetMuscles": [
+          "triceps"
+        ],
+        "equipments": [
+          "dumbbell"
+        ],
+        "instructions": [
+          "Step:1 Sit on a bench with your back straight and feet flat on the ground.",
+          "Step:2 Hold a dumbbell with an underhand grip and extend your arm straight up overhead.",
+          "Step:3 Lower the dumbbell behind your head by bending your elbow, keeping your upper arm stationary.",
+          "Step:4 Pause for a moment, then extend your arm back up to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions, then switch arms."
+        ]
+      },
+      "score": 260,
+      "alternatives": [
+        {
+          "name": "dumbbell lying one arm supinated triceps extension",
+          "score": 227.5
+        },
+        {
+          "name": "dumbbell lying triceps extension",
+          "score": 227.5
+        },
+        {
+          "name": "dumbbell standing bent over one arm triceps extension",
+          "score": 227.5
+        }
+      ],
+      "originalMuscles": "triceps",
+      "originalEquipment": "dumbbells"
+    },
+    {
+      "originalId": "40",
+      "originalName": "Barbell Back Squat",
+      "originalSlug": "barbell-back-squat",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "DhMl549",
+        "name": "barbell full squat (back pov)",
+        "gifUrl": "https://static.exercisedb.dev/media/DhMl549.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "barbell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart, toes slightly turned out.",
+          "Step:2 Hold the barbell across your upper back, resting it on your traps or rear delts.",
+          "Step:3 Engage your core and keep your chest up as you begin to lower your body down.",
+          "Step:4 Bend at the knees and hips, pushing your hips back and down as if sitting into a chair.",
+          "Step:5 Lower your body until your thighs are parallel to the ground or slightly below.",
+          "Step:6 Keep your knees in line with your toes and your weight in your heels.",
+          "Step:7 Drive through your heels to stand back up, extending your hips and knees.",
+          "Step:8 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 245,
+      "alternatives": [
+        {
+          "name": "barbell bench squat",
+          "score": 225.83333333333331
+        },
+        {
+          "name": "barbell overhead squat",
+          "score": 225.83333333333331
+        },
+        {
+          "name": "barbell split squat v. 2",
+          "score": 225.83333333333331
+        }
+      ],
+      "originalMuscles": "quads, glutes, hamstrings, core",
+      "originalEquipment": "barbell"
+    },
+    {
+      "originalId": "45",
+      "originalName": "Barbell Overhead Press",
+      "originalSlug": "barbell-overhead-press",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "kTbSH9h",
+        "name": "barbell seated overhead press",
+        "gifUrl": "https://static.exercisedb.dev/media/kTbSH9h.gif",
+        "targetMuscles": [
+          "delts"
+        ],
+        "equipments": [
+          "barbell"
+        ],
+        "instructions": [
+          "Step:1 Sit on a bench with your back straight and feet flat on the ground.",
+          "Step:2 Hold the barbell with an overhand grip, slightly wider than shoulder-width apart.",
+          "Step:3 Lift the barbell off the rack and bring it to shoulder level, with your elbows bent and palms facing forward.",
+          "Step:4 Press the barbell overhead by extending your arms fully.",
+          "Step:5 Pause for a moment at the top, then slowly lower the barbell back to shoulder level.",
+          "Step:6 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 250,
+      "alternatives": [
+        {
+          "name": "barbell seated behind head military press",
+          "score": 233.33333333333331
+        },
+        {
+          "name": "barbell standing close grip military press",
+          "score": 223.33333333333331
+        },
+        {
+          "name": "barbell standing bradford press",
+          "score": 223.33333333333331
+        }
+      ],
+      "originalMuscles": "shoulders, triceps, upper chest, core",
+      "originalEquipment": "barbell"
+    },
+    {
+      "originalId": "47",
+      "originalName": "Barbell Bicep Curl",
+      "originalSlug": "barbell-bicep-curl",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "OVTZ65k",
+        "name": "ez-barbell standing wide grip biceps curl",
+        "gifUrl": "https://static.exercisedb.dev/media/OVTZ65k.gif",
+        "targetMuscles": [
+          "biceps"
+        ],
+        "equipments": [
+          "ez barbell"
+        ],
+        "instructions": [
+          "Step:1 Stand up straight with your feet shoulder-width apart and hold the ez barbell with an underhand grip, hands wider than shoulder-width apart.",
+          "Step:2 Keep your elbows close to your torso and your upper arms stationary throughout the movement.",
+          "Step:3 Curl the barbell up towards your shoulders by contracting your biceps.",
+          "Step:4 Pause for a moment at the top, then slowly lower the barbell back to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 243.33333333333331,
+      "alternatives": [
+        {
+          "name": "barbell biceps curl (with arm blaster)",
+          "score": 243.33333333333331
+        },
+        {
+          "name": "barbell standing wide grip biceps curl",
+          "score": 243.33333333333331
+        },
+        {
+          "name": "barbell alternate biceps curl",
+          "score": 243.33333333333331
+        }
+      ],
+      "originalMuscles": "biceps, forearms",
+      "originalEquipment": "barbell"
+    },
+    {
+      "originalId": "49",
+      "originalName": "Band Glute Bridge",
+      "originalSlug": "band-glute-bridge",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "aWedzZX",
+        "name": "glute bridge two legs on bench (male)",
+        "gifUrl": "https://static.exercisedb.dev/media/aWedzZX.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Sit on the edge of a bench with your back against it and your feet flat on the ground.",
+          "Step:2 Place your hands on the bench beside your hips for support.",
+          "Step:3 Engage your glutes and hamstrings, then lift your hips off the bench until your body forms a straight line from your knees to your shoulders.",
+          "Step:4 Pause for a moment at the top, then slowly lower your hips back down to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 183.33333333333331,
+      "alternatives": [
+        {
+          "name": "barbell glute bridge",
+          "score": 183.33333333333331
+        },
+        {
+          "name": "barbell glute bridge two legs on bench (male)",
+          "score": 183.33333333333331
+        },
+        {
+          "name": "glute bridge march",
+          "score": 183.33333333333331
+        }
+      ],
+      "originalMuscles": "glutes, hamstrings",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "50",
+      "originalName": "Band Lateral Walk",
+      "originalSlug": "band-lateral-walk",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "kuMiR2T",
+        "name": "band stiff leg deadlift",
+        "gifUrl": "https://static.exercisedb.dev/media/kuMiR2T.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart and place the band around your ankles.",
+          "Step:2 Hold the band with both hands in front of your thighs, palms facing your body.",
+          "Step:3 Keeping your back straight and your core engaged, hinge at the hips and slowly lower your upper body towards the ground.",
+          "Step:4 As you lower, push your hips back and allow your knees to bend slightly.",
+          "Step:5 Lower the band towards the ground, feeling a stretch in your hamstrings.",
+          "Step:6 Pause for a moment at the bottom, then engage your glutes and hamstrings to lift your upper body back up to the starting position.",
+          "Step:7 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 106.66666666666666,
+      "alternatives": [
+        {
+          "name": "band step-up",
+          "score": 106.66666666666666
+        },
+        {
+          "name": "band hip lift",
+          "score": 106.66666666666666
+        },
+        {
+          "name": "resistance band hip thrusts on knees (female)",
+          "score": 106.66666666666666
+        }
+      ],
+      "originalMuscles": "glutes, hip abductors",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "52",
+      "originalName": "Band Pull-Apart",
+      "originalSlug": "band-pull-apart",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "r1XNRYB",
+        "name": "band assisted pull-up",
+        "gifUrl": "https://static.exercisedb.dev/media/r1XNRYB.gif",
+        "targetMuscles": [
+          "lats"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Attach the band to a pull-up bar or sturdy anchor point.",
+          "Step:2 Step onto the band and grip the bar with your palms facing away from you, hands slightly wider than shoulder-width apart.",
+          "Step:3 Hang with your arms fully extended, keeping your core engaged and your shoulders down and back.",
+          "Step:4 Pull your body up towards the bar by squeezing your shoulder blades together and driving your elbows down towards your hips.",
+          "Step:5 Continue pulling until your chin is above the bar, then slowly lower yourself back down to the starting position.",
+          "Step:6 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 118.33333333333333,
+      "alternatives": [
+        {
+          "name": "band close-grip pulldown",
+          "score": 101.66666666666666
+        },
+        {
+          "name": "band fixed back close grip pulldown",
+          "score": 101.66666666666666
+        },
+        {
+          "name": "band underhand pulldown",
+          "score": 101.66666666666666
+        }
+      ],
+      "originalMuscles": "upper back, rear delts",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "55",
+      "originalName": "Walking",
+      "originalSlug": "walking",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "IZVHb27",
+        "name": "walking lunge",
+        "gifUrl": "https://static.exercisedb.dev/media/IZVHb27.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart.",
+          "Step:2 Take a step forward with your right leg, lowering your body into a lunge position.",
+          "Step:3 Keep your torso upright and your front knee aligned with your ankle.",
+          "Step:4 Push off with your right foot and bring your left foot forward, stepping into a lunge position with your left leg.",
+          "Step:5 Continue alternating legs and walking forward, maintaining a controlled and steady pace.",
+          "Step:6 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 325,
+      "alternatives": [
+        {
+          "name": "walking high knees lunge",
+          "score": 325
+        },
+        {
+          "name": "walking on stepmill",
+          "score": 275
+        },
+        {
+          "name": "walking on incline treadmill",
+          "score": 275
+        }
+      ],
+      "originalMuscles": "cardiovascular system, calves, quads",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "61",
+      "originalName": "Child's Pose",
+      "originalSlug": "childs-pose",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "HIgYKAB",
+        "name": "seated wide angle pose sequence",
+        "gifUrl": "https://static.exercisedb.dev/media/HIgYKAB.gif",
+        "targetMuscles": [
+          "hamstrings"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Sit on the ground with your legs extended in a wide angle.",
+          "Step:2 Flex your feet and engage your quadriceps.",
+          "Step:3 Place your hands on the ground behind you for support.",
+          "Step:4 Keeping your back straight, lean forward from your hips.",
+          "Step:5 Continue leaning forward until you feel a stretch in your hamstrings.",
+          "Step:6 Hold this position for a few breaths.",
+          "Step:7 Slowly release the stretch and return to the starting position.",
+          "Step:8 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 70,
+      "alternatives": [
+        {
+          "name": "butterfly yoga pose",
+          "score": 70
+        },
+        {
+          "name": "one arm against wall",
+          "score": 65
+        },
+        {
+          "name": "archer pull up",
+          "score": 65
+        }
+      ],
+      "originalMuscles": "back, hips, shoulders",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "62",
+      "originalName": "Hip Flexor Stretch",
+      "originalSlug": "hip-flexor-stretch",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "2LQkNPW",
+        "name": "exercise ball hip flexor stretch",
+        "gifUrl": "https://static.exercisedb.dev/media/2LQkNPW.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "stability ball"
+        ],
+        "instructions": [
+          "Step:1 Place the stability ball on the ground and kneel in front of it.",
+          "Step:2 Place your right foot on top of the stability ball, with your knee bent at a 90-degree angle.",
+          "Step:3 Extend your left leg behind you, keeping it straight.",
+          "Step:4 Lean forward, pushing your hips towards the stability ball, until you feel a stretch in your right hip flexor.",
+          "Step:5 Hold the stretch for 20-30 seconds, then switch sides and repeat."
+        ]
+      },
+      "score": 390,
+      "alternatives": [
+        {
+          "name": "exercise ball hip flexor stretch pointed",
+          "score": 390
+        },
+        {
+          "name": "intermediate hip flexor and quad stretch",
+          "score": 200
+        },
+        {
+          "name": "all fours squad stretch",
+          "score": 196.66666666666666
+        }
+      ],
+      "originalMuscles": "hip flexors, quads",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "64",
+      "originalName": "Doorway Chest Stretch",
+      "originalSlug": "doorway-chest-stretch",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "ykA5tU7",
+        "name": "chest stretch with exercise ball",
+        "gifUrl": "https://static.exercisedb.dev/media/ykA5tU7.gif",
+        "targetMuscles": [
+          "pectorals"
+        ],
+        "equipments": [
+          "stability ball"
+        ],
+        "instructions": [
+          "Step:1 Sit on the stability ball with your feet flat on the ground and your back straight.",
+          "Step:2 Hold the exercise ball with both hands and extend your arms straight out in front of you.",
+          "Step:3 Slowly bring the exercise ball towards your chest, feeling a stretch in your chest muscles.",
+          "Step:4 Hold the stretch for a few seconds, then slowly return to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 188.33333333333331,
+      "alternatives": [
+        {
+          "name": "dynamic chest stretch (male)",
+          "score": 188.33333333333331
+        },
+        {
+          "name": "behind head chest stretch",
+          "score": 188.33333333333331
+        },
+        {
+          "name": "chest and front of shoulder stretch",
+          "score": 188.33333333333331
+        }
+      ],
+      "originalMuscles": "pectorals, shoulders",
+      "originalEquipment": "wall"
+    },
+    {
+      "originalId": "65",
+      "originalName": "90/90 Hip Stretch",
+      "originalSlug": "90-90-hip-stretch",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "pZwUsKB",
+        "name": "iron cross stretch",
+        "gifUrl": "https://static.exercisedb.dev/media/pZwUsKB.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Lie flat on your back with your arms extended out to the sides.",
+          "Step:2 Raise your legs up towards the ceiling, keeping them straight.",
+          "Step:3 Slowly lower your legs to one side, aiming to touch the floor with your feet.",
+          "Step:4 Hold the stretch for a few seconds, then return your legs to the starting position.",
+          "Step:5 Repeat the stretch on the other side.",
+          "Step:6 Continue alternating sides for the desired number of repetitions."
+        ]
+      },
+      "score": 206.66666666666666,
+      "alternatives": [
+        {
+          "name": "seated piriformis stretch",
+          "score": 206.66666666666666
+        },
+        {
+          "name": "seated glute stretch",
+          "score": 206.66666666666666
+        },
+        {
+          "name": "rocking frog stretch",
+          "score": 206.66666666666666
+        }
+      ],
+      "originalMuscles": "hips, glutes",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "66",
+      "originalName": "Thoracic Spine Rotation",
+      "originalSlug": "thoracic-spine-rotation",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "ZZTGMKh",
+        "name": "one arm against wall",
+        "gifUrl": "https://static.exercisedb.dev/media/ZZTGMKh.gif",
+        "targetMuscles": [
+          "lats"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Stand facing a wall with your feet shoulder-width apart.",
+          "Step:2 Extend one arm straight out in front of you and place your palm against the wall.",
+          "Step:3 Engage your core and lean your body forward, keeping your arm straight and your back flat.",
+          "Step:4 Slowly push against the wall with your palm, activating your lat muscles.",
+          "Step:5 Hold the position for a few seconds, then release and repeat with the other arm."
+        ]
+      },
+      "score": 60,
+      "alternatives": [
+        {
+          "name": "archer pull up",
+          "score": 60
+        },
+        {
+          "name": "standing lateral stretch",
+          "score": 60
+        },
+        {
+          "name": "side-to-side chin",
+          "score": 60
+        }
+      ],
+      "originalMuscles": "upper back, shoulders",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "68",
+      "originalName": "Donkey Kick",
+      "originalSlug": "donkey-kick",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "0br45wL",
+        "name": "push-up inside leg kick",
+        "gifUrl": "https://static.exercisedb.dev/media/0br45wL.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Start in a push-up position with your hands slightly wider than shoulder-width apart and your feet together.",
+          "Step:2 Lower your body towards the ground by bending your elbows, keeping your back straight and your core engaged.",
+          "Step:3 As you push back up, lift one leg off the ground and kick it out to the side, keeping it straight.",
+          "Step:4 Lower your leg back down and repeat the push-up, then switch to the other leg.",
+          "Step:5 Continue alternating leg kicks with each push-up repetition."
+        ]
+      },
+      "score": 220,
+      "alternatives": [
+        {
+          "name": "kick out sit",
+          "score": 220
+        },
+        {
+          "name": "outside leg kick push-up",
+          "score": 220
+        },
+        {
+          "name": "swimmer kicks v. 2 (male)",
+          "score": 195
+        }
+      ],
+      "originalMuscles": "glutes, hamstrings",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "70",
+      "originalName": "Scapular Push-Up",
+      "originalSlug": "scapular-push-up",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "GdMa1ET",
+        "name": "incline scapula push up",
+        "gifUrl": "https://static.exercisedb.dev/media/GdMa1ET.gif",
+        "targetMuscles": [
+          "serratus anterior"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Set up an incline bench at a 45-degree angle.",
+          "Step:2 Place your hands on the bench slightly wider than shoulder-width apart.",
+          "Step:3 Position your feet on the ground, hip-width apart.",
+          "Step:4 Lower your chest towards the bench, keeping your elbows tucked in.",
+          "Step:5 As you lower, retract your shoulder blades, squeezing your scapulae together.",
+          "Step:6 Push through your palms to extend your arms and return to the starting position.",
+          "Step:7 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 185,
+      "alternatives": [
+        {
+          "name": "scapula push-up",
+          "score": 185
+        },
+        {
+          "name": "high style scapula push-up",
+          "score": 185
+        },
+        {
+          "name": "push-up inside leg kick",
+          "score": 170
+        }
+      ],
+      "originalMuscles": "upper back, shoulders",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "79",
+      "originalName": "Kettlebell Turkish Get-Up",
+      "originalSlug": "kettlebell-turkish-get-up",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "Ha7SZ3y",
+        "name": "kettlebell turkish get up (squat style)",
+        "gifUrl": "https://static.exercisedb.dev/media/Ha7SZ3y.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "kettlebell"
+        ],
+        "instructions": [
+          "Step:1 Start by lying on your back with your legs extended and the kettlebell held in your right hand, arm fully extended above your shoulder.",
+          "Step:2 Bend your right knee and place your right foot flat on the ground, keeping your left leg extended.",
+          "Step:3 Pressing through your right foot, lift your hips off the ground, coming into a bridge position.",
+          "Step:4 Slide your left leg underneath your body, bending your left knee and placing your left foot flat on the ground.",
+          "Step:5 Rotate your torso to the left, bringing your left hand to the ground for support.",
+          "Step:6 Pressing through your right foot and left hand, lift your torso off the ground, coming into a kneeling position.",
+          "Step:7 From the kneeling position, stand up, keeping the kettlebell extended overhead.",
+          "Step:8 Reverse the movement to return to the starting position.",
+          "Step:9 Repeat the exercise on the other side, starting with the kettlebell in your left hand."
+        ]
+      },
+      "score": 310,
+      "alternatives": [
+        {
+          "name": "kettlebell alternating press",
+          "score": 91.66666666666666
+        },
+        {
+          "name": "kettlebell double windmill",
+          "score": 91.66666666666666
+        },
+        {
+          "name": "kettlebell one arm jerk",
+          "score": 91.66666666666666
+        }
+      ],
+      "originalMuscles": "full body, core, shoulders, stability",
+      "originalEquipment": "kettlebell"
+    },
+    {
+      "originalId": "81",
+      "originalName": "Kettlebell Press",
+      "originalSlug": "kettlebell-press",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "5KLbZWx",
+        "name": "kettlebell alternating press",
+        "gifUrl": "https://static.exercisedb.dev/media/5KLbZWx.gif",
+        "targetMuscles": [
+          "delts"
+        ],
+        "equipments": [
+          "kettlebell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart, holding a kettlebell in each hand at shoulder height.",
+          "Step:2 Press one kettlebell overhead, fully extending your arm.",
+          "Step:3 Lower the kettlebell back to shoulder height.",
+          "Step:4 Repeat with the other arm.",
+          "Step:5 Continue alternating arms for the desired number of repetitions."
+        ]
+      },
+      "score": 250,
+      "alternatives": [
+        {
+          "name": "kettlebell seesaw press",
+          "score": 250
+        },
+        {
+          "name": "kettlebell one arm military press to the side",
+          "score": 250
+        },
+        {
+          "name": "kettlebell seated press",
+          "score": 250
+        }
+      ],
+      "originalMuscles": "shoulders, triceps, core",
+      "originalEquipment": "kettlebell"
+    },
+    {
+      "originalId": "82",
+      "originalName": "Kettlebell Row",
+      "originalSlug": "kettlebell-row",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "Ca76jUE",
+        "name": "kettlebell alternating row",
+        "gifUrl": "https://static.exercisedb.dev/media/Ca76jUE.gif",
+        "targetMuscles": [
+          "upper back"
+        ],
+        "equipments": [
+          "kettlebell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart, knees slightly bent, and hold a kettlebell in each hand with your palms facing your body.",
+          "Step:2 Bend forward at the hips, keeping your back straight and your core engaged.",
+          "Step:3 Pull one kettlebell up towards your chest, keeping your elbow close to your body and squeezing your shoulder blades together.",
+          "Step:4 Lower the kettlebell back down to the starting position and repeat with the other arm.",
+          "Step:5 Continue alternating arms for the desired number of repetitions."
+        ]
+      },
+      "score": 220,
+      "alternatives": [
+        {
+          "name": "kettlebell two arm row",
+          "score": 220
+        },
+        {
+          "name": "kettlebell one arm row",
+          "score": 220
+        },
+        {
+          "name": "intense kettlebell two arm row",
+          "score": 220
+        }
+      ],
+      "originalMuscles": "upper back, lats, biceps",
+      "originalEquipment": "kettlebell"
+    },
+    {
+      "originalId": "93",
+      "originalName": "Hollow Body Hold",
+      "originalSlug": "hollow-body-hold",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "9c6T1YX",
+        "name": "bridge - mountain climber (cross body)",
+        "gifUrl": "https://static.exercisedb.dev/media/9c6T1YX.gif",
+        "targetMuscles": [
+          "abs"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Start in a high plank position with your hands directly under your shoulders and your body in a straight line.",
+          "Step:2 Engage your core and lift your right foot off the ground, bringing your right knee towards your left elbow.",
+          "Step:3 Return your right foot to the starting position and repeat the movement with your left foot towards your right elbow.",
+          "Step:4 Continue alternating sides, moving at a controlled pace.",
+          "Step:5 Keep your hips level and avoid lifting your hips too high or sagging them too low.",
+          "Step:6 Maintain a steady breathing pattern throughout the exercise.",
+          "Step:7 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 96.66666666666666,
+      "alternatives": [
+        {
+          "name": "cross body crunch",
+          "score": 86.66666666666666
+        },
+        {
+          "name": "flutter kicks",
+          "score": 80
+        },
+        {
+          "name": "bottoms-up",
+          "score": 70
+        }
+      ],
+      "originalMuscles": "abs, hip flexors",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "97",
+      "originalName": "Bridge March",
+      "originalSlug": "bridge-march",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "GibBPPg",
+        "name": "glute bridge march",
+        "gifUrl": "https://static.exercisedb.dev/media/GibBPPg.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Lie flat on your back with your knees bent and feet flat on the ground.",
+          "Step:2 Engage your glutes and lift your hips off the ground, forming a straight line from your knees to your shoulders.",
+          "Step:3 While keeping your hips lifted, lift one foot off the ground and bring your knee towards your chest.",
+          "Step:4 Lower your foot back to the ground and repeat the movement with the other leg.",
+          "Step:5 Continue alternating legs in a marching motion while maintaining the bridge position.",
+          "Step:6 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 450,
+      "alternatives": [
+        {
+          "name": "bridge - mountain climber (cross body)",
+          "score": 220
+        },
+        {
+          "name": "single leg bridge with outstretched leg",
+          "score": 210
+        },
+        {
+          "name": "glute bridge two legs on bench (male)",
+          "score": 210
+        }
+      ],
+      "originalMuscles": "glutes, hamstrings, core",
+      "originalEquipment": "bodyweight"
+    },
+    {
+      "originalId": "98",
+      "originalName": "Dumbbell Chest Fly",
+      "originalSlug": "dumbbell-chest-fly",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "Bpkf41o",
+        "name": "dumbbell one arm chest fly on exercise ball",
+        "gifUrl": "https://static.exercisedb.dev/media/Bpkf41o.gif",
+        "targetMuscles": [
+          "pectorals"
+        ],
+        "equipments": [
+          "dumbbell"
+        ],
+        "instructions": [
+          "Step:1 Sit on an exercise ball with a dumbbell in one hand and your feet flat on the ground.",
+          "Step:2 Walk your feet forward, rolling the ball until your upper back is supported on the ball and your head, neck, and shoulders are off the ball.",
+          "Step:3 Extend your arm with the dumbbell straight up above your chest, palm facing inward.",
+          "Step:4 Slowly lower the dumbbell out to the side, keeping a slight bend in your elbow.",
+          "Step:5 Pause for a moment when your arm is parallel to the ground.",
+          "Step:6 Engage your chest muscles to bring the dumbbell back up to the starting position.",
+          "Step:7 Repeat for the desired number of repetitions, then switch arms."
+        ]
+      },
+      "score": 245,
+      "alternatives": [
+        {
+          "name": "dumbbell rotation reverse fly",
+          "score": 218.33333333333331
+        },
+        {
+          "name": "dumbbell decline twist fly",
+          "score": 218.33333333333331
+        },
+        {
+          "name": "dumbbell reverse fly",
+          "score": 218.33333333333331
+        }
+      ],
+      "originalMuscles": "pectorals, shoulders",
+      "originalEquipment": "dumbbells, bench"
+    },
+    {
+      "originalId": "103",
+      "originalName": "Dumbbell Tricep Kickback",
+      "originalSlug": "dumbbell-tricep-kickback",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "wOLmCXc",
+        "name": "dumbbell tricep kickback with stork stance",
+        "gifUrl": "https://static.exercisedb.dev/media/wOLmCXc.gif",
+        "targetMuscles": [
+          "triceps"
+        ],
+        "equipments": [
+          "dumbbell"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart and hold a dumbbell in your right hand.",
+          "Step:2 Bend your knees slightly and hinge forward at the hips, keeping your back straight.",
+          "Step:3 Bring your right elbow up to your side, keeping it bent at a 90-degree angle.",
+          "Step:4 Extend your right arm straight back, squeezing your triceps.",
+          "Step:5 Pause for a moment, then slowly lower the dumbbell back to the starting position.",
+          "Step:6 Repeat for the desired number of repetitions, then switch sides."
+        ]
+      },
+      "score": 460,
+      "alternatives": [
+        {
+          "name": "dumbbell standing alternating tricep kickback",
+          "score": 260
+        },
+        {
+          "name": "dumbbell kickback",
+          "score": 233.33333333333331
+        },
+        {
+          "name": "dumbbell seated one arm kickback",
+          "score": 233.33333333333331
+        }
+      ],
+      "originalMuscles": "triceps",
+      "originalEquipment": "dumbbells"
+    },
+    {
+      "originalId": "105",
+      "originalName": "Dumbbell Hip Thrust",
+      "originalSlug": "dumbbell-hip-thrust",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "Pjbc0Kt",
+        "name": "resistance band hip thrusts on knees (female)",
+        "gifUrl": "https://static.exercisedb.dev/media/Pjbc0Kt.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "resistance band"
+        ],
+        "instructions": [
+          "Step:1 Start by kneeling on the ground with your knees hip-width apart and your feet flexed.",
+          "Step:2 Wrap the resistance band around your thighs, just above your knees.",
+          "Step:3 Place your hands on your hips or extend them out in front of you for balance.",
+          "Step:4 Engage your glutes and core muscles.",
+          "Step:5 Push your hips forward and squeeze your glutes as you lift your knees off the ground, extending your hips until your thighs are parallel to the ground.",
+          "Step:6 Hold the position for a moment, then slowly lower your knees back down to the starting position.",
+          "Step:7 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 166.66666666666666,
+      "alternatives": [
+        {
+          "name": "barbell thruster",
+          "score": 120
+        },
+        {
+          "name": "dumbbell contralateral forward lunge",
+          "score": 106.66666666666666
+        },
+        {
+          "name": "dumbbell single leg squat",
+          "score": 106.66666666666666
+        }
+      ],
+      "originalMuscles": "glutes, hamstrings",
+      "originalEquipment": "dumbbells, bench"
+    },
+    {
+      "originalId": "107",
+      "originalName": "Dumbbell Floor Press",
+      "originalSlug": "dumbbell-floor-press",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "REGM1dE",
+        "name": "dumbbell one arm decline chest press",
+        "gifUrl": "https://static.exercisedb.dev/media/REGM1dE.gif",
+        "targetMuscles": [
+          "pectorals"
+        ],
+        "equipments": [
+          "dumbbell"
+        ],
+        "instructions": [
+          "Step:1 Lie on a decline bench with a dumbbell in one hand, resting on your chest.",
+          "Step:2 Place your feet flat on the ground and keep your back pressed against the bench.",
+          "Step:3 Extend your arm and push the dumbbell up towards the ceiling, fully extending your elbow.",
+          "Step:4 Pause for a moment at the top, then slowly lower the dumbbell back down to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions, then switch to the other arm."
+        ]
+      },
+      "score": 233.33333333333331,
+      "alternatives": [
+        {
+          "name": "dumbbell bench press",
+          "score": 233.33333333333331
+        },
+        {
+          "name": "dumbbell lying one arm press v. 2",
+          "score": 233.33333333333331
+        },
+        {
+          "name": "dumbbell incline one arm press",
+          "score": 233.33333333333331
+        }
+      ],
+      "originalMuscles": "pectorals, triceps",
+      "originalEquipment": "dumbbells"
+    },
+    {
+      "originalId": "117",
+      "originalName": "Barbell Landmine Press",
+      "originalSlug": "barbell-landmine-press",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "wnEscH8",
+        "name": "barbell press sit-up",
+        "gifUrl": "https://static.exercisedb.dev/media/wnEscH8.gif",
+        "targetMuscles": [
+          "abs"
+        ],
+        "equipments": [
+          "barbell"
+        ],
+        "instructions": [
+          "Step:1 Lie flat on your back on a mat with your knees bent and feet flat on the ground.",
+          "Step:2 Hold the barbell with an overhand grip, resting it on your chest.",
+          "Step:3 Engaging your abs, slowly lift your upper body off the ground, curling forward until your torso is at a 45-degree angle.",
+          "Step:4 Pause for a moment at the top, then slowly lower your upper body back down to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 213.33333333333331,
+      "alternatives": [
+        {
+          "name": "barbell standing close grip military press",
+          "score": 213.33333333333331
+        },
+        {
+          "name": "barbell incline bench press",
+          "score": 213.33333333333331
+        },
+        {
+          "name": "barbell reverse grip incline bench press",
+          "score": 213.33333333333331
+        }
+      ],
+      "originalMuscles": "shoulders, chest, core",
+      "originalEquipment": "barbell"
+    },
+    {
+      "originalId": "118",
+      "originalName": "Band Squat with Abduction",
+      "originalSlug": "band-squat-with-abduction",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "y8bYM8w",
+        "name": "band single leg split squat",
+        "gifUrl": "https://static.exercisedb.dev/media/y8bYM8w.gif",
+        "targetMuscles": [
+          "quads"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet hip-width apart and place a resistance band around your ankles.",
+          "Step:2 Take a big step forward with your right foot and a smaller step back with your left foot.",
+          "Step:3 Bend your knees and lower your body until your right thigh is parallel to the ground, keeping your left knee slightly above the ground.",
+          "Step:4 Push through your right heel to return to the starting position.",
+          "Step:5 Repeat on the other side."
+        ]
+      },
+      "score": 233.33333333333331,
+      "alternatives": [
+        {
+          "name": "band one arm single leg split squat",
+          "score": 233.33333333333331
+        },
+        {
+          "name": "band squat",
+          "score": 218.33333333333331
+        },
+        {
+          "name": "band squat row",
+          "score": 218.33333333333331
+        }
+      ],
+      "originalMuscles": "glutes, quads, hip abductors",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "122",
+      "originalName": "Band Face Pull",
+      "originalSlug": "band-face-pull",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "r1XNRYB",
+        "name": "band assisted pull-up",
+        "gifUrl": "https://static.exercisedb.dev/media/r1XNRYB.gif",
+        "targetMuscles": [
+          "lats"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Attach the band to a pull-up bar or sturdy anchor point.",
+          "Step:2 Step onto the band and grip the bar with your palms facing away from you, hands slightly wider than shoulder-width apart.",
+          "Step:3 Hang with your arms fully extended, keeping your core engaged and your shoulders down and back.",
+          "Step:4 Pull your body up towards the bar by squeezing your shoulder blades together and driving your elbows down towards your hips.",
+          "Step:5 Continue pulling until your chin is above the bar, then slowly lower yourself back down to the starting position.",
+          "Step:6 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 118.33333333333333,
+      "alternatives": [
+        {
+          "name": "band close-grip pulldown",
+          "score": 101.66666666666666
+        },
+        {
+          "name": "band fixed back close grip pulldown",
+          "score": 101.66666666666666
+        },
+        {
+          "name": "band underhand pulldown",
+          "score": 101.66666666666666
+        }
+      ],
+      "originalMuscles": "rear delts, upper back",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "124",
+      "originalName": "Band Upright Row",
+      "originalSlug": "band-upright-row",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "tc5dYrf",
+        "name": "band standing rear delt row",
+        "gifUrl": "https://static.exercisedb.dev/media/tc5dYrf.gif",
+        "targetMuscles": [
+          "delts"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Stand with your feet shoulder-width apart and place the band under your feet.",
+          "Step:2 Hold the band handles with your palms facing each other and your arms extended in front of you.",
+          "Step:3 Bend your knees slightly and hinge forward at the hips, keeping your back straight.",
+          "Step:4 Pull the band towards your chest, squeezing your shoulder blades together.",
+          "Step:5 Pause for a moment at the top, then slowly release the tension and return to the starting position.",
+          "Step:6 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 218.33333333333331,
+      "alternatives": [
+        {
+          "name": "band one arm standing low row",
+          "score": 183.33333333333331
+        },
+        {
+          "name": "cable upright row",
+          "score": 183.33333333333331
+        },
+        {
+          "name": "barbell wide-grip upright row",
+          "score": 183.33333333333331
+        }
+      ],
+      "originalMuscles": "shoulders, traps",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "127",
+      "originalName": "Band Leg Press",
+      "originalSlug": "band-leg-press",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "9pa4H5m",
+        "name": "band horizontal pallof press",
+        "gifUrl": "https://static.exercisedb.dev/media/9pa4H5m.gif",
+        "targetMuscles": [
+          "abs"
+        ],
+        "equipments": [
+          "band"
+        ],
+        "instructions": [
+          "Step:1 Attach the band to a sturdy anchor point at waist height.",
+          "Step:2 Stand perpendicular to the anchor point with your feet shoulder-width apart.",
+          "Step:3 Grasp the band handle with both hands and step away from the anchor point to create tension in the band.",
+          "Step:4 Bring your hands to your chest, keeping your elbows bent and close to your body.",
+          "Step:5 Engage your core and maintain a stable stance.",
+          "Step:6 Extend your arms straight out in front of you, pushing the band away from your body.",
+          "Step:7 Hold the extended position for a few seconds, focusing on maintaining tension in your core.",
+          "Step:8 Slowly bring your hands back to your chest, resisting the pull of the band.",
+          "Step:9 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 225,
+      "alternatives": [
+        {
+          "name": "band vertical pallof press",
+          "score": 225
+        },
+        {
+          "name": "band vertical pallof press - seated variation",
+          "score": 225
+        },
+        {
+          "name": "band one arm twisting chest press",
+          "score": 210
+        }
+      ],
+      "originalMuscles": "quads, glutes",
+      "originalEquipment": "resistance_band"
+    },
+    {
+      "originalId": "132",
+      "originalName": "Rowing Machine",
+      "originalSlug": "rowing-machine",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "G70mEAJ",
+        "name": "chin-ups (narrow parallel grip)",
+        "gifUrl": "https://static.exercisedb.dev/media/G70mEAJ.gif",
+        "targetMuscles": [
+          "upper back"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Hang from a pull-up bar with a narrow parallel grip, palms facing towards you.",
+          "Step:2 Engage your back muscles and pull your body up towards the bar, keeping your elbows close to your body.",
+          "Step:3 Continue pulling until your chin is above the bar.",
+          "Step:4 Pause for a moment at the top, then slowly lower your body back down to the starting position.",
+          "Step:5 Repeat for the desired number of repetitions."
+        ]
+      },
+      "score": 115,
+      "alternatives": [
+        {
+          "name": "inverted row bent knees",
+          "score": 100
+        },
+        {
+          "name": "barbell reverse grip incline bench row",
+          "score": 100
+        },
+        {
+          "name": "smith narrow row",
+          "score": 100
+        }
+      ],
+      "originalMuscles": "cardiovascular system, full body",
+      "originalEquipment": "rowing_machine"
+    },
+    {
+      "originalId": "136",
+      "originalName": "Sled Push",
+      "originalSlug": "sled-push",
+      "source": "rejected",
+      "replacement": {
+        "exerciseId": "0br45wL",
+        "name": "push-up inside leg kick",
+        "gifUrl": "https://static.exercisedb.dev/media/0br45wL.gif",
+        "targetMuscles": [
+          "glutes"
+        ],
+        "equipments": [
+          "body weight"
+        ],
+        "instructions": [
+          "Step:1 Start in a push-up position with your hands slightly wider than shoulder-width apart and your feet together.",
+          "Step:2 Lower your body towards the ground by bending your elbows, keeping your back straight and your core engaged.",
+          "Step:3 As you push back up, lift one leg off the ground and kick it out to the side, keeping it straight.",
+          "Step:4 Lower your leg back down and repeat the push-up, then switch to the other leg.",
+          "Step:5 Continue alternating leg kicks with each push-up repetition."
+        ]
+      },
+      "score": 70,
+      "alternatives": [
+        {
+          "name": "sled 45в° leg wide press",
+          "score": 70
+        },
+        {
+          "name": "sled 45в° leg press (back pov)",
+          "score": 70
+        },
+        {
+          "name": "spider crawl push up",
+          "score": 70
+        }
+      ],
+      "originalMuscles": "quads, glutes, cardiovascular system, core",
+      "originalEquipment": "sled"
+    }
+  ],
+  "failures": [
+    {
+      "id": "56",
+      "name": "Jogging",
+      "slug": "jogging",
+      "source": "not_found"
+    }
+  ]
+}

@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform } from 'react-native';
-import { Video, ResizeMode } from 'expo-av';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, Platform, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Exercise } from '../../types';
-import { cacheVideo, getCachedVideo } from '../../services/videoCache';
+import { DumbbellIcon } from '../icons/DumbbellIcon';
 import { palette, spacing, colors } from '../../theme';
 
 interface ExerciseDisplayProps {
@@ -16,49 +15,6 @@ const ExerciseDisplay: React.FC<ExerciseDisplayProps> = ({
   exercise,
   lowSensoryMode = false,
 }) => {
-  const [videoUri, setVideoUri] = useState<string | null>(null);
-  const [loadingVideo, setLoadingVideo] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadVideo = async () => {
-      if (!exercise?.videoUrl || lowSensoryMode) {
-        if (isMounted) {
-          setVideoUri(null);
-        }
-        return;
-      }
-
-      try {
-        setLoadingVideo(true);
-        const cached = await getCachedVideo(exercise.id);
-        if (!isMounted) return;
-
-        if (cached) {
-          setVideoUri(cached);
-          return;
-        }
-
-        const uri = await cacheVideo(exercise.id, exercise.videoUrl);
-        if (isMounted) {
-          setVideoUri(uri);
-        }
-      } catch (error) {
-        console.warn('Failed to load exercise video', error);
-      } finally {
-        if (isMounted) {
-          setLoadingVideo(false);
-        }
-      }
-    };
-
-    loadVideo();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [exercise.id, exercise.videoUrl, lowSensoryMode]);
 
   const renderList = (items: string[]) =>
     items.map((item, index) => (
@@ -73,16 +29,20 @@ const ExerciseDisplay: React.FC<ExerciseDisplayProps> = ({
 
   return (
     <View style={styles.container}>
-      {!lowSensoryMode && videoUri && (
-        <View style={styles.videoContainer}>
-          <Video
-            style={styles.video}
-            source={{ uri: videoUri }}
-            shouldPlay
-            isLooping
-            resizeMode={ResizeMode.COVER}
-            useNativeControls
-          />
+      {!lowSensoryMode && (
+        <View style={styles.thumbnailContainer}>
+          {exercise.media_thumb ? (
+            <Image
+              style={styles.thumbnail}
+              source={{ uri: exercise.media_thumb }}
+              resizeMode="contain"
+            />
+          ) : (
+            <View style={styles.noMediaFallback}>
+              <DumbbellIcon size={40} color={colors.text.tertiary} />
+              <Text style={styles.noMediaText}>{exercise.name}</Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -92,17 +52,7 @@ const ExerciseDisplay: React.FC<ExerciseDisplayProps> = ({
             colors={['rgba(25, 25, 30, 0.9)', 'rgba(18, 18, 22, 0.95)']}
             style={StyleSheet.absoluteFill}
           />
-          <Text style={styles.lowSensoryText}>Video hidden for low-sensory mode</Text>
-        </View>
-      )}
-
-      {!lowSensoryMode && loadingVideo && (
-        <View style={styles.lowSensoryNotice}>
-          <LinearGradient
-            colors={['rgba(25, 25, 30, 0.9)', 'rgba(18, 18, 22, 0.95)']}
-            style={StyleSheet.absoluteFill}
-          />
-          <Text style={styles.lowSensoryText}>Loading exercise video...</Text>
+          <Text style={styles.lowSensoryText}>Media hidden for low-sensory mode</Text>
         </View>
       )}
 
@@ -170,15 +120,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: palette.deepBlack,
   },
-  videoContainer: {
+  thumbnailContainer: {
     width: '100%',
     height: 180,
     backgroundColor: 'rgba(15, 15, 18, 0.9)',
     overflow: 'hidden',
   },
-  video: {
+  thumbnail: {
     width: '100%',
     height: '100%',
+    backgroundColor: 'rgba(15, 15, 18, 0.9)',
+  },
+  noMediaFallback: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: spacing.m,
+  },
+  noMediaText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   lowSensoryNotice: {
     padding: spacing.m,

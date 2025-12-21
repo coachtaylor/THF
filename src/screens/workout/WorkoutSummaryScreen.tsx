@@ -27,6 +27,9 @@ import {
   incrementWorkoutCount,
 } from '../../services/feedback';
 import { PostWorkoutCheckin, BodyCheckinData } from '../../components/session/PostWorkoutCheckin';
+import { getCurrentStreak } from '../../services/storage/stats';
+import { usePlan } from '../../hooks/usePlan';
+import { useProfile } from '../../hooks/useProfile';
 
 type RootStackParamList = {
   WorkoutSummary: {
@@ -39,7 +42,6 @@ type RootStackParamList = {
     };
   };
   Home: undefined;
-  DetailedStats: undefined;
   [key: string]: any;
 };
 
@@ -199,6 +201,9 @@ export default function WorkoutSummaryScreen() {
 
   const routeData = route.params?.workoutData;
   const workoutContext = useWorkoutSafe();
+  const { profile } = useProfile();
+  const userId = profile?.user_id || profile?.id || 'default';
+  const { plan } = usePlan(userId);
 
   const workout = routeData ? null : (workoutContext?.workout || null);
   const completedSets = routeData?.completedSets || workoutContext?.completedSets || [];
@@ -216,6 +221,12 @@ export default function WorkoutSummaryScreen() {
   const [showBodyCheckin, setShowBodyCheckin] = useState(false);
   const [bodyCheckinData, setBodyCheckinData] = useState<BodyCheckinData | null>(null);
   const [bodyCheckinShown, setBodyCheckinShown] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState<number>(0);
+
+  // Load current streak on mount
+  useEffect(() => {
+    getCurrentStreak(userId).then(setCurrentStreak).catch(() => setCurrentStreak(0));
+  }, [userId]);
 
   // Show body check-in after celebration animation
   useEffect(() => {
@@ -308,12 +319,18 @@ export default function WorkoutSummaryScreen() {
   const achievements = useMemo(() => {
     const achievementsList = [];
 
-    achievementsList.push({
-      icon: 'flame' as const,
-      text: '8-day streak maintained!',
-      color: colors.warning,
-    });
+    // Streak achievement - use real data
+    if (currentStreak > 0) {
+      achievementsList.push({
+        icon: 'flame' as const,
+        text: currentStreak === 1
+          ? 'Workout streak started!'
+          : `${currentStreak}-day streak maintained!`,
+        color: colors.warning,
+      });
+    }
 
+    // PR achievement based on volume
     if (stats.totalVolume > 2000) {
       achievementsList.push({
         icon: 'trophy' as const,
@@ -322,27 +339,59 @@ export default function WorkoutSummaryScreen() {
       });
     }
 
-    achievementsList.push({
-      icon: 'checkmark-circle' as const,
-      text: 'No binding incidents',
-      color: colors.success,
-    });
+    // Workout completion achievement
+    if (exercisesCompleted === totalExercises && totalExercises > 0) {
+      achievementsList.push({
+        icon: 'checkmark-circle' as const,
+        text: 'All exercises completed!',
+        color: colors.success,
+      });
+    }
 
     return achievementsList;
-  }, [stats]);
+  }, [stats, currentStreak, exercisesCompleted, totalExercises]);
 
   const nextWorkout = useMemo(() => {
-    const nextDate = new Date();
-    nextDate.setDate(nextDate.getDate() + 1);
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
+    // Find next workout from plan
+    if (plan?.days) {
+      // Find the next non-rest day that's after today
+      const upcomingWorkoutDay = plan.days.find(day => {
+        const dayDate = new Date(day.date);
+        dayDate.setHours(0, 0, 0, 0);
+        return dayDate > today && !day.isRestDay;
+      });
+
+      if (upcomingWorkoutDay) {
+        const workoutDate = new Date(upcomingWorkoutDay.date);
+        // Get workout name from variants (try 45 min variant first, then others)
+        const workoutVariant = upcomingWorkoutDay.variants[45] ||
+          upcomingWorkoutDay.variants[30] ||
+          upcomingWorkoutDay.variants[60] ||
+          upcomingWorkoutDay.variants[90];
+        const workoutName = workoutVariant?.name || 'Workout';
+
+        return {
+          name: workoutName,
+          day: dayNames[workoutDate.getDay()],
+          date: `${monthNames[workoutDate.getMonth()]} ${workoutDate.getDate()}`,
+        };
+      }
+    }
+
+    // Fallback: next day
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 1);
     return {
-      name: 'Lower Body',
+      name: 'Next Workout',
       day: dayNames[nextDate.getDay()],
       date: `${monthNames[nextDate.getMonth()]} ${nextDate.getDate()}`,
     };
-  }, []);
+  }, [plan]);
 
   const handleDone = async () => {
     try {
@@ -372,14 +421,6 @@ export default function WorkoutSummaryScreen() {
       console.error('Error completing workout:', error);
       Alert.alert('Error', 'Failed to save workout. Please try again.');
     }
-  };
-
-  const handleShareProgress = () => {
-    Alert.alert('Share', 'Share functionality coming soon!');
-  };
-
-  const handleViewDetailedStats = () => {
-    navigation.navigate('DetailedStats');
   };
 
   const workoutName = routeData?.workoutName || workout?.workout_name || 'Workout Complete';
@@ -586,30 +627,6 @@ export default function WorkoutSummaryScreen() {
           <Text style={styles.doneButtonText}>Complete & Save</Text>
         </Pressable>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleShareProgress}
-          >
-            <Ionicons name="share-outline" size={20} color={colors.text.secondary} />
-            <Text style={styles.actionButtonText}>Share</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.actionButton,
-              pressed && styles.buttonPressed,
-            ]}
-            onPress={handleViewDetailedStats}
-          >
-            <Ionicons name="stats-chart-outline" size={20} color={colors.text.secondary} />
-            <Text style={styles.actionButtonText}>Detailed Stats</Text>
-          </Pressable>
-        </View>
       </ScrollView>
 
       {/* Post-Workout Body Check-in */}
@@ -932,29 +949,6 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.8,
-  },
-  // Action buttons
-  actionButtons: {
-    flexDirection: 'row',
-    gap: spacing.m,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.s,
-    backgroundColor: colors.glass.bg,
-    borderRadius: borderRadius.lg,
-    paddingVertical: spacing.m,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-  },
-  actionButtonText: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text.secondary,
   },
   // Error state
   errorCard: {

@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Modal, Portal, Card } from 'react-native-paper';
-import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
@@ -25,7 +24,7 @@ import { saveSession, buildSessionData } from '../services/sessionLogger';
 import { autoRegress, AutoRegressionResult } from '../services/autoRegress';
 import { fetchAllExercises, getCachedExercises } from '../services/exerciseService';
 import { useProfile } from '../hooks/useProfile';
-import { getCachedVideo, cacheVideo } from '../services/videoCache';
+import { DumbbellIcon } from '../components/icons/DumbbellIcon';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import type { OnboardingScreenProps } from '../types/onboarding';
 import { CommonActions } from '@react-navigation/native';
@@ -118,8 +117,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   const [currentRPE, setCurrentRPE] = useState<number | null>(null);
   const [swappedExercises, setSwappedExercises] = useState<Map<string, string>>(new Map());
   const [painFlaggedExercises, setPainFlaggedExercises] = useState<Set<string>>(new Set());
-  const [videoUri, setVideoUri] = useState<string | null>(null);
-  const [loadingVideo, setLoadingVideo] = useState(false);
   const [showCuesModal, setShowCuesModal] = useState(false);
   const [showSafetyCheckpoint, setShowSafetyCheckpoint] = useState(false);
   const [safetyCheckpointShown, setSafetyCheckpointShown] = useState(false);
@@ -127,8 +124,11 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   const [currentSetBeingCompleted, setCurrentSetBeingCompleted] = useState<number | null>(null);
   const [showSkipExerciseModal, setShowSkipExerciseModal] = useState(false);
   const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
-  const totalElapsedSecondsRef = useRef(0);
+  const [totalElapsedSeconds, setTotalElapsedSeconds] = useState(0);
+  const [isTimerPaused, setIsTimerPaused] = useState(false);
   const elapsedTimeIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pausedTimeRef = useRef(0); // Stores elapsed time when paused
+  const timerStartRef = useRef<Date | null>(null); // Tracks when timer started/resumed
   
   // New state for main phase UI
   const [reps, setReps] = useState(10);
@@ -158,24 +158,42 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   // Start tracking elapsed time when main workout starts
   useEffect(() => {
-    if (phase === 'main' && mainWorkoutStartedAt && !elapsedTimeIntervalRef.current) {
+    if (phase === 'main' && mainWorkoutStartedAt && !isTimerPaused) {
+      // Initialize timer start reference if not set
+      if (!timerStartRef.current) {
+        timerStartRef.current = new Date();
+      }
+
+      // Clear any existing interval
+      if (elapsedTimeIntervalRef.current) {
+        clearInterval(elapsedTimeIntervalRef.current);
+      }
+
       elapsedTimeIntervalRef.current = setInterval(() => {
-        const elapsed = Math.floor(
-          (new Date().getTime() - new Date(mainWorkoutStartedAt).getTime()) / 1000
+        const now = new Date();
+        const sessionElapsed = Math.floor(
+          (now.getTime() - timerStartRef.current!.getTime()) / 1000
         );
-        totalElapsedSecondsRef.current = elapsed;
+        const totalElapsed = pausedTimeRef.current + sessionElapsed;
+        setTotalElapsedSeconds(totalElapsed);
 
         // Check for safety checkpoint at 45 minutes (2700 seconds)
         if (
           !safetyCheckpointShown &&
           safetyCheckpoints.length > 0 &&
           profile?.binds_chest &&
-          elapsed >= 2700
+          totalElapsed >= 2700
         ) {
           setShowSafetyCheckpoint(true);
           setSafetyCheckpointShown(true);
         }
       }, 1000);
+    } else if (isTimerPaused && elapsedTimeIntervalRef.current) {
+      // Paused - clear interval and save current time
+      clearInterval(elapsedTimeIntervalRef.current);
+      elapsedTimeIntervalRef.current = null;
+      pausedTimeRef.current = totalElapsedSeconds;
+      timerStartRef.current = null;
     }
 
     return () => {
@@ -184,16 +202,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         elapsedTimeIntervalRef.current = null;
       }
     };
-  }, [phase, mainWorkoutStartedAt, safetyCheckpointShown, safetyCheckpoints, profile?.binds_chest]);
-
-  // Load video when exercise changes
-  useEffect(() => {
-    if (phase === 'main' && currentExercise && !profile?.low_sensory_mode) {
-      loadVideo();
-    } else {
-      setVideoUri(null);
-    }
-  }, [phase, currentExerciseIndex, profile?.low_sensory_mode]);
+  }, [phase, mainWorkoutStartedAt, isTimerPaused, safetyCheckpointShown, safetyCheckpoints, profile?.binds_chest]);
 
   // Ref to store rest timer completion callback (avoids hook order issues)
   const restTimerCompleteCallbackRef = useRef<(() => void) | null>(null);
@@ -278,34 +287,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     } finally {
       setLoading(false);
       console.log('✅ Exercise loading complete');
-    }
-  };
-
-  const loadVideo = async () => {
-      if (!currentExercise?.videoUrl && !currentExercise?.video_url || profile?.low_sensory_mode) {
-      setVideoUri(null);
-      return;
-    }
-
-    try {
-      setLoadingVideo(true);
-      const cached = await getCachedVideo(currentExercise.id);
-      
-      if (cached) {
-        setVideoUri(cached);
-        setLoadingVideo(false);
-        return;
-      }
-
-      const videoUrl = currentExercise.videoUrl || currentExercise.video_url;
-      if (videoUrl) {
-        const uri = await cacheVideo(currentExercise.id, videoUrl);
-        setVideoUri(uri);
-      }
-    } catch (error) {
-      console.warn('Failed to load exercise video', error);
-    } finally {
-      setLoadingVideo(false);
     }
   };
 
@@ -510,15 +491,20 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   const handleSetComplete = (reps: number, weight: number, rpe: number) => {
     if (!currentExercise) return;
-    
+
+    // Validate input - ensure reps is at least 1 and weight is non-negative
+    const validatedReps = Math.max(1, Math.round(reps));
+    const validatedWeight = Math.max(0, weight);
+    const validatedRpe = Math.min(10, Math.max(1, rpe));
+
     const setNumber = currentExerciseSets.length + 1;
-    
+
     const newSet: CompletedSet = {
       exerciseId: currentExercise.id,
       setNumber,
-      rpe,
-      reps,
-      weight,
+      rpe: validatedRpe,
+      reps: validatedReps,
+      weight: validatedWeight,
       completedAt: new Date().toISOString(),
     };
 
@@ -527,15 +513,17 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     setCurrentRPE(null);
 
     // POST /workouts/{id}/exercises/{exerciseIndex}/log-set
-    console.log('Set logged:', {
-      workoutId: planId,
-      exerciseId: currentExercise.id,
-      exerciseIndex: currentExerciseIndex,
-      setNumber,
-      rpe,
-      reps,
-      weight,
-    });
+    if (__DEV__) {
+      console.log('Set logged:', {
+        workoutId: planId,
+        exerciseId: currentExercise.id,
+        exerciseIndex: currentExerciseIndex,
+        setNumber,
+        rpe: validatedRpe,
+        reps: validatedReps,
+        weight: validatedWeight,
+      });
+    }
 
     // Show rest timer (unless it's the last set of the last exercise)
     const completedSetsForExercise = updatedSets.filter(
@@ -732,10 +720,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           return updated;
         });
 
-        // Reset video for new exercise
-        setVideoUri(null);
-        setLoadingVideo(false);
-
         console.log('✅ Swapped to exercise:', swappedExercise.name);
       } else {
         console.warn('⚠️ Could not find swapped exercise:', swapExerciseId);
@@ -750,8 +734,24 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   const handlePainFlag = async (result: AutoRegressionResult) => {
     // Track pain flagged exercise
     setPainFlaggedExercises(prev => new Set(prev).add(currentExercise.id));
-    console.log('Pain flag applied:', result);
-    // TODO: Apply auto-regression changes to exercise instance
+
+    // Apply auto-regression changes to the current exercise instance
+    setExercises(prev => prev.map((ex, idx) => {
+      if (idx === currentExerciseIndex) {
+        return {
+          ...ex,
+          exerciseId: result.exerciseId,
+          sets: result.sets,
+          reps: result.reps,
+          exercise: {
+            ...ex.exercise,
+            id: result.exerciseId,
+            name: result.exerciseName,
+          },
+        };
+      }
+      return ex;
+    }));
   };
 
   const handleSaveSession = async () => {
@@ -784,13 +784,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       ]);
     } else {
       navigation.goBack();
-    }
-  };
-
-  // Handle video play
-  const handlePlayVideo = () => {
-    if (videoUri) {
-      setShowCuesModal(true);
     }
   };
 
@@ -828,7 +821,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   // Calculate progress
   const progress = ((currentExerciseIndex + 1) / exercises.length) * 100;
-  const totalElapsedSeconds = totalElapsedSecondsRef.current;
 
   // Render main phase with new design
   if (phase === 'main') {
@@ -847,10 +839,26 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           <TouchableOpacity onPress={handleBack}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.workoutTimer}>{formatTime(totalElapsedSeconds)}</Text>
-            <Text style={styles.timerLabel}>Total Time</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.headerCenter}
+            onPress={() => setIsTimerPaused(!isTimerPaused)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.timerRow}>
+              <Text style={[styles.workoutTimer, isTimerPaused && styles.timerPaused]}>
+                {formatTime(totalElapsedSeconds)}
+              </Text>
+              <Ionicons
+                name={isTimerPaused ? "play" : "pause"}
+                size={18}
+                color={isTimerPaused ? colors.accent.primary : colors.text.tertiary}
+                style={styles.timerIcon}
+              />
+            </View>
+            <Text style={styles.timerLabel}>
+              {isTimerPaused ? 'Paused - Tap to Resume' : 'Total Time - Tap to Pause'}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity style={styles.menuButton}>
             <Ionicons name="ellipsis-horizontal" size={24} color={colors.text.primary} />
           </TouchableOpacity>
@@ -874,51 +882,31 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           <View style={styles.exerciseCard}>
             <Text style={styles.exerciseName}>{currentExercise.name}</Text>
             
-            {currentExercise.target_muscle && (
+            {currentExercise.target_muscles && (
               <View style={styles.targetBadge}>
-                <Text style={styles.targetBadgeText}>{currentExercise.target_muscle}</Text>
+                <Text style={styles.targetBadgeText}>{currentExercise.target_muscles}</Text>
               </View>
             )}
 
-            {/* Video Thumbnail */}
+            {/* Exercise Thumbnail */}
             {!profile?.low_sensory_mode && (
-              <TouchableOpacity style={styles.videoContainer} onPress={handlePlayVideo}>
-                {loadingVideo ? (
-                  <View style={styles.videoThumbnail}>
-                    <ActivityIndicator size="large" color={colors.accent.primary} />
-                  </View>
-                ) : videoUri ? (
-                  <Video
-                    source={{ uri: videoUri }}
-                    style={styles.video}
-                    useNativeControls={false}
-                    resizeMode={ResizeMode.COVER}
-                    isLooping
-                    shouldPlay
-                    isMuted
+              <TouchableOpacity style={styles.thumbnailContainer} onPress={() => setShowCuesModal(true)}>
+                {currentExercise.media_thumb ? (
+                  <Image
+                    source={{ uri: currentExercise.media_thumb }}
+                    style={styles.exerciseThumbnail}
+                    resizeMode="contain"
                   />
-                ) : (currentExercise.videoUrl || currentExercise.video_url) ? (
-                  <View style={styles.videoThumbnail}>
-                    <View style={styles.videoPlaceholder}>
-                      <Ionicons name="videocam-outline" size={48} color="#6B7280" />
-                      <Text style={styles.videoPlaceholderText}>Loading video...</Text>
-                    </View>
-                  </View>
                 ) : (
-                  <View style={styles.videoThumbnail}>
-                    <View style={styles.videoPlaceholder}>
-                      <Ionicons name="videocam-off-outline" size={48} color="#6B7280" />
-                      <Text style={styles.videoPlaceholderText}>No video available</Text>
-                    </View>
+                  <View style={styles.noMediaFallback}>
+                    <DumbbellIcon size={48} color={colors.text.tertiary} />
+                    <Text style={styles.noMediaText}>{currentExercise.name}</Text>
                   </View>
                 )}
-                {videoUri && (
-                  <View style={styles.playOverlay}>
-                    <View style={styles.playButtonCircle}>
-                      <PlayIconSVG />
-                    </View>
-                  </View>
-                )}
+                <View style={styles.tipsHint}>
+                  <Ionicons name="information-circle-outline" size={16} color={colors.accent.primary} />
+                  <Text style={styles.tipsHintText}>Tap for form tips</Text>
+                </View>
               </TouchableOpacity>
             )}
 
@@ -1087,6 +1075,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             visible={showSkipExerciseModal}
             onDismiss={cancelSkipExercise}
             contentContainerStyle={styles.modalContainer}
+            style={styles.modalOverlay}
           >
             <Card style={styles.modalCard}>
               <Card.Title
@@ -1121,6 +1110,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             visible={showCuesModal}
             onDismiss={() => setShowCuesModal(false)}
             contentContainerStyle={styles.modalContainer}
+            style={styles.modalOverlay}
           >
             <Card style={styles.modalCard}>
               <Card.Title
@@ -1211,7 +1201,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         </View>
         <View style={styles.headerRight}>
           <Text style={styles.timerText}>
-            ⏱️ {Math.floor(totalElapsedSecondsRef.current / 60)}:{(totalElapsedSecondsRef.current % 60).toString().padStart(2, '0')}
+            ⏱️ {Math.floor(totalElapsedSeconds / 60)}:{(totalElapsedSeconds % 60).toString().padStart(2, '0')}
           </Text>
           <TouchableOpacity>
             <Ionicons name="ellipsis-vertical" size={20} color={colors.text.primary} />
@@ -1247,9 +1237,16 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
               onComplete={handleSetComplete}
               onViewForm={() => setShowCuesModal(true)}
               onViewDetails={() => setShowCuesModal(true)}
-              onStopIfPain={() => {
-                // TODO: Open pain flag modal
-                console.log('Stop if pain clicked');
+              onStopIfPain={async () => {
+                // Trigger pain flag flow - auto-regress and apply changes
+                if (currentExercise && currentExerciseInstance) {
+                  try {
+                    const result = await autoRegress(currentExercise, currentExerciseInstance, profile);
+                    handlePainFlag(result);
+                  } catch (error) {
+                    console.error('Failed to process pain flag:', error);
+                  }
+                }
               }}
               onSkipExercise={handleSkipExercise}
             />
@@ -1307,6 +1304,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           visible={showSkipExerciseModal}
           onDismiss={cancelSkipExercise}
           contentContainerStyle={styles.modalContainer}
+          style={styles.modalOverlay}
         >
           <Card style={styles.modalCard}>
             <Card.Title
@@ -1341,6 +1339,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           visible={showCuesModal}
           onDismiss={() => setShowCuesModal(false)}
           contentContainerStyle={styles.modalContainer}
+          style={styles.modalOverlay}
         >
           <Card style={styles.modalCard}>
             <Card.Title
@@ -1529,12 +1528,19 @@ const styles = StyleSheet.create({
   rpeSection: {
     marginVertical: spacing.s,
   },
+  modalOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
   modalContainer: {
     padding: spacing.l,
+    margin: spacing.l,
   },
   modalCard: {
-    backgroundColor: colors.glass.bg,
+    backgroundColor: colors.bg.elevated,
     maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: borderRadius.lg,
   },
   modalTitle: {
     color: colors.text.primary,
@@ -1625,18 +1631,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   workoutTimer: {
     fontFamily: 'Poppins',
     fontSize: 24,
     fontWeight: '700',
     color: colors.text.primary,
   },
+  timerPaused: {
+    color: colors.accent.primary,
+  },
+  timerIcon: {
+    marginLeft: 8,
+  },
   timerLabel: {
     fontFamily: 'Poppins',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     color: colors.text.tertiary,
     marginTop: 2,
+    textAlign: 'center',
   },
   menuButton: {
     width: 40,
@@ -1720,9 +1738,9 @@ const styles = StyleSheet.create({
     color: colors.accent.secondary,
     letterSpacing: 0.3,
   },
-  videoContainer: {
+  thumbnailContainer: {
     width: '100%',
-    height: 220,
+    height: 200,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: colors.bg.secondary,
@@ -1731,51 +1749,42 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.default,
   },
-  video: {
+  exerciseThumbnail: {
     width: '100%',
     height: '100%',
-  },
-  videoThumbnail: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: colors.bg.secondary,
   },
-  videoPlaceholder: {
+  noMediaFallback: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     gap: 12,
+    paddingHorizontal: 20,
   },
-  videoPlaceholderText: {
+  noMediaText: {
     fontFamily: 'Poppins',
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-    marginTop: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
-  playOverlay: {
+  tipsHint: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
+    bottom: 12,
+    right: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    gap: 4,
+    backgroundColor: 'rgba(15, 20, 25, 0.85)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
   },
-  playButtonCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.accent.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.accent.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+  tipsHintText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.accent.primary,
   },
   setInfoText: {
     fontFamily: 'Poppins',
