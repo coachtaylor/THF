@@ -15,10 +15,12 @@ import { generatePlan } from '../../services/planGenerator';
 import { savePlan } from '../../services/storage/plan';
 import { usePlan } from '../../hooks/usePlan';
 import { restorePurchases } from '../../services/payments/revenueCat';
-import { colors, spacing, borderRadius } from '../../theme/theme';
+import { colors, spacing, borderRadius, layout, iconContainer, shadows } from '../../theme/theme';
+import { headerStyles, sectionStyles, infoCardStyles, screenStyles } from '../../theme/components';
 import { GlassCard, GlassButton, GlassListItem, GlassList, GlassModal } from '../../components/common';
-import { BetaSurveyModal, SurveyResponse } from '../../components/feedback';
-import { saveSurveyResponse } from '../../services/feedback';
+import { BetaSurveyModal, SurveyResponse, FeedbackDetailModal } from '../../components/feedback';
+import { saveSurveyResponse, saveFeedbackReport } from '../../services/feedback';
+import { FeedbackCategory } from '../../types/feedback';
 import {
   EditProfileModal,
   EditHRTModal,
@@ -60,6 +62,7 @@ export default function SettingsScreen() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [showSurveyModal, setShowSurveyModal] = useState(false);
+  const [showBugReportModal, setShowBugReportModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -338,6 +341,30 @@ export default function SettingsScreen() {
     setShowSurveyModal(false);
   };
 
+  const handleBugReportSubmit = async (data: {
+    category: FeedbackCategory;
+    severity?: string;
+    quickFeedback: string[];
+    description?: string;
+  }) => {
+    try {
+      const userId = profile?.user_id || profile?.id || 'default';
+      await saveFeedbackReport({
+        user_id: userId,
+        category: data.category,
+        severity: data.severity,
+        context: 'settings',
+        quick_feedback: data.quickFeedback,
+        description: data.description,
+      });
+      setShowBugReportModal(false);
+      Alert.alert('Thank you!', 'Your bug report has been submitted. We appreciate your help improving TransFitness.');
+    } catch (error) {
+      console.error('Error submitting bug report:', error);
+      Alert.alert('Error', 'Failed to submit bug report. Please try again.');
+    }
+  };
+
   const handleRegeneratePlan = async () => {
     if (!profile) return;
 
@@ -408,9 +435,9 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[screenStyles.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={headerStyles.container}>
         <Pressable
           onPress={() => {
             navigation.dispatch(
@@ -421,13 +448,13 @@ export default function SettingsScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={{ width: 24 }} />
+        <Text style={headerStyles.title}>Settings</Text>
+        <View style={headerStyles.spacer} />
       </View>
 
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        style={screenStyles.scroll}
+        contentContainerStyle={screenStyles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Profile Header Card */}
@@ -458,17 +485,17 @@ export default function SettingsScreen() {
         </GlassCard>
 
         {/* Subscription */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: isPremium ? colors.accent.secondaryMuted : colors.accent.primaryMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.header}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: isPremium ? colors.accent.secondaryMuted : colors.accent.primaryMuted }]}>
                 <Ionicons
                   name={isPremium ? 'star' : 'star-outline'}
                   size={16}
                   color={isPremium ? colors.accent.secondary : colors.accent.primary}
                 />
               </View>
-              <Text style={styles.sectionTitle}>Subscription</Text>
+              <Text style={sectionStyles.title}>Subscription</Text>
             </View>
           </View>
           <GlassCard variant={isPremium ? 'heroPink' : 'default'}>
@@ -534,24 +561,24 @@ export default function SettingsScreen() {
         </View>
 
         {/* HRT Status */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.secondaryMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.secondaryMuted }]}>
                 <Ionicons name="medical" size={16} color={colors.accent.secondary} />
               </View>
-              <Text style={styles.sectionTitle}>HRT Status</Text>
+              <Text style={sectionStyles.title}>HRT Status</Text>
             </View>
             <Pressable onPress={() => handleEdit('hrt')} hitSlop={8}>
-              <Text style={styles.editLink}>Edit</Text>
+              <Text style={sectionStyles.editLink}>Edit</Text>
             </Pressable>
           </View>
           <GlassCard variant="default">
             {profile?.on_hrt ? (
-              <View style={styles.infoContent}>
-                <Text style={styles.infoText}>On {formatHRTType(profile.hrt_type)}</Text>
+              <View style={infoCardStyles.content}>
+                <Text style={infoCardStyles.text}>On {formatHRTType(profile.hrt_type)}</Text>
                 {profile.hrt_start_date && (
-                  <Text style={styles.infoSubtext}>
+                  <Text style={infoCardStyles.subtext}>
                     Started {new Date(profile.hrt_start_date).toLocaleDateString('en-US', {
                       month: 'long',
                       year: 'numeric',
@@ -561,60 +588,60 @@ export default function SettingsScreen() {
                 )}
               </View>
             ) : (
-              <Text style={styles.infoText}>Not on HRT</Text>
+              <Text style={infoCardStyles.text}>Not on HRT</Text>
             )}
           </GlassCard>
         </View>
 
         {/* Binding */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.primaryMuted }]}>
                 <Ionicons name="shield-checkmark" size={16} color={colors.accent.primary} />
               </View>
-              <Text style={styles.sectionTitle}>Binding</Text>
+              <Text style={sectionStyles.title}>Binding</Text>
             </View>
             <Pressable onPress={() => handleEdit('binding')} hitSlop={8}>
-              <Text style={styles.editLink}>Edit</Text>
+              <Text style={sectionStyles.editLink}>Edit</Text>
             </Pressable>
           </View>
           <GlassCard variant="default">
             {profile?.binds_chest ? (
-              <View style={styles.infoContent}>
+              <View style={infoCardStyles.content}>
                 {profile.binding_frequency && (
-                  <Text style={styles.infoText}>Binds {profile.binding_frequency}</Text>
+                  <Text style={infoCardStyles.text}>Binds {profile.binding_frequency}</Text>
                 )}
                 {profile.binding_duration_hours && (
-                  <Text style={styles.infoSubtext}>
+                  <Text style={infoCardStyles.subtext}>
                     {profile.binding_duration_hours} hours per session
                   </Text>
                 )}
               </View>
             ) : (
-              <Text style={styles.infoText}>Does not bind</Text>
+              <Text style={infoCardStyles.text}>Does not bind</Text>
             )}
           </GlassCard>
         </View>
 
         {/* Surgery History */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.primaryMuted }]}>
                 <Ionicons name="bandage" size={16} color={colors.accent.primary} />
               </View>
-              <Text style={styles.sectionTitle}>Surgery History</Text>
+              <Text style={sectionStyles.title}>Surgery History</Text>
             </View>
             <Pressable onPress={() => handleEdit('surgery')} hitSlop={8}>
-              <Text style={styles.editLink}>Edit</Text>
+              <Text style={sectionStyles.editLink}>Edit</Text>
             </Pressable>
           </View>
           <GlassCard variant="default">
             {profile?.surgeries && profile.surgeries.length > 0 ? (
-              <View style={styles.infoContent}>
+              <View style={infoCardStyles.content}>
                 {profile.surgeries.map((surgery, index) => (
-                  <Text key={index} style={styles.infoText}>
+                  <Text key={index} style={infoCardStyles.text}>
                     {formatSurgeryType(surgery.type)} ({new Date(surgery.date).toLocaleDateString('en-US', {
                       month: 'short',
                       year: 'numeric',
@@ -623,31 +650,31 @@ export default function SettingsScreen() {
                 ))}
               </View>
             ) : (
-              <Text style={styles.infoText}>No surgeries</Text>
+              <Text style={infoCardStyles.text}>No surgeries</Text>
             )}
           </GlassCard>
         </View>
 
         {/* Fitness Goals */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.successMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.successMuted }]}>
                 <Ionicons name="trophy" size={16} color={colors.success} />
               </View>
-              <Text style={styles.sectionTitle}>Fitness Goals</Text>
+              <Text style={sectionStyles.title}>Fitness Goals</Text>
             </View>
             <Pressable onPress={() => handleEdit('goals')} hitSlop={8}>
-              <Text style={styles.editLink}>Edit</Text>
+              <Text style={sectionStyles.editLink}>Edit</Text>
             </Pressable>
           </View>
           <GlassCard variant="default">
-            <View style={styles.infoContent}>
-              <Text style={styles.infoText}>
+            <View style={infoCardStyles.content}>
+              <Text style={infoCardStyles.text}>
                 Primary: {formatGoal(profile?.primary_goal)}
               </Text>
               {profile?.secondary_goals && profile.secondary_goals.length > 0 && (
-                <Text style={styles.infoSubtext}>
+                <Text style={infoCardStyles.subtext}>
                   Secondary: {profile.secondary_goals.map(formatGoal).join(', ')}
                 </Text>
               )}
@@ -656,29 +683,29 @@ export default function SettingsScreen() {
         </View>
 
         {/* Training Preferences */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.primaryMuted }]}>
                 <Ionicons name="barbell" size={16} color={colors.accent.primary} />
               </View>
-              <Text style={styles.sectionTitle}>Training Preferences</Text>
+              <Text style={sectionStyles.title}>Training Preferences</Text>
             </View>
             <Pressable onPress={() => handleEdit('training')} hitSlop={8}>
-              <Text style={styles.editLink}>Edit</Text>
+              <Text style={sectionStyles.editLink}>Edit</Text>
             </Pressable>
           </View>
           <GlassCard variant="default">
-            <View style={styles.infoContent}>
-              <Text style={styles.infoText}>
+            <View style={infoCardStyles.content}>
+              <Text style={infoCardStyles.text}>
                 {profile?.fitness_experience
                   ? profile.fitness_experience.charAt(0).toUpperCase() + profile.fitness_experience.slice(1)
                   : 'Not set'} level
               </Text>
-              <Text style={styles.infoSubtext}>
+              <Text style={infoCardStyles.subtext}>
                 {profile?.workout_frequency || 0} days/week, {profile?.session_duration || 0} min sessions
               </Text>
-              <Text style={styles.infoSubtext}>
+              <Text style={infoCardStyles.subtext}>
                 Equipment: {profile?.equipment?.join(', ') || 'None'}
               </Text>
             </View>
@@ -686,24 +713,24 @@ export default function SettingsScreen() {
         </View>
 
         {/* Training Environment */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.primaryMuted }]}>
                 <Ionicons name="location" size={16} color={colors.accent.primary} />
               </View>
-              <Text style={styles.sectionTitle}>Training Environment</Text>
+              <Text style={sectionStyles.title}>Training Environment</Text>
             </View>
             <Pressable onPress={() => handleEdit('environment')} hitSlop={8}>
-              <Text style={styles.editLink}>Edit</Text>
+              <Text style={sectionStyles.editLink}>Edit</Text>
             </Pressable>
           </View>
           <GlassCard variant="default">
-            <View style={styles.infoContent}>
-              <Text style={styles.infoText}>
+            <View style={infoCardStyles.content}>
+              <Text style={infoCardStyles.text}>
                 {formatEnvironment(profile?.training_environment)}
               </Text>
-              <Text style={styles.infoSubtext}>
+              <Text style={infoCardStyles.subtext}>
                 {profile?.training_environment === 'home' && 'Workouts optimized for home with minimal equipment'}
                 {profile?.training_environment === 'gym' && 'Full access to gym equipment and machines'}
                 {profile?.training_environment === 'studio' && 'Workouts for studio environments with basic equipment'}
@@ -715,13 +742,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Ask Copilot */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.secondaryMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.secondaryMuted }]}>
                 <Ionicons name="chatbubbles" size={16} color={colors.accent.secondary} />
               </View>
-              <Text style={styles.sectionTitle}>Ask Copilot</Text>
+              <Text style={sectionStyles.title}>Ask Copilot</Text>
             </View>
           </View>
           <GlassList>
@@ -736,13 +763,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Education & Guides */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.primaryMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.primaryMuted }]}>
                 <Ionicons name="book" size={16} color={colors.accent.primary} />
               </View>
-              <Text style={styles.sectionTitle}>Education & Guides</Text>
+              <Text style={sectionStyles.title}>Education & Guides</Text>
             </View>
           </View>
           <GlassList>
@@ -764,13 +791,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* App Settings */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.glass.bgLight }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.glass.bgLight }]}>
                 <Ionicons name="settings" size={16} color={colors.text.secondary} />
               </View>
-              <Text style={styles.sectionTitle}>App Settings</Text>
+              <Text style={sectionStyles.title}>App Settings</Text>
             </View>
           </View>
           <GlassList>
@@ -805,6 +832,20 @@ export default function SettingsScreen() {
               }}
             />
             <GlassListItem
+              title="Low sensory mode"
+              subtitle="Reduces animations, sounds, and visual complexity"
+              rightValue={profile?.low_sensory_mode ? 'On' : 'Off'}
+              onPress={async () => {
+                const newValue = !profile?.low_sensory_mode;
+                await updateProfile({ low_sensory_mode: newValue });
+                // Also disable sounds when enabling low sensory mode
+                if (newValue) {
+                  setRestTimerSound(false);
+                  saveSettings({ restTimerSound: false });
+                }
+              }}
+            />
+            <GlassListItem
               title="Theme"
               subtitle="Coming soon"
               rightValue="Dark"
@@ -813,13 +854,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Data & Privacy */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.glass.bgLight }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.glass.bgLight }]}>
                 <Ionicons name="shield" size={16} color={colors.text.secondary} />
               </View>
-              <Text style={styles.sectionTitle}>Data & Privacy</Text>
+              <Text style={sectionStyles.title}>Data & Privacy</Text>
             </View>
           </View>
           <GlassList>
@@ -847,13 +888,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Debug Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.accent.warningMuted }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.warningMuted }]}>
                 <Ionicons name="bug" size={16} color={colors.warning} />
               </View>
-              <Text style={[styles.sectionTitle, { color: colors.warning }]}>Debug</Text>
+              <Text style={[sectionStyles.title, { color: colors.warning }]}>Debug</Text>
             </View>
           </View>
           <GlassList>
@@ -876,13 +917,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Support */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: colors.glass.bgLight }]}>
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.glass.bgLight }]}>
                 <Ionicons name="help-circle" size={16} color={colors.text.secondary} />
               </View>
-              <Text style={styles.sectionTitle}>Support</Text>
+              <Text style={sectionStyles.title}>Support</Text>
             </View>
           </View>
           <GlassList>
@@ -897,9 +938,7 @@ export default function SettingsScreen() {
             <GlassListItem
               title="Report a bug"
               leftIcon="bug-outline"
-              onPress={() => {
-                Linking.openURL('mailto:support@transfitness.app?subject=TransFitness Bug Report&body=Please describe the bug you encountered:%0A%0ADevice: ' + Platform.OS + '%0AApp Version: 1.0.0');
-              }}
+              onPress={() => setShowBugReportModal(true)}
               showChevron
             />
             <GlassListItem
@@ -975,8 +1014,18 @@ export default function SettingsScreen() {
       {/* Beta Survey Modal */}
       <BetaSurveyModal
         visible={showSurveyModal}
+        onClose={handleSurveySkip}
         onSubmit={handleSurveySubmit}
-        onSkip={handleSurveySkip}
+        triggerPoint="manual"
+      />
+
+      {/* Bug Report Modal */}
+      <FeedbackDetailModal
+        visible={showBugReportModal}
+        onClose={() => setShowBugReportModal(false)}
+        onSubmit={handleBugReportSubmit}
+        context="settings"
+        initialCategory="technical_bug"
       />
 
       {/* Delete Account Modal */}
@@ -1054,31 +1103,8 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg.primary,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.m,
-  },
-  headerTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.primary,
-    letterSpacing: -0.3,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xxl,
-  },
+  // Note: container, header, headerTitle, scroll, scrollContent now use shared styles from components.ts
+  // screenStyles.container, headerStyles.container, headerStyles.title, screenStyles.scroll, screenStyles.scrollContent
   profileCard: {
     marginBottom: spacing.xl,
   },
@@ -1092,15 +1118,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 32,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.accent.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-      },
-      android: { elevation: 6 },
-    }),
+    ...shadows.glow,
   },
   avatarGradient: {
     width: '100%',
@@ -1184,55 +1202,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.m,
     gap: spacing.s,
   },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.m,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.s,
-  },
-  sectionIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text.primary,
-    letterSpacing: -0.2,
-  },
-  editLink: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.accent.primary,
-  },
-  infoContent: {
-    gap: spacing.xs,
-  },
-  infoText: {
-    fontFamily: 'Poppins',
-    fontSize: 15,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  infoSubtext: {
-    fontFamily: 'Poppins',
-    fontSize: 13,
-    fontWeight: '400',
-    color: colors.text.secondary,
-  },
+  // Note: section, sectionHeader, sectionTitleRow, sectionIcon, sectionTitle, editLink
+  // now use shared styles from sectionStyles in components.ts
+  // infoContent, infoText, infoSubtext now use infoCardStyles from components.ts
   logoutSection: {
     marginTop: spacing.m,
     marginBottom: spacing.l,

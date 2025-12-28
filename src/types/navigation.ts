@@ -66,7 +66,7 @@ export type MainStackParamList = {
     onSwapComplete?: (newExercise: ExerciseInstance) => void;
   };
   BinderSafetyGuide: undefined;
-  PostOpMovementGuide: undefined;
+  PostOpMovementGuide: { surgeryType?: string };
   Copilot: undefined;
   ExerciseLibrary: {
     onSelectExercise?: (exercise: ExerciseInstance) => void;

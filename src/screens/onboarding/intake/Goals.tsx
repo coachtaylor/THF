@@ -1,14 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
-import { glassStyles, textStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile } from "../../../services/storage/profile";
-import { Platform } from "react-native";
 
 type Goal = "feminization" | "masculinization" | "general_fitness" | "strength" | "endurance";
 
@@ -28,35 +26,35 @@ interface GoalCardProps {
 
 function GoalCard({ icon, title, description, selected, onPress }: GoalCardProps) {
   const borderColor = selected === "primary"
-    ? colors.cyan[500]
+    ? colors.accent.primary
     : selected === "secondary"
-    ? colors.red[500]
+    ? colors.accent.secondary
     : colors.glass.border;
 
   const backgroundColor = selected === "primary"
     ? colors.glass.bgHero
     : selected === "secondary"
-    ? "rgba(244, 63, 94, 0.08)"
+    ? colors.accent.secondaryMuted
     : colors.glass.bg;
 
   const iconColor = selected === "primary"
-    ? colors.cyan[500]
+    ? colors.accent.primary
     : selected === "secondary"
-    ? colors.red[500]
+    ? colors.accent.secondary
     : colors.text.secondary;
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
-      activeOpacity={0.7}
-      style={[
+      style={({ pressed }) => [
         styles.goalCard,
         {
           backgroundColor,
           borderColor,
           borderWidth: selected ? 2 : 1,
         },
-        selected && styles.goalCardSelected
+        selected && styles.goalCardSelected,
+        pressed && styles.buttonPressed,
       ]}
     >
       {/* Icon */}
@@ -86,7 +84,7 @@ function GoalCard({ icon, title, description, selected, onPress }: GoalCardProps
         <View style={[
           styles.badge,
           {
-            backgroundColor: selected === "primary" ? colors.cyan[500] : colors.red[500],
+            backgroundColor: selected === "primary" ? colors.accent.primary : colors.accent.secondary,
           }
         ]}>
           <Text style={styles.badgeText}>
@@ -94,7 +92,7 @@ function GoalCard({ icon, title, description, selected, onPress }: GoalCardProps
           </Text>
         </View>
       )}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
@@ -223,16 +221,16 @@ export default function Goals({ navigation }: GoalsProps) {
           <View style={styles.focusCard}>
             <View style={styles.focusHeader}>
               <View style={[styles.focusIconContainer, { backgroundColor: "rgba(6, 182, 212, 0.15)", borderColor: "rgba(6, 182, 212, 0.3)" }]}>
-                <Ionicons name="information-circle" size={20} color={colors.cyan[500]} />
+                <Ionicons name="information-circle" size={20} color={colors.accent.primary} />
               </View>
-              <Text style={[styles.focusTitle, { color: colors.cyan[500] }]}>
+              <Text style={[styles.focusTitle, { color: colors.accent.primary }]}>
                 Primary Focus:
               </Text>
             </View>
             <View style={styles.focusList}>
               {goalInfo[primaryGoal].focus.map((item, index) => (
                 <View key={index} style={styles.focusItem}>
-                  <Ionicons name="checkmark" size={20} color={colors.cyan[500]} style={styles.checkmark} />
+                  <Ionicons name="checkmark" size={20} color={colors.accent.primary} style={styles.checkmark} />
                   <Text style={styles.focusItemText}>{item}</Text>
                 </View>
               ))}
@@ -245,16 +243,16 @@ export default function Goals({ navigation }: GoalsProps) {
           <View style={[styles.focusCard, styles.focusCardSecondary]}>
             <View style={styles.focusHeader}>
               <View style={[styles.focusIconContainer, { backgroundColor: "rgba(244, 63, 94, 0.15)", borderColor: "rgba(244, 63, 94, 0.3)" }]}>
-                <Ionicons name="information-circle" size={20} color={colors.red[500]} />
+                <Ionicons name="information-circle" size={20} color={colors.accent.secondary} />
               </View>
-              <Text style={[styles.focusTitle, { color: colors.red[500] }]}>
+              <Text style={[styles.focusTitle, { color: colors.accent.secondary }]}>
                 Secondary Focus:
               </Text>
             </View>
             <View style={styles.focusList}>
               {goalInfo[secondaryGoal].focus.map((item, index) => (
                 <View key={index} style={styles.focusItem}>
-                  <Ionicons name="checkmark" size={20} color={colors.red[500]} style={styles.checkmark} />
+                  <Ionicons name="checkmark" size={20} color={colors.accent.secondary} style={styles.checkmark} />
                   <Text style={styles.focusItemText}>{item}</Text>
                 </View>
               ))}
@@ -274,7 +272,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   goalCard: {
-    ...glassStyles.card,
+    backgroundColor: colors.glass.bg,
+    borderColor: colors.glass.border,
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.lg,
@@ -327,12 +326,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconContainerSelected: {
-    backgroundColor: 'rgba(91, 206, 250, 0.15)',
-    borderColor: 'rgba(91, 206, 250, 0.3)',
+    backgroundColor: colors.accent.primaryMuted,
+    borderColor: colors.accent.primaryGlow,
   },
   iconContainerSecondary: {
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
-    borderColor: 'rgba(244, 63, 94, 0.3)',
+    backgroundColor: colors.accent.secondaryMuted,
+    borderColor: colors.accent.secondaryGlow,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
   goalContent: {
     flex: 1,
@@ -353,14 +355,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   focusCard: {
-    ...glassStyles.cardHero,
+    backgroundColor: colors.glass.bgHero,
     padding: spacing.xl,
     borderRadius: borderRadius['2xl'],
     borderWidth: 1,
-    borderColor: colors.cyan[500],
+    borderColor: colors.accent.primary,
     ...Platform.select({
       ios: {
-        shadowColor: colors.cyan[500],
+        shadowColor: colors.accent.primary,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.3,
         shadowRadius: 20,
@@ -371,11 +373,11 @@ const styles = StyleSheet.create({
     }),
   },
   focusCardSecondary: {
-    backgroundColor: "rgba(244, 63, 94, 0.08)",
-    borderColor: colors.red[500],
+    backgroundColor: colors.accent.secondaryMuted,
+    borderColor: colors.accent.secondary,
     ...Platform.select({
       ios: {
-        shadowColor: colors.red[500],
+        shadowColor: colors.accent.secondary,
         shadowOpacity: 0.3,
       },
     }),
@@ -395,7 +397,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   focusTitle: {
-    ...textStyles.h3,
+    fontFamily: 'Poppins',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -411,7 +413,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   focusItemText: {
-    ...textStyles.bodySmall,
+    fontFamily: 'Poppins',
     fontSize: 14,
     lineHeight: 20,
     flex: 1,

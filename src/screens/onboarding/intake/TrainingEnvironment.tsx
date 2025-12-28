@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import SelectionCard from "../../../components/onboarding/SelectionCard";
-import { colors, spacing } from "../../../theme/theme";
+import { colors, spacing, borderRadius } from "../../../theme/theme";
 import { textStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile } from "../../../services/storage/profile";
@@ -124,7 +124,7 @@ export default function TrainingEnvironment({
             <Ionicons
               name="information-circle-outline"
               size={20}
-              color={colors.cyan[500]}
+              color={colors.accent.primary}
             />
             <Text style={styles.infoText}>
               {environment === "home" &&

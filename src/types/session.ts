@@ -16,6 +16,7 @@ export interface CompletedSet {
   reps: number;
   weight?: number; // Weight in lbs
   completedAt: string;
+  skipped?: boolean; // True if set was skipped
 }
 
 export interface SessionState {

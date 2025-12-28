@@ -226,10 +226,8 @@ export async function getWorkout(workoutId: string, userId: string = 'default'):
       };
     });
 
-    // Build workout name
-    const workoutName = plan.goals.length > 0 
-      ? `${plan.goals[0].charAt(0).toUpperCase() + plan.goals[0].slice(1)} Focus`
-      : 'Today\'s Workout';
+    // Build workout name - first check if workout has a name, otherwise derive from muscles
+    const workoutName = workout.name || deriveWorkoutNameFromExercises(exercises);
 
     // Determine focus from plan goals
     const dayFocus = plan.goals.length > 0 
@@ -342,6 +340,51 @@ function generateCooldownExercises(focus: string): Array<{ name: string; duratio
       { name: "Child's Pose", duration: '60 seconds' },
     ];
   }
+}
+
+/**
+ * Derive a workout name from the exercises' target muscles
+ * Uses the same logic as HomeScreen for consistency
+ */
+function deriveWorkoutNameFromExercises(exercises: Exercise[]): string {
+  if (!exercises || exercises.length === 0) return 'Workout';
+
+  const allMuscles: string[] = [];
+  exercises.forEach((ex) => {
+    if (ex.target_muscles) {
+      allMuscles.push(...ex.target_muscles.split(',').map(m => m.trim().toLowerCase()));
+    }
+  });
+  const uniqueMuscles = [...new Set(allMuscles)];
+
+  // Check for muscle groups (case-insensitive)
+  const hasChest = uniqueMuscles.some(m => m.includes('chest') || m.includes('pec'));
+  const hasBack = uniqueMuscles.some(m => m.includes('back') || m.includes('lat'));
+  const hasTriceps = uniqueMuscles.some(m => m.includes('tricep'));
+  const hasBiceps = uniqueMuscles.some(m => m.includes('bicep'));
+  const hasLegs = uniqueMuscles.some(m =>
+    m.includes('quad') || m.includes('glute') || m.includes('hamstring') || m.includes('leg')
+  );
+  const hasShoulders = uniqueMuscles.some(m => m.includes('shoulder') || m.includes('delt'));
+  const hasCore = uniqueMuscles.some(m => m.includes('core') || m.includes('ab'));
+
+  // Determine workout type based on muscle combinations
+  if (hasChest && hasTriceps && hasShoulders) {
+    return 'Push - Chest & Shoulders';
+  } else if (hasBack && hasBiceps) {
+    return 'Pull - Back & Biceps';
+  } else if (hasLegs && !hasChest && !hasBack) {
+    return 'Lower Body';
+  } else if (hasChest && hasTriceps) {
+    return 'Chest & Arms';
+  } else if ((hasChest || hasBack || hasShoulders) && !hasLegs) {
+    return 'Upper Body';
+  } else if (hasLegs && (hasChest || hasBack)) {
+    return 'Full Body';
+  } else if (hasCore && uniqueMuscles.length <= 3) {
+    return 'Core Focus';
+  }
+  return 'Full Body';
 }
 
 /**

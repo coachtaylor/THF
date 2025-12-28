@@ -5,7 +5,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   TextInput,
   ActivityIndicator,
   Platform,
@@ -22,6 +22,7 @@ import { addExerciseToWorkout } from '../../services/storage/workout';
 import ExerciseFilterBar, { ExerciseFilters } from '../../components/exercise/ExerciseFilterBar';
 import ExerciseLibraryCard from '../../components/exercise/ExerciseLibraryCard';
 import { ExerciseDetailSheet } from '../../components/exercise/ExerciseDetailSheet';
+import { FeedbackFAB } from '../../components/feedback';
 
 type RouteParams = {
   ExerciseLibrary: {
@@ -246,12 +247,12 @@ const ExerciseLibraryScreen: React.FC = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
+        <Pressable
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
+        </Pressable>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>
             {mode === 'swap' ? 'Choose Exercise' : 'Exercise Library'}
@@ -276,12 +277,12 @@ const ExerciseLibraryScreen: React.FC = () => {
             autoCapitalize="none"
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Pressable onPress={() => setSearchQuery('')}>
               <Ionicons name="close-circle" size={20} color={colors.text.tertiary} />
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
-        <TouchableOpacity
+        <Pressable
           style={[
             styles.filterButton,
             activeFilterCount > 0 && styles.filterButtonActive,
@@ -298,7 +299,7 @@ const ExerciseLibraryScreen: React.FC = () => {
               <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
             </View>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
       {/* Filter Bar */}
@@ -319,31 +320,6 @@ const ExerciseLibraryScreen: React.FC = () => {
         keyExtractor={keyExtractor}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={styles.legendContainer}>
-            <Text style={styles.legendTitle}>Icon Legend</Text>
-            <View style={styles.legendItems}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendIcon, styles.binderLegendIcon]}>
-                  <Ionicons name="shield-checkmark" size={12} color={colors.accent.primary} />
-                </View>
-                <Text style={styles.legendText}>Binder Safe</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendIcon, styles.heavyBindingLegendIcon]}>
-                  <Ionicons name="shield" size={12} color={colors.accent.secondary} />
-                </View>
-                <Text style={styles.legendText}>Heavy Binding Safe</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendIcon, styles.pelvicLegendIcon]}>
-                  <Ionicons name="heart" size={12} color={colors.success} />
-                </View>
-                <Text style={styles.legendText}>Pelvic Floor Safe</Text>
-              </View>
-            </View>
-          </View>
-        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="fitness-outline" size={48} color={colors.text.tertiary} />
@@ -352,12 +328,12 @@ const ExerciseLibraryScreen: React.FC = () => {
               Try adjusting your search or filters
             </Text>
             {activeFilterCount > 0 && (
-              <TouchableOpacity
+              <Pressable
                 style={styles.clearFiltersButton}
                 onPress={handleClearFilters}
               >
                 <Text style={styles.clearFiltersText}>Clear all filters</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
         }
@@ -373,6 +349,9 @@ const ExerciseLibraryScreen: React.FC = () => {
           onAddToWorkout={mode === 'browse' ? handleAddToWorkout : undefined}
         />
       )}
+
+      {/* Feedback FAB - positioned just above tab bar */}
+      <FeedbackFAB context="exercise_library" bottomOffset={16} />
     </View>
   );
 };
@@ -507,52 +486,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: colors.accent.primary,
-  },
-  legendContainer: {
-    backgroundColor: colors.bg.tertiary,
-    borderRadius: borderRadius.m,
-    padding: spacing.m,
-    marginBottom: spacing.m,
-  },
-  legendTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: spacing.s,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  legendItems: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.m,
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  legendIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  binderLegendIcon: {
-    backgroundColor: colors.accent.primaryMuted,
-  },
-  heavyBindingLegendIcon: {
-    backgroundColor: colors.accent.secondaryMuted,
-  },
-  pelvicLegendIcon: {
-    backgroundColor: colors.accent.successMuted,
-  },
-  legendText: {
-    fontFamily: 'Poppins',
-    fontSize: 11,
-    color: colors.text.secondary,
   },
 });
 

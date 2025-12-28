@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import { Profile } from "../../../types";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
-import { glassStyles, textStyles, cardStyles } from "../../../theme/components";
+import { textStyles, cardStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { generatePlan } from "../../../services/planGenerator";
 import { savePlan } from "../../../services/storage/plan";
@@ -255,17 +255,16 @@ export default function Review({ navigation }: ReviewProps) {
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionHeaderLeft}>
                   <View style={styles.sectionIconContainer}>
-                    <Ionicons name={section.icon} size={24} color={colors.cyan[500]} />
+                    <Ionicons name={section.icon} size={24} color={colors.accent.primary} />
                   </View>
                   <Text style={styles.sectionTitle}>{section.title}</Text>
                 </View>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => handleEdit(section.id)}
-                  activeOpacity={0.7}
-                  style={styles.editButton}
+                  style={({ pressed }) => [styles.editButton, pressed && styles.buttonPressed]}
                 >
                   <Ionicons name="create-outline" size={18} color={colors.text.secondary} />
-                </TouchableOpacity>
+                </Pressable>
               </View>
 
               {/* Section Items */}
@@ -283,7 +282,7 @@ export default function Review({ navigation }: ReviewProps) {
           {/* What's Next Card */}
           <View style={styles.whatsNextCard}>
             <View style={styles.whatsNextHeader}>
-              <Ionicons name="sparkles" size={28} color={colors.cyan[500]} />
+              <Ionicons name="sparkles" size={28} color={colors.accent.primary} />
               <Text style={styles.whatsNextTitle}>What's Next?</Text>
             </View>
             <View style={styles.whatsNextList}>
@@ -294,7 +293,7 @@ export default function Review({ navigation }: ReviewProps) {
                 "Adaptive programming that evolves with you"
               ].map((item, index) => (
                 <View key={index} style={styles.whatsNextItem}>
-                  <Ionicons name="checkmark" size={20} color={colors.cyan[500]} style={styles.checkmark} />
+                  <Ionicons name="checkmark" size={20} color={colors.accent.primary} style={styles.checkmark} />
                   <Text style={styles.whatsNextItemText}>{item}</Text>
                 </View>
               ))}
@@ -326,7 +325,7 @@ export default function Review({ navigation }: ReviewProps) {
           <View style={styles.modalContent}>
             {/* Icon */}
             <View style={styles.modalIconContainer}>
-              <Ionicons name="sparkles" size={40} color={colors.cyan[500]} />
+              <Ionicons name="sparkles" size={32} color={colors.accent.primary} />
             </View>
 
             {/* Title */}
@@ -357,10 +356,10 @@ export default function Review({ navigation }: ReviewProps) {
                 const isComplete = generationProgress > (index * 20);
                 return (
                   <View key={index} style={styles.checklistItem}>
-                    <Ionicons 
-                      name={isComplete ? "checkmark-circle" : "ellipse-outline"} 
-                      size={20} 
-                      color={isComplete ? colors.cyan[500] : colors.text.tertiary} 
+                    <Ionicons
+                      name={isComplete ? "checkmark-circle" : "ellipse-outline"}
+                      size={20}
+                      color={isComplete ? colors.accent.primary : colors.text.tertiary}
                     />
                     <Text style={[
                       styles.checklistText,
@@ -384,7 +383,9 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
   sectionCard: {
-    ...glassStyles.card,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
     padding: spacing.xl,
     borderRadius: borderRadius['2xl'],
     ...Platform.select({
@@ -414,9 +415,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: borderRadius.md,
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: colors.accent.primaryGlow,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -460,14 +461,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   whatsNextCard: {
-    ...glassStyles.cardHero,
+    backgroundColor: colors.glass.bgHero,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
     padding: spacing['2xl'],
     borderRadius: borderRadius['3xl'],
-    borderWidth: 1,
-    borderColor: colors.cyan[500],
     ...Platform.select({
       ios: {
-        shadowColor: colors.cyan[500],
+        shadowColor: colors.accent.primary,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.3,
         shadowRadius: 24,
@@ -487,7 +488,7 @@ const styles = StyleSheet.create({
     ...textStyles.h2,
     fontSize: 20,
     fontWeight: '700',
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   whatsNextList: {
     gap: spacing.md,
@@ -529,13 +530,13 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     backgroundColor: colors.bg.raised,
     borderRadius: borderRadius['3xl'],
-    padding: spacing['3xl'],
+    padding: spacing.xl,
     gap: spacing.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: colors.glass.borderLight,
     ...Platform.select({
       ios: {
-        shadowColor: colors.cyan[500],
+        shadowColor: colors.accent.primary,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.35,
         shadowRadius: 32,
@@ -546,19 +547,19 @@ const styles = StyleSheet.create({
     }),
   },
   modalIconContainer: {
-    width: 80,
-    height: 80,
+    width: 64,
+    height: 64,
     borderRadius: borderRadius.xl,
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: colors.accent.primaryGlow,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     ...Platform.select({
       ios: {
-        shadowColor: colors.cyan[500],
+        shadowColor: colors.accent.primary,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.35,
         shadowRadius: 12,
@@ -570,11 +571,11 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     ...textStyles.h1,
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '700',
     textAlign: 'center',
     color: colors.text.primary,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   modalSubtitle: {
     ...textStyles.body,
@@ -582,7 +583,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'center',
     color: colors.text.secondary,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   progressBarContainer: {
     height: 8,
@@ -593,11 +594,11 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: colors.cyan[500],
+    backgroundColor: colors.accent.primary,
     borderRadius: borderRadius.full,
     ...Platform.select({
       ios: {
-        shadowColor: colors.cyan[500],
+        shadowColor: colors.accent.primary,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.6,
         shadowRadius: 20,
@@ -609,11 +610,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
-    color: colors.cyan[500],
-    marginBottom: spacing.xl,
+    color: colors.accent.primary,
+    marginBottom: spacing.lg,
     ...Platform.select({
       ios: {
-        shadowColor: colors.cyan[500],
+        shadowColor: colors.accent.primary,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.4,
         shadowRadius: 10,
@@ -635,5 +636,8 @@ const styles = StyleSheet.create({
   },
   checklistTextComplete: {
     color: colors.text.secondary,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });

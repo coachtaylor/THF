@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, borderRadius } from '../../theme/theme';
+import { useSensoryMode } from '../../contexts/SensoryModeContext';
 
 interface WarmUpExercise {
   name: string;
@@ -27,6 +28,7 @@ const formatTime = (seconds: number) => {
 
 export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onComplete, onSkip }: WarmUpPhaseProps) {
   const insets = useSafeAreaInsets();
+  const { disableAnimations } = useSensoryMode();
   const [completedExercises, setCompletedExercises] = useState<boolean[]>(
     new Array(warmUpExercises.length).fill(false)
   );
@@ -41,8 +43,10 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
     return () => clearInterval(interval);
   }, []);
 
-  // Shimmer animation for complete button
+  // Shimmer animation for complete button - skip in low sensory mode
   useEffect(() => {
+    if (disableAnimations) return;
+
     Animated.loop(
       Animated.sequence([
         Animated.timing(shimmerAnim, {
@@ -57,7 +61,7 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
         }),
       ])
     ).start();
-  }, [shimmerAnim]);
+  }, [shimmerAnim, disableAnimations]);
 
   const toggleExercise = (index: number) => {
     setCompletedExercises(prev => {
@@ -104,7 +108,7 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.instructionCard}>
-          <Ionicons name="fitness-outline" size={24} color={colors.accent.primary} />
+          <Ionicons name="fitness-outline" size={24} color={colors.accent.secondary} />
           <Text style={styles.instructionText}>
             Get your body ready for the workout ahead!
           </Text>
@@ -184,7 +188,7 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
             end={{ x: 1, y: 0 }}
             style={styles.completeButtonGradient}
           >
-            {allCompleted && (
+            {allCompleted && !disableAnimations && (
               <Animated.View
                 style={[
                   styles.shimmerOverlay,

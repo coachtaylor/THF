@@ -1,6 +1,6 @@
 // src/screens/SessionPlayer.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, Pressable, Image, Alert, useWindowDimensions, Animated, Platform } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Text, Modal, Portal, Card } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,11 +20,17 @@ import CompletionScreen from '../components/session/CompletionScreen';
 import WarmUpPhase from '../components/session/WarmUpPhase';
 import CoolDownPhase from '../components/session/CoolDownPhase';
 import SafetyCheckpointModal from '../components/session/SafetyCheckpointModal';
+import SafetyInfoModal from '../components/session/SafetyInfoModal';
+import RecoveryReminderBanner from '../components/session/RecoveryReminderBanner';
 import { saveSession, buildSessionData } from '../services/sessionLogger';
+import type { InjectedCheckpoint } from '../services/workoutGeneration/checkpointInjection';
+import { useSessionFeedback } from '../hooks/useSessionFeedback';
 import { autoRegress, AutoRegressionResult } from '../services/autoRegress';
 import { fetchAllExercises, getCachedExercises } from '../services/exerciseService';
 import { useProfile } from '../hooks/useProfile';
 import { DumbbellIcon } from '../components/icons/DumbbellIcon';
+import ProgressRing from '../components/common/ProgressRing';
+import GlassCard from '../components/common/GlassCard';
 import { colors, spacing, borderRadius } from '../theme/theme';
 import type { OnboardingScreenProps } from '../types/onboarding';
 import { CommonActions } from '@react-navigation/native';
@@ -51,10 +57,6 @@ interface CoolDownData {
   }>;
 }
 
-interface SafetyCheckpoint {
-  message: string;
-}
-
 interface SessionPlayerProps extends OnboardingScreenProps<'SessionPlayer'> {
   route: {
     params: {
@@ -62,7 +64,7 @@ interface SessionPlayerProps extends OnboardingScreenProps<'SessionPlayer'> {
       planId?: string;
       warmUp?: WarmUpData;
       coolDown?: CoolDownData;
-      safetyCheckpoints?: SafetyCheckpoint[];
+      safetyCheckpoints?: InjectedCheckpoint[];
       selectedSwapExerciseId?: string; // From ExerciseLibraryScreen
     };
   };
@@ -104,9 +106,29 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   const { profile } = useProfile();
   const insets = useSafeAreaInsets();
 
+  // Generate a unique session ID for this workout session
+  const sessionId = useRef(`session_${workout.id}_${Date.now()}`).current;
+
+  // Session feedback hook for tracking flagged exercises
+  const {
+    flaggedExercises,
+    addFlag,
+    isExerciseFlagged,
+    hasFlags,
+    submitFlags,
+    clearFlags,
+  } = useSessionFeedback({
+    sessionId,
+    workoutId: workout.id,
+    userId: profile?.id,
+  });
+  const { width } = useWindowDimensions();
+  const isSmall = width < 375;
+
   const [phase, setPhase] = useState<WorkoutPhase>(warmUp ? 'warm-up' : 'main');
   const [exercises, setExercises] = useState<ExerciseInstanceWithData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
   const [completedSets, setCompletedSets] = useState<CompletedSet[]>([]);
   const [startedAt, setStartedAt] = useState<string>(new Date().toISOString());
@@ -119,12 +141,15 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   const [painFlaggedExercises, setPainFlaggedExercises] = useState<Set<string>>(new Set());
   const [showCuesModal, setShowCuesModal] = useState(false);
   const [showSafetyCheckpoint, setShowSafetyCheckpoint] = useState(false);
-  const [safetyCheckpointShown, setSafetyCheckpointShown] = useState(false);
+  const [shownCheckpointIds, setShownCheckpointIds] = useState<Set<string>>(new Set());
+  const [currentCheckpoint, setCurrentCheckpoint] = useState<InjectedCheckpoint | null>(null);
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [currentSetBeingCompleted, setCurrentSetBeingCompleted] = useState<number | null>(null);
   const [showSkipExerciseModal, setShowSkipExerciseModal] = useState(false);
+  const [showSessionMenu, setShowSessionMenu] = useState(false);
   const [skippedExercises, setSkippedExercises] = useState<Set<string>>(new Set());
   const [totalElapsedSeconds, setTotalElapsedSeconds] = useState(0);
+  const [showSafetyInfo, setShowSafetyInfo] = useState(false);
   const [isTimerPaused, setIsTimerPaused] = useState(false);
   const elapsedTimeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pausedTimeRef = useRef(0); // Stores elapsed time when paused
@@ -177,15 +202,31 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         const totalElapsed = pausedTimeRef.current + sessionElapsed;
         setTotalElapsedSeconds(totalElapsed);
 
-        // Check for safety checkpoint at 45 minutes (2700 seconds)
-        if (
-          !safetyCheckpointShown &&
-          safetyCheckpoints.length > 0 &&
-          profile?.binds_chest &&
-          totalElapsed >= 2700
-        ) {
-          setShowSafetyCheckpoint(true);
-          setSafetyCheckpointShown(true);
+        // Check for due safety checkpoints dynamically
+        if (safetyCheckpoints.length > 0) {
+          const dueCheckpoints = safetyCheckpoints.filter(cp => {
+            // Generate a unique ID for each checkpoint
+            const checkpointId = `${cp.type}-${cp.trigger}-${cp.timing_minutes || 0}`;
+
+            // Skip if already shown
+            if (shownCheckpointIds.has(checkpointId)) return false;
+
+            // Only check during-workout checkpoints here
+            if (cp.position !== 'during_workout') return false;
+
+            // Check if timing threshold reached (convert minutes to seconds)
+            const triggerTimeSeconds = (cp.timing_minutes || 0) * 60;
+            return totalElapsed >= triggerTimeSeconds;
+          });
+
+          if (dueCheckpoints.length > 0) {
+            const checkpoint = dueCheckpoints[0];
+            const checkpointId = `${checkpoint.type}-${checkpoint.trigger}-${checkpoint.timing_minutes || 0}`;
+
+            setCurrentCheckpoint(checkpoint);
+            setShowSafetyCheckpoint(true);
+            setShownCheckpointIds(prev => new Set(prev).add(checkpointId));
+          }
         }
       }, 1000);
     } else if (isTimerPaused && elapsedTimeIntervalRef.current) {
@@ -202,7 +243,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         elapsedTimeIntervalRef.current = null;
       }
     };
-  }, [phase, mainWorkoutStartedAt, isTimerPaused, safetyCheckpointShown, safetyCheckpoints, profile?.binds_chest]);
+  }, [phase, mainWorkoutStartedAt, isTimerPaused, shownCheckpointIds, safetyCheckpoints]);
 
   // Ref to store rest timer completion callback (avoids hook order issues)
   const restTimerCompleteCallbackRef = useRef<(() => void) | null>(null);
@@ -261,16 +302,17 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   const loadExercises = async () => {
     try {
-      console.log('🔄 Loading exercises...', { workoutExercisesCount: workout.exercises.length });
+      if (__DEV__) console.log('🔄 Loading exercises...', { workoutExercisesCount: workout.exercises.length });
       setLoading(true);
+      setLoadError(null); // Clear any previous error
       const allExercises = await fetchAllExercises();
-      console.log('✅ Fetched all exercises:', allExercises.length);
+      if (__DEV__) console.log('✅ Fetched all exercises:', allExercises.length);
       const exerciseMap = new Map(allExercises.map(ex => [ex.id, ex]));
 
       const exercisesWithData: ExerciseInstanceWithData[] = workout.exercises.map(instance => {
         const exercise = exerciseMap.get(instance.exerciseId);
         if (!exercise) {
-          console.error(`❌ Exercise ${instance.exerciseId} not found in exercise map`);
+          if (__DEV__) console.error(`❌ Exercise ${instance.exerciseId} not found in exercise map`);
           throw new Error(`Exercise ${instance.exerciseId} not found`);
         }
         return {
@@ -279,25 +321,55 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         };
       });
 
-      console.log('✅ Loaded exercises with data:', exercisesWithData.length);
+      if (__DEV__) console.log('✅ Loaded exercises with data:', exercisesWithData.length);
       setExercises(exercisesWithData);
       setStartedAt(new Date().toISOString());
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Failed to load exercises:', error);
+      setLoadError(error?.message || 'Unable to load workout exercises. Please try again.');
     } finally {
       setLoading(false);
-      console.log('✅ Exercise loading complete');
+      if (__DEV__) console.log('✅ Exercise loading complete');
     }
   };
 
-  // Handle safety checkpoint modal
+  // Handle safety checkpoint modal dismiss
+  const handleDismissCheckpoint = () => {
+    setShowSafetyCheckpoint(false);
+    setCurrentCheckpoint(null);
+  };
+
+  // Handle safety checkpoint modal - for binder breaks
   const handleStartBreak = () => {
     setShowSafetyCheckpoint(false);
+    setCurrentCheckpoint(null);
     // Break timer is handled in SafetyCheckpointModal
   };
 
   const handleTakeBreakLater = () => {
     setShowSafetyCheckpoint(false);
+    setCurrentCheckpoint(null);
+  };
+
+  // Helper to get checkpoint title based on type
+  const getCheckpointTitle = (checkpoint: InjectedCheckpoint | null): string => {
+    if (!checkpoint) return 'Safety Reminder';
+    switch (checkpoint.type) {
+      case 'binder_break':
+        return 'Binder Break';
+      case 'scar_care':
+        return 'Scar Care Reminder';
+      case 'sensitivity_check':
+        return 'Sensitivity Check';
+      case 'post_workout_reminder':
+        return 'Post-Workout Reminder';
+      case 'safety_reminder':
+        return 'Safety Reminder';
+      case 'hrt_reminder':
+        return 'HRT Reminder';
+      default:
+        return 'Safety Reminder';
+    }
   };
 
   const handleSkipExercise = () => {
@@ -391,13 +463,24 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           totalDurationMinutes={warmUp.total_duration_minutes}
           onComplete={handleWarmUpComplete}
         />
-        <SafetyCheckpointModal
-          visible={showSafetyCheckpoint}
-          message={safetyCheckpoints[0]?.message || 'Time for a binder break'}
-          breakDurationMinutes={10}
-          onStartBreak={handleStartBreak}
-          onTakeBreakLater={handleTakeBreakLater}
-        />
+        {/* Render appropriate modal based on checkpoint type */}
+        {currentCheckpoint?.type === 'binder_break' ? (
+          <SafetyCheckpointModal
+            visible={showSafetyCheckpoint}
+            message={currentCheckpoint?.message || 'Time for a binder break'}
+            breakDurationMinutes={10}
+            onStartBreak={handleStartBreak}
+            onTakeBreakLater={handleTakeBreakLater}
+          />
+        ) : (
+          <SafetyInfoModal
+            visible={showSafetyCheckpoint}
+            title={getCheckpointTitle(currentCheckpoint)}
+            message={currentCheckpoint?.message || ''}
+            severity={currentCheckpoint?.severity === 'critical' ? 'high' : currentCheckpoint?.severity === 'high' ? 'high' : currentCheckpoint?.severity === 'medium' ? 'medium' : 'low'}
+            onDismiss={handleDismissCheckpoint}
+          />
+        )}
       </>
     );
   }
@@ -421,7 +504,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   // Show loading state if in main phase but exercises aren't loaded yet
   // Only show loading if we're actually still loading OR if exercises is empty AND we have workout exercises to load
   if (phase === 'main' && loading) {
-    console.log('⏳ Showing loading state for main phase (still loading)');
+    if (__DEV__) console.log('⏳ Showing loading state for main phase (still loading)');
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: Math.max(insets.top, spacing.l) }]}>
         <ActivityIndicator size="large" color={colors.accent.primary} />
@@ -433,9 +516,39 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     );
   }
 
+  // Show error if exercise loading failed
+  if (loadError) {
+    return (
+      <View style={[styles.container, styles.centerContent, { paddingTop: Math.max(insets.top, spacing.l) }]}>
+        <Ionicons name="alert-circle" size={48} color={colors.error} style={{ marginBottom: spacing.m }} />
+        <Text style={styles.errorText}>Unable to Load Workout</Text>
+        <Text style={[styles.errorText, { fontSize: 14, marginTop: spacing.s, color: colors.text.tertiary, textAlign: 'center', paddingHorizontal: spacing.xl }]}>
+          {loadError}
+        </Text>
+        <Button
+          mode="contained"
+          onPress={() => {
+            if (__DEV__) console.log('🔄 Retrying exercise load...');
+            loadExercises();
+          }}
+          style={{ marginTop: spacing.l }}
+        >
+          Try Again
+        </Button>
+        <Button
+          mode="text"
+          onPress={() => navigation.goBack()}
+          style={{ marginTop: spacing.s }}
+        >
+          Go Back
+        </Button>
+      </View>
+    );
+  }
+
   // Show error if exercises failed to load (only if we're not loading and have no exercises)
   if (phase === 'main' && exercises.length === 0 && !loading && workout.exercises.length > 0) {
-    console.error('❌ Main phase but no exercises loaded', {
+    if (__DEV__) console.error('❌ Main phase but no exercises loaded', {
       workoutExercisesCount: workout.exercises.length,
       exercisesStateCount: exercises.length
     });
@@ -578,7 +691,13 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   };
 
   const handleCoolDownComplete = async () => {
-    await handleWorkoutComplete();
+    console.log('🏁 handleCoolDownComplete called');
+    try {
+      await handleWorkoutComplete();
+    } catch (error) {
+      console.error('❌ Error in handleCoolDownComplete:', error);
+      Alert.alert('Error', 'Failed to complete workout. Please try again.');
+    }
   };
 
   const handleWorkoutComplete = async () => {
@@ -677,6 +796,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         exercisesCompleted: exercises.length,
         workoutName: `Workout - ${new Date().toLocaleDateString()}`,
       },
+      // Pass flagged exercises for post-workout review
+      flaggedExercises,
+      sessionId,
     });
   };
 
@@ -789,12 +911,32 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   // Handle skip set
   const handleSkipSet = () => {
-    // Move to next set or exercise
-    const completedSetsForExercise = completedSets.filter(
+    const currentExerciseSets = completedSets.filter(
       set => set.exerciseId === currentExercise.id
     );
+    const setNumber = currentExerciseSets.length + 1;
+
+    // Add a skipped set to completedSets (with skipped flag)
+    const skippedSet: CompletedSet = {
+      exerciseId: currentExercise.id,
+      setNumber,
+      rpe: 0,
+      reps: 0,
+      weight: 0,
+      completedAt: new Date().toISOString(),
+      skipped: true,
+    };
+
+    const updatedSets = [...completedSets, skippedSet];
+    setCompletedSets(updatedSets);
+
+    // Check if this was the last set
+    const completedSetsForExercise = updatedSets.filter(
+      set => set.exerciseId === currentExercise.id
+    );
+
     if (completedSetsForExercise.length >= totalSets) {
-      // Move to next exercise
+      // Last set - move to next exercise or complete workout
       if (currentExerciseIndex < exercises.length - 1) {
         setCurrentExerciseIndex(prev => prev + 1);
         setCurrentRPE(null);
@@ -802,6 +944,8 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         handleMainWorkoutComplete();
       }
     }
+    // If more sets remain, the UI will automatically show the next set
+    // (currentSet is derived from completedSets.length + 1)
   };
 
 
@@ -826,163 +970,255 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   if (phase === 'main') {
     return (
       <SafeAreaView style={styles.container}>
-        <SafetyCheckpointModal
-          visible={showSafetyCheckpoint}
-          message={safetyCheckpoints[0]?.message || 'Time for a binder break'}
-          breakDurationMinutes={10}
-          onStartBreak={handleStartBreak}
-          onTakeBreakLater={handleTakeBreakLater}
-        />
-        
-        {/* Header */}
-        <View style={[styles.newHeader, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.headerCenter}
+        {/* Render appropriate modal based on checkpoint type */}
+        {currentCheckpoint?.type === 'binder_break' ? (
+          <SafetyCheckpointModal
+            visible={showSafetyCheckpoint}
+            message={currentCheckpoint?.message || 'Time for a binder break'}
+            breakDurationMinutes={10}
+            onStartBreak={handleStartBreak}
+            onTakeBreakLater={handleTakeBreakLater}
+          />
+        ) : (
+          <SafetyInfoModal
+            visible={showSafetyCheckpoint}
+            title={getCheckpointTitle(currentCheckpoint)}
+            message={currentCheckpoint?.message || ''}
+            severity={currentCheckpoint?.severity === 'critical' ? 'high' : currentCheckpoint?.severity === 'high' ? 'high' : currentCheckpoint?.severity === 'medium' ? 'medium' : 'low'}
+            onDismiss={handleDismissCheckpoint}
+          />
+        )}
+
+        {/* Premium Header */}
+        <View style={styles.premiumHeader}>
+          <Pressable style={styles.headerGlassButton} onPress={handleBack}>
+            <Ionicons name="close" size={22} color={colors.text.primary} />
+          </Pressable>
+
+          <Pressable
+            style={styles.premiumTimerSection}
             onPress={() => setIsTimerPaused(!isTimerPaused)}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
-            <View style={styles.timerRow}>
-              <Text style={[styles.workoutTimer, isTimerPaused && styles.timerPaused]}>
+            <ProgressRing
+              progress={Math.min(totalElapsedSeconds / ((workout?.duration || 45) * 60), 1)}
+              size={72}
+              strokeWidth={4}
+              color={isTimerPaused ? 'warning' : 'primary'}
+            >
+              <Text style={[styles.timerDigits, isTimerPaused && styles.timerDigitsPaused]}>
                 {formatTime(totalElapsedSeconds)}
               </Text>
-              <Ionicons
-                name={isTimerPaused ? "play" : "pause"}
-                size={18}
-                color={isTimerPaused ? colors.accent.primary : colors.text.tertiary}
-                style={styles.timerIcon}
-              />
-            </View>
-            <Text style={styles.timerLabel}>
-              {isTimerPaused ? 'Paused - Tap to Resume' : 'Total Time - Tap to Pause'}
+            </ProgressRing>
+            <Text style={styles.timerStatusLabel}>
+              {isTimerPaused ? 'PAUSED' : 'ELAPSED'}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.menuButton}>
-            <Ionicons name="ellipsis-horizontal" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
+          </Pressable>
+
+          <Pressable
+            style={styles.headerGlassButton}
+            onPress={() => setShowSessionMenu(true)}
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color={colors.text.primary} />
+          </Pressable>
         </View>
 
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressInfoRow}>
-            <Text style={styles.progressText}>
-              {currentExerciseIndex + 1} / {exercises.length} exercises
-            </Text>
-            <Text style={styles.progressText}>{Math.round(progress)}%</Text>
+        {/* Segmented Progress Bar */}
+        <View style={styles.progressSection}>
+          <View style={styles.progressSegments}>
+            {exercises.map((_, index) => {
+              const isComplete = index < currentExerciseIndex;
+              const isCurrent = index === currentExerciseIndex;
+              const setProgress = isCurrent ? (currentExerciseSets.length / totalSets) * 100 : 0;
+
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.progressSegment,
+                    isCurrent && styles.progressSegmentActive,
+                  ]}
+                >
+                  {isComplete && (
+                    <LinearGradient
+                      colors={[colors.accent.primary, colors.accent.primaryDark]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  )}
+                  {isCurrent && setProgress > 0 && (
+                    <View style={[styles.progressSegmentFill, { width: `${setProgress}%` }]}>
+                      <LinearGradient
+                        colors={[colors.accent.primary, '#4AA8D8']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </View>
-          <View style={styles.progressBarTrack}>
-            <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
+          <View style={styles.progressLabels}>
+            <Text style={styles.progressExerciseCount}>
+              Exercise {currentExerciseIndex + 1}/{exercises.length}
+            </Text>
+            <Text style={styles.progressPercentage}>{Math.round(progress)}%</Text>
           </View>
         </View>
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          {/* Exercise Card */}
-          <View style={styles.exerciseCard}>
-            <Text style={styles.exerciseName}>{currentExercise.name}</Text>
-            
-            {currentExercise.target_muscles && (
-              <View style={styles.targetBadge}>
-                <Text style={styles.targetBadgeText}>{currentExercise.target_muscles}</Text>
-              </View>
-            )}
+          {/* Recovery Reminder Banner */}
+          {profile?.surgeries && profile.surgeries.length > 0 && (
+            <RecoveryReminderBanner
+              surgeries={profile.surgeries}
+              onLearnMore={(surgery) => {
+                // Navigate to PostOpMovementGuide when user taps "View Recovery Guide"
+                navigation.navigate('PostOpMovementGuide', { surgeryType: surgery.type });
+              }}
+            />
+          )}
 
-            {/* Exercise Thumbnail */}
-            {!profile?.low_sensory_mode && (
-              <TouchableOpacity style={styles.thumbnailContainer} onPress={() => setShowCuesModal(true)}>
-                {currentExercise.media_thumb ? (
-                  <Image
-                    source={{ uri: currentExercise.media_thumb }}
-                    style={styles.exerciseThumbnail}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <View style={styles.noMediaFallback}>
-                    <DumbbellIcon size={48} color={colors.text.tertiary} />
-                    <Text style={styles.noMediaText}>{currentExercise.name}</Text>
-                  </View>
-                )}
-                <View style={styles.tipsHint}>
-                  <Ionicons name="information-circle-outline" size={16} color={colors.accent.primary} />
-                  <Text style={styles.tipsHintText}>Tap for form tips</Text>
+          {/* Premium Exercise Card */}
+          <View style={styles.exerciseCardWrapper}>
+            {/* Floating Set Badge */}
+            <View style={styles.setBadge}>
+              <LinearGradient
+                colors={[colors.accent.primary, colors.accent.primaryDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Text style={styles.setBadgeText}>SET {currentExerciseSets.length + 1}/{totalSets}</Text>
+            </View>
+
+            <GlassCard variant="hero" style={styles.premiumExerciseCard}>
+              {/* Exercise Name */}
+              <Text style={styles.premiumExerciseName}>{currentExercise.name}</Text>
+
+              {/* Target Muscles Pill */}
+              {currentExercise.target_muscles && (
+                <View style={styles.targetPill}>
+                  <Ionicons name="body-outline" size={12} color={colors.accent.secondary} />
+                  <Text style={styles.targetPillText}>{currentExercise.target_muscles}</Text>
                 </View>
-              </TouchableOpacity>
-            )}
+              )}
 
-            {/* Set Info */}
-            <Text style={styles.setInfoText}>
-              Set {currentExerciseSets.length + 1} of {totalSets}
-            </Text>
+              {/* Exercise Visual */}
+              {!profile?.low_sensory_mode && (
+                <View style={styles.exerciseVisualContainer}>
+                  {currentExercise.media_thumb ? (
+                    <Image
+                      source={{ uri: currentExercise.media_thumb }}
+                      style={styles.exerciseImage}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={styles.exercisePlaceholder}>
+                      <DumbbellIcon size={56} color={colors.text.tertiary} />
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Quick Cue Preview */}
+              {currentExercise.cue_primary && (
+                <View style={styles.quickCueContainer}>
+                  <Text style={styles.quickCueText}>"{currentExercise.cue_primary}"</Text>
+                </View>
+              )}
+            </GlassCard>
           </View>
 
-          {/* Input Controls */}
-          <View style={styles.controlsContainer}>
-            {/* Reps */}
-            <View style={styles.inputSection}>
-              <Text style={styles.inputLabel}>Reps Completed</Text>
-              <View style={styles.numberInputContainer}>
-                <TouchableOpacity
-                  style={styles.numberButton}
+          {/* Premium Input Controls */}
+          <View style={styles.premiumControls}>
+            {/* Reps Input - Primary */}
+            <View style={styles.inputCard}>
+              <Text style={styles.inputCardLabel}>REPS COMPLETED</Text>
+              <View style={styles.stepperContainer}>
+                <Pressable
+                  style={styles.stepperButton}
                   onPress={() => setReps(Math.max(1, reps - 1))}
+                  onLongPress={() => setReps(Math.max(1, reps - 5))}
                 >
-                  <Text style={styles.numberButtonText}>−</Text>
-                </TouchableOpacity>
-                <View style={styles.numberDisplay}>
-                  <Text style={styles.numberText}>{reps}</Text>
+                  <LinearGradient
+                    colors={[colors.glass.bgLight, colors.glass.bg]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Ionicons name="remove" size={28} color={colors.text.primary} />
+                </Pressable>
+
+                <View style={styles.stepperValueContainer}>
+                  <Text style={styles.stepperValue}>{reps}</Text>
+                  <Text style={styles.stepperUnit}>reps</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.numberButton}
+
+                <Pressable
+                  style={styles.stepperButton}
                   onPress={() => setReps(reps + 1)}
+                  onLongPress={() => setReps(reps + 5)}
                 >
-                  <Text style={styles.numberButtonText}>+</Text>
-                </TouchableOpacity>
+                  <LinearGradient
+                    colors={[colors.glass.bgLight, colors.glass.bg]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Ionicons name="add" size={28} color={colors.text.primary} />
+                </Pressable>
               </View>
             </View>
 
-            {/* Weight */}
-            <View style={styles.inputSection}>
-              <Text style={styles.inputLabel}>Weight (lbs)</Text>
-              <View style={styles.numberInputContainer}>
-                <TouchableOpacity
-                  style={styles.numberButton}
+            {/* Weight Input */}
+            <View style={styles.inputCard}>
+              <Text style={styles.inputCardLabel}>WEIGHT</Text>
+              <View style={styles.stepperContainer}>
+                <Pressable
+                  style={styles.stepperButtonSmall}
                   onPress={() => setWeight(Math.max(0, weight - 5))}
                 >
-                  <Text style={styles.numberButtonText}>−5</Text>
-                </TouchableOpacity>
-                <View style={styles.numberDisplay}>
-                  <Text style={styles.numberText}>{weight}</Text>
+                  <Text style={styles.stepperButtonText}>-5</Text>
+                </Pressable>
+
+                <View style={styles.stepperValueContainerCompact}>
+                  <Text style={styles.stepperValueCompact}>{weight}</Text>
+                  <Text style={styles.stepperUnitCompact}>lbs</Text>
                 </View>
-                <TouchableOpacity
-                  style={styles.numberButton}
+
+                <Pressable
+                  style={styles.stepperButtonSmall}
                   onPress={() => setWeight(weight + 5)}
                 >
-                  <Text style={styles.numberButtonText}>+5</Text>
-                </TouchableOpacity>
+                  <Text style={styles.stepperButtonText}>+5</Text>
+                </Pressable>
               </View>
             </View>
 
-            {/* RPE Slider */}
-            <View style={styles.rpeContainer}>
-              <Text style={styles.inputLabel}>How Hard Was It?</Text>
-              <View style={styles.rpeValueContainer}>
-                <Text style={styles.rpeValueText}>{rpe}</Text>
+            {/* RPE Dots */}
+            <View style={styles.rpeCard}>
+              <View style={styles.rpeHeader}>
+                <Text style={styles.inputCardLabel}>EFFORT LEVEL (RPE)</Text>
+                <View style={styles.rpeValueBadge}>
+                  <Text style={styles.rpeValueBadgeText}>{rpe}/10</Text>
+                </View>
               </View>
-              <Slider
-                value={rpe}
-                onValueChange={setRpe}
-                minimumValue={1}
-                maximumValue={10}
-                step={1}
-                minimumTrackTintColor={colors.accent.primary}
-                maximumTrackTintColor={colors.border.default}
-                thumbTintColor={colors.accent.primary}
-                style={styles.rpeSlider}
-              />
-              <View style={styles.rpeLabelsRow}>
-                <Text style={styles.rpeLabel}>Easy</Text>
-                <Text style={styles.rpeLabel}>Moderate</Text>
-                <Text style={styles.rpeLabel}>Max Effort</Text>
+              <View style={styles.rpeTrack}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+                  <Pressable
+                    key={value}
+                    style={[
+                      styles.rpeDot,
+                      rpe >= value && styles.rpeDotActive,
+                      rpe === value && styles.rpeDotCurrent,
+                    ]}
+                    onPress={() => setRpe(value)}
+                  />
+                ))}
+              </View>
+              <View style={styles.rpeDotsLabels}>
+                <Text style={styles.rpeDotsLabel}>Easy</Text>
+                <Text style={styles.rpeDotsLabel}>Moderate</Text>
+                <Text style={styles.rpeDotsLabel}>Maximum</Text>
               </View>
             </View>
           </View>
@@ -1002,49 +1238,90 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           )}
         </ScrollView>
 
-        {/* Actions Row */}
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleSkipSet}>
-            <Text style={styles.secondaryButtonText}>Skip Set</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => setShowCuesModal(true)}
-          >
-            <Text style={styles.secondaryButtonText}>View Cues</Text>
-          </TouchableOpacity>
+        {/* Premium Actions Row */}
+        <View style={styles.actionsContainer}>
+          <Pressable style={styles.actionButtonSecondary} onPress={handleSkipSet}>
+            <Ionicons name="play-skip-forward" size={18} color={colors.text.secondary} />
+            <Text style={styles.actionButtonSecondaryText}>Skip</Text>
+          </Pressable>
+
+          <View style={styles.actionDivider} />
+
+          <Pressable style={styles.actionButtonSecondary} onPress={() => setShowSwapDrawer(true)}>
+            <Ionicons name="swap-horizontal" size={18} color={colors.text.secondary} />
+            <Text style={styles.actionButtonSecondaryText}>Swap</Text>
+          </Pressable>
+
+          <View style={styles.actionDivider} />
+
+          <Pressable style={styles.actionButtonPrimary} onPress={() => setShowCuesModal(true)}>
+            <Ionicons name="information-circle" size={18} color={colors.accent.primary} />
+            <Text style={styles.actionButtonPrimaryText}>Cues</Text>
+          </Pressable>
         </View>
 
-        {/* Complete Button */}
-        <View style={styles.completeButtonContainer}>
-          <TouchableOpacity
-            style={styles.completeButton}
+        {/* Premium Complete Set CTA */}
+        <View style={styles.ctaContainer}>
+          <Pressable
+            style={styles.premiumCompleteButton}
             onPress={() => handleSetComplete(reps, weight, rpe)}
+            activeOpacity={0.9}
           >
             <LinearGradient
-              colors={[colors.accent.primary, '#4AA8D8']}
+              colors={[colors.accent.primary, '#45A8D8', colors.accent.primaryDark]}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.completeButtonGradient}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumCompleteButtonGradient}
             >
-              <CheckmarkSVG />
-              <Text style={styles.completeButtonText}>Complete Set</Text>
+              {/* Glass highlight */}
+              <LinearGradient
+                colors={['rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.1)', 'transparent']}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={styles.premiumCompleteButtonHighlight}
+              />
+
+              <View style={styles.premiumCompleteButtonContent}>
+                <View style={styles.completeCheckCircle}>
+                  <Ionicons name="checkmark" size={24} color={colors.accent.primary} />
+                </View>
+                <Text style={styles.premiumCompleteButtonText}>Complete Set</Text>
+              </View>
             </LinearGradient>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
-        {/* Rest Timer Overlay */}
+        {/* Premium Rest Timer Overlay */}
         {showRestTimer && (
-          <View style={styles.restOverlay}>
-            <View style={styles.restCard}>
-              <Text style={styles.restTitle}>Rest</Text>
-              <Text style={styles.restTimerText}>{formatTime(restSeconds)}</Text>
-              <TouchableOpacity
-                style={styles.skipRestButton}
-                onPress={handleRestTimerComplete}
+          <View style={styles.premiumRestOverlay}>
+            <LinearGradient
+              colors={['rgba(0, 0, 0, 0.85)', 'rgba(10, 10, 15, 0.95)']}
+              style={StyleSheet.absoluteFill}
+            />
+
+            <View style={styles.restContent}>
+              <View style={styles.restHeader}>
+                <Ionicons name="pause-circle" size={32} color={colors.accent.primary} />
+                <Text style={styles.restLabel}>REST</Text>
+              </View>
+
+              <ProgressRing
+                progress={1 - (restSeconds / (currentExerciseInstance?.restSeconds || 60))}
+                size={200}
+                strokeWidth={8}
+                color="primary"
               >
-                <Text style={styles.skipRestButtonText}>Skip Rest</Text>
-              </TouchableOpacity>
+                <Text style={styles.restTimerLarge}>{formatTime(restSeconds)}</Text>
+              </ProgressRing>
+
+              <Text style={styles.restNextUp}>
+                Next: Set {currentExerciseSets.length + 2} of {totalSets}
+              </Text>
+
+              <Pressable style={styles.skipRestButtonPremium} onPress={handleRestTimerComplete}>
+                <Text style={styles.skipRestButtonPremiumText}>Skip Rest</Text>
+                <Ionicons name="arrow-forward" size={18} color={colors.text.primary} />
+              </Pressable>
             </View>
           </View>
         )}
@@ -1077,7 +1354,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             contentContainerStyle={styles.modalContainer}
             style={styles.modalOverlay}
           >
-            <Card style={styles.modalCard}>
+            <Card style={styles.modalCard} mode="contained">
               <Card.Title
                 title="Skip Exercise?"
                 titleStyle={styles.modalTitle}
@@ -1091,7 +1368,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                 </Text>
               </Card.Content>
               <Card.Actions>
-                <Button onPress={cancelSkipExercise}>Cancel</Button>
+                <Button onPress={cancelSkipExercise} textColor={colors.text.primary}>Cancel</Button>
                 <Button
                   mode="contained"
                   onPress={confirmSkipExercise}
@@ -1112,58 +1389,53 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             contentContainerStyle={styles.modalContainer}
             style={styles.modalOverlay}
           >
-            <Card style={styles.modalCard}>
-              <Card.Title
-                title={currentExercise.name}
-                titleStyle={styles.modalTitle}
-              />
-              <Card.Content>
-                <ScrollView style={styles.modalScrollView}>
-                  {currentExercise.neutral_cues && currentExercise.neutral_cues.length > 0 && (
-                    <View style={styles.modalSection}>
-                      <Text style={styles.modalSectionTitle}>Neutral Cues</Text>
-                      {currentExercise.neutral_cues.map((cue: string, index: number) => (
-                        <Text key={index} style={styles.modalListItem}>
-                          • {cue}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
+            <View style={styles.modalCard}>
+              <Text style={styles.modalHeaderTitle}>{currentExercise.name}</Text>
+              <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+                {currentExercise.neutral_cues && currentExercise.neutral_cues.length > 0 && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionTitle}>Neutral Cues</Text>
+                    {currentExercise.neutral_cues.map((cue: string, index: number) => (
+                      <Text key={index} style={styles.modalListItem}>
+                        • {cue}
+                      </Text>
+                    ))}
+                  </View>
+                )}
 
-                  {currentExercise.breathing_cues && currentExercise.breathing_cues.length > 0 && (
-                    <View style={styles.modalSection}>
-                      <Text style={styles.modalSectionTitle}>Breathing Cues</Text>
-                      {currentExercise.breathing_cues.map((cue: string, index: number) => (
-                        <Text key={index} style={styles.modalListItem}>
-                          • {cue}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
+                {currentExercise.breathing_cues && currentExercise.breathing_cues.length > 0 && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionTitle}>Breathing Cues</Text>
+                    {currentExercise.breathing_cues.map((cue: string, index: number) => (
+                      <Text key={index} style={styles.modalListItem}>
+                        • {cue}
+                      </Text>
+                    ))}
+                  </View>
+                )}
 
-                  {(currentExercise.trans_notes?.binder || currentExercise.trans_notes?.pelvic_floor) && (
-                    <View style={styles.modalTransNotes}>
-                      <Text style={styles.modalTransNotesTitle}>Trans-Specific Notes</Text>
-                      {currentExercise.trans_notes?.binder && (
-                        <Text style={styles.modalTransNotesItem}>
-                          <Text style={styles.modalTransNoteLabel}>Binder:</Text>{' '}
-                          {currentExercise.trans_notes.binder}
-                        </Text>
-                      )}
-                      {currentExercise.trans_notes?.pelvic_floor && (
-                        <Text style={styles.modalTransNotesItem}>
-                          <Text style={styles.modalTransNoteLabel}>Pelvic Floor:</Text>{' '}
-                          {currentExercise.trans_notes.pelvic_floor}
-                        </Text>
-                      )}
-                    </View>
-                  )}
-                </ScrollView>
-              </Card.Content>
-              <Card.Actions>
-                <Button onPress={() => setShowCuesModal(false)}>Close</Button>
-              </Card.Actions>
-            </Card>
+                {(currentExercise.trans_notes?.binder || currentExercise.trans_notes?.pelvic_floor) && (
+                  <View style={styles.modalTransNotes}>
+                    <Text style={styles.modalTransNotesTitle}>Trans-Specific Notes</Text>
+                    {currentExercise.trans_notes?.binder && (
+                      <Text style={styles.modalTransNotesItem}>
+                        <Text style={styles.modalTransNoteLabel}>Binder:</Text>{' '}
+                        {currentExercise.trans_notes.binder}
+                      </Text>
+                    )}
+                    {currentExercise.trans_notes?.pelvic_floor && (
+                      <Text style={styles.modalTransNotesItem}>
+                        <Text style={styles.modalTransNoteLabel}>Pelvic Floor:</Text>{' '}
+                        {currentExercise.trans_notes.pelvic_floor}
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </ScrollView>
+              <Pressable style={styles.modalCloseButton} onPress={() => setShowCuesModal(false)}>
+                <Text style={styles.modalCloseButtonText}>Close</Text>
+              </Pressable>
+            </View>
           </Modal>
         </Portal>
       </SafeAreaView>
@@ -1173,18 +1445,29 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   // Original rendering for non-main phases (warm-up, cool-down)
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, spacing.l) }]}>
-      <SafetyCheckpointModal
-        visible={showSafetyCheckpoint}
-        message={safetyCheckpoints[0]?.message || 'Time for a binder break'}
-        breakDurationMinutes={10}
-        onStartBreak={handleStartBreak}
-        onTakeBreakLater={handleTakeBreakLater}
-      />
+      {/* Render appropriate modal based on checkpoint type */}
+      {currentCheckpoint?.type === 'binder_break' ? (
+        <SafetyCheckpointModal
+          visible={showSafetyCheckpoint}
+          message={currentCheckpoint?.message || 'Time for a binder break'}
+          breakDurationMinutes={10}
+          onStartBreak={handleStartBreak}
+          onTakeBreakLater={handleTakeBreakLater}
+        />
+      ) : (
+        <SafetyInfoModal
+          visible={showSafetyCheckpoint}
+          title={getCheckpointTitle(currentCheckpoint)}
+          message={currentCheckpoint?.message || ''}
+          severity={currentCheckpoint?.severity === 'critical' ? 'high' : currentCheckpoint?.severity === 'high' ? 'high' : currentCheckpoint?.severity === 'medium' ? 'medium' : 'low'}
+          onDismiss={handleDismissCheckpoint}
+        />
+      )}
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <Pressable onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
+        </Pressable>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>{workout.duration} min Workout</Text>
           <View style={styles.progressDots}>
@@ -1200,14 +1483,32 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           </View>
         </View>
         <View style={styles.headerRight}>
+          {/* Safety adjustments indicator */}
+          {(workout.metadata?.rules_applied?.length ?? 0) > 0 && (
+            <Pressable
+              onPress={() => setShowSafetyInfo(true)}
+              style={styles.safetyButton}
+            >
+              <Ionicons name="shield-checkmark" size={16} color={colors.accent.primaryLight} />
+            </Pressable>
+          )}
           <Text style={styles.timerText}>
             ⏱️ {Math.floor(totalElapsedSeconds / 60)}:{(totalElapsedSeconds % 60).toString().padStart(2, '0')}
           </Text>
-          <TouchableOpacity>
+          <Pressable>
             <Ionicons name="ellipsis-vertical" size={20} color={colors.text.primary} />
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
+
+      {/* Safety Info Modal */}
+      <SafetyInfoModal
+        visible={showSafetyInfo}
+        onClose={() => setShowSafetyInfo(false)}
+        rulesApplied={workout.metadata?.rules_applied || []}
+        hrtAdjusted={workout.metadata?.hrt_adjusted}
+        excludedCount={workout.metadata?.exercises_excluded_count}
+      />
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Exercise Counter */}
@@ -1249,6 +1550,11 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                 }
               }}
               onSkipExercise={handleSkipExercise}
+              onFlagExercise={addFlag}
+              isExerciseFlagged={isExerciseFlagged(
+                String(currentExercise.id),
+                currentExerciseSets.length + 1
+              )}
             />
           </View>
         )}
@@ -1306,7 +1612,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           contentContainerStyle={styles.modalContainer}
           style={styles.modalOverlay}
         >
-          <Card style={styles.modalCard}>
+          <Card style={styles.modalCard} mode="contained">
             <Card.Title
               title="Skip Exercise?"
               titleStyle={styles.modalTitle}
@@ -1320,7 +1626,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
               </Text>
             </Card.Content>
             <Card.Actions>
-              <Button onPress={cancelSkipExercise}>Cancel</Button>
+              <Button onPress={cancelSkipExercise} textColor={colors.text.primary}>Cancel</Button>
               <Button
                 mode="contained"
                 onPress={confirmSkipExercise}
@@ -1341,58 +1647,137 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           contentContainerStyle={styles.modalContainer}
           style={styles.modalOverlay}
         >
-          <Card style={styles.modalCard}>
-            <Card.Title
-              title={currentExercise.name}
-              titleStyle={styles.modalTitle}
-            />
-            <Card.Content>
-              <ScrollView style={styles.modalScrollView}>
-                {currentExercise.neutral_cues && currentExercise.neutral_cues.length > 0 && (
-                  <View style={styles.modalSection}>
-                    <Text style={styles.modalSectionTitle}>Neutral Cues</Text>
-                    {currentExercise.neutral_cues.map((cue: string, index: number) => (
-                      <Text key={index} style={styles.modalListItem}>
-                        • {cue}
-                      </Text>
-                    ))}
-                  </View>
-                )}
+          <View style={styles.modalCard}>
+            <Text style={styles.modalHeaderTitle}>{currentExercise.name}</Text>
+            <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+              {currentExercise.neutral_cues && currentExercise.neutral_cues.length > 0 && (
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalSectionTitle}>Neutral Cues</Text>
+                  {currentExercise.neutral_cues.map((cue: string, index: number) => (
+                    <Text key={index} style={styles.modalListItem}>
+                      • {cue}
+                    </Text>
+                  ))}
+                </View>
+              )}
 
-                {currentExercise.breathing_cues && currentExercise.breathing_cues.length > 0 && (
-                  <View style={styles.modalSection}>
-                    <Text style={styles.modalSectionTitle}>Breathing Cues</Text>
-                    {currentExercise.breathing_cues.map((cue: string, index: number) => (
-                      <Text key={index} style={styles.modalListItem}>
-                        • {cue}
-                      </Text>
-                    ))}
-                  </View>
-                )}
+              {currentExercise.breathing_cues && currentExercise.breathing_cues.length > 0 && (
+                <View style={styles.modalSection}>
+                  <Text style={styles.modalSectionTitle}>Breathing Cues</Text>
+                  {currentExercise.breathing_cues.map((cue: string, index: number) => (
+                    <Text key={index} style={styles.modalListItem}>
+                      • {cue}
+                    </Text>
+                  ))}
+                </View>
+              )}
 
-                {(currentExercise.trans_notes?.binder || currentExercise.trans_notes?.pelvic_floor) && (
-                  <View style={styles.modalTransNotes}>
-                    <Text style={styles.modalTransNotesTitle}>Trans-Specific Notes</Text>
-                    {currentExercise.trans_notes?.binder && (
-                      <Text style={styles.modalTransNotesItem}>
-                        <Text style={styles.modalTransNoteLabel}>Binder:</Text>{' '}
-                        {currentExercise.trans_notes.binder}
-                      </Text>
-                    )}
-                    {currentExercise.trans_notes?.pelvic_floor && (
-                      <Text style={styles.modalTransNotesItem}>
-                        <Text style={styles.modalTransNoteLabel}>Pelvic Floor:</Text>{' '}
-                        {currentExercise.trans_notes.pelvic_floor}
-                      </Text>
-                    )}
-                  </View>
-                )}
-              </ScrollView>
-            </Card.Content>
-            <Card.Actions>
-              <Button onPress={() => setShowCuesModal(false)}>Close</Button>
-            </Card.Actions>
-          </Card>
+              {(currentExercise.trans_notes?.binder || currentExercise.trans_notes?.pelvic_floor) && (
+                <View style={styles.modalTransNotes}>
+                  <Text style={styles.modalTransNotesTitle}>Trans-Specific Notes</Text>
+                  {currentExercise.trans_notes?.binder && (
+                    <Text style={styles.modalTransNotesItem}>
+                      <Text style={styles.modalTransNoteLabel}>Binder:</Text>{' '}
+                      {currentExercise.trans_notes.binder}
+                    </Text>
+                  )}
+                  {currentExercise.trans_notes?.pelvic_floor && (
+                    <Text style={styles.modalTransNotesItem}>
+                      <Text style={styles.modalTransNoteLabel}>Pelvic Floor:</Text>{' '}
+                      {currentExercise.trans_notes.pelvic_floor}
+                    </Text>
+                  )}
+                </View>
+              )}
+            </ScrollView>
+            <Pressable style={styles.modalCloseButton} onPress={() => setShowCuesModal(false)}>
+              <Text style={styles.modalCloseButtonText}>Close</Text>
+            </Pressable>
+          </View>
+        </Modal>
+      </Portal>
+
+      {/* Session Menu Modal */}
+      <Portal>
+        <Modal
+          visible={showSessionMenu}
+          onDismiss={() => setShowSessionMenu(false)}
+          contentContainerStyle={styles.menuModalContainer}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.menuCard}>
+            <Text style={styles.menuTitle}>Session Options</Text>
+
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                setShowSessionMenu(false);
+                setIsTimerPaused(!isTimerPaused);
+              }}
+            >
+              <Ionicons
+                name={isTimerPaused ? "play-circle-outline" : "pause-circle-outline"}
+                size={24}
+                color={colors.accent.primary}
+              />
+              <Text style={styles.menuItemText}>
+                {isTimerPaused ? 'Resume Timer' : 'Pause Timer'}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                setShowSessionMenu(false);
+                setShowSwapDrawer(true);
+              }}
+            >
+              <Ionicons name="swap-horizontal-outline" size={24} color={colors.text.primary} />
+              <Text style={styles.menuItemText}>Swap Exercise</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                setShowSessionMenu(false);
+                handleSkipSet();
+              }}
+            >
+              <Ionicons name="play-skip-forward-outline" size={24} color={colors.text.primary} />
+              <Text style={styles.menuItemText}>Skip This Exercise</Text>
+            </Pressable>
+
+            <View style={styles.menuDivider} />
+
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                setShowSessionMenu(false);
+                Alert.alert(
+                  'End Workout Early?',
+                  'Your progress will be saved, but this workout will be marked as incomplete.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'End Workout',
+                      style: 'destructive',
+                      onPress: () => navigation.goBack(),
+                    },
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="exit-outline" size={24} color={colors.error} />
+              <Text style={[styles.menuItemText, { color: colors.error }]}>End Workout Early</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.menuCloseButton}
+              onPress={() => setShowSessionMenu(false)}
+            >
+              <Text style={styles.menuCloseButtonText}>Close</Text>
+            </Pressable>
+          </View>
         </Modal>
       </Portal>
     </View>
@@ -1463,7 +1848,12 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.m,
+    gap: spacing.sm,
+  },
+  safetyButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: colors.accent.primaryMuted,
   },
   timerText: {
     fontFamily: 'Poppins',
@@ -1530,23 +1920,47 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
   },
   modalContainer: {
     padding: spacing.l,
     margin: spacing.l,
+    maxHeight: '80%',
   },
   modalCard: {
     backgroundColor: colors.bg.elevated,
-    maxHeight: '80%',
     borderWidth: 1,
     borderColor: colors.border.default,
     borderRadius: borderRadius.lg,
+    padding: spacing.l,
+  },
+  modalHeaderTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.m,
   },
   modalTitle: {
     color: colors.text.primary,
   },
   modalScrollView: {
-    maxHeight: 400,
+    maxHeight: 350,
+  },
+  modalCloseButton: {
+    marginTop: spacing.m,
+    paddingVertical: spacing.s,
+    paddingHorizontal: spacing.l,
+    borderRadius: borderRadius.m,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    alignSelf: 'flex-end',
+  },
+  modalCloseButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
   modalSection: {
     marginBottom: spacing.m,
@@ -1572,6 +1986,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.accent.primary,
     marginTop: spacing.s,
+    marginBottom: spacing.m,
   },
   modalTransNotesTitle: {
     fontFamily: 'Poppins',
@@ -1590,6 +2005,62 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.accent.primary,
   },
+
+  // Session Menu Modal
+  menuModalContainer: {
+    padding: spacing.lg,
+    margin: spacing.lg,
+  },
+  menuCard: {
+    backgroundColor: colors.bg.elevated,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  menuTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.m,
+    paddingVertical: spacing.m,
+    paddingHorizontal: spacing.s,
+    borderRadius: borderRadius.lg,
+  },
+  menuItemText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text.primary,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: colors.border.default,
+    marginVertical: spacing.m,
+  },
+  menuCloseButton: {
+    marginTop: spacing.xl,
+    paddingVertical: spacing.m,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    alignItems: 'center',
+  },
+  menuCloseButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+
   modalText: {
     fontFamily: 'Poppins',
     fontSize: 14,
@@ -1628,8 +2099,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.l,
   },
   timerRow: {
     flexDirection: 'row',
@@ -1665,9 +2136,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   progressContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.l,
+    paddingBottom: spacing.lg,
     backgroundColor: colors.bg.primary,
   },
   progressInfoRow: {
@@ -1702,9 +2173,9 @@ const styles = StyleSheet.create({
   exerciseCard: {
     backgroundColor: colors.glass.bg,
     borderRadius: borderRadius['2xl'],
-    padding: 24,
-    marginHorizontal: 20,
-    marginBottom: 32,
+    padding: spacing.xl,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing['2xl'],
     borderWidth: 1,
     borderColor: colors.border.default,
     shadowColor: '#000',
@@ -1715,10 +2186,10 @@ const styles = StyleSheet.create({
   },
   exerciseName: {
     fontFamily: 'Poppins',
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: colors.text.primary,
-    marginBottom: 12,
+    marginBottom: spacing.m,
     letterSpacing: -0.5,
   },
   targetBadge: {
@@ -1740,7 +2211,7 @@ const styles = StyleSheet.create({
   },
   thumbnailContainer: {
     width: '100%',
-    height: 200,
+    aspectRatio: 16 / 9,
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: colors.bg.secondary,
@@ -1795,8 +2266,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   controlsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 32,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing['2xl'],
   },
   inputSection: {
     marginBottom: 24,
@@ -1873,7 +2344,7 @@ const styles = StyleSheet.create({
   },
   rpeValueText: {
     fontFamily: 'Poppins',
-    fontSize: 42,
+    fontSize: 36,
     fontWeight: '800',
     color: colors.accent.primary,
     letterSpacing: -1,
@@ -1899,8 +2370,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   previousSetsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 32,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing['2xl'],
   },
   previousSetsTitle: {
     fontFamily: 'Poppins',
@@ -1932,9 +2403,9 @@ const styles = StyleSheet.create({
   },
   actionsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 12,
-    marginBottom: 12,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.m,
+    marginBottom: spacing.m,
   },
   secondaryButton: {
     flex: 1,
@@ -1953,9 +2424,9 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   completeButtonContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 24,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.m,
+    paddingBottom: spacing.xl,
     backgroundColor: colors.bg.primary,
     borderTopWidth: 1,
     borderTopColor: colors.border.default,
@@ -1996,11 +2467,11 @@ const styles = StyleSheet.create({
   restCard: {
     backgroundColor: colors.glass.bg,
     borderRadius: borderRadius['2xl'],
-    padding: 40,
+    padding: spacing['2xl'],
     alignItems: 'center',
     borderWidth: 2,
     borderColor: colors.glass.borderCyan,
-    minWidth: 300,
+    minWidth: 280,
     shadowColor: colors.accent.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -2018,10 +2489,10 @@ const styles = StyleSheet.create({
   },
   restTimerText: {
     fontFamily: 'Poppins',
-    fontSize: 72,
+    fontSize: 60,
     fontWeight: '800',
     color: colors.accent.primary,
-    marginBottom: 32,
+    marginBottom: spacing['2xl'],
     letterSpacing: -2,
     textShadowColor: 'rgba(91, 206, 250, 0.4)',
     textShadowOffset: { width: 0, height: 4 },
@@ -2046,6 +2517,567 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     letterSpacing: 0.3,
+  },
+
+  // ============================================
+  // PREMIUM UI STYLES
+  // ============================================
+
+  // Premium Header
+  premiumHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.s,
+    paddingBottom: spacing.m,
+  },
+  headerGlassButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  premiumTimerSection: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  timerDigits: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text.primary,
+    letterSpacing: -0.5,
+  },
+  timerDigitsPaused: {
+    color: colors.warning,
+  },
+  timerStatusLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    letterSpacing: 1.5,
+    marginTop: 4,
+  },
+
+  // Segmented Progress Bar
+  progressSection: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  progressSegments: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 8,
+  },
+  progressSegment: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.glass.bg,
+    overflow: 'hidden',
+  },
+  progressSegmentActive: {
+    backgroundColor: colors.glass.bgLight,
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+  },
+  progressSegmentFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 3,
+  },
+  progressLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressExerciseCount: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  progressPercentage: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.accent.primary,
+  },
+
+  // Premium Exercise Card
+  exerciseCardWrapper: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
+    marginTop: spacing.m,
+    position: 'relative',
+  },
+  premiumExerciseCard: {
+    marginTop: 12,
+  },
+  setBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
+    zIndex: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  setBadgeText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.text.inverse,
+    letterSpacing: 1,
+  },
+  premiumExerciseName: {
+    fontFamily: 'Poppins',
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text.primary,
+    letterSpacing: -0.8,
+    marginBottom: spacing.s,
+  },
+  targetPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    backgroundColor: colors.accent.secondaryMuted,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.glass.borderPink,
+    marginBottom: spacing.lg,
+  },
+  targetPillText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.accent.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  exerciseVisualContainer: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    marginBottom: spacing.l,
+  },
+  exerciseImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  exercisePlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.bg.tertiary,
+  },
+  exerciseImageOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '50%',
+  },
+  formTipsBadge: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+  },
+  formTipsBadgeText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.accent.primary,
+  },
+  quickCueContainer: {
+    backgroundColor: colors.glass.bg,
+    borderRadius: 12,
+    padding: spacing.m,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  quickCueText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.secondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+
+  // Premium Input Controls
+  premiumControls: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  inputCard: {
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  inputCardLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.text.tertiary,
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    marginBottom: spacing.m,
+  },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
+  },
+  stepperButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    overflow: 'hidden',
+  },
+  stepperButtonSmall: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  stepperButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  stepperValueContainer: {
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  stepperValue: {
+    fontFamily: 'Poppins',
+    fontSize: 48,
+    fontWeight: '800',
+    color: colors.text.primary,
+    letterSpacing: -2,
+  },
+  stepperUnit: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    marginTop: -4,
+  },
+  stepperValueContainerCompact: {
+    minWidth: 100,
+    alignItems: 'center',
+  },
+  stepperValueCompact: {
+    fontFamily: 'Poppins',
+    fontSize: 36,
+    fontWeight: '800',
+    color: colors.text.primary,
+    letterSpacing: -1,
+  },
+  stepperUnitCompact: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+  },
+
+  // RPE Dots
+  rpeCard: {
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  rpeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  rpeValueBadge: {
+    backgroundColor: colors.accent.primaryMuted,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.glass.borderCyan,
+  },
+  rpeValueBadgeText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.accent.primary,
+  },
+  rpeTrack: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.s,
+    marginBottom: spacing.m,
+  },
+  rpeDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.glass.bgLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  rpeDotActive: {
+    backgroundColor: colors.accent.primaryMuted,
+    borderColor: colors.glass.borderCyan,
+  },
+  rpeDotCurrent: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.accent.primary,
+    borderWidth: 2,
+    borderColor: colors.accent.primaryLight,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
+      },
+      android: { elevation: 4 },
+    }),
+  },
+  rpeDotsLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.xs,
+  },
+  rpeDotsLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    letterSpacing: 0.3,
+  },
+
+  // Premium Actions Row
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.m,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  actionButtonSecondary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: borderRadius.lg,
+  },
+  actionButtonPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.accent.primaryMuted,
+  },
+  actionButtonSecondaryText: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  actionButtonPrimaryText: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.accent.primary,
+  },
+  actionDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: colors.border.default,
+  },
+
+  // Premium Complete Set CTA
+  ctaContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    paddingBottom: spacing.xl + 8,
+    backgroundColor: colors.bg.primary,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
+  },
+  premiumCompleteButton: {
+    height: 72,
+    borderRadius: 36,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.5,
+        shadowRadius: 24,
+      },
+      android: { elevation: 12 },
+    }),
+  },
+  premiumCompleteButtonGradient: {
+    flex: 1,
+    position: 'relative',
+    borderRadius: 36,
+  },
+  premiumCompleteButtonHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+  },
+  premiumCompleteButtonContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  completeCheckCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  premiumCompleteButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '800',
+    color: colors.text.inverse,
+    letterSpacing: -0.3,
+  },
+
+  // Premium Rest Timer Overlay
+  premiumRestOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  restContent: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  restHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: spacing.xl,
+  },
+  restLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.primary,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+  },
+  restTimerLarge: {
+    fontFamily: 'Poppins',
+    fontSize: 56,
+    fontWeight: '800',
+    color: colors.accent.primary,
+    letterSpacing: -2,
+    textShadowColor: 'rgba(91, 206, 250, 0.4)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 16,
+  },
+  restNextUp: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    marginTop: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  skipRestButtonPremium: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    borderRadius: 28,
+    backgroundColor: colors.glass.bgLight,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  skipRestButtonPremiumText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
 });
 

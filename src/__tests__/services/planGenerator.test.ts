@@ -130,12 +130,12 @@ describe('planGenerator', () => {
       expect(plan.blockLength).toBe(1);
     });
 
-    it('generates plan with only 5-minute variant', async () => {
+    it('generates plan with 30-minute variant only', async () => {
       const plan = await generateQuickStartPlan();
-      expect(plan.days[0].variants[5]).toBeTruthy();
-      expect(plan.days[0].variants[15]).toBeNull();
-      expect(plan.days[0].variants[30]).toBeNull();
+      expect(plan.days[0].variants[30]).toBeTruthy();
       expect(plan.days[0].variants[45]).toBeNull();
+      expect(plan.days[0].variants[60]).toBeNull();
+      expect(plan.days[0].variants[90]).toBeNull();
     });
   });
 
@@ -178,14 +178,14 @@ describe('planGenerator', () => {
       expect(plan.goalWeighting).toEqual(mockProfile.goal_weighting);
     });
 
-    it('generates each day with 4 time variants (5, 15, 30, 45)', async () => {
+    it('generates each day with 4 time variants (30, 45, 60, 90)', async () => {
       const plan = await generatePlan(mockProfile);
 
       plan.days.forEach(day => {
-        expect(day.variants).toHaveProperty('5');
-        expect(day.variants).toHaveProperty('15');
         expect(day.variants).toHaveProperty('30');
         expect(day.variants).toHaveProperty('45');
+        expect(day.variants).toHaveProperty('60');
+        expect(day.variants).toHaveProperty('90');
       });
     });
 
@@ -200,6 +200,71 @@ describe('planGenerator', () => {
       // Plan should be generated successfully
       expect(plan).toBeTruthy();
       expect(plan.goals).toEqual(['strength']);
+    });
+  });
+
+  describe('Rules Engine Integration', () => {
+    it('applies post-op rules for users with recent surgery', async () => {
+      const postOpProfile = {
+        ...mockProfile,
+        surgeries: [
+          {
+            type: 'top_surgery',
+            date: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 weeks ago
+            weeks_post_op: 4,
+            fully_healed: false,
+          },
+        ],
+      };
+
+      const plan = await generatePlan(postOpProfile);
+
+      // Plan should be generated successfully even with post-op status
+      expect(plan).toBeTruthy();
+      expect(plan.days.length).toBeGreaterThan(0);
+    });
+
+    it('handles HRT status in plan generation', async () => {
+      const hrtProfile = {
+        ...mockProfile,
+        on_hrt: true,
+        hrt_type: 'estrogen',
+        hrt_months_duration: 6,
+      };
+
+      const plan = await generatePlan(hrtProfile);
+
+      // Plan should be generated with HRT considerations
+      expect(plan).toBeTruthy();
+      expect(plan.days.length).toBeGreaterThan(0);
+    });
+
+    it('handles binding status in plan generation', async () => {
+      const bindingProfile = {
+        ...mockProfile,
+        binds_chest: true,
+        binding_frequency: 'daily',
+        binding_duration_hours: 8,
+      };
+
+      const plan = await generatePlan(bindingProfile);
+
+      // Plan should be generated with binding considerations
+      expect(plan).toBeTruthy();
+      expect(plan.days.length).toBeGreaterThan(0);
+    });
+
+    it('handles dysphoria triggers in plan generation', async () => {
+      const dysphoriaProfile = {
+        ...mockProfile,
+        dysphoria_triggers: ['looking_at_chest', 'mirrors'],
+      };
+
+      const plan = await generatePlan(dysphoriaProfile);
+
+      // Plan should be generated with dysphoria considerations
+      expect(plan).toBeTruthy();
+      expect(plan.days.length).toBeGreaterThan(0);
     });
   });
 });

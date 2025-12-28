@@ -67,7 +67,7 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
   }, []);
 
   const handleGetStarted = () => {
-    navigation.navigate('Welcome');
+    navigation.navigate('Signup');
   };
 
   return (

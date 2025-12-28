@@ -16,7 +16,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useWorkoutSafe } from '../../contexts/WorkoutContext';
-import { colors, spacing, borderRadius } from '../../theme/theme';
+import { colors, spacing, borderRadius, timing, gradients, layout } from '../../theme/theme';
 import { GlassCard, ProgressRing } from '../../components/common';
 import { trackWorkoutCompleted } from '../../services/analytics';
 import { BetaSurveyModal, SurveyResponse } from '../../components/feedback';
@@ -30,6 +30,14 @@ import { PostWorkoutCheckin, BodyCheckinData } from '../../components/session/Po
 import { getCurrentStreak } from '../../services/storage/stats';
 import { usePlan } from '../../hooks/usePlan';
 import { useProfile } from '../../hooks/useProfile';
+import { useSensoryMode } from '../../contexts/SensoryModeContext';
+import { FlaggedExercisesReview } from '../../components/feedback';
+import { FlaggedExercise, FeedbackCategory } from '../../types/feedback';
+import {
+  submitFlaggedExercisesAsFeedback,
+  clearSessionFlags,
+  saveFeedbackReport,
+} from '../../services/feedback';
 
 type RootStackParamList = {
   WorkoutSummary: {
@@ -40,6 +48,8 @@ type RootStackParamList = {
       exercisesCompleted: number;
       workoutName?: string;
     };
+    flaggedExercises?: FlaggedExercise[];
+    sessionId?: string;
   };
   Home: undefined;
   [key: string]: any;
@@ -63,12 +73,15 @@ const RATING_OPTIONS: Array<{ value: WorkoutRating; emoji: string; label: string
 ];
 
 // Celebration confetti animation component
-function CelebrationHeader({ duration }: { duration: string }) {
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+function CelebrationHeader({ duration, disableAnimations }: { duration: string; disableAnimations?: boolean }) {
+  const scaleAnim = useRef(new Animated.Value(disableAnimations ? 1 : 0)).current;
+  const fadeAnim = useRef(new Animated.Value(disableAnimations ? 1 : 0)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Skip animations in low sensory mode
+    if (disableAnimations) return;
+
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
@@ -87,17 +100,17 @@ function CelebrationHeader({ duration }: { duration: string }) {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 2000,
+          duration: timing.shimmer,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 2000,
+          duration: timing.shimmer,
           useNativeDriver: true,
         }),
       ])
     ).start();
-  }, []);
+  }, [disableAnimations]);
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -120,19 +133,22 @@ function CelebrationHeader({ duration }: { duration: string }) {
           style={StyleSheet.absoluteFill}
         />
       </View>
-      <Animated.View
-        style={[
-          styles.celebrationShimmer,
-          { transform: [{ translateX: shimmerTranslate }] },
-        ]}
-      >
-        <LinearGradient
-          colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+      {/* Hide shimmer in low sensory mode */}
+      {!disableAnimations && (
+        <Animated.View
+          style={[
+            styles.celebrationShimmer,
+            { transform: [{ translateX: shimmerTranslate }] },
+          ]}
+        >
+          <LinearGradient
+            colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      )}
 
       <View style={styles.trophyContainer}>
         <LinearGradient
@@ -170,7 +186,7 @@ function StatCard({
   return (
     <View style={styles.statCard}>
       <LinearGradient
-        colors={['#141418', '#0A0A0C']}
+        colors={gradients.cardBg}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.glassHighlight} />
@@ -198,8 +214,11 @@ export default function WorkoutSummaryScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<WorkoutSummaryScreenNavigationProp>();
   const route = useRoute<WorkoutSummaryScreenRouteProp>();
+  const { disableAnimations } = useSensoryMode();
 
   const routeData = route.params?.workoutData;
+  const routeFlaggedExercises = route.params?.flaggedExercises || [];
+  const routeSessionId = route.params?.sessionId;
   const workoutContext = useWorkoutSafe();
   const { profile } = useProfile();
   const userId = profile?.user_id || profile?.id || 'default';
@@ -222,6 +241,8 @@ export default function WorkoutSummaryScreen() {
   const [bodyCheckinData, setBodyCheckinData] = useState<BodyCheckinData | null>(null);
   const [bodyCheckinShown, setBodyCheckinShown] = useState(false);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
+  const [flaggedExercises, setFlaggedExercises] = useState<FlaggedExercise[]>(routeFlaggedExercises);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
   // Load current streak on mount
   useEffect(() => {
@@ -283,6 +304,56 @@ export default function WorkoutSummaryScreen() {
   const handleSurveyClose = async () => {
     await trackSurveySkipped('workout');
     setShowSurvey(false);
+  };
+
+  // Flagged exercises handlers
+  const handleSubmitAllFlags = async () => {
+    if (!routeSessionId || flaggedExercises.length === 0) return;
+
+    try {
+      await submitFlaggedExercisesAsFeedback(
+        routeSessionId,
+        routeData?.workoutName || 'workout',
+        userId
+      );
+      setFeedbackSubmitted(true);
+      setFlaggedExercises([]);
+    } catch (error) {
+      console.error('Error submitting flagged exercises:', error);
+      Alert.alert('Error', 'Failed to submit feedback. Please try again.');
+    }
+  };
+
+  const handleDismissFlags = async () => {
+    if (routeSessionId) {
+      await clearSessionFlags(routeSessionId);
+    }
+    setFlaggedExercises([]);
+  };
+
+  const handleSubmitFlagWithDetails = async (data: {
+    category: FeedbackCategory;
+    severity?: string;
+    quickFeedback: string[];
+    description?: string;
+  }) => {
+    try {
+      await saveFeedbackReport({
+        user_id: userId,
+        category: data.category,
+        severity: data.severity,
+        context: 'post_workout',
+        quick_feedback: data.quickFeedback,
+        description: data.description,
+        workout_id: routeData?.workoutName,
+      });
+      // Remove the specific exercise from the list after submitting with details
+      // For now, just mark as submitted
+      setFeedbackSubmitted(true);
+    } catch (error) {
+      console.error('Error submitting feedback with details:', error);
+      Alert.alert('Error', 'Failed to submit feedback. Please try again.');
+    }
   };
 
   const stats = useMemo(() => {
@@ -413,9 +484,14 @@ export default function WorkoutSummaryScreen() {
       await completeWorkout();
       clearWorkout();
 
+      // Detect which navigator we're in and navigate accordingly
+      // MainNavigator has 'MainTabs' (which contains Home), OnboardingNavigator has 'Home' directly
+      const routeNames = navigation.getState().routeNames;
+      const targetRoute = routeNames.includes('MainTabs') ? 'MainTabs' : 'Home';
+
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Home' }],
+        routes: [{ name: targetRoute }],
       });
     } catch (error) {
       console.error('Error completing workout:', error);
@@ -436,7 +512,11 @@ export default function WorkoutSummaryScreen() {
               styles.errorButton,
               pressed && styles.buttonPressed,
             ]}
-            onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Home' }] })}
+            onPress={() => {
+              const routeNames = navigation.getState().routeNames;
+              const targetRoute = routeNames.includes('MainTabs') ? 'MainTabs' : 'Home';
+              navigation.reset({ index: 0, routes: [{ name: targetRoute }] });
+            }}
           >
             <Text style={styles.errorButtonText}>Go Home</Text>
           </Pressable>
@@ -461,7 +541,7 @@ export default function WorkoutSummaryScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Celebration Header */}
-        <CelebrationHeader duration={formatDuration(workoutDuration)} />
+        <CelebrationHeader duration={formatDuration(workoutDuration)} disableAnimations={disableAnimations} />
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
@@ -565,13 +645,24 @@ export default function WorkoutSummaryScreen() {
           </View>
         </GlassCard>
 
+        {/* Flagged Exercises Review */}
+        {flaggedExercises.length > 0 && !feedbackSubmitted && (
+          <FlaggedExercisesReview
+            flaggedExercises={flaggedExercises}
+            onSubmitAll={handleSubmitAllFlags}
+            onDismiss={handleDismissFlags}
+            onSubmitWithDetails={handleSubmitFlagWithDetails}
+            workoutId={routeData?.workoutName}
+          />
+        )}
+
         {/* Notes Input */}
         <View style={[
           styles.notesContainer,
           notesFocused && styles.notesContainerFocused,
         ]}>
           <LinearGradient
-            colors={['#141418', '#0A0A0C']}
+            colors={gradients.cardBg}
             style={StyleSheet.absoluteFill}
           />
           <View style={styles.glassHighlight} />
@@ -656,7 +747,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: layout.screenPadding,
   },
   // Celebration header
   celebrationContainer: {

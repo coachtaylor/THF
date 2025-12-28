@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from "react-native";
+import { View, Text, Pressable, StyleSheet, Modal } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
@@ -211,7 +211,7 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
           <Ionicons
             name="calendar-outline"
             size={24}
-            color={colors.cyan[500]}
+            color={colors.accent.primary}
             style={styles.infoIcon}
           />
           <View style={styles.infoContent}>
@@ -234,13 +234,13 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
             {DAYS_OF_WEEK.map((day) => {
               const isSelected = selectedDays.has(day.id);
               return (
-                <TouchableOpacity
+                <Pressable
                   key={day.id}
                   onPress={() => toggleDay(day.id)}
-                  activeOpacity={0.7}
-                  style={[
+                  style={({ pressed }) => [
                     styles.dayButton,
                     isSelected && styles.dayButtonSelected,
+                    pressed && styles.buttonPressed
                   ]}
                 >
                   <Text style={[
@@ -255,7 +255,7 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
                   ]}>
                     {day.full.slice(0, 3)}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -265,7 +265,7 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
         {selectedDays.size > 0 && (
           <View style={styles.summaryCard}>
             <View style={styles.summaryHeader}>
-              <Ionicons name="fitness-outline" size={20} color={colors.cyan[500]} />
+              <Ionicons name="fitness-outline" size={20} color={colors.accent.primary} />
               <Text style={styles.summaryTitle}>Your Workout Schedule</Text>
             </View>
             <Text style={styles.summaryText}>
@@ -301,7 +301,7 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Ionicons name="calendar-outline" size={32} color={colors.cyan[500]} />
+              <Ionicons name="calendar-outline" size={32} color={colors.accent.primary} />
               <Text style={styles.modalTitle}>
                 Looks like {getPassedDaysText()} already passed!
               </Text>
@@ -318,13 +318,13 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
                   const isToday = dayId === new Date().getDay();
                   const isSelected = selectedSubstitute === dayId;
                   return (
-                    <TouchableOpacity
+                    <Pressable
                       key={dayId}
                       onPress={() => setSelectedSubstitute(dayId)}
-                      activeOpacity={0.7}
-                      style={[
+                      style={({ pressed }) => [
                         styles.modalDayButton,
                         isSelected && styles.modalDayButtonSelected,
+                        pressed && styles.buttonPressed
                       ]}
                     >
                       <Text style={[
@@ -334,9 +334,9 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
                         {isToday ? "Today" : day.full}
                       </Text>
                       {isSelected && (
-                        <Ionicons name="checkmark-circle" size={20} color={colors.cyan[500]} />
+                        <Ionicons name="checkmark-circle" size={20} color={colors.accent.primary} />
                       )}
-                    </TouchableOpacity>
+                    </Pressable>
                   );
                 })}
               </View>
@@ -344,8 +344,12 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
 
             {/* Action Buttons */}
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonPrimary]}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.modalButtonPrimary,
+                  pressed && styles.buttonPressed
+                ]}
                 onPress={handlePickSubstitute}
                 disabled={selectedSubstitute === null}
               >
@@ -354,13 +358,17 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
                     ? `Pick ${selectedSubstitute === new Date().getDay() ? "Today" : DAYS_OF_WEEK[selectedSubstitute].full}`
                     : "Pick a day"}
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonSecondary]}
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.modalButtonSecondary,
+                  pressed && styles.buttonPressed
+                ]}
                 onPress={handleSkipThisWeek}
               >
                 <Text style={styles.modalButtonTextSecondary}>Skip this week</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -376,7 +384,7 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Ionicons name="checkmark-circle-outline" size={32} color={colors.cyan[500]} />
+              <Ionicons name="checkmark-circle-outline" size={32} color={colors.accent.primary} />
               <Text style={styles.modalTitle}>No problem!</Text>
               <Text style={styles.modalSubtitle}>
                 Your dashboard will show {daysArrayForSave.filter(d => d >= new Date().getDay()).length} workout{daysArrayForSave.filter(d => d >= new Date().getDay()).length !== 1 ? 's' : ''} this week
@@ -385,12 +393,16 @@ export default function WorkoutDays({ navigation }: WorkoutDaysProps) {
             </View>
 
             <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonPrimary]}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.modalButtonPrimary,
+                  pressed && styles.buttonPressed
+                ]}
                 onPress={handleSkipConfirmed}
               >
                 <Text style={styles.modalButtonTextPrimary}>Got it</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           </View>
         </View>
@@ -418,9 +430,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
     borderRadius: borderRadius.xl,
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: colors.accent.primaryGlow,
   },
   infoIcon: {
     marginTop: 2,
@@ -432,7 +444,7 @@ const styles = StyleSheet.create({
     ...textStyles.label,
     fontSize: 15,
     fontWeight: '600',
-    color: colors.cyan[500],
+    color: colors.accent.primary,
     marginBottom: spacing.xs,
   },
   infoText: {
@@ -460,8 +472,8 @@ const styles = StyleSheet.create({
     borderColor: colors.glass.border,
   },
   dayButtonSelected: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-    borderColor: colors.cyan[500],
+    backgroundColor: colors.accent.primaryMuted,
+    borderColor: colors.accent.primary,
   },
   dayLetter: {
     fontSize: 16,
@@ -469,7 +481,7 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   dayLetterSelected: {
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   dayLabel: {
     ...textStyles.caption,
@@ -502,7 +514,7 @@ const styles = StyleSheet.create({
   summaryText: {
     ...textStyles.body,
     fontSize: 15,
-    color: colors.cyan[500],
+    color: colors.accent.primary,
     fontWeight: '500',
   },
   summarySubtext: {
@@ -571,8 +583,8 @@ const styles = StyleSheet.create({
     borderColor: colors.glass.border,
   },
   modalDayButtonSelected: {
-    backgroundColor: 'rgba(6, 182, 212, 0.15)',
-    borderColor: colors.cyan[500],
+    backgroundColor: colors.accent.primaryMuted,
+    borderColor: colors.accent.primary,
   },
   modalDayText: {
     ...textStyles.body,
@@ -580,7 +592,7 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   modalDayTextSelected: {
-    color: colors.cyan[500],
+    color: colors.accent.primary,
     fontWeight: '600',
   },
   modalButtons: {
@@ -594,7 +606,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalButtonPrimary: {
-    backgroundColor: colors.cyan[500],
+    backgroundColor: colors.accent.primary,
   },
   modalButtonSecondary: {
     backgroundColor: 'transparent',
@@ -612,5 +624,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: colors.text.secondary,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });

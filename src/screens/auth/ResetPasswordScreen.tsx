@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,16 @@ export default function ResetPasswordScreen({ route, navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+
+  // Validate token on mount
+  useEffect(() => {
+    if (!token) {
+      setTokenError('No reset token provided. Please use the link from your email.');
+    } else if (typeof token !== 'string' || token.length < 10) {
+      setTokenError('Invalid reset token. Please request a new password reset.');
+    }
+  }, [token]);
 
   const getPasswordStrength = (pass: string) => {
     let strength = 0;
@@ -50,6 +60,7 @@ export default function ResetPasswordScreen({ route, navigation }: any) {
 
   const passwordsMatch = newPassword === confirmPassword && confirmPassword.length > 0;
   const canSubmit =
+    !tokenError &&
     newPassword.length >= 8 &&
     passwordStrength >= 2 &&
     passwordsMatch &&
@@ -110,6 +121,22 @@ export default function ResetPasswordScreen({ route, navigation }: any) {
           Enter a new password for your account. Make sure it's strong and
           secure.
         </Text>
+
+        {/* Token Error - Show if token is missing or invalid */}
+        {tokenError && (
+          <View>
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle" size={20} color={palette.error} />
+              <Text style={styles.errorText}>{tokenError}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.requestLinkButton}
+              onPress={() => navigation.replace('ForgotPassword')}
+            >
+              <Text style={styles.requestLinkText}>Request New Reset Link</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Success Message */}
         {success && (
@@ -443,6 +470,20 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: palette.midGray,
     textAlign: 'center',
+  },
+  requestLinkButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: palette.tealPrimary,
+    borderRadius: 12,
+    padding: spacing.m,
+    alignItems: 'center',
+    marginTop: spacing.m,
+  },
+  requestLinkText: {
+    ...typography.button,
+    color: palette.tealPrimary,
+    fontWeight: '600',
   },
 });
 

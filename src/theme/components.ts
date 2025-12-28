@@ -2,7 +2,202 @@
 // TransFitness Component Styles - Liquid Glass Aesthetic with Trans Pride colors
 
 import { StyleSheet, Platform } from 'react-native';
-import { colors, spacing, borderRadius, shadows, typography } from './theme';
+import { colors, spacing, borderRadius, shadows, typography, iconContainer, layout } from './theme';
+
+// ============================================
+// SCREEN HEADER STYLES
+// Standardized header for all screens
+// ============================================
+
+export const headerStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: spacing.m,
+  },
+  title: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.3,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.glass.bg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  spacer: {
+    width: 24,
+  },
+});
+
+// ============================================
+// SECTION STYLES
+// Standardized section headers and containers
+// ============================================
+
+export const sectionStyles = StyleSheet.create({
+  container: {
+    marginBottom: layout.sectionSpacing,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.m,
+    gap: spacing.s,
+  },
+  headerWithAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.m,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+  },
+  iconContainer: {
+    width: iconContainer.sm,
+    height: iconContainer.sm,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainerLg: {
+    width: iconContainer.md,
+    height: iconContainer.md,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.2,
+  },
+  editLink: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.accent.primary,
+  },
+});
+
+// ============================================
+// REST DAY CARD STYLES
+// Standardized rest day / no workout card
+// ============================================
+
+export const restDayCardStyles = StyleSheet.create({
+  container: {
+    minHeight: 130,
+    paddingVertical: spacing.xl,
+    borderRadius: borderRadius.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    backgroundColor: colors.bg.elevated,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.35,
+        shadowRadius: 24,
+      },
+      android: { elevation: 8 },
+    }),
+  },
+  containerPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  glow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+  },
+  title: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '300',
+    color: colors.text.secondary,
+    letterSpacing: 2,
+    marginBottom: 6,
+  },
+  subtitle: {
+    fontFamily: 'Poppins',
+    fontSize: typography.bodySmall,
+    fontWeight: '400',
+    color: colors.text.disabled,
+  },
+});
+
+// ============================================
+// INFO CARD STYLES
+// For displaying profile info, settings values, etc.
+// ============================================
+
+export const infoCardStyles = StyleSheet.create({
+  content: {
+    gap: spacing.xs,
+  },
+  text: {
+    fontFamily: 'Poppins',
+    fontSize: typography.body,
+    fontWeight: '500',
+    color: colors.text.primary,
+  },
+  subtext: {
+    fontFamily: 'Poppins',
+    fontSize: typography.bodySmall,
+    fontWeight: '400',
+    color: colors.text.secondary,
+  },
+});
+
+// ============================================
+// SCREEN CONTAINER STYLES
+// Base styles for screen containers
+// ============================================
+
+export const screenStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.bg.primary,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.xxl,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.l,
+  },
+  loadingText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '400',
+    color: colors.text.secondary,
+  },
+});
 
 // ============================================
 // LIQUID GLASS MORPHISM STYLES

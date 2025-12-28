@@ -6,8 +6,8 @@ import { Profile } from '../../types/index';
 import { Plan, Day, Workout } from '../../types/plan';
 import { Exercise, ExerciseInstance } from '../../types';
 import { evaluateSafetyRules } from '../rulesEngine/evaluator';
-import { selectTemplate, SelectedTemplate } from './templateSelection';
-import { DayTemplate } from './templates/types';
+import { selectTemplate } from './templateSelection';
+import { DayTemplate, SelectedTemplate } from './templates/types';
 import { getFilteredExercisePool } from '../workoutGenerator';
 import { selectExercisesForDay } from './exerciseSelection';
 import { calculateVolumeAdjustments, VolumeAdjustments } from './volumeAdjustment';
@@ -86,28 +86,36 @@ export async function generateWorkoutPlan(
     
     logger.log(`\n   Day ${dayNumber}: ${dayTemplate.name}`);
     
-    // Generate 4 time variants (5, 15, 30, 45 min)
+    // Generate 4 time variants (30, 45, 60, 90 min)
     const variants: Day['variants'] = {
-      5: null,
-      15: null,
       30: null,
       45: null,
+      60: null,
+      90: null,
     };
-    
-    for (const duration of [5, 15, 30, 45] as const) {
-      // Skip 5-minute if not in user preferences
-      if (duration === 5 && !profile.preferred_minutes?.includes(5)) {
+
+    // SAFETY: Check for max workout minutes limit (e.g., ace bandage/DIY binder users)
+    const maxWorkoutMinutes = safetyContext.modified_parameters.max_workout_minutes;
+
+    for (const duration of [30, 45, 60, 90] as const) {
+
+      // SAFETY FIX: Skip durations that exceed safety limits
+      if (maxWorkoutMinutes && duration > maxWorkoutMinutes) {
+        logger.log(`     ├─ ${duration}min variant - ⚠️ SKIPPED (exceeds ${maxWorkoutMinutes}min safety limit for binding)`);
+        variants[duration] = null;
         continue;
       }
-      
+
       logger.log(`     ├─ ${duration}min variant...`);
-      
+
       try {
-        // Phase 2C: Select exercises with scoring
+        // Phase 2C: Select exercises with scoring (including dysphoria soft filters)
         const selectedExercises = selectExercisesForDay(
           filteredExercises,
           dayTemplate,
-          profile
+          profile,
+          [],
+          safetyContext
         );
         
         // Phase 2D: Calculate volume adjustments
@@ -197,10 +205,12 @@ export async function generateWorkoutPlan(
     // Create Day with all variants
     const dayDate = new Date(startDate);
     dayDate.setDate(startDate.getDate() + (dayNumber - 1));
-    
+
     days.push({
       dayNumber,
       date: dayDate,
+      dayOfWeek: dayDate.getDay(),
+      isRestDay: false, // Generated workout days are not rest days
       variants,
     });
   }
@@ -210,11 +220,34 @@ export async function generateWorkoutPlan(
   // STEP 6: Assemble complete plan
   logger.log('\n📦 STEP 6: Assembling Complete Plan');
   
+  // Map primary goal to Goal type (Plan.goals uses the limited Goal type)
+  const mapToGoal = (goal: string): 'strength' | 'cardio' | 'flexibility' | 'mobility' => {
+    switch (goal) {
+      case 'strength':
+      case 'masculinization':
+        return 'strength';
+      case 'endurance':
+      case 'cardio':
+        return 'cardio';
+      case 'flexibility':
+        return 'flexibility';
+      case 'mobility':
+        return 'mobility';
+      case 'feminization':
+      case 'general_fitness':
+      default:
+        return 'strength'; // Default to strength for general fitness and feminization
+    }
+  };
+
+  const goals = (profile.goals as string[] | undefined) || [profile.primary_goal] || ['general_fitness'];
+  const mappedGoals = goals.map(mapToGoal);
+
   const plan: Plan = {
     id: generatePlanId(),
     blockLength: blockLength,
     startDate: startDate,
-    goals: profile.goals || [profile.primary_goal] || ['general_fitness'],
+    goals: mappedGoals,
     goalWeighting: profile.goal_weighting || { primary: 100, secondary: 0 },
     days,
   };
@@ -252,7 +285,7 @@ function prescribeExercise(
   total: number,
   profile: Profile,
   volumeAdjustments: VolumeAdjustments,
-  duration: number
+  duration: 30 | 45 | 60 | 90
 ): ExerciseInstance {
   // Calculate sets with volume adjustments
   const sets = calculateSets(duration, exercise.difficulty, index, total, volumeAdjustments);
@@ -283,45 +316,52 @@ function prescribeExercise(
  * Calculate sets for an exercise with volume adjustments
  */
 function calculateSets(
-  duration: number,
+  duration: 30 | 45 | 60 | 90,
   difficulty: 'beginner' | 'intermediate' | 'advanced',
   exerciseIndex: number,
   totalExercises: number,
   volumeAdjustments: VolumeAdjustments
 ): number {
   let baseSets: number;
-  
-  if (duration === 5) {
-    baseSets = 1;
-  } else if (duration === 15) {
-    if (exerciseIndex < 2) {
-      baseSets = difficulty === 'advanced' ? 4 : 3;
-    } else {
-      baseSets = 2;
-    }
-  } else if (duration === 30) {
+
+  if (duration === 30) {
+    // Short workout: fewer sets per exercise
     if (exerciseIndex < 3) {
       baseSets = difficulty === 'beginner' ? 3 : 4;
     } else {
       baseSets = difficulty === 'beginner' ? 2 : 3;
     }
-  } else {
-    // 45 minutes
+  } else if (duration === 45) {
+    // Standard workout
     if (exerciseIndex < 3) {
+      baseSets = difficulty === 'beginner' ? 3 : 4;
+    } else {
+      baseSets = difficulty === 'beginner' ? 3 : 3;
+    }
+  } else if (duration === 60) {
+    // Longer workout: more sets
+    if (exerciseIndex < 4) {
+      baseSets = difficulty === 'beginner' ? 4 : 4;
+    } else {
+      baseSets = difficulty === 'beginner' ? 3 : 4;
+    }
+  } else {
+    // 90 minutes: most volume
+    if (exerciseIndex < 4) {
       baseSets = difficulty === 'beginner' ? 4 : 5;
     } else {
       baseSets = difficulty === 'beginner' ? 3 : 4;
     }
   }
-  
+
   // Apply volume multiplier
   baseSets = Math.round(baseSets * volumeAdjustments.sets_multiplier);
-  
+
   // Clamp to reasonable range
-  const minSets = duration === 5 ? 1 : 2;
+  const minSets = 2;
   const maxSets = 5;
   baseSets = Math.max(minSets, Math.min(maxSets, baseSets));
-  
+
   return baseSets;
 }
 
@@ -395,31 +435,32 @@ function calculateReps(
  * Calculate rest time with volume adjustments
  */
 function calculateRest(
-  duration: number,
+  duration: 30 | 45 | 60 | 90,
   difficulty: 'beginner' | 'intermediate' | 'advanced',
   volumeAdjustments?: VolumeAdjustments
 ): number {
   let baseRest: number;
-  
-  if (duration === 5) {
-    baseRest = 15;
-  } else if (duration === 15) {
-    baseRest = difficulty === 'advanced' ? 45 : 30;
-  } else if (duration === 30) {
+
+  if (duration === 30) {
+    // Shorter rest for 30-min workout to fit more in
+    baseRest = difficulty === 'beginner' ? 45 : 30;
+  } else if (duration === 45) {
+    baseRest = difficulty === 'beginner' ? 60 : 45;
+  } else if (duration === 60) {
     baseRest = difficulty === 'beginner' ? 60 : 45;
   } else {
-    // 45 minutes
-    baseRest = difficulty === 'beginner' ? 60 : 45;
+    // 90 minutes: more rest between sets for heavier work
+    baseRest = difficulty === 'beginner' ? 90 : 60;
   }
-  
+
   // Apply rest multiplier
   if (volumeAdjustments) {
     baseRest = Math.round(baseRest * volumeAdjustments.rest_multiplier);
   }
-  
+
   // Clamp to reasonable range
-  baseRest = Math.max(10, Math.min(120, baseRest));
-  
+  baseRest = Math.max(30, Math.min(120, baseRest));
+
   return baseRest;
 }
 

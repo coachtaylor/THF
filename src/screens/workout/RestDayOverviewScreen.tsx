@@ -4,16 +4,16 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
+  Pressable,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, borderRadius } from '../../theme/theme';
-import { textStyles, buttonStyles } from '../../theme/components';
+import { colors, spacing, borderRadius, gradients, layout } from '../../theme/theme';
+import { headerStyles, sectionStyles } from '../../theme/components';
 import { useProfile } from '../../hooks/useProfile';
 import { usePlan } from '../../hooks/usePlan';
 import { regenerateDay } from '../../services/planGenerator';
@@ -75,6 +75,7 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
   const userId = profile?.user_id || profile?.id || 'default';
   const { plan, refreshPlan } = usePlan(userId);
   const [isGenerating, setIsGenerating] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const dayDate = new Date(day.date);
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -119,45 +120,54 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[colors.bg.primary, colors.bg.secondary]}
+        style={StyleSheet.absoluteFill}
+      />
+
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
+      <View style={[headerStyles.container, { paddingTop: insets.top + spacing.m }]}>
+        <Pressable
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={({ pressed }) => [
+            headerStyles.backButton,
+            pressed && styles.buttonPressed,
+          ]}
+          hitSlop={8}
         >
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
-        </TouchableOpacity>
+        </Pressable>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{dayName}</Text>
+          <Text style={headerStyles.title}>{dayName}</Text>
           <Text style={styles.headerSubtitle}>{formattedDate}</Text>
         </View>
-        <View style={styles.headerPlaceholder} />
+        <View style={headerStyles.spacer} />
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Hero Section */}
         <View style={styles.heroSection}>
           <LinearGradient
-            colors={['rgba(245, 169, 184, 0.1)', 'transparent']}
+            colors={gradients.restDayGlow}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
           <View style={styles.heroIconContainer}>
-            <Ionicons name="moon" size={48} color="rgba(245, 169, 184, 0.9)" />
+            <Ionicons name="moon" size={48} color={colors.accent.secondary} />
           </View>
           <Text style={styles.heroTitle}>Rest Day</Text>
           <Text style={styles.heroSubtitle}>Recovery is part of progress</Text>
         </View>
 
         {/* Benefits Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Why Rest Days Matter</Text>
+        <View style={sectionStyles.container}>
+          <Text style={sectionStyles.title}>Why Rest Days Matter</Text>
           <View style={styles.benefitsGrid}>
             {REST_DAY_BENEFITS.map((benefit, index) => (
               <View key={index} style={styles.benefitCard}>
@@ -165,7 +175,7 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
                   <Ionicons
                     name={benefit.icon}
                     size={24}
-                    color={colors.cyan[500]}
+                    color={colors.accent.primary}
                   />
                 </View>
                 <Text style={styles.benefitTitle}>{benefit.title}</Text>
@@ -178,8 +188,8 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
         </View>
 
         {/* Activities Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Rest Day Activities</Text>
+        <View style={sectionStyles.container}>
+          <Text style={sectionStyles.title}>Rest Day Activities</Text>
           <View style={styles.activitiesCard}>
             {REST_DAY_ACTIVITIES.map((activity, index) => (
               <View key={index} style={styles.activityItem}>
@@ -195,13 +205,13 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
         </View>
 
         {/* Mobility Routine */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Optional Mobility Routine</Text>
+        <View style={sectionStyles.container}>
+          <Text style={sectionStyles.title}>Optional Mobility Routine</Text>
           <MobilityRoutine />
         </View>
 
         {/* Generate Workout Option */}
-        <View style={styles.section}>
+        <View style={sectionStyles.container}>
           <View style={styles.generateCard}>
             <View style={styles.generateContent}>
               <Ionicons
@@ -216,8 +226,11 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
-              style={styles.generateButton}
+            <Pressable
+              style={({ pressed }) => [
+                styles.generateButton,
+                pressed && styles.buttonPressed,
+              ]}
               onPress={handleGenerateWorkout}
               disabled={isGenerating}
             >
@@ -233,7 +246,7 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
                   />
                 </>
               )}
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -244,51 +257,30 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Note: header styles now use headerStyles from components.ts
+  // Section styles now use sectionStyles from components.ts
   container: {
     flex: 1,
-    backgroundColor: colors.bg.deep,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.bg.primary,
   },
   headerCenter: {
     alignItems: 'center',
   },
-  headerTitle: {
-    ...textStyles.h3,
-    fontSize: 18,
-    color: colors.text.primary,
-  },
   headerSubtitle: {
-    ...textStyles.bodySmall,
+    fontFamily: 'Poppins',
     fontSize: 12,
     color: colors.text.tertiary,
-  },
-  headerPlaceholder: {
-    width: 40,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: spacing.lg,
+    paddingTop: spacing.lg,
     paddingBottom: spacing['3xl'],
   },
   heroSection: {
@@ -296,82 +288,77 @@ const styles = StyleSheet.create({
     paddingVertical: spacing['2xl'],
     marginBottom: spacing.xl,
     borderRadius: borderRadius['2xl'],
-    backgroundColor: 'rgba(245, 169, 184, 0.05)',
+    backgroundColor: colors.accent.secondaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(245, 169, 184, 0.1)',
+    borderColor: colors.glass.borderPink,
     overflow: 'hidden',
   },
   heroIconContainer: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(245, 169, 184, 0.1)',
+    backgroundColor: colors.accent.secondaryMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
   heroTitle: {
-    ...textStyles.h1,
+    fontFamily: 'Poppins',
     fontSize: 32,
-    color: 'rgba(245, 169, 184, 0.9)',
+    fontWeight: '700',
+    color: colors.accent.secondary,
     marginBottom: spacing.xs,
   },
   heroSubtitle: {
-    ...textStyles.body,
+    fontFamily: 'Poppins',
     fontSize: 16,
     color: colors.text.secondary,
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionTitle: {
-    ...textStyles.h3,
-    fontSize: 16,
-    color: colors.text.primary,
-    marginBottom: spacing.base,
   },
   benefitsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.md,
+    marginTop: spacing.m,
   },
   benefitCard: {
     flex: 1,
     minWidth: '45%',
-    padding: spacing.base,
+    padding: spacing.m,
     borderRadius: borderRadius.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: colors.glass.bg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: colors.border.default,
   },
   benefitIconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    backgroundColor: colors.accent.primaryMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
   },
   benefitTitle: {
-    ...textStyles.label,
+    fontFamily: 'Poppins',
     fontSize: 13,
+    fontWeight: '600',
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   benefitDescription: {
-    ...textStyles.bodySmall,
+    fontFamily: 'Poppins',
     fontSize: 11,
     color: colors.text.tertiary,
     lineHeight: 16,
   },
   activitiesCard: {
-    padding: spacing.lg,
+    padding: spacing.l,
     borderRadius: borderRadius.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: colors.glass.bg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: colors.border.default,
     gap: spacing.md,
+    marginTop: spacing.m,
   },
   activityItem: {
     flexDirection: 'row',
@@ -379,17 +366,18 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   activityText: {
-    ...textStyles.body,
+    fontFamily: 'Poppins',
     fontSize: 14,
     color: colors.text.secondary,
   },
   generateCard: {
-    padding: spacing.lg,
+    padding: spacing.l,
     borderRadius: borderRadius.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: colors.glass.bg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    gap: spacing.lg,
+    borderColor: colors.border.default,
+    gap: spacing.l,
+    marginTop: spacing.m,
   },
   generateContent: {
     flexDirection: 'row',
@@ -400,13 +388,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   generateTitle: {
-    ...textStyles.label,
+    fontFamily: 'Poppins',
     fontSize: 14,
+    fontWeight: '600',
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   generateDescription: {
-    ...textStyles.bodySmall,
+    fontFamily: 'Poppins',
     fontSize: 13,
     color: colors.text.tertiary,
     lineHeight: 18,
@@ -416,16 +405,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.base,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: spacing.m,
+    paddingHorizontal: spacing.l,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.glass.bgLight,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: colors.border.default,
   },
   generateButtonText: {
-    ...textStyles.label,
+    fontFamily: 'Poppins',
     fontSize: 14,
+    fontWeight: '600',
     color: colors.text.primary,
   },
   encouragementSection: {
@@ -433,11 +423,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   encouragementText: {
-    ...textStyles.body,
+    fontFamily: 'Poppins',
     fontSize: 14,
     fontStyle: 'italic',
     color: colors.text.tertiary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });

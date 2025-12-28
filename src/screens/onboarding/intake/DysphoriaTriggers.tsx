@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput } from "react-native";
+import { View, Text, Pressable, StyleSheet, TextInput } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import { DysphoriaTrigger } from "../../../types";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
-import { glassStyles, textStyles, inputStyles } from "../../../theme/components";
+import { textStyles, inputStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile } from "../../../services/storage/profile";
 
@@ -17,13 +17,14 @@ interface DysphoriaTriggersProps {
 }
 
 // Map UI-friendly trigger IDs to profile types
+// All triggers now map to types with active rules in dysphoriaFiltering.ts
 const TRIGGER_MAPPING: Record<string, DysphoriaTrigger> = {
-  mirrors: "mirrors",
-  public_spaces: "crowded_spaces",
-  photos: "other", // Photos tracking maps to 'other'
-  changing_rooms: "locker_rooms",
-  swimming: "other", // Swimming maps to 'other'
-  form_focused: "other", // Form-focused maps to 'other'
+  mirrors: "mirrors",              // DYS-02: Excludes mirror-required exercises
+  public_spaces: "crowded_spaces", // DYS-04: Prefers home_friendly exercises
+  photos: "photos",                // DYS-06: Deprioritizes camera-facing / progress photo exercises
+  changing_rooms: "crowded_spaces", // Maps to DYS-04: Prefers home_friendly (avoid gym changing rooms)
+  swimming: "swimming",            // DYS-07: Filters out aquatic/pool exercises
+  form_focused: "form_focused",    // DYS-08: Reduces form-intensive movements
 };
 
 const TRIGGER_OPTIONS = [
@@ -150,10 +151,10 @@ export default function DysphoriaTriggers({ navigation }: DysphoriaTriggersProps
       <View style={styles.container}>
         {/* Privacy Notice */}
         <View style={styles.privacyCard}>
-          <Ionicons 
-            name="lock-closed" 
-            size={24} 
-            color={colors.cyan[500]} 
+          <Ionicons
+            name="lock-closed"
+            size={24}
+            color={colors.accent.primary}
             style={styles.privacyIcon}
           />
           <View style={styles.privacyContent}>
@@ -176,13 +177,13 @@ export default function DysphoriaTriggers({ navigation }: DysphoriaTriggersProps
             {TRIGGER_OPTIONS.map((option) => {
               const isSelected = triggers.has(option.id);
               return (
-                <TouchableOpacity
+                <Pressable
                   key={option.id}
                   onPress={() => toggleTrigger(option.id)}
-                  activeOpacity={0.7}
-                  style={[
+                  style={({ pressed }) => [
                     styles.triggerCard,
-                    isSelected && styles.triggerCardSelected
+                    isSelected && styles.triggerCardSelected,
+                    pressed && styles.buttonPressed
                   ]}
                 >
                   <View style={[
@@ -196,10 +197,10 @@ export default function DysphoriaTriggers({ navigation }: DysphoriaTriggersProps
 
                   <View style={styles.triggerContent}>
                     <View style={styles.triggerHeader}>
-                      <Ionicons 
-                        name={option.icon} 
-                        size={20} 
-                        color={colors.cyan[500]} 
+                      <Ionicons
+                        name={option.icon}
+                        size={20}
+                        color={colors.accent.primary}
                       />
                       <Text style={styles.triggerLabel}>{option.label}</Text>
                     </View>
@@ -207,7 +208,7 @@ export default function DysphoriaTriggers({ navigation }: DysphoriaTriggersProps
                       {option.description}
                     </Text>
                   </View>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -238,13 +239,15 @@ export default function DysphoriaTriggers({ navigation }: DysphoriaTriggersProps
         </View>
 
         {/* Skip Button */}
-        <TouchableOpacity
+        <Pressable
           onPress={handleSkip}
-          activeOpacity={0.7}
-          style={styles.skipButton}
+          style={({ pressed }) => [
+            styles.skipButton,
+            pressed && styles.buttonPressed
+          ]}
         >
           <Text style={styles.skipButtonText}>Skip This Step</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </OnboardingLayout>
   );
@@ -274,9 +277,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
     borderRadius: borderRadius.xl,
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: colors.accent.primaryGlow,
   },
   privacyIcon: {
     marginTop: 2,
@@ -288,7 +291,7 @@ const styles = StyleSheet.create({
     ...textStyles.label,
     fontSize: 15,
     fontWeight: '600',
-    color: colors.cyan[500],
+    color: colors.accent.primary,
     marginBottom: spacing.xs,
   },
   privacyText: {
@@ -313,7 +316,7 @@ const styles = StyleSheet.create({
   triggerCardSelected: {
     backgroundColor: colors.glass.bgHero,
     borderWidth: 2,
-    borderColor: colors.cyan[500],
+    borderColor: colors.accent.primary,
   },
   triggerCheckbox: {
     width: 28,
@@ -327,8 +330,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   triggerCheckboxSelected: {
-    backgroundColor: colors.cyan[500],
-    borderColor: colors.cyan[500],
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.primary,
   },
   triggerContent: {
     flex: 1,
@@ -386,5 +389,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text.secondary,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });

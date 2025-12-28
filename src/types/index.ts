@@ -4,6 +4,9 @@
 // Re-export navigation types for convenience
 export * from './navigation';
 
+// Re-export feedback types
+export * from './feedback';
+
 export interface Profile {
   // REQUIRED FIELDS
   user_id: string;
@@ -23,9 +26,10 @@ export interface Profile {
   
   // OPTIONAL FIELDS - Personal Information
   pronouns?: string; // User-specified pronouns (e.g., "she/her", "he/him", "they/them")
+  chosen_name?: string; // User's chosen/preferred name for personalized greetings
   
   // OPTIONAL FIELDS - HRT Information
-  hrt_type?: 'estrogen_blockers' | 'testosterone' | 'none';
+  hrt_type?: 'estrogen' | 'testosterone' | 'none';
   hrt_start_date?: Date; // When user started HRT
   hrt_months_duration?: number; // Computed field (calculated from hrt_start_date)
   hrt_method?: 'pills' | 'patches' | 'injections' | 'gel'; // Method of HRT administration
@@ -84,9 +88,28 @@ export interface Profile {
 // Training environment type for space-aware training
 export type TrainingEnvironment = 'home' | 'gym' | 'studio' | 'outdoors';
 
+// Surgery type - all gender-affirming surgeries supported by the rules engine
+export type SurgeryType =
+  | 'top_surgery'        // Chest masculinization / mastectomy
+  | 'bottom_surgery'     // Generic bottom surgery (legacy)
+  | 'vaginoplasty'       // MTF bottom surgery
+  | 'phalloplasty'       // FTM bottom surgery (with donor site)
+  | 'metoidioplasty'     // FTM bottom surgery (meta)
+  | 'ffs'                // Facial feminization surgery
+  | 'orchiectomy'        // Orchi
+  | 'hysterectomy'       // Hysterectomy
+  | 'breast_augmentation' // Breast augmentation
+  | 'other';             // Other surgeries
+
+// Recovery phase for post-surgical exercise appropriateness
+export type RecoveryPhase = 'immediate' | 'early' | 'mid' | 'late' | 'maintenance';
+
+// Impact level for exercise intensity classification
+export type ImpactLevel = 'no_impact' | 'very_low_impact' | 'low_impact' | 'moderate_impact' | 'high_impact';
+
 // Surgery interface
 export interface Surgery {
-  type: 'top_surgery' | 'bottom_surgery' | 'ffs' | 'orchiectomy' | 'other';
+  type: SurgeryType;
   date: Date;
   weeks_post_op?: number;
   fully_healed?: boolean; // Whether surgery is fully healed
@@ -94,7 +117,7 @@ export interface Surgery {
 }
 
 // Dysphoria trigger types
-export type DysphoriaTrigger = 
+export type DysphoriaTrigger =
   | 'looking_at_chest'
   | 'tight_clothing'
   | 'mirrors'
@@ -102,6 +125,9 @@ export type DysphoriaTrigger =
   | 'crowded_spaces'
   | 'locker_rooms'
   | 'voice'
+  | 'swimming'        // Added: avoid aquatic exercises
+  | 'photos'          // Added: avoid progress photo / camera-facing exercises
+  | 'form_focused'    // Added: reduce form-intensive movements
   | 'other';
 
 // Onboarding step types
@@ -188,7 +214,13 @@ export interface Exercise {
   notes?: string;
   dysphoria_tags?: string;
   post_op_safe_weeks?: number;
-  
+
+  // Recovery phase fields (from research analyzer)
+  recovery_phases?: RecoveryPhase[];  // Array of phases this exercise is appropriate for
+  impact_level?: ImpactLevel;         // Impact classification for recovery safety
+  earliest_safe_phase?: RecoveryPhase; // Earliest recovery phase when exercise can be introduced
+  research_source_ids?: string[];      // UUIDs of research articles supporting this exercise
+
   // Keep old fields for backward compatibility
   neutral_cues?: string[];
   breathing_cues?: string[];
@@ -226,23 +258,65 @@ export interface Plan {
   goals: Goal[];
   goalWeighting: { primary: number; secondary: number };
   days: Day[];
+  workoutDays?: number[]; // User's selected workout days (0=Sun, 1=Mon, ..., 6=Sat)
 }
 
 export interface Day {
   dayNumber: number;
   date: Date;
+  dayOfWeek: number; // 0=Sunday, 1=Monday, ..., 6=Saturday
+  isRestDay: boolean; // true if this is an intentional rest day
+  wasRestDay?: boolean; // true if this was originally a rest day but user generated a workout
   variants: {
-    5: Workout | null;
-    15: Workout;
-    30: Workout;
-    45: Workout;
+    30: Workout | null;
+    45: Workout | null;
+    60: Workout | null;
+    90: Workout | null;
   };
 }
 
 export interface Workout {
-  duration: 5 | 15 | 30 | 45;
+  name?: string;
+  duration: 30 | 45 | 60 | 90;
   exercises: ExerciseInstance[];
   totalMinutes: number;
+  // Phase 2 additions - optional for backward compatibility
+  warmUp?: WarmupCooldownSection;
+  coolDown?: WarmupCooldownSection;
+  safetyCheckpoints?: InjectedCheckpoint[];
+  metadata?: WorkoutMetadata;
+}
+
+// Phase 2 warm-up/cool-down section
+export interface WarmupCooldownSection {
+  exercises: Array<{
+    name: string;
+    duration?: string;
+    reps?: string;
+    description?: string;
+  }>;
+  total_duration_minutes: number;
+}
+
+// Phase 2 safety checkpoint (injected during workout)
+export interface InjectedCheckpoint {
+  exercise_index: number;
+  type: 'safety_reminder' | 'binder_break' | 'hydration' | 'pelvic_floor_check' | 'scar_care';
+  message: string;
+  severity: 'info' | 'low' | 'medium' | 'high';
+  requires_acknowledgment: boolean;
+}
+
+// Phase 2 workout metadata
+export interface WorkoutMetadata {
+  template_name: string;
+  day_focus: string;
+  user_goal: string;
+  hrt_adjusted: boolean;
+  rules_applied: string[];
+  exercises_excluded_count: number;
+  total_exercises: number;
+  generation_timestamp: Date;
 }
 
 export interface ExerciseInstance {
@@ -257,7 +331,7 @@ export interface ExerciseInstance {
 export interface Session {
   id: string;
   planId: string;
-  workoutDuration: 5 | 15 | 30 | 45;
+  workoutDuration: 30 | 45 | 60 | 90;
   exercises: CompletedExercise[];
   startedAt: Date;
   completedAt: Date;

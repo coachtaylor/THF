@@ -3,6 +3,7 @@
 
 import { Exercise, Profile } from '../../types';
 import { PatternRequirement, DayTemplate } from './templates/types';
+import { SafetyContext, SoftFilterCriteria } from '../rulesEngine/rules/types';
 
 /**
  * Scored exercise with reasoning
@@ -21,13 +22,16 @@ export function selectExercisesForDay(
   exercisePool: Exercise[],
   dayTemplate: DayTemplate,
   profile: Profile,
-  previouslySelectedIds: string[] = []
+  previouslySelectedIds: string[] = [],
+  safetyContext?: SafetyContext
 ): Exercise[] {
   const selectedExercises: Exercise[] = [];
   const usedExerciseIds = new Set(previouslySelectedIds);
 
-  console.log(`\n🎯 Selecting exercises for: ${dayTemplate.name}`);
-  console.log(`   Target: ${dayTemplate.total_exercises} exercises, Focus: ${dayTemplate.focus}`);
+  if (__DEV__) {
+    console.log(`\n🎯 Selecting exercises for: ${dayTemplate.name}`);
+    console.log(`   Target: ${dayTemplate.total_exercises} exercises, Focus: ${dayTemplate.focus}`);
+  }
 
   // Process each pattern requirement in the template
   for (const requirement of dayTemplate.patterns) {
@@ -36,7 +40,8 @@ export function selectExercisesForDay(
       requirement,
       profile,
       usedExerciseIds,
-      selectedExercises
+      selectedExercises,
+      safetyContext?.soft_filters
     );
 
     selectedExercises.push(...exercises);
@@ -56,7 +61,7 @@ export function selectExercisesForDay(
     selectedExercises.push(...additional);
   }
 
-  console.log(`✅ Selected ${selectedExercises.length} exercises for ${dayTemplate.name}\n`);
+  if (__DEV__) console.log(`✅ Selected ${selectedExercises.length} exercises for ${dayTemplate.name}\n`);
 
   return selectedExercises.slice(0, dayTemplate.total_exercises);
 }
@@ -69,7 +74,8 @@ function selectExercisesForPattern(
   requirement: PatternRequirement,
   profile: Profile,
   usedIds: Set<string>,
-  alreadySelected: Exercise[]
+  alreadySelected: Exercise[],
+  softFilters?: SoftFilterCriteria[]
 ): Exercise[] {
   // Filter to matching pattern
   const patternExercises = pool.filter(ex =>
@@ -77,13 +83,13 @@ function selectExercisesForPattern(
   );
 
   if (patternExercises.length === 0) {
-    console.warn(`⚠️ No exercises found for pattern: ${requirement.pattern}`);
+    if (__DEV__) console.warn(`⚠️ No exercises found for pattern: ${requirement.pattern}`);
     return [];
   }
 
   // Score all exercises
   const scored = patternExercises.map(ex =>
-    scoreExercise(ex, requirement, profile, alreadySelected)
+    scoreExercise(ex, requirement, profile, alreadySelected, softFilters)
   );
 
   // Sort by score (highest first)
@@ -93,11 +99,13 @@ function selectExercisesForPattern(
   const selected = scored.slice(0, requirement.count).map(se => se.exercise);
 
   // Log selection with reasoning
-  console.log(`  ✓ Selected ${selected.length} ${requirement.pattern} exercises`);
-  selected.forEach((ex, i) => {
-    const s = scored[i];
-    console.log(`    ${i + 1}. ${ex.name} (score: ${s.score.toFixed(1)}, ${s.reasons.join(', ')})`);
-  });
+  if (__DEV__) {
+    console.log(`  ✓ Selected ${selected.length} ${requirement.pattern} exercises`);
+    selected.forEach((ex, i) => {
+      const s = scored[i];
+      console.log(`    ${i + 1}. ${ex.name} (score: ${s.score.toFixed(1)}, ${s.reasons.join(', ')})`);
+    });
+  }
 
   return selected;
 }
@@ -110,7 +118,8 @@ function scoreExercise(
   exercise: Exercise,
   requirement: PatternRequirement,
   profile: Profile,
-  alreadySelected: Exercise[]
+  alreadySelected: Exercise[],
+  softFilters?: SoftFilterCriteria[]
 ): ScoredExercise {
   let score = 0;
   const reasons: string[] = [];
@@ -170,7 +179,94 @@ function scoreExercise(
     reasons.push('required pattern +5');
   }
 
+  // DYSPHORIA-AWARE SOFT FILTER SCORING
+  // Apply scoring adjustments based on user's dysphoria triggers
+  if (softFilters && softFilters.length > 0) {
+    const exerciseTags = exercise.dysphoria_tags || '';
+
+    for (const filter of softFilters) {
+      // Boost exercises with preferred tags (e.g., home_friendly, minimal_space)
+      if (filter.prefer_tags?.some(tag => exerciseTags.includes(tag))) {
+        score += 40;
+        reasons.push('dysphoria-friendly +40');
+      }
+
+      // Penalize exercises with deprioritized tags (e.g., chest_focus, mirror_required)
+      if (filter.deprioritize_tags?.some(tag => exerciseTags.includes(tag))) {
+        score -= 40;
+        reasons.push('dysphoria-trigger -40');
+      }
+    }
+  }
+
+  // BODY FOCUS PREFERENCES (+25 primary, +15 secondary, -25 avoid)
+  // Allows users to emphasize specific body areas within their gender-affirming framework
+  const bodyFocusBonus = calculateBodyFocusBonus(exercise, profile);
+  score += bodyFocusBonus.score;
+  if (bodyFocusBonus.score !== 0) {
+    reasons.push(bodyFocusBonus.reason);
+  }
+
   return { exercise, score, reasons };
+}
+
+/**
+ * Calculate body focus bonus - allows users to emphasize specific body areas
+ * within their gender-affirming framework
+ *
+ * Weights: +25 primary preference, +15 secondary, -25 avoid
+ */
+function calculateBodyFocusBonus(
+  exercise: Exercise,
+  profile: Profile
+): { score: number; reason: string } {
+  let score = 0;
+  const reasons: string[] = [];
+
+  // Map body regions to muscle groups for matching
+  const regionMuscleMap: Record<string, string[]> = {
+    legs: ['quads', 'hamstrings', 'calves', 'legs'],
+    glutes: ['glutes', 'hips', 'hip'],
+    back: ['lats', 'upper_back', 'lower_back', 'back', 'traps'],
+    core: ['core', 'abs', 'obliques', 'abdomen'],
+    shoulders: ['shoulders', 'delts', 'deltoids'],
+    arms: ['biceps', 'triceps', 'forearms', 'arms'],
+    chest: ['chest', 'pecs', 'pectorals'],
+    hips: ['hips', 'hip_flexors', 'inner_thighs', 'adductors'],
+  };
+
+  const exerciseMatchesRegion = (region: string): boolean => {
+    const regionLower = region.toLowerCase();
+    const muscles = regionMuscleMap[regionLower] || [regionLower];
+    const targetMuscles = (exercise.target_muscles || '').toLowerCase();
+    const tags = (exercise.tags || []).map(t => t.toLowerCase());
+
+    return muscles.some(m => targetMuscles.includes(m) || tags.includes(m));
+  };
+
+  // Body focus preferences (+25 primary, +15 secondary)
+  const bodyFocusPrefer = profile.body_focus_prefer || [];
+  bodyFocusPrefer.forEach((region, index) => {
+    if (exerciseMatchesRegion(region)) {
+      const bonus = index === 0 ? 25 : 15;
+      score += bonus;
+      reasons.push(`body focus: ${region} +${bonus}`);
+    }
+  });
+
+  // Body focus avoid (-25 per match)
+  const bodyFocusAvoid = profile.body_focus_soft_avoid || [];
+  bodyFocusAvoid.forEach(region => {
+    if (exerciseMatchesRegion(region)) {
+      score -= 25;
+      reasons.push(`avoid: ${region} -25`);
+    }
+  });
+
+  return {
+    score,
+    reason: reasons.length > 0 ? reasons.join(', ') : ''
+  };
 }
 
 /**
@@ -267,7 +363,7 @@ function fillRemainingSlots(
 ): Exercise[] {
   const unused = pool.filter(ex => !usedIds.has(ex.id));
   if (unused.length === 0) {
-    console.warn(`⚠️ No unused exercises available to fill ${slotsNeeded} remaining slots`);
+    if (__DEV__) console.warn(`⚠️ No unused exercises available to fill ${slotsNeeded} remaining slots`);
     return [];
   }
 
@@ -310,7 +406,7 @@ function fillRemainingSlots(
 
   const selected = scored.slice(0, slotsNeeded).map(s => s.exercise);
 
-  if (selected.length > 0) {
+  if (__DEV__ && selected.length > 0) {
     console.log(`  ✓ Filled ${selected.length} remaining slots with filler exercises`);
     selected.forEach((ex, i) => {
       const s = scored[i];

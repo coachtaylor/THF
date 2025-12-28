@@ -1,5 +1,6 @@
 // Post-Op Movement Guide Screen
-// PRD 3.0 requirement: General outline for returning to movement after top surgery
+// PRD 3.0 requirement: General outline for returning to movement after surgery
+// Updated to support multiple surgery types with dynamic content
 
 import React from 'react';
 import {
@@ -12,122 +13,27 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard } from '../../components/common';
+import { getRecoveryGuide } from '../../data/recoveryPhases';
 
-interface PhaseInfo {
-  title: string;
-  weeks: string;
-  focus: string;
-  activities: string[];
-  avoid: string[];
-  color: string;
-  bgColor: string;
-}
-
-const RECOVERY_PHASES: PhaseInfo[] = [
-  {
-    title: 'Phase 1: Rest & Heal',
-    weeks: 'Weeks 0-2',
-    focus: 'Complete rest and initial healing',
-    activities: [
-      'Short, gentle walks (5-10 minutes)',
-      'Light stretching of lower body only',
-      'Deep breathing exercises',
-      'Focus on sleep and nutrition',
-    ],
-    avoid: [
-      'Any upper body movement',
-      'Raising arms above shoulder level',
-      'Lifting anything heavier than 5 lbs',
-      'Driving (first week minimum)',
-    ],
-    color: colors.accent.secondary,
-    bgColor: colors.accent.secondaryMuted,
-  },
-  {
-    title: 'Phase 2: Gentle Mobility',
-    weeks: 'Weeks 2-6',
-    focus: 'Gradual mobility restoration',
-    activities: [
-      'Walking (gradually increasing distance)',
-      'Gentle lower body movements',
-      'Light core work (no crunches)',
-      'Range of motion for shoulders (if cleared)',
-    ],
-    avoid: [
-      'Chest exercises of any kind',
-      'Overhead movements',
-      'Heavy carrying or lifting',
-      'High-impact activities',
-    ],
-    color: colors.accent.primary,
-    bgColor: colors.accent.primaryMuted,
-  },
-  {
-    title: 'Phase 3: Building Back',
-    weeks: 'Weeks 6-12',
-    focus: 'Conservative strength rebuilding',
-    activities: [
-      'Light upper body work (surgeon approved)',
-      'Bodyweight exercises',
-      'Resistance bands',
-      'Stationary cardio',
-    ],
-    avoid: [
-      'Heavy pressing movements',
-      'Direct chest loading',
-      'Pull-ups and dips',
-      'Pushing to failure',
-    ],
-    color: colors.success,
-    bgColor: colors.accent.successMuted,
-  },
-  {
-    title: 'Phase 4: Progressive Return',
-    weeks: 'Weeks 12-24',
-    focus: 'Gradual return to normal training',
-    activities: [
-      'Progressive overload (slowly)',
-      'Full range of motion work',
-      'Most exercises with modifications',
-      'Scar massage and mobility',
-    ],
-    avoid: [
-      'Maximal lifts (PRs)',
-      'Anything causing pulling at incisions',
-      'Ignoring pain signals',
-      'Rushing the process',
-    ],
-    color: colors.accent.primary,
-    bgColor: colors.accent.primaryMuted,
-  },
-];
-
-const GENERAL_TIPS = [
-  {
-    icon: 'medical-outline' as const,
-    text: 'Always follow your surgeon\'s specific instructions—they override any general guidelines.',
-  },
-  {
-    icon: 'body-outline' as const,
-    text: 'Every body heals differently. Some people progress faster, some slower. Both are normal.',
-  },
-  {
-    icon: 'alert-circle-outline' as const,
-    text: 'Sharp pain, pulling at incisions, or unusual swelling are signals to stop and check with your provider.',
-  },
-  {
-    icon: 'heart-outline' as const,
-    text: 'Mental health matters too. Be patient with yourself—this is a marathon, not a sprint.',
-  },
-];
+// Route params type
+type PostOpMovementGuideParams = {
+  PostOpMovementGuide: {
+    surgeryType?: string;
+  };
+};
 
 export default function PostOpMovementGuide() {
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<PostOpMovementGuideParams, 'PostOpMovementGuide'>>();
   const insets = useSafeAreaInsets();
+
+  // Get surgery type from route params, default to top_surgery
+  const surgeryType = route.params?.surgeryType || 'top_surgery';
+  const guide = getRecoveryGuide(surgeryType);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -155,10 +61,8 @@ export default function PostOpMovementGuide() {
               <Ionicons name="trending-up" size={32} color={colors.text.inverse} />
             </LinearGradient>
           </View>
-          <Text style={styles.heroTitle}>Returning to Movement</Text>
-          <Text style={styles.heroSubtitle}>
-            A general outline for getting back to training after top surgery
-          </Text>
+          <Text style={styles.heroTitle}>{guide.title}</Text>
+          <Text style={styles.heroSubtitle}>{guide.subtitle}</Text>
         </GlassCard>
 
         {/* Important Disclaimer */}
@@ -167,17 +71,13 @@ export default function PostOpMovementGuide() {
             <Ionicons name="warning" size={20} color={colors.warning} />
             <Text style={styles.disclaimerTitle}>Important</Text>
           </View>
-          <Text style={styles.disclaimerText}>
-            This is a general educational outline, not a medical protocol. Your surgeon's
-            instructions take priority. Every surgery and every body is different—
-            these phases are approximate guidelines, not strict rules.
-          </Text>
+          <Text style={styles.disclaimerText}>{guide.disclaimer}</Text>
         </GlassCard>
 
         {/* Recovery Phases */}
         <Text style={styles.sectionHeading}>Recovery Phases</Text>
 
-        {RECOVERY_PHASES.map((phase, index) => (
+        {guide.phases.map((phase, index) => (
           <GlassCard key={index} variant="default" style={styles.phaseCard}>
             {/* Phase Header */}
             <View style={styles.phaseHeader}>
@@ -219,7 +119,7 @@ export default function PostOpMovementGuide() {
         <Text style={styles.sectionHeading}>Key Reminders</Text>
 
         <GlassCard variant="default" style={styles.tipsCard}>
-          {GENERAL_TIPS.map((tip, index) => (
+          {guide.generalTips.map((tip, index) => (
             <View
               key={index}
               style={[

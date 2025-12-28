@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput } from "react-native";
+import { View, Text, Pressable, StyleSheet, TextInput } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import SelectionCard from "../../../components/onboarding/SelectionCard";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
-import { glassStyles, textStyles, inputStyles } from "../../../theme/components";
+import { textStyles, inputStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile, logEquipmentRequest } from "../../../services/storage/profile";
 import { TrainingEnvironment } from "../../../types";
@@ -228,23 +228,23 @@ export default function Experience({ navigation }: ExperienceProps) {
           
           {/* Number Input with +/- buttons */}
           <View style={styles.frequencyContainer}>
-            <TouchableOpacity
+            <Pressable
               onPress={() => setFrequency(Math.max(1, frequency - 1))}
               disabled={frequency <= 1}
-              activeOpacity={0.7}
-              style={[
+              style={({ pressed }) => [
                 styles.frequencyButton,
-                frequency <= 1 && styles.frequencyButtonDisabled
+                frequency <= 1 && styles.frequencyButtonDisabled,
+                pressed && styles.buttonPressed
               ]}
             >
-              <Ionicons name="remove" size={24} color={frequency <= 1 ? colors.text.tertiary : colors.cyan[500]} />
-            </TouchableOpacity>
+              <Ionicons name="remove" size={24} color={frequency <= 1 ? colors.text.tertiary : colors.accent.primary} />
+            </Pressable>
 
             <View style={styles.frequencyDisplay}>
               <Text style={styles.frequencyText}>{frequency}</Text>
             </View>
 
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 // Check if free user is trying to exceed the limit
                 if (!isPremium && frequency >= maxFreeFrequency) {
@@ -254,10 +254,10 @@ export default function Experience({ navigation }: ExperienceProps) {
                 }
               }}
               disabled={isPremium ? frequency >= 7 : false}
-              activeOpacity={0.7}
-              style={[
+              style={({ pressed }) => [
                 styles.frequencyButton,
-                isPremium && frequency >= 7 && styles.frequencyButtonDisabled
+                isPremium && frequency >= 7 && styles.frequencyButtonDisabled,
+                pressed && styles.buttonPressed
               ]}
             >
               <Ionicons
@@ -266,12 +266,10 @@ export default function Experience({ navigation }: ExperienceProps) {
                 color={
                   isPremium && frequency >= 7
                     ? colors.text.tertiary
-                    : !isPremium && frequency >= maxFreeFrequency
-                    ? colors.accent.primary
-                    : colors.cyan[500]
+                    : colors.accent.primary
                 }
               />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -280,13 +278,13 @@ export default function Experience({ navigation }: ExperienceProps) {
           <Text style={styles.sectionTitle}>Session Duration</Text>
           <View style={styles.durationGrid}>
             {DURATION_OPTIONS.map((option) => (
-              <TouchableOpacity
+              <Pressable
                 key={option.value}
                 onPress={() => setDuration(option.value)}
-                activeOpacity={0.7}
-                style={[
+                style={({ pressed }) => [
                   styles.durationButton,
-                  duration === option.value && styles.durationButtonSelected
+                  duration === option.value && styles.durationButtonSelected,
+                  pressed && styles.buttonPressed
                 ]}
               >
                 <Text style={[
@@ -295,7 +293,7 @@ export default function Experience({ navigation }: ExperienceProps) {
                 ]}>
                   {option.label}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         </View>
@@ -305,7 +303,7 @@ export default function Experience({ navigation }: ExperienceProps) {
           <Text style={styles.sectionTitle}>Available Equipment</Text>
           {trainingEnvironment && (
             <View style={styles.environmentNote}>
-              <Ionicons name="location-outline" size={16} color={colors.cyan[500]} />
+              <Ionicons name="location-outline" size={16} color={colors.accent.primary} />
               <Text style={styles.environmentNoteText}>
                 Showing equipment for {getEnvironmentLabel(trainingEnvironment)} workouts
               </Text>
@@ -318,13 +316,13 @@ export default function Experience({ navigation }: ExperienceProps) {
             {availableEquipment.map((option) => {
               const isSelected = equipment.has(option.id);
               return (
-                <TouchableOpacity
+                <Pressable
                   key={option.id}
                   onPress={() => toggleEquipment(option.id)}
-                  activeOpacity={0.7}
-                  style={[
+                  style={({ pressed }) => [
                     styles.equipmentButton,
-                    isSelected && styles.equipmentButtonSelected
+                    isSelected && styles.equipmentButtonSelected,
+                    pressed && styles.buttonPressed
                   ]}
                 >
                   <View style={[
@@ -338,7 +336,7 @@ export default function Experience({ navigation }: ExperienceProps) {
                   <Text style={styles.equipmentLabel} numberOfLines={1}>
                     {option.label}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -380,7 +378,7 @@ export default function Experience({ navigation }: ExperienceProps) {
         visible={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         icon="sparkles"
-        iconColor={colors.cyan[500]}
+        iconColor={colors.accent.primary}
         title="Unlock More Workouts"
         message={`Free plan includes ${maxFreeFrequency} workouts per week. Upgrade to Premium for unlimited weekly workouts and personalized programming.`}
         actions={[
@@ -458,7 +456,7 @@ const styles = StyleSheet.create({
   frequencyText: {
     ...textStyles.statMedium,
     fontSize: 36,
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   durationGrid: {
     flexDirection: 'row',
@@ -478,7 +476,7 @@ const styles = StyleSheet.create({
   },
   durationButtonSelected: {
     backgroundColor: colors.glass.bgHero,
-    borderColor: colors.cyan[500],
+    borderColor: colors.accent.primary,
   },
   durationButtonText: {
     ...textStyles.label,
@@ -486,7 +484,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   durationButtonTextSelected: {
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   environmentNote: {
     flexDirection: 'row',
@@ -497,7 +495,7 @@ const styles = StyleSheet.create({
   environmentNoteText: {
     ...textStyles.bodySmall,
     fontSize: 13,
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   equipmentSubtitle: {
     ...textStyles.bodySmall,
@@ -525,7 +523,7 @@ const styles = StyleSheet.create({
   equipmentButtonSelected: {
     backgroundColor: colors.glass.bgHero,
     borderWidth: 2,
-    borderColor: colors.cyan[500],
+    borderColor: colors.accent.primary,
   },
   equipmentCheckbox: {
     width: 28,
@@ -538,8 +536,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   equipmentCheckboxSelected: {
-    backgroundColor: colors.cyan[500],
-    borderColor: colors.cyan[500],
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.primary,
   },
   equipmentLabel: {
     ...textStyles.body,
@@ -571,5 +569,8 @@ const styles = StyleSheet.create({
     height: 80,
     paddingTop: spacing.base,
     textAlignVertical: 'top',
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });

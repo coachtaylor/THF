@@ -16,6 +16,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSavedWorkouts } from '../../hooks/useSavedWorkouts';
 import { useProfile } from '../../hooks/useProfile';
+import { useSensoryMode } from '../../contexts/SensoryModeContext';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard, GlassButton } from '../../components/common';
 
@@ -23,6 +24,7 @@ export default function SavedWorkoutsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
   const { profile } = useProfile();
+  const { disableAnimations } = useSensoryMode();
   const userId = profile?.user_id || profile?.id || 'default';
   const { savedWorkouts, loading, remove, recordUsage, refresh } = useSavedWorkouts(userId);
 
@@ -140,6 +142,7 @@ export default function SavedWorkoutsScreen() {
               onSwap={() => handleSwapIntoSchedule(workout)}
               onDelete={() => handleDelete(workout.id, workout.workout_name)}
               formatDate={formatDate}
+              disableAnimations={disableAnimations}
             />
           );
         })}
@@ -157,6 +160,7 @@ function WorkoutCard({
   onSwap,
   onDelete,
   formatDate,
+  disableAnimations,
 }: {
   workout: any;
   exerciseCount: number;
@@ -165,10 +169,14 @@ function WorkoutCard({
   onSwap: () => void;
   onDelete: () => void;
   formatDate: (date: Date) => string;
+  disableAnimations?: boolean;
 }) {
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Skip animations in low sensory mode
+    if (disableAnimations) return;
+
     Animated.loop(
       Animated.sequence([
         Animated.timing(shimmerAnim, {
@@ -183,7 +191,7 @@ function WorkoutCard({
         }),
       ])
     ).start();
-  }, []);
+  }, [disableAnimations]);
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -206,20 +214,22 @@ function WorkoutCard({
         style={styles.cardGlow}
       />
 
-      {/* Shimmer */}
-      <Animated.View
-        style={[
-          styles.shimmerOverlay,
-          { transform: [{ translateX: shimmerTranslate }] },
-        ]}
-      >
-        <LinearGradient
-          colors={['transparent', 'rgba(255, 255, 255, 0.02)', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+      {/* Shimmer - hidden in low sensory mode */}
+      {!disableAnimations && (
+        <Animated.View
+          style={[
+            styles.shimmerOverlay,
+            { transform: [{ translateX: shimmerTranslate }] },
+          ]}
+        >
+          <LinearGradient
+            colors={['transparent', 'rgba(255, 255, 255, 0.02)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      )}
 
       {/* Glass highlight */}
       <View style={styles.glassHighlight} />

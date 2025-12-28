@@ -4,14 +4,16 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { requestPasswordReset } from '../../services/auth/auth';
-import { palette, spacing, typography } from '../../theme';
+import { colors, spacing, borderRadius, gradients, layout } from '../../theme/theme';
+import { headerStyles } from '../../theme/components';
 
 export default function ForgotPasswordScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
@@ -46,24 +48,38 @@ export default function ForgotPasswordScreen({ navigation }: any) {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[colors.bg.primary, colors.bg.secondary]}
+        style={StyleSheet.absoluteFill}
+      />
+
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color={palette.white} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Forgot Password</Text>
-        <View style={{ width: 28 }} />
+      <View style={[headerStyles.container, { paddingTop: insets.top + spacing.m }]}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [
+            headerStyles.backButton,
+            pressed && styles.buttonPressed,
+          ]}
+          hitSlop={8}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
+        </Pressable>
+        <Text style={headerStyles.title}>Forgot Password</Text>
+        <View style={headerStyles.spacer} />
       </View>
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Icon */}
         <View style={styles.iconContainer}>
-          <Text style={styles.icon}>🔑</Text>
+          <View style={styles.iconCircle}>
+            <Ionicons name="key-outline" size={40} color={colors.accent.primary} />
+          </View>
         </View>
 
         {/* Title */}
@@ -81,7 +97,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
             <Ionicons
               name="checkmark-circle"
               size={20}
-              color={palette.tealPrimary}
+              color={colors.success}
             />
             <Text style={styles.successText}>
               Reset link sent! Check your email for instructions.
@@ -92,7 +108,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
         {/* Error Message */}
         {error && (
           <View style={styles.errorBanner}>
-            <Ionicons name="alert-circle" size={20} color={palette.error} />
+            <Ionicons name="alert-circle" size={20} color={colors.error} />
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
@@ -100,36 +116,67 @@ export default function ForgotPasswordScreen({ navigation }: any) {
         {/* Email Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="you@example.com"
-            placeholderTextColor={palette.midGray}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            editable={!loading && !success}
-          />
+          <View style={styles.inputContainer}>
+            <LinearGradient
+              colors={gradients.inputBg}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.glassHighlight} />
+            <Ionicons
+              name="mail-outline"
+              size={20}
+              color={colors.text.tertiary}
+              style={styles.inputIcon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.text.disabled}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              editable={!loading && !success}
+            />
+          </View>
         </View>
 
         {/* Send Reset Link Button */}
-        <TouchableOpacity
-          style={[
+        <Pressable
+          style={({ pressed }) => [
             styles.sendButton,
             (!canSubmit || loading || success) && styles.sendButtonDisabled,
+            pressed && canSubmit && !loading && !success && styles.buttonPressed,
           ]}
           onPress={handleSendResetLink}
           disabled={!canSubmit || loading || success}
         >
+          <LinearGradient
+            colors={canSubmit && !loading && !success
+              ? [colors.accent.primary, colors.accent.primaryDark]
+              : [colors.glass.bg, colors.glass.bg]
+            }
+            style={StyleSheet.absoluteFill}
+          />
           {loading ? (
-            <ActivityIndicator color={palette.deepBlack} />
+            <ActivityIndicator color={colors.text.inverse} />
           ) : (
-            <Text style={styles.sendButtonText}>
-              {success ? 'Email Sent ✓' : 'Send Reset Link →'}
-            </Text>
+            <>
+              <Text style={[
+                styles.sendButtonText,
+                (!canSubmit || success) && styles.sendButtonTextDisabled,
+              ]}>
+                {success ? 'Email Sent' : 'Send Reset Link'}
+              </Text>
+              <Ionicons
+                name={success ? 'checkmark' : 'arrow-forward'}
+                size={20}
+                color={canSubmit && !success ? colors.text.inverse : colors.text.tertiary}
+              />
+            </>
           )}
-        </TouchableOpacity>
+        </Pressable>
 
         {/* Additional Info */}
         {success && (
@@ -147,9 +194,12 @@ export default function ForgotPasswordScreen({ navigation }: any) {
         {/* Login Link */}
         <View style={styles.loginContainer}>
           <Text style={styles.loginText}>Remember your password? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Pressable
+            onPress={() => navigation.navigate('Login')}
+            style={({ pressed }) => pressed && styles.buttonPressed}
+          >
             <Text style={styles.loginLink}>Log in</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </ScrollView>
     </View>
@@ -157,47 +207,44 @@ export default function ForgotPasswordScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  // Note: header, headerTitle, backButton now use headerStyles from components.ts
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.l,
-    paddingVertical: spacing.m,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
-  },
-  headerTitle: {
-    ...typography.h2,
-    color: palette.white,
+    backgroundColor: colors.bg.primary,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.l,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.xxl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
   },
   iconContainer: {
     alignItems: 'center',
     marginBottom: spacing.l,
   },
-  icon: {
-    fontSize: 80,
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    ...typography.h1,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: spacing.m,
   },
   instructions: {
-    ...typography.body,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
@@ -205,78 +252,114 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.s,
-    backgroundColor: palette.tealPrimary + '20',
+    backgroundColor: colors.success + '20',
     padding: spacing.m,
-    borderRadius: 8,
+    borderRadius: borderRadius.lg,
     marginBottom: spacing.l,
+    borderWidth: 1,
+    borderColor: colors.success + '40',
   },
   successText: {
-    ...typography.body,
-    color: palette.tealPrimary,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.success,
     flex: 1,
   },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.s,
-    backgroundColor: palette.error + '20',
+    backgroundColor: colors.error + '20',
     padding: spacing.m,
-    borderRadius: 8,
+    borderRadius: borderRadius.lg,
     marginBottom: spacing.l,
+    borderWidth: 1,
+    borderColor: colors.error + '40',
   },
   errorText: {
-    ...typography.body,
-    color: palette.error,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.error,
     flex: 1,
   },
   inputGroup: {
     marginBottom: spacing.l,
   },
   label: {
-    ...typography.body,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.text.primary,
     marginBottom: spacing.s,
   },
-  input: {
-    ...typography.body,
-    backgroundColor: palette.darkCard,
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: palette.border,
-    borderRadius: 12,
+    borderColor: colors.border.default,
+    overflow: 'hidden',
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  inputIcon: {
+    marginLeft: spacing.m,
+  },
+  input: {
+    flex: 1,
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    color: colors.text.primary,
     padding: spacing.m,
-    color: palette.white,
   },
   sendButton: {
-    backgroundColor: palette.tealPrimary,
-    borderRadius: 12,
-    padding: spacing.m,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.s,
+    borderRadius: borderRadius.xl,
+    paddingVertical: spacing.m,
     marginTop: spacing.m,
     marginBottom: spacing.l,
+    overflow: 'hidden',
   },
   sendButtonDisabled: {
-    opacity: 0.5,
+    opacity: 1,
   },
   sendButtonText: {
-    ...typography.button,
-    color: palette.deepBlack,
-    fontWeight: '700',
-    fontSize: 18,
+    fontFamily: 'Poppins',
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.text.inverse,
+  },
+  sendButtonTextDisabled: {
+    color: colors.text.tertiary,
   },
   infoBox: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 12,
+    backgroundColor: colors.glass.bg,
+    borderRadius: borderRadius.lg,
     padding: spacing.m,
     marginBottom: spacing.l,
+    borderWidth: 1,
+    borderColor: colors.border.default,
   },
   infoTitle: {
-    ...typography.bodyLarge,
-    color: palette.white,
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
     marginBottom: spacing.s,
   },
   infoText: {
-    ...typography.body,
-    color: palette.lightGray,
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: colors.text.secondary,
     lineHeight: 24,
   },
   loginContainer: {
@@ -285,13 +368,18 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   loginText: {
-    ...typography.body,
-    color: palette.midGray,
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    color: colors.text.secondary,
   },
   loginLink: {
-    ...typography.body,
-    color: palette.tealPrimary,
+    fontFamily: 'Poppins',
+    fontSize: 15,
     fontWeight: '600',
+    color: colors.accent.primary,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });
 

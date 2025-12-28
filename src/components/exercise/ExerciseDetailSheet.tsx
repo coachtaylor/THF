@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,18 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  Animated,
+  useWindowDimensions,
+  Platform,
+  Pressable,
 } from 'react-native';
-import { IconButton } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useExerciseDetail } from '../../hooks/useExerciseDetail';
 import { Profile } from '../../services/storage/profile';
 import { palette, spacing, typography } from '../../theme';
+import { FlaggedExercise } from '../../types/feedback';
+import ExerciseFlagSheet from '../feedback/ExerciseFlagSheet';
 
 type Props = {
   exerciseId: number | null;
@@ -20,12 +27,76 @@ type Props = {
   onClose: () => void;
   onAddToWorkout?: (exerciseId: number) => void;
   onSwapExercise?: (exerciseId: number) => void;
+  onFlagExercise?: (flag: FlaggedExercise) => void;
 };
 
-export function ExerciseDetailSheet({ exerciseId, profile, onClose, onAddToWorkout, onSwapExercise }: Props) {
+export function ExerciseDetailSheet({ exerciseId, profile, onClose, onAddToWorkout, onSwapExercise, onFlagExercise }: Props) {
   const { exercise, loading } = useExerciseDetail(exerciseId, profile);
+  const [showFlagSheet, setShowFlagSheet] = useState(false);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+
+  // Animation refs
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
 
   const visible = exerciseId !== null;
+
+  // Calculate modal dimensions
+  const modalWidth = Math.min(screenWidth - 48, 400);
+  const modalHeight = Math.min(screenHeight * 0.85, 700);
+
+  // Animation effect
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 100,
+          friction: 10,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      scaleAnim.setValue(0.9);
+      opacityAnim.setValue(0);
+    }
+  }, [visible]);
+
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
+    });
+  };
+
+  const handleFlagSelect = (flagType: string, notes?: string) => {
+    if (exercise && onFlagExercise) {
+      const flag: FlaggedExercise = {
+        exercise_id: String(exerciseId),
+        exercise_name: exercise.name,
+        flag_type: flagType as any,
+        notes,
+        timestamp: new Date().toISOString(),
+      };
+      onFlagExercise(flag);
+      setShowFlagSheet(false);
+    }
+  };
 
   console.log('📋 ExerciseDetailSheet render:', { exerciseId, visible, loading, hasExercise: !!exercise, exerciseName: exercise?.name });
 
@@ -34,23 +105,47 @@ export function ExerciseDetailSheet({ exerciseId, profile, onClose, onAddToWorko
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-        <View style={styles.sheet}>
-          {/* Handle */}
-          <View style={styles.handle} />
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={handleClose}
+      statusBarTranslucent
+    >
+      <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
+        <Pressable style={styles.backdrop} onPress={handleClose} />
+
+        <Animated.View
+          style={[
+            styles.modalContainer,
+            {
+              width: modalWidth,
+              maxHeight: modalHeight,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
+          {/* Glass background */}
+          <View style={styles.glassBackground}>
+            <LinearGradient
+              colors={['rgba(30, 30, 35, 0.95)', 'rgba(20, 20, 25, 0.98)']}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.glassHighlight} />
+          </View>
+
+          {/* Close button - absolute positioned top right */}
+          <Pressable
+            style={styles.closeButton}
+            onPress={handleClose}
+            hitSlop={8}
+          >
+            <Ionicons name="close" size={24} color={palette.lightGray} />
+          </Pressable>
 
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Exercise Details</Text>
-            <IconButton
-              icon="close"
-              size={24}
-              iconColor={palette.lightGray}
-              onPress={onClose}
-              style={styles.closeButton}
-            />
           </View>
 
           {/* Content */}
@@ -114,7 +209,7 @@ export function ExerciseDetailSheet({ exerciseId, profile, onClose, onAddToWorko
               {/* Thumbnail Image */}
               {exercise.mediaThumb && (
                 <View style={styles.imageContainer}>
-                  <Image source={{ uri: exercise.mediaThumb }} style={styles.thumbnail} />
+                  <Image source={{ uri: exercise.mediaThumb }} style={styles.thumbnail} resizeMode="contain" />
                 </View>
               )}
 
@@ -219,37 +314,61 @@ export function ExerciseDetailSheet({ exerciseId, profile, onClose, onAddToWorko
             </ScrollView>
 
             {/* Action Buttons - Fixed at bottom */}
-            {(onAddToWorkout || onSwapExercise) && (
+            {(onAddToWorkout || onSwapExercise || onFlagExercise) && (
               <View style={styles.actionsContainer}>
-                {onSwapExercise && (
+                {/* Feedback Button */}
+                {onFlagExercise && (
                   <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => { onSwapExercise(exerciseId!); onClose(); }}
+                    style={styles.feedbackButton}
+                    onPress={() => setShowFlagSheet(true)}
                   >
-                    <Text style={styles.actionButtonText}>Swap Exercise</Text>
+                    <Ionicons name="flag-outline" size={18} color={palette.warning} />
+                    <Text style={styles.feedbackButtonText}>Something felt off?</Text>
                   </TouchableOpacity>
                 )}
-                {onAddToWorkout && (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => { onAddToWorkout(exerciseId!); onClose(); }}
-                  >
-                    <Text style={styles.actionButtonText}>Add to Workout</Text>
-                  </TouchableOpacity>
-                )}
+
+                {/* Primary Actions */}
+                <View style={styles.primaryActions}>
+                  {onSwapExercise && (
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => { onSwapExercise(exerciseId!); handleClose(); }}
+                    >
+                      <Text style={styles.actionButtonText}>Swap Exercise</Text>
+                    </TouchableOpacity>
+                  )}
+                  {onAddToWorkout && (
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => { onAddToWorkout(exerciseId!); handleClose(); }}
+                    >
+                      <Text style={styles.actionButtonText}>Add to Workout</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
+            )}
+
+            {/* Flag Exercise Sheet */}
+            {exercise && (
+              <ExerciseFlagSheet
+                visible={showFlagSheet}
+                onClose={() => setShowFlagSheet(false)}
+                onFlagSelect={handleFlagSelect}
+                exerciseName={exercise.name}
+              />
             )}
           </>
           ) : (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>Failed to load exercise details</Text>
-              <TouchableOpacity onPress={onClose} style={styles.errorButton}>
+              <TouchableOpacity onPress={handleClose} style={styles.errorButton}>
                 <Text style={styles.errorButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           )}
-        </View>
-      </View>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }
@@ -257,49 +376,61 @@ export function ExerciseDetailSheet({ exerciseId, profile, onClose, onAddToWorko
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(10, 14, 14, 0.8)',
   },
-  sheet: {
-    backgroundColor: palette.darkCard,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingTop: spacing.s,
-    paddingHorizontal: spacing.l,
-    paddingBottom: spacing.xxl,
-    minHeight: '50%',
-    maxHeight: '90%',
-    borderTopWidth: 1,
-    borderTopColor: palette.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 16,
+  modalContainer: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: palette.border,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 20 },
+        shadowOpacity: 0.5,
+        shadowRadius: 30,
+      },
+      android: {
+        elevation: 20,
+      },
+    }),
   },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: palette.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: spacing.m,
+  glassBackground: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  glassHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.l,
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.l,
+    paddingBottom: spacing.m,
   },
   headerTitle: {
     ...typography.h2,
-    flex: 1,
+    textAlign: 'center',
   },
   closeButton: {
-    margin: 0,
+    position: 'absolute',
+    top: spacing.m,
+    right: spacing.m,
+    zIndex: 1,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -316,6 +447,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingHorizontal: spacing.l,
     paddingBottom: spacing.xl,
   },
   exerciseName: {
@@ -371,8 +503,7 @@ const styles = StyleSheet.create({
   },
   thumbnail: {
     width: '100%',
-    height: 200,
-    resizeMode: 'cover',
+    aspectRatio: 16 / 9,
   },
   section: {
     marginBottom: spacing.xl,
@@ -452,8 +583,30 @@ const styles = StyleSheet.create({
   actionsContainer: {
     marginTop: spacing.l,
     paddingTop: spacing.l,
+    paddingHorizontal: spacing.l,
+    paddingBottom: spacing.l,
     borderTopWidth: 1,
     borderTopColor: palette.border,
+    gap: spacing.m,
+  },
+  feedbackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.s,
+    paddingHorizontal: spacing.m,
+    backgroundColor: `${palette.warning}15`,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: `${palette.warning}40`,
+  },
+  feedbackButtonText: {
+    ...typography.body,
+    color: palette.warning,
+    fontWeight: '500',
+  },
+  primaryActions: {
     gap: spacing.m,
   },
   actionButton: {

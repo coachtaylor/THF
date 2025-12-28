@@ -67,12 +67,14 @@ export async function generateWorkout(
   logger.log(`   ✓ Rules applied: ${safetyContext.rules_applied.length}`);
   logger.log(`   ✓ Excluded: ${safetyContext.excluded_exercise_ids.length} unsafe`);
 
-  // Phase 2C: Select Exercises
+  // Phase 2C: Select Exercises (including dysphoria soft filters)
   logger.log('\n🎯 Phase 2C: Exercise Selection');
   const selectedExercises = selectExercisesForDay(
     exercises,
     dayTemplate,
-    profile
+    profile,
+    [],
+    safetyContext
   );
   logger.log(`   ✓ Selected: ${selectedExercises.length} exercises`);
 

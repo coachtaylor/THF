@@ -8,15 +8,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { getWorkout, WorkoutDetailData, removeExerciseFromWorkout } from '../../services/storage/workout';
 import { useProfile } from '../../hooks/useProfile';
-import { colors, spacing, borderRadius } from '../../theme/theme';
+import { colors, spacing, borderRadius, timing, layout, iconContainer, shadows, gradients } from '../../theme/theme';
+import { headerStyles, sectionStyles, screenStyles } from '../../theme/components';
 import { GlassCard, GlassButton, ProgressRing } from '../../components/common';
 import WhyThisWorkout from '../../components/workout/WhyThisWorkout';
 import EducationSnippets from '../../components/education/EducationSnippets';
 import { selectSnippetsForUser, initEducationSnippets } from '../../services/education/snippets';
 import { SelectedSnippets, UserSnippetContext } from '../../services/education/types';
-import { WorkoutExplanation } from '../../types/explanations';
+import { WorkoutExplanation, WorkoutPersonalizationSummary } from '../../types/explanations';
+import { generatePersonalizationSummary } from '../../services/explanations/personalizationExplainer';
 import { trackWorkoutStarted, trackWhyThisWorkoutOpened } from '../../services/analytics';
 import { useWorkoutLimit } from '../../hooks/useWorkoutLimit';
+import { FeedbackFAB } from '../../components/feedback';
 
 type RootStackParamList = {
   WorkoutOverview: { workoutId: string; isToday?: boolean };
@@ -61,6 +64,7 @@ export default function WorkoutOverviewScreen() {
   const [whySheetVisible, setWhySheetVisible] = useState(false);
   const [snippets, setSnippets] = useState<SelectedSnippets>({});
   const [explanations, setExplanations] = useState<WorkoutExplanation[]>([]);
+  const [personalizationSummary, setPersonalizationSummary] = useState<WorkoutPersonalizationSummary | null>(null);
 
   // Workout limit tracking for free tier
   const userId = profile?.user_id || profile?.id || 'default';
@@ -72,8 +76,8 @@ export default function WorkoutOverviewScreen() {
     loadWorkout();
     Animated.loop(
       Animated.sequence([
-        Animated.timing(shimmerAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
-        Animated.timing(shimmerAnim, { toValue: 0, duration: 3000, useNativeDriver: true }),
+        Animated.timing(shimmerAnim, { toValue: 1, duration: timing.shimmer, useNativeDriver: true }),
+        Animated.timing(shimmerAnim, { toValue: 0, duration: timing.shimmer, useNativeDriver: true }),
       ])
     ).start();
   }, [workoutId, profile?.user_id, profile?.id]);
@@ -113,6 +117,12 @@ export default function WorkoutOverviewScreen() {
       // Build explanations from workout metadata (would come from rules engine in full implementation)
       const workoutExplanations = buildExplanationsFromWorkout(data, profile);
       setExplanations(workoutExplanations);
+
+      // Generate personalization summary for "Personalized for you" section
+      if (profile) {
+        const summary = generatePersonalizationSummary(profile);
+        setPersonalizationSummary(summary);
+      }
     } catch (error) {
       console.error('Failed to load workout:', error);
     } finally {
@@ -321,12 +331,12 @@ export default function WorkoutOverviewScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={[headerStyles.container, { paddingTop: insets.top + 8 }]}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </Pressable>
-          <Text style={styles.headerTitle}>{headerTitle}</Text>
-          <View style={styles.spacer} />
+          <Text style={headerStyles.title}>{headerTitle}</Text>
+          <View style={headerStyles.spacer} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.accent.primary} />
@@ -339,12 +349,12 @@ export default function WorkoutOverviewScreen() {
   if (!workout) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={[headerStyles.container, { paddingTop: insets.top + 8 }]}>
           <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </Pressable>
-          <Text style={styles.headerTitle}>{headerTitle}</Text>
-          <View style={styles.spacer} />
+          <Text style={headerStyles.title}>{headerTitle}</Text>
+          <View style={headerStyles.spacer} />
         </View>
         <View style={styles.loadingContainer}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.text.tertiary} />
@@ -368,11 +378,11 @@ export default function WorkoutOverviewScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[headerStyles.container, { paddingTop: insets.top + 8 }]}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{headerTitle}</Text>
+        <Text style={headerStyles.title}>{headerTitle}</Text>
         <Pressable onPress={handleSwapWorkout} hitSlop={8}>
           <Ionicons name="swap-horizontal" size={24} color={colors.accent.primary} />
         </Pressable>
@@ -385,7 +395,7 @@ export default function WorkoutOverviewScreen() {
       >
         {/* Hero Section */}
         <GlassCard variant="hero" shimmer style={styles.heroCard}>
-          <Text style={styles.workoutName}>{headerTitle}</Text>
+          <Text style={styles.workoutName}>{workout.workout_name}</Text>
           <Text style={styles.dateText}>{workout.scheduled_date ? new Date(workout.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : formatDate()}</Text>
 
           {/* Stats Row */}
@@ -494,19 +504,14 @@ export default function WorkoutOverviewScreen() {
                   <Text style={styles.exercisePrescription}>
                     {ex.sets} sets × {ex.reps} reps • Rest {ex.rest_seconds}s
                   </Text>
-                  <View style={styles.exerciseTags}>
-                    {ex.gender_emphasis && (
-                      <View style={styles.tag}>
-                        <Text style={styles.tagText}>{ex.gender_emphasis}</Text>
-                      </View>
-                    )}
-                    {ex.binding_safe && (
+                  {ex.binding_safe && (
+                    <View style={styles.exerciseTags}>
                       <View style={styles.safetyTag}>
                         <Ionicons name="shield-checkmark" size={10} color={colors.accent.primary} />
                         <Text style={styles.safetyTagText}>binding-safe</Text>
                       </View>
-                    )}
-                  </View>
+                    </View>
+                  )}
                 </View>
 
                 <Pressable
@@ -602,7 +607,11 @@ export default function WorkoutOverviewScreen() {
         onClose={() => setWhySheetVisible(false)}
         explanations={explanations}
         primaryGoal={profile?.primary_goal}
+        personalizationSummary={personalizationSummary}
       />
+
+      {/* Feedback FAB - no tab bar on this screen, so minimal offset */}
+      <FeedbackFAB context="general" bottomOffset={16} />
     </SafeAreaView>
   );
 }
@@ -612,28 +621,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg.primary,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.m,
-  },
-  headerTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.primary,
-    letterSpacing: -0.3,
-  },
-  spacer: {
-    width: 24,
-  },
+  // Note: header, headerTitle, spacer now use headerStyles from components.ts
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing['2xl'],
   },
   heroCard: {
@@ -664,9 +657,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: iconContainer.lg,
+    height: iconContainer.lg,
+    borderRadius: iconContainer.lg / 2,
     backgroundColor: colors.glass.bgLight,
     justifyContent: 'center',
     alignItems: 'center',
@@ -732,8 +725,8 @@ const styles = StyleSheet.create({
     gap: spacing.s,
   },
   sectionIconContainer: {
-    width: 32,
-    height: 32,
+    width: iconContainer.md,
+    height: iconContainer.md,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -904,17 +897,9 @@ const styles = StyleSheet.create({
   },
   startButton: {
     height: 56,
-    borderRadius: 28,
+    borderRadius: borderRadius.pill,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: colors.accent.primary,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-      },
-      android: { elevation: 8 },
-    }),
+    ...shadows.glow,
   },
   buttonGlassOverlay: {
     position: 'absolute',

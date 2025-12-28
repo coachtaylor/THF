@@ -2,8 +2,9 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../../theme/theme';
+import { colors, spacing, borderRadius } from '../../theme/theme';
 import { useProfile } from '../../hooks/useProfile';
+import { useSensoryMode } from '../../contexts/SensoryModeContext';
 
 interface EnrichedExercise {
   exerciseId: string;
@@ -13,12 +14,19 @@ interface EnrichedExercise {
   mediaThumb: string | null;
 }
 
+interface AppliedRule {
+  rule_id: string;
+  category: string;
+  action_taken: string;
+}
+
 interface TodayWorkoutCardProps {
   workout: {
     name: string;
     duration?: number;
     exercises: EnrichedExercise[];
     totalSets: number;
+    rulesApplied?: AppliedRule[];
   };
   onStartWorkout: () => void;
   onSaveWorkout?: () => void;
@@ -27,12 +35,16 @@ interface TodayWorkoutCardProps {
 
 export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkout, isSaved = false }: TodayWorkoutCardProps) {
   const { profile } = useProfile();
+  const { disableAnimations } = useSensoryMode();
   const duration = workout.duration || 45;
   const exerciseCount = workout.exercises.length;
 
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Skip shimmer animation in low sensory mode
+    if (disableAnimations) return;
+
     Animated.loop(
       Animated.sequence([
         Animated.timing(shimmerAnim, {
@@ -47,19 +59,51 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
         }),
       ])
     ).start();
-  }, []);
+  }, [disableAnimations]);
 
   const getDayLabel = () => {
     const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
     return days[new Date().getDay()];
   };
 
-  const tags: string[] = [];
-  if (profile?.binds_chest) tags.push('Binding-Safe');
-  if (profile?.on_hrt) tags.push('HRT-Optimized');
+  // Build safety tags from rules applied or profile
+  const safetyTags: { label: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [];
 
-  const displayExercises = workout.exercises.slice(0, 4);
-  const remainingCount = workout.exercises.length - 4;
+  // If we have rules applied, use those for more specific info
+  if (workout.rulesApplied && workout.rulesApplied.length > 0) {
+    const categories = new Set(workout.rulesApplied.map(r => r.category));
+    if (categories.has('post_op')) {
+      safetyTags.push({ label: 'Post-Op Recovery', icon: 'medical', color: colors.semantic.warning });
+    }
+    if (categories.has('hrt_adjustment')) {
+      safetyTags.push({ label: 'HRT-Optimized', icon: 'flask', color: colors.accent.primary });
+    }
+    if (categories.has('binding')) {
+      safetyTags.push({ label: 'Binding-Safe', icon: 'shield-checkmark', color: colors.accent.success });
+    }
+    if (categories.has('dysphoria')) {
+      safetyTags.push({ label: 'Comfort-Adjusted', icon: 'heart', color: colors.cyan[400] });
+    }
+  } else {
+    // Fallback to profile-based inference
+    if (profile?.binds_chest) {
+      safetyTags.push({ label: 'Binding-Safe', icon: 'shield-checkmark', color: colors.accent.success });
+    }
+    if (profile?.on_hrt) {
+      safetyTags.push({ label: 'HRT-Optimized', icon: 'flask', color: colors.accent.primary });
+    }
+    // Check for post-op if user has recent surgeries
+    if (profile?.surgeries?.some(s => {
+      const weeks = s.weeks_post_op ?? 0;
+      return weeks < 12;
+    })) {
+      safetyTags.push({ label: 'Post-Op Recovery', icon: 'medical', color: colors.semantic.warning });
+    }
+  }
+
+  // Show only 3 exercises in preview
+  const displayExercises = workout.exercises.slice(0, 3);
+  const remainingCount = workout.exercises.length - 3;
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -90,20 +134,22 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
         style={styles.glowOverlayPink}
       />
 
-      {/* Liquid glass shimmer effect */}
-      <Animated.View
-        style={[
-          styles.shimmerOverlay,
-          { transform: [{ translateX: shimmerTranslate }] }
-        ]}
-      >
-        <LinearGradient
-          colors={['transparent', 'rgba(255, 255, 255, 0.03)', 'transparent']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
+      {/* Liquid glass shimmer effect - hidden in low sensory mode */}
+      {!disableAnimations && (
+        <Animated.View
+          style={[
+            styles.shimmerOverlay,
+            { transform: [{ translateX: shimmerTranslate }] }
+          ]}
+        >
+          <LinearGradient
+            colors={['transparent', 'rgba(255, 255, 255, 0.03)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
+      )}
 
       {/* Top highlight for glass depth */}
       <View style={styles.glassHighlight} />
@@ -139,22 +185,27 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
         {/* Title */}
         <Text style={styles.title}>{workout.name}</Text>
 
-        {/* Tags */}
-        {tags.length > 0 && (
+        {/* Safety Tags */}
+        {safetyTags.length > 0 && (
           <View style={styles.tagsRow}>
-            {tags.map((tag, i) => (
+            {safetyTags.map((tag, i) => (
               <View key={i} style={styles.tag}>
-                <View style={styles.tagDot} />
-                <Text style={styles.tagText}>{tag}</Text>
+                <Ionicons name={tag.icon} size={10} color={tag.color} />
+                <Text style={[styles.tagText, { color: tag.color }]}>{tag.label}</Text>
               </View>
             ))}
           </View>
         )}
 
+        {/* Exercise count */}
+        <View style={styles.exerciseCountRow}>
+          <Text style={styles.exerciseCountText}>{exerciseCount} exercises</Text>
+        </View>
+
         {/* Divider */}
         <View style={styles.divider} />
 
-        {/* Exercise list */}
+        {/* Exercise preview - 3 exercises */}
         <View style={styles.exerciseList}>
           {displayExercises.map((ex, index) => (
             <View key={index} style={styles.exerciseRow}>
@@ -166,7 +217,7 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
             </View>
           ))}
           {remainingCount > 0 && (
-            <Text style={styles.moreText}>+{remainingCount} more exercises</Text>
+            <Text style={styles.moreText}>+{remainingCount} more</Text>
           )}
         </View>
 
@@ -189,20 +240,22 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
             end={{ x: 0.5, y: 0.5 }}
             style={styles.buttonGlassOverlay}
           />
-          {/* Shimmer effect */}
-          <Animated.View
-            style={[
-              styles.buttonShimmer,
-              { transform: [{ translateX: shimmerTranslate }] }
-            ]}
-          >
-            <LinearGradient
-              colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
+          {/* Shimmer effect - hidden in low sensory mode */}
+          {!disableAnimations && (
+            <Animated.View
+              style={[
+                styles.buttonShimmer,
+                { transform: [{ translateX: shimmerTranslate }] }
+              ]}
+            >
+              <LinearGradient
+                colors={['transparent', 'rgba(255, 255, 255, 0.1)', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          )}
           {/* Content */}
           <View style={styles.startButtonContent}>
             <Ionicons name="play" size={15} color={colors.text.primary} style={styles.playIcon} />
@@ -323,39 +376,45 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     color: colors.text.primary,
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   tagsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 2,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
   },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-  },
-  tagDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.accent.success,
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
   tagText: {
     fontFamily: 'Poppins',
     fontSize: 10,
-    fontWeight: '400',
+    fontWeight: '500',
+  },
+  exerciseCountRow: {
+    marginBottom: 4,
+  },
+  exerciseCountText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
     color: colors.text.secondary,
   },
   divider: {
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    marginVertical: 12,
-    marginHorizontal: 4,
+    marginVertical: 10,
   },
   exerciseList: {
-    gap: 8,
-    marginBottom: 14,
+    gap: 6,
+    marginBottom: 12,
   },
   exerciseRow: {
     flexDirection: 'row',

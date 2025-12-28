@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import { Plan, Day, Workout } from "../../../types/plan";
 import { Exercise } from "../../../types";
-import { colors, spacing, borderRadius } from "../../../theme/theme";
-import { glassStyles, textStyles, buttonStyles } from "../../../theme/components";
+import { colors, spacing, borderRadius, layout } from "../../../theme/theme";
+import { textStyles, buttonStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { getPlan } from "../../../services/storage/plan";
 import { getExerciseLibrary } from "../../../data/exercises";
@@ -36,6 +38,7 @@ const GOAL_LABELS: Record<string, string> = {
 
 export default function ProgramSetup({ navigation }: ProgramSetupProps) {
   const { profile } = useProfile();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<Plan | null>(null);
   const [exerciseMap, setExerciseMap] = useState<Record<string, Exercise>>({});
@@ -268,8 +271,14 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color={colors.cyan[500]} />
-        <Text style={styles.loadingText}>Loading your program...</Text>
+        <LinearGradient
+          colors={[colors.bg.primary, colors.bg.secondary]}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[styles.loadingContent, { paddingTop: insets.top + spacing.xl }]}>
+          <ActivityIndicator size="large" color={colors.accent.primary} />
+          <Text style={styles.loadingText}>Loading your program...</Text>
+        </View>
       </View>
     );
   }
@@ -277,16 +286,20 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
   if (error) {
     return (
       <View style={styles.container}>
-        <View style={styles.errorContainer}>
+        <LinearGradient
+          colors={[colors.bg.primary, colors.bg.secondary]}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[styles.errorContainer, { paddingTop: insets.top + spacing.xl }]}>
           <Ionicons name="alert-circle" size={48} color={colors.semantic.error} />
           <Text style={styles.errorTitle}>Error Generating Program</Text>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity
+          <Pressable
             onPress={loadProgram}
-            style={buttonStyles.primary}
+            style={({ pressed }) => [buttonStyles.primary, pressed && styles.buttonPressed]}
           >
             <Text style={buttonStyles.primaryText}>Try Again</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </View>
     );
@@ -301,11 +314,20 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
 
   return (
     <>
-    <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[colors.bg.primary, colors.bg.secondary]}
+        style={StyleSheet.absoluteFill}
+      />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + spacing.xl }]}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Success Animation */}
       <View style={styles.successContainer}>
         <View style={styles.successIconContainer}>
-          <Ionicons name="checkmark-circle" size={56} color={colors.cyan[500]} />
+          <Ionicons name="checkmark-circle" size={56} color={colors.accent.primary} />
         </View>
       </View>
 
@@ -318,7 +340,7 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
       {/* Program Card */}
       <View style={styles.programCard}>
         <View style={styles.programHeader}>
-          <Ionicons name="sparkles" size={28} color={colors.cyan[500]} />
+          <Ionicons name="sparkles" size={28} color={colors.accent.primary} />
           <Text style={styles.programName}>{getProgramName()}</Text>
         </View>
 
@@ -329,13 +351,13 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
         {/* Program Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Ionicons name="calendar-outline" size={24} color={colors.cyan[500]} />
+            <Ionicons name="calendar-outline" size={24} color={colors.accent.primary} />
             <Text style={styles.statLabel}>FREQUENCY</Text>
             <Text style={styles.statValue}>{profile.workout_frequency} Days/Week</Text>
           </View>
 
           <View style={styles.statCard}>
-            <Ionicons name="barbell-outline" size={24} color={colors.cyan[500]} />
+            <Ionicons name="barbell-outline" size={24} color={colors.accent.primary} />
             <Text style={styles.statLabel}>DURATION</Text>
             <Text style={styles.statValue}>{profile.session_duration} Minutes</Text>
           </View>
@@ -365,7 +387,7 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
             { icon: "sparkles", text: "Progressive overload for sustainable results" }
           ].map((item, index) => (
             <View key={index} style={styles.featureItem}>
-              <Ionicons name={item.icon as any} size={20} color={colors.cyan[500]} />
+              <Ionicons name={item.icon as any} size={20} color={colors.accent.primary} />
               <Text style={styles.featureText}>{item.text}</Text>
             </View>
           ))}
@@ -483,25 +505,24 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
 
       {/* CTA Buttons */}
       <View style={styles.ctaButtonsContainer}>
-        <TouchableOpacity
+        <Pressable
           onPress={handleGoToDashboard}
-          style={styles.dashboardButton}
-          activeOpacity={0.8}
+          style={({ pressed }) => [styles.dashboardButton, pressed && styles.buttonPressed]}
         >
           <Text style={styles.dashboardButtonText}>Go to Dashboard</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
+        </Pressable>
+
+        <Pressable
           onPress={handleGetStarted}
-          style={styles.ctaButton}
-          activeOpacity={0.8}
+          style={({ pressed }) => [styles.ctaButton, pressed && styles.buttonPressed]}
         >
           <Text style={styles.ctaButtonText}>Start Your First Workout</Text>
           <Ionicons name="arrow-forward" size={20} color={colors.text.primary} />
-        </TouchableOpacity>
+        </Pressable>
       </View>
 
-    </ScrollView>
+      </ScrollView>
+    </View>
 
     {/* Beta Survey Modal - must be outside ScrollView */}
     <BetaSurveyModal
@@ -517,10 +538,7 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.bg.deep,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
+    backgroundColor: colors.bg.primary,
   },
   modalContent: {
     width: '100%',
@@ -545,9 +563,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: borderRadius.xl,
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: colors.accent.primaryGlow,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
@@ -573,14 +591,14 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: colors.cyan[500],
+    backgroundColor: colors.accent.primary,
     borderRadius: borderRadius.full,
   },
   progressText: {
     ...textStyles.label,
     fontSize: 24,
     textAlign: 'center',
-    color: colors.cyan[500],
+    color: colors.accent.primary,
     fontWeight: '700',
   },
   checklist: {
@@ -600,7 +618,9 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   errorContainer: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.lg,
     padding: spacing.xl,
   },
@@ -618,12 +638,17 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginTop: spacing.lg,
   },
+  loadingContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
   scrollView: {
     flex: 1,
-    backgroundColor: colors.bg.deep,
   },
   scrollContent: {
-    padding: spacing.lg,
+    paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing['3xl'],
     gap: spacing.xl,
   },
@@ -635,9 +660,9 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: borderRadius['3xl'],
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.2)',
+    borderColor: colors.accent.primaryGlow,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -660,14 +685,14 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   programCard: {
-    backgroundColor: 'rgba(6, 182, 212, 0.08)',
+    backgroundColor: colors.accent.primaryMuted,
     padding: spacing['2xl'],
     borderRadius: borderRadius['3xl'],
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.15)',
+    borderColor: colors.accent.primaryMuted,
     ...Platform.select({
       ios: {
-        shadowColor: colors.cyan[500],
+        shadowColor: colors.accent.primary,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.3,
         shadowRadius: 32,
@@ -687,7 +712,7 @@ const styles = StyleSheet.create({
     ...textStyles.h2,
     fontSize: 24,
     fontWeight: '700',
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   programDescription: {
     ...textStyles.body,
@@ -723,7 +748,9 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   featuresCard: {
-    ...glassStyles.card,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
     padding: spacing.xl,
     borderRadius: borderRadius['2xl'],
   },
@@ -759,7 +786,9 @@ const styles = StyleSheet.create({
     gap: spacing.base,
   },
   workoutCard: {
-    ...glassStyles.card,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
     padding: spacing.xl,
     borderRadius: borderRadius['2xl'],
     marginBottom: spacing.base,
@@ -823,9 +852,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
   },
   badgeCyan: {
-    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+    backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(6, 182, 212, 0.3)',
+    borderColor: colors.accent.primaryGlow,
   },
   badgeGreen: {
     backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -845,7 +874,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   badgeTextCyan: {
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   badgeTextGreen: {
     color: colors.semantic.success,
@@ -885,16 +914,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.sm,
-    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    backgroundColor: colors.accent.secondaryMuted,
     borderWidth: 1,
-    borderColor: 'rgba(244, 63, 94, 0.4)',
+    borderColor: colors.accent.secondaryGlow,
   },
   exerciseBadgeText: {
     ...textStyles.caption,
     fontSize: 10,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    color: '#f43f5e',
+    color: colors.accent.secondary,
     fontWeight: '600',
   },
   cautionBadge: {
@@ -948,5 +977,8 @@ const styles = StyleSheet.create({
   ctaButtonText: {
     ...buttonStyles.primaryText,
     fontSize: 16,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });

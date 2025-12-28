@@ -3,6 +3,7 @@
 
 import { Exercise } from '../types';
 import { Swap } from '../types/plan';
+import { formatExerciseName } from './exerciseNames';
 
 /**
  * Parse equipment field from Supabase
@@ -124,20 +125,36 @@ export function mapSupabaseExercise(row: any): Exercise {
   const equipment = parseEquipment(row.equipment);
   console.log('   Parsed equipment:', equipment);
 
+  // Safety field validation - warn in dev if critical fields are missing
+  // Default to FALSE (unsafe) for safety fields when database value is null/undefined
+  // This is the SAFER default - we assume an exercise is NOT safe unless explicitly marked
+  const binderAware = row.binder_aware ?? false;
+  const pelvicFloorSafe = row.pelvic_floor_safe ?? false;
+  const heavyBindingSafe = row.heavy_binding_safe ?? false;
+
+  if (__DEV__) {
+    if (row.binder_aware === null || row.binder_aware === undefined) {
+      console.warn(`⚠️ Safety: Exercise "${row.name}" missing binder_aware field, defaulting to FALSE (unsafe)`);
+    }
+    if (row.pelvic_floor_safe === null || row.pelvic_floor_safe === undefined) {
+      console.warn(`⚠️ Safety: Exercise "${row.name}" missing pelvic_floor_safe field, defaulting to FALSE (unsafe)`);
+    }
+  }
+
   return {
     id: String(row.id || row.slug), // Convert to string to match Exercise type
     slug: row.slug || String(row.id || ''),
-    name: row.name || 'Unknown Exercise',
+    name: formatExerciseName(row.name) || 'Unknown Exercise',
     pattern: row.pattern || '',
     goal: row.goal || '',
     category: row.pattern || 'full_body',
     equipment: equipment,
     difficulty: (row.difficulty || 'beginner') as Exercise['difficulty'],
     tags: parseTextArray(row.tags),
-    binder_aware: row.binder_aware ?? true,
-    pelvic_floor_safe: row.pelvic_floor_safe ?? true,
-    heavy_binding_safe: row.heavy_binding_safe ?? false,
-    pelvic_floor_aware: row.pelvic_floor_safe ?? true, // Alias for backward compatibility
+    binder_aware: binderAware,
+    pelvic_floor_safe: pelvicFloorSafe,
+    heavy_binding_safe: heavyBindingSafe,
+    pelvic_floor_aware: pelvicFloorSafe, // Alias for backward compatibility
     contraindications: parseTextArray(row.contraindications),
     pressure_level: (row.pressure_level || 'low') as 'low' | 'medium' | 'high',
     target_muscles: row.target_muscles || undefined,
@@ -163,12 +180,13 @@ export function mapSupabaseExercise(row: any): Exercise {
     reviewer: row.reviewer || undefined,
     swaps: parseSwaps(row.swaps),
     trans_notes: {
-      binder: row.trans_notes?.binder || (row.binder_aware ? 'Safe for binding' : 'Use caution with binding'),
-      pelvic_floor: row.trans_notes?.pelvic_floor || (row.pelvic_floor_safe ? 'Pelvic floor safe' : 'Use caution with pelvic floor'),
+      binder: row.trans_notes?.binder || (binderAware ? 'Safe for binding' : 'Use caution with binding'),
+      pelvic_floor: row.trans_notes?.pelvic_floor || (pelvicFloorSafe ? 'Pelvic floor safe' : 'Use caution with pelvic floor'),
     },
     commonErrors: [],
     videoUrl: row.media_video || row.media_thumb || undefined,
     video_url: row.media_video || row.media_thumb || undefined,
+    media_thumb: row.media_thumb || undefined,
   };
 }
 

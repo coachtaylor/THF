@@ -180,6 +180,11 @@ export const borderRadius = {
   xxl: 32,
   '3xl': 40,
   full: 999,
+  // Semantic aliases for consistency
+  pill: 28,        // For pill-shaped buttons
+  button: 28,      // Alias for clarity
+  input: 16,       // Standard input field radius
+  card: 24,        // Standard card radius
 };
 
 export const radii = {
@@ -359,6 +364,61 @@ export const timing = {
   fast: 150,
   normal: 250,
   slow: 400,
+  shimmer: 3000,   // Standardized shimmer animation duration
+};
+
+// ============================================
+// ICON SIZES
+// ============================================
+
+export const iconSize = {
+  xs: 14,
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 32,
+};
+
+// ============================================
+// ICON CONTAINER SIZES
+// ============================================
+
+export const iconContainer = {
+  sm: 28,          // Settings section icons
+  md: 32,          // Workout section icons
+  lg: 44,          // Stat circles
+};
+
+// ============================================
+// BUTTON HEIGHTS
+// ============================================
+
+export const buttonHeight = {
+  sm: 40,
+  md: 52,
+  lg: 56,
+};
+
+// ============================================
+// STANDARD GRADIENTS
+// ============================================
+
+export const gradients = {
+  cardBg: ['#141418', '#0A0A0C'] as const,
+  restDayGlow: ['rgba(245, 169, 184, 0.1)', 'transparent'] as const,
+  buttonPrimary: [colors.accent.primary, colors.accent.primaryDark] as const,
+  inputBg: ['#141418', '#0A0A0C'] as const,
+  glassHighlight: ['rgba(255, 255, 255, 0.2)', 'transparent'] as const,
+  shimmer: ['transparent', 'rgba(255, 255, 255, 0.15)', 'transparent'] as const,
+};
+
+// ============================================
+// INTERACTION FEEDBACK
+// ============================================
+
+export const interaction = {
+  pressScale: 0.98,        // Standard press scale for pressables
+  pressOpacity: 0.85,      // Alternative press feedback
 };
 
 // ============================================
@@ -413,9 +473,10 @@ export const components = {
 };
 
 export const layout = {
-  screenPadding: spacing.xl,
-  sectionSpacing: spacing['2xl'],
-  cardSpacing: spacing.l,
+  screenPadding: spacing.xl,      // 24px - standardized screen edge padding
+  sectionSpacing: spacing.xl,     // 24px - between sections
+  cardSpacing: spacing.l,         // 16px - between cards
+  headerHeight: 56,               // Standard header height
 };
 
 // ============================================
@@ -445,6 +506,15 @@ export const theme = {
     primary: colors.accent.primary,
     background: colors.bg.primary,
     surface: colors.bg.tertiary,
+    surfaceVariant: colors.bg.elevated,
+    elevation: {
+      level0: 'transparent',
+      level1: colors.bg.secondary,
+      level2: colors.bg.tertiary,
+      level3: colors.bg.elevated,
+      level4: colors.bg.elevated,
+      level5: colors.bg.elevated,
+    },
     error: colors.error,
   },
 };

@@ -64,9 +64,16 @@ export type BodyArea =
   | 'abdomen' 
   | 'shoulders';
 
-export type SurgeryType = 
-  | 'top_surgery' 
-  | 'bottom_surgery' 
+export type SurgeryType =
+  | 'top_surgery'
+  | 'bottom_surgery'
+  | 'vaginoplasty'
+  | 'phalloplasty'
+  | 'metoidioplasty'
+  | 'ffs'
+  | 'orchiectomy'
+  | 'hysterectomy'
+  | 'breast_augmentation'
   | 'other';
 
 /**
@@ -267,8 +274,8 @@ export type OnboardingStackParamList = {
   Disclaimer: undefined;
   GenderIdentity: undefined;
   HRTStatus: { genderIdentity: string };
-  BindingInfo: undefined;
-  Surgery: undefined;
+  BindingInfo: { genderIdentity?: string };
+  Surgery: { genderIdentity?: string };
   Goals: undefined;
   TrainingEnvironment: undefined;
   Experience: undefined;
@@ -296,7 +303,6 @@ export type OnboardingStackParamList = {
   };
 
   // Auth screens
-  Welcome: undefined;
   Login: { message?: string; error?: string } | undefined;
   Signup: undefined;
   EmailVerification: { userId?: string; email: string };
@@ -306,6 +312,9 @@ export type OnboardingStackParamList = {
 
   // Paywall (for mid-onboarding upgrade)
   Paywall: undefined;
+
+  // Guides
+  PostOpMovementGuide: { surgeryType: string };
 };
 
 export type OnboardingScreenProps<T extends keyof OnboardingStackParamList> = {

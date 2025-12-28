@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   },
   thumbnailContainer: {
     width: '100%',
-    height: 180,
+    aspectRatio: 16 / 9,
     backgroundColor: 'rgba(15, 15, 18, 0.9)',
     overflow: 'hidden',
   },

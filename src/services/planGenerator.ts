@@ -1,15 +1,380 @@
 // src/services/planGenerator.ts
 // Orchestrates generation of multi-day workout plans
-// Uses workoutGenerator.ts for individual workout generation
+// Uses Phase 2 workoutGeneration system for trans-specific safety features
 
-import { Plan, Day, Workout, Goal } from '../types';
+import { Plan, Day, Workout, Goal, WarmupCooldownSection, InjectedCheckpoint, WorkoutMetadata } from '../types';
 import { Profile } from './storage/profile';
-import { generateWorkout, printWorkoutSummary } from './workoutGenerator';
+import { getFilteredExercisePool } from './workoutGenerator';
 import { fetchAllExercises } from './exerciseService';
 import { selectTemplate } from './workoutGeneration/templateSelection';
-import { DayTemplate } from './workoutGeneration/templates/types';
+import { DayTemplate, SelectedTemplate } from './workoutGeneration/templates/types';
+import { selectExercisesForDay } from './workoutGeneration/exerciseSelection';
+import { calculateVolumeAdjustments, VolumeAdjustments } from './workoutGeneration/volumeAdjustment';
+import { generateWarmup, generateCooldown } from './workoutGeneration/warmupCooldown';
+import { injectSafetyCheckpoints, convertToPrescriptions } from './workoutGeneration/checkpointInjection';
+import { SafetyContext } from './rulesEngine/rules/types';
 import { logger } from '../utils/logger';
+import { Exercise, ExerciseInstance } from '../types';
 
+/**
+ * Profile Validation
+ * Checks for contradictory or impossible profile data before generating workouts
+ */
+export interface ProfileValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export function validateProfile(profile: Profile): ProfileValidationResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Get surgery types for validation
+  const surgeryTypes = (profile.surgeries || []).map(s => s.type);
+
+  // Check for contradictory surgeries
+  const hasVaginoplasty = surgeryTypes.includes('vaginoplasty');
+  const hasPhalloplasty = surgeryTypes.includes('phalloplasty');
+  const hasMetoidioplasty = surgeryTypes.includes('metoidioplasty');
+
+  // Vaginoplasty and phalloplasty/metoidioplasty are mutually exclusive
+  if (hasVaginoplasty && (hasPhalloplasty || hasMetoidioplasty)) {
+    errors.push('Profile has both vaginoplasty and phalloplasty/metoidioplasty selected. Please correct your surgery history.');
+  }
+
+  // Phalloplasty and metoidioplasty are typically mutually exclusive (can have both but rare)
+  if (hasPhalloplasty && hasMetoidioplasty) {
+    warnings.push('Profile has both phalloplasty and metoidioplasty selected. If this is correct, please continue.');
+  }
+
+  // Check for surgery dates in the future
+  const now = new Date();
+  for (const surgery of profile.surgeries || []) {
+    if (surgery.date && new Date(surgery.date) > now) {
+      errors.push(`Surgery date for ${surgery.type} is in the future. Please correct the date.`);
+    }
+  }
+
+  // Check for HRT date in the future
+  if (profile.hrt_start_date && new Date(profile.hrt_start_date) > now) {
+    errors.push('HRT start date is in the future. Please correct the date.');
+  }
+
+  // Validate binding for MTF users (unusual but not impossible)
+  if (profile.gender_identity === 'mtf' && profile.binds_chest) {
+    warnings.push('Binding marked for MTF user. If this is correct, please continue.');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+/**
+ * Phase 2 Workout Generation
+ * Generates a complete workout with warm-up, cool-down, and safety checkpoints
+ * This is the trans-specific workout generator with all safety features
+ */
+function generatePhase2Workout(
+  profile: Profile,
+  duration: 30 | 45 | 60 | 90,
+  exercises: Exercise[],
+  dayTemplate: DayTemplate,
+  template: SelectedTemplate,
+  safetyContext: SafetyContext
+): Workout {
+  // Phase 2C: Select Exercises (including dysphoria soft filters)
+  const selectedExercises = selectExercisesForDay(
+    exercises,
+    dayTemplate,
+    profile,
+    [],
+    safetyContext
+  );
+
+  // Phase 2D: Volume Adjustments
+  const volumeAdjustments = calculateVolumeAdjustments(
+    profile,
+    template,
+    safetyContext
+  );
+
+  // Phase 2E: Prescribe Sets/Reps/Rest
+  const prescriptions = selectedExercises.map((ex, i) =>
+    prescribeExercise(
+      ex,
+      i,
+      selectedExercises.length,
+      duration,
+      profile,
+      volumeAdjustments
+    )
+  );
+
+  // Phase 2F: Warm-up & Cool-down
+  const warmup = generateWarmup(dayTemplate, selectedExercises);
+  const cooldown = generateCooldown(dayTemplate, selectedExercises);
+
+  // Phase 2G: Safety Checkpoints
+  const exerciseNameMap = new Map<string, string>();
+  selectedExercises.forEach(ex => {
+    exerciseNameMap.set(ex.id, ex.name);
+  });
+
+  const prescriptionsForCheckpoints = convertToPrescriptions(
+    prescriptions,
+    exerciseNameMap
+  );
+
+  const estimatedMainDuration = estimatePrescriptionsDuration(prescriptions);
+  const totalDuration = warmup.total_duration_minutes +
+                       cooldown.total_duration_minutes +
+                       estimatedMainDuration;
+
+  const checkpoints = injectSafetyCheckpoints(
+    prescriptionsForCheckpoints,
+    safetyContext,
+    totalDuration
+  );
+
+  // Map checkpoint types and convert severity
+  const mappedCheckpoints = checkpoints.map((cp, index) => {
+    // Map checkpoint type to plan-compatible type
+    let planType: 'safety_reminder' | 'binder_break' | 'hydration' | 'pelvic_floor_check' | 'scar_care';
+    switch (cp.type) {
+      case 'binder_break':
+        planType = 'binder_break';
+        break;
+      case 'scar_care':
+        planType = 'scar_care';
+        break;
+      case 'sensitivity_check':
+        planType = 'pelvic_floor_check';
+        break;
+      case 'hrt_reminder':
+      case 'safety_reminder':
+      case 'post_workout_reminder':
+      default:
+        planType = 'safety_reminder';
+    }
+
+    // Map severity to plan-compatible values
+    let planSeverity: 'info' | 'low' | 'medium' | 'high';
+    switch (cp.severity) {
+      case 'critical':
+        planSeverity = 'high';
+        break;
+      case 'high':
+        planSeverity = 'high';
+        break;
+      case 'medium':
+        planSeverity = 'medium';
+        break;
+      case 'low':
+      default:
+        planSeverity = 'low';
+    }
+
+    return {
+      exercise_index: index, // Use checkpoint index as proxy for exercise position
+      type: planType,
+      message: cp.message,
+      severity: planSeverity,
+      requires_acknowledgment: planSeverity === 'high' || planSeverity === 'medium'
+    };
+  });
+
+  // Build workout with Phase 2 data
+  const workout: Workout = {
+    name: dayTemplate.name,
+    duration,
+    exercises: prescriptions,
+    totalMinutes: duration,
+    warmUp: warmup,
+    coolDown: cooldown,
+    safetyCheckpoints: mappedCheckpoints,
+    metadata: {
+      template_name: template.name,
+      day_focus: dayTemplate.focus,
+      user_goal: profile.primary_goal,
+      hrt_adjusted: template.adjusted_for_hrt,
+      rules_applied: safetyContext.rules_applied.map(r => r.rule_id),
+      exercises_excluded_count: safetyContext.excluded_exercise_ids.length,
+      total_exercises: prescriptions.length,
+      generation_timestamp: new Date()
+    }
+  };
+
+  return workout;
+}
+
+/**
+ * Prescribe sets, reps, rest, and weight guidance for a single exercise
+ * Applies volume adjustments from HRT and experience level
+ */
+function prescribeExercise(
+  exercise: Exercise,
+  index: number,
+  total: number,
+  duration: number,
+  profile: Profile,
+  volumeAdjustments: VolumeAdjustments
+): ExerciseInstance {
+  const sets = calculateSets(duration, exercise.difficulty, index, total, volumeAdjustments);
+  const reps = calculateReps(exercise.difficulty, profile.primary_goal, volumeAdjustments);
+  const restSeconds = calculateRest(duration, exercise.difficulty, volumeAdjustments);
+  const weight_guidance = determineWeightGuidance(profile, volumeAdjustments);
+
+  return {
+    exerciseId: exercise.id,
+    sets,
+    reps,
+    format: 'straight_sets' as const,
+    restSeconds,
+    weight_guidance
+  };
+}
+
+/**
+ * Calculate sets with volume adjustments
+ * Respects max_sets cap from safety rules (e.g., post-op recovery)
+ */
+function calculateSets(
+  duration: number,
+  difficulty: 'beginner' | 'intermediate' | 'advanced',
+  exerciseIndex: number,
+  totalExercises: number,
+  volumeAdjustments: VolumeAdjustments
+): number {
+  let baseSets: number;
+
+  if (duration === 30) {
+    baseSets = exerciseIndex < 3 ? (difficulty === 'beginner' ? 3 : 4) : (difficulty === 'beginner' ? 2 : 3);
+  } else if (duration === 45) {
+    baseSets = exerciseIndex < 3 ? (difficulty === 'beginner' ? 3 : 4) : (difficulty === 'beginner' ? 2 : 3);
+  } else if (duration === 60) {
+    baseSets = exerciseIndex < 3 ? (difficulty === 'beginner' ? 4 : 5) : (difficulty === 'beginner' ? 3 : 4);
+  } else {
+    baseSets = exerciseIndex < 3 ? (difficulty === 'beginner' ? 4 : 5) : (difficulty === 'beginner' ? 3 : 4);
+  }
+
+  if (volumeAdjustments) {
+    baseSets = Math.round(baseSets * volumeAdjustments.sets_multiplier);
+
+    // Apply max_sets cap from safety rules (e.g., post-op recovery limits)
+    if (volumeAdjustments.max_sets && baseSets > volumeAdjustments.max_sets) {
+      baseSets = volumeAdjustments.max_sets;
+    }
+  }
+
+  return Math.max(2, Math.min(5, baseSets));
+}
+
+/**
+ * Calculate reps with volume adjustments
+ * Respects rep_range override from safety rules (e.g., post-op recovery)
+ */
+function calculateReps(
+  difficulty: 'beginner' | 'intermediate' | 'advanced',
+  primaryGoal?: string,
+  volumeAdjustments?: VolumeAdjustments
+): number {
+  // If safety rules specify a rep_range override, use that instead
+  if (volumeAdjustments?.rep_range) {
+    // Parse rep range like "12-15" and use the average
+    const match = volumeAdjustments.rep_range.match(/(\d+)-(\d+)/);
+    if (match) {
+      const minReps = parseInt(match[1]);
+      const maxReps = parseInt(match[2]);
+      return Math.round((minReps + maxReps) / 2);
+    }
+    // Single number like "15"
+    const singleRep = parseInt(volumeAdjustments.rep_range);
+    if (!isNaN(singleRep)) {
+      return singleRep;
+    }
+  }
+
+  let baseReps: number;
+
+  if (primaryGoal === 'strength') {
+    baseReps = difficulty === 'advanced' ? 6 : 5;
+  } else if (primaryGoal === 'endurance') {
+    baseReps = difficulty === 'beginner' ? 15 : (difficulty === 'intermediate' ? 18 : 20);
+  } else {
+    // Hypertrophy (default for feminization/masculinization)
+    baseReps = difficulty === 'beginner' ? 10 : 12;
+  }
+
+  if (volumeAdjustments && volumeAdjustments.reps_adjustment !== 0) {
+    baseReps += volumeAdjustments.reps_adjustment;
+  }
+
+  return Math.max(5, Math.min(20, baseReps));
+}
+
+/**
+ * Calculate rest with volume adjustments
+ */
+function calculateRest(
+  duration: number,
+  difficulty: 'beginner' | 'intermediate' | 'advanced',
+  volumeAdjustments?: VolumeAdjustments
+): number {
+  let baseRest: number;
+
+  if (duration === 30) {
+    baseRest = difficulty === 'beginner' ? 60 : 45;
+  } else {
+    baseRest = difficulty === 'beginner' ? 60 : 45;
+  }
+
+  if (volumeAdjustments) {
+    baseRest = Math.round(baseRest * volumeAdjustments.rest_multiplier);
+  }
+
+  return Math.max(10, Math.min(120, baseRest));
+}
+
+/**
+ * Determine weight guidance based on experience level and safety rules
+ */
+function determineWeightGuidance(profile: Profile, volumeAdjustments?: VolumeAdjustments): string {
+  // If safety rules specify a max_weight override, use that
+  if (volumeAdjustments?.max_weight) {
+    return `Weight limited to ${volumeAdjustments.max_weight} of normal (recovery phase)`;
+  }
+
+  switch (profile.fitness_experience) {
+    case 'beginner':
+      return 'Start light, focus on form';
+    case 'intermediate':
+      return 'Moderate weight, leave 2-3 reps in reserve';
+    case 'advanced':
+      return 'Challenging weight, leave 1-2 reps in reserve';
+    default:
+      return 'Choose appropriate weight';
+  }
+}
+
+/**
+ * Estimate duration of exercise prescriptions for checkpoint timing
+ */
+function estimatePrescriptionsDuration(prescriptions: ExerciseInstance[]): number {
+  let totalMinutes = 0;
+
+  for (const p of prescriptions) {
+    const reps = typeof p.reps === 'number' ? p.reps : 10;
+    const workSeconds = p.sets * reps * 3;
+    const restSeconds = Math.max(0, (p.sets - 1) * p.restSeconds);
+    totalMinutes += (workSeconds + restSeconds) / 60;
+  }
+
+  return Math.round(totalMinutes);
+}
 
 /**
  * Generate a Quick Start plan - a single 5-minute bodyweight workout
@@ -43,15 +408,36 @@ export async function generateQuickStartPlan(): Promise<Plan> {
     updated_at: new Date(),
   };
 
-  // Fetch exercises
-  const exercises = await fetchAllExercises();
-  
+  // Use safety-filtered exercises (Rules Engine)
+  const { exercises, safetyContext } = await getFilteredExercisePool(quickStartProfile);
+
   if (exercises.length === 0) {
-    throw new Error('No exercises available. Please check your database.');
+    // Graceful fallback for quick start - return empty plan with rest day
+    const today = new Date();
+    const restDay: Day = {
+      dayNumber: 1,
+      date: today,
+      dayOfWeek: today.getDay(),
+      isRestDay: true,
+      variants: { 30: null, 45: null, 60: null, 90: null },
+    };
+
+    return {
+      id: 'quick-start',
+      blockLength: 1,
+      startDate: today,
+      goals: ['strength'] as Goal[],
+      goalWeighting: { primary: 100, secondary: 0 },
+      days: [restDay],
+    };
   }
 
-  // Generate a 30-minute workout for quick start (minimum supported duration)
-  const workout = generateWorkout(quickStartProfile, 30, exercises);
+  // Select template and use first day template for quick start
+  const template = selectTemplate(quickStartProfile);
+  const dayTemplate = template.days[0];
+
+  // Generate a 30-minute workout for quick start using Phase 2
+  const workout = generatePhase2Workout(quickStartProfile, 30, exercises, dayTemplate, template, safetyContext);
 
   // Create a single day with the 30-minute variant
   const day: Day = {
@@ -88,6 +474,19 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
   logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   logger.log('🏋️ GENERATING WORKOUT PLAN');
   logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  // Validate profile before generating plan
+  const validation = validateProfile(profile);
+  if (!validation.isValid) {
+    logger.log('❌ Profile validation failed:');
+    validation.errors.forEach(err => logger.log(`   - ${err}`));
+    throw new Error(`Profile validation failed: ${validation.errors.join('; ')}`);
+  }
+  if (validation.warnings.length > 0) {
+    logger.log('⚠️ Profile validation warnings:');
+    validation.warnings.forEach(warn => logger.log(`   - ${warn}`));
+  }
+
   logger.log(`User ID: ${profile.id}`);
   logger.log(`Block length: ${profile.block_length || 1} weeks`);
   logger.log(`Goals: ${profile.goals?.join(', ') || 'none'}`);
@@ -95,12 +494,52 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
   logger.log(`Constraints: ${profile.constraints?.join(', ') || 'none'}`);
   logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-  // Fetch all exercises from Supabase
-  const exercises = await fetchAllExercises();
-  logger.log(`📚 Loaded ${exercises.length} exercises from database\n`);
+  // Fetch all exercises from Supabase with safety filtering (Rules Engine)
+  const { exercises, safetyContext } = await getFilteredExercisePool(profile);
+  logger.log(`📚 Loaded ${exercises.length} safe exercises (after Rules Engine filtering)\n`);
+  logger.log(`🛡️ Safety rules applied: ${safetyContext.rules_applied.length}`);
+  if (safetyContext.rules_applied.length > 0) {
+    safetyContext.rules_applied.forEach(rule => {
+      logger.log(`   - ${rule.rule_id}: ${rule.userMessage || rule.action_taken}`);
+    });
+  }
 
   if (exercises.length === 0) {
-    throw new Error('No exercises available. Please check your database.');
+    // Graceful fallback: Return a rest-only plan with a helpful message
+    // This can happen when safety rules filter out all exercises (e.g., early post-op recovery)
+    logger.log('⚠️ No exercises available after safety filtering - suggesting rest-only plan');
+
+    const restDays: Day[] = [];
+    const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
+    const startDate = new Date();
+
+    for (let i = 0; i < daysCount; i++) {
+      const dayDate = new Date(startDate);
+      dayDate.setDate(startDate.getDate() + i);
+      restDays.push({
+        dayNumber: i + 1,
+        date: dayDate,
+        dayOfWeek: dayDate.getDay(),
+        isRestDay: true,
+        variants: { 30: null, 45: null, 60: null, 90: null },
+      });
+    }
+
+    const recoveryPlan: Plan = {
+      id: generatePlanId(),
+      blockLength: (profile.block_length || 1) as 1 | 4,
+      startDate,
+      goals: (profile.goals || []).filter((g): g is Goal =>
+        g === 'strength' || g === 'cardio' || g === 'flexibility' || g === 'mobility'
+      ),
+      goalWeighting: profile.goal_weighting || { primary: 70, secondary: 30 },
+      days: restDays,
+      workoutDays: [],
+    };
+
+    // Note: The UI should check if all days are rest days and show recovery message
+    logger.log('✅ Generated recovery plan (all rest days)');
+    return recoveryPlan;
   }
 
   // Select workout template based on profile
@@ -184,12 +623,12 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
       logger.log(`🔄 Variety filter: ${exercises.length - availableExercises.length} exercises excluded from recent days`);
     }
 
-    // Generate all 4 workout variants for this day
+    // Generate all 4 workout variants for this day using Phase 2 (with safety checkpoints, warm-up/cool-down)
     const variants: Day['variants'] = {
-      30: generateWorkout(profile, 30, exercisesToUse, dayTemplate),
-      45: generateWorkout(profile, 45, exercisesToUse, dayTemplate),
-      60: generateWorkout(profile, 60, exercisesToUse, dayTemplate),
-      90: generateWorkout(profile, 90, exercisesToUse, dayTemplate),
+      30: generatePhase2Workout(profile, 30, exercisesToUse, dayTemplate, template, safetyContext),
+      45: generatePhase2Workout(profile, 45, exercisesToUse, dayTemplate, template, safetyContext),
+      60: generatePhase2Workout(profile, 60, exercisesToUse, dayTemplate, template, safetyContext),
+      90: generatePhase2Workout(profile, 90, exercisesToUse, dayTemplate, template, safetyContext),
     };
 
     // Track exercises used today
@@ -260,11 +699,40 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
  * This is an enhanced version that ensures exercise variety across the week/month
  */
 export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
-  const exercises = await fetchAllExercises();
+  // Use safety-filtered exercises (Rules Engine)
+  const { exercises, safetyContext } = await getFilteredExercisePool(profile);
 
   if (exercises.length === 0) {
-    throw new Error('No exercises available');
+    // Graceful fallback: Return a rest-only plan
+    const restDays: Day[] = [];
+    const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
+    const startDate = new Date();
+
+    for (let i = 0; i < daysCount; i++) {
+      const dayDate = new Date(startDate);
+      dayDate.setDate(startDate.getDate() + i);
+      restDays.push({
+        dayNumber: i + 1,
+        date: dayDate,
+        dayOfWeek: dayDate.getDay(),
+        isRestDay: true,
+        variants: { 30: null, 45: null, 60: null, 90: null },
+      });
+    }
+
+    return {
+      id: generatePlanId(),
+      blockLength: (profile.block_length || 1) as 1 | 4,
+      startDate,
+      goals: (profile.goals || []) as Goal[],
+      goalWeighting: profile.goal_weighting || { primary: 70, secondary: 30 },
+      days: restDays,
+      workoutDays: [],
+    };
   }
+
+  // Select template for volume adjustments
+  const template = selectTemplate(profile);
 
   const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
   const startDate = new Date();
@@ -313,11 +781,14 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
       usedExerciseIds.clear();
     }
 
+    const exercisesToUse = availableExercises.length > 0 ? availableExercises : exercises;
+    // Use first template day as default for generatePlanWithVariety
+    const dayTemplate = template.days[0];
     const variants: Day['variants'] = {
-      30: generateWorkout(profile, 30, availableExercises.length > 0 ? availableExercises : exercises),
-      45: generateWorkout(profile, 45, availableExercises.length > 0 ? availableExercises : exercises),
-      60: generateWorkout(profile, 60, availableExercises.length > 0 ? availableExercises : exercises),
-      90: generateWorkout(profile, 90, availableExercises.length > 0 ? availableExercises : exercises),
+      30: generatePhase2Workout(profile, 30, exercisesToUse, dayTemplate, template, safetyContext),
+      45: generatePhase2Workout(profile, 45, exercisesToUse, dayTemplate, template, safetyContext),
+      60: generatePhase2Workout(profile, 60, exercisesToUse, dayTemplate, template, safetyContext),
+      90: generatePhase2Workout(profile, 90, exercisesToUse, dayTemplate, template, safetyContext),
     };
 
     // Mark exercises as used
@@ -359,7 +830,9 @@ export async function regenerateDay(
   dayNumber: number,
   profile: Profile
 ): Promise<Day> {
-  const exercises = await fetchAllExercises();
+  // Use safety-filtered exercises (Rules Engine)
+  const { exercises, safetyContext } = await getFilteredExercisePool(profile);
+  const template = selectTemplate(profile);
 
   const existingDay = plan.days.find(d => d.dayNumber === dayNumber);
   if (!existingDay) {
@@ -368,11 +841,13 @@ export async function regenerateDay(
 
   logger.log(`\n🔄 Regenerating Day ${dayNumber}`);
 
+  // Use first template day as default for regeneration
+  const dayTemplate = template.days[0];
   const variants: Day['variants'] = {
-    30: generateWorkout(profile, 30, exercises),
-    45: generateWorkout(profile, 45, exercises),
-    60: generateWorkout(profile, 60, exercises),
-    90: generateWorkout(profile, 90, exercises),
+    30: generatePhase2Workout(profile, 30, exercises, dayTemplate, template, safetyContext),
+    45: generatePhase2Workout(profile, 45, exercises, dayTemplate, template, safetyContext),
+    60: generatePhase2Workout(profile, 60, exercises, dayTemplate, template, safetyContext),
+    90: generatePhase2Workout(profile, 90, exercises, dayTemplate, template, safetyContext),
   };
 
   return {
@@ -498,7 +973,7 @@ function generatePlanId(): string {
 /**
  * Calculate total workout minutes in a plan
  */
-export function calculatePlanTotalMinutes(plan: Plan, duration: 5 | 15 | 30 | 45): number {
+export function calculatePlanTotalMinutes(plan: Plan, duration: 30 | 45 | 60 | 90): number {
   let total = 0;
   plan.days.forEach(day => {
     const workout = day.variants[duration];
