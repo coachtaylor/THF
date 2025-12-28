@@ -1,27 +1,66 @@
+# Dependencies
 node_modules/
+
+# Expo
 .expo/
 .expo-shared/
 dist/
-npm-debug.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.orig.*
 web-build/
+
+# Environment files
 .env
 .env.local
-.DS_Store
-.env
-node_modules/
-.expo/
-.expo-shared/
-dist/
+
+# Signing keys
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
-.env
-.env.local
+
+# Debug
+npm-debug.*
+*.orig.*
+
+# OS
+.DS_Store
+
+# ===========================================
+# PROPRIETARY RESEARCH FILES - DO NOT COMMIT
+# These files contain proprietary trans-specific
+# research data that is not part of the app sale
+# ===========================================
+
+# Research analyzer pipeline
+scripts/research_analyzer/
+
+# Dysphoria-related research
+scripts/*dysphoria*.ts
+scripts/*dysphoria*.json
+scripts/inferred_dysphoria_tags.json
+
+# Recovery phase research
+scripts/*recovery*.ts
+scripts/tag_exercises_recovery.ts
+
+# Exercise swap algorithms
+scripts/*swaps*.ts
+scripts/*swaps*.json
+scripts/generate_exercise_swaps.ts
+scripts/generated_swaps.json
+
+# Classification data
+scripts/*classifications*.json
+scripts/exercise_classifications.json
+
+# Knowledge base exports
+scripts/migrateKnowledgeContent.ts
+scripts/migrateSafetyGuides.ts
+scripts/exportKnowledgeEngine.ts
+exports/knowledge-v1/
+
+# Recovery phases data
+src/data/recoveryPhases.ts
+
+# Knowledge base source
+src/knowledge/
