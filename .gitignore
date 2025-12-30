@@ -68,4 +68,6 @@ src/knowledge/
 # Safety rules seed data (contains proprietary formulas)
 scripts/seed_safety_config.sql
 
-.env.local
+# Sentry properties (contain auth tokens)
+ios/sentry.properties
+android/sentry.properties
