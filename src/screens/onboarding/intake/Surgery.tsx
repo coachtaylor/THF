@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, Pressable, StyleSheet, TextInput, Modal, ScrollView, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  Modal,
+  ScrollView,
+  Platform,
+  Alert,
+} from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -9,7 +19,12 @@ import { Surgery as SurgeryType } from "../../../types";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import { useNavigation as useRootNavigation } from "@react-navigation/native";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
-import { glassStyles, textStyles, cardStyles, inputStyles } from "../../../theme/components";
+import {
+  glassStyles,
+  textStyles,
+  cardStyles,
+  inputStyles,
+} from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile } from "../../../services/storage/profile";
 
@@ -25,7 +40,10 @@ type SurgeryTypeOption =
   | "breast_augmentation"
   | "other";
 
-type SurgeryNavigationProp = StackNavigationProp<OnboardingStackParamList, "Surgery">;
+type SurgeryNavigationProp = StackNavigationProp<
+  OnboardingStackParamList,
+  "Surgery"
+>;
 type SurgeryRouteProp = RouteProp<OnboardingStackParamList, "Surgery">;
 
 interface SurgeryProps {
@@ -73,9 +91,13 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
   // Filter surgery options based on gender identity
   const SURGERY_OPTIONS = useMemo(() => {
     if (genderIdentity === "mtf") {
-      return ALL_SURGERY_OPTIONS.filter(opt => MTF_SURGERY_IDS.includes(opt.id));
+      return ALL_SURGERY_OPTIONS.filter((opt) =>
+        MTF_SURGERY_IDS.includes(opt.id),
+      );
     } else if (genderIdentity === "ftm") {
-      return ALL_SURGERY_OPTIONS.filter(opt => FTM_SURGERY_IDS.includes(opt.id));
+      return ALL_SURGERY_OPTIONS.filter((opt) =>
+        FTM_SURGERY_IDS.includes(opt.id),
+      );
     }
     // Non-binary, questioning, or undefined: show all options
     return ALL_SURGERY_OPTIONS;
@@ -85,11 +107,15 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
 
   const openRecoveryGuide = (surgeryType: SurgeryTypeOption) => {
     // Navigate to the PostOpMovementGuide screen with the surgery type
-    rootNavigation.navigate('PostOpMovementGuide', { surgeryType });
+    rootNavigation.navigate("PostOpMovementGuide", { surgeryType });
   };
   const [hasSurgeries, setHasSurgeries] = useState<boolean | null>(null);
-  const [selectedTypes, setSelectedTypes] = useState<Set<SurgeryTypeOption>>(new Set());
-  const [surgeryDates, setSurgeryDates] = useState<Record<SurgeryTypeOption, Date | null>>({
+  const [selectedTypes, setSelectedTypes] = useState<Set<SurgeryTypeOption>>(
+    new Set(),
+  );
+  const [surgeryDates, setSurgeryDates] = useState<
+    Record<SurgeryTypeOption, Date | null>
+  >({
     top_surgery: null,
     bottom_surgery: null,
     vaginoplasty: null,
@@ -101,7 +127,9 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
     breast_augmentation: null,
     other: null,
   });
-  const [surgeryNotes, setSurgeryNotes] = useState<Record<SurgeryTypeOption, string>>({
+  const [surgeryNotes, setSurgeryNotes] = useState<
+    Record<SurgeryTypeOption, string>
+  >({
     top_surgery: "",
     bottom_surgery: "",
     vaginoplasty: "",
@@ -113,7 +141,8 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
     breast_augmentation: "",
     other: "",
   });
-  const [showDatePicker, setShowDatePicker] = useState<SurgeryTypeOption | null>(null);
+  const [showDatePicker, setShowDatePicker] =
+    useState<SurgeryTypeOption | null>(null);
   const [datePickerDate, setDatePickerDate] = useState(new Date());
   const [surgeonClearance, setSurgeonClearance] = useState<boolean>(false);
 
@@ -150,9 +179,10 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
       profile.surgeries.forEach((surgery) => {
         types.add(surgery.type as SurgeryTypeOption);
         if (surgery.date) {
-          dates[surgery.type as SurgeryTypeOption] = surgery.date instanceof Date 
-            ? surgery.date 
-            : new Date(surgery.date);
+          dates[surgery.type as SurgeryTypeOption] =
+            surgery.date instanceof Date
+              ? surgery.date
+              : new Date(surgery.date);
         }
         if (surgery.notes) {
           notes[surgery.type as SurgeryTypeOption] = surgery.notes;
@@ -175,9 +205,13 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
     return Math.max(0, diffWeeks);
   };
 
-  const getRecoveryPhase = (weeks: number): { label: string; color: string } => {
-    if (weeks < 6) return { label: "Early Recovery", color: colors.semantic.error };
-    if (weeks < 12) return { label: "Active Recovery", color: colors.semantic.warning };
+  const getRecoveryPhase = (
+    weeks: number,
+  ): { label: string; color: string } => {
+    if (weeks < 6)
+      return { label: "Early Recovery", color: colors.semantic.error };
+    if (weeks < 12)
+      return { label: "Active Recovery", color: colors.semantic.warning };
     return { label: "Late Recovery", color: colors.semantic.success };
   };
 
@@ -197,11 +231,38 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
     setSelectedTypes(newSelected);
   };
 
-  const handleDateChange = (event: any, selectedDate?: Date, type?: SurgeryTypeOption) => {
+  const handleDateChange = (
+    event: any,
+    selectedDate?: Date,
+    type?: SurgeryTypeOption,
+  ) => {
     if (Platform.OS === "android") {
       setShowDatePicker(null);
     }
     if (selectedDate && type) {
+      // VALIDATION: Check for future dates
+      const now = new Date();
+      if (selectedDate > now) {
+        Alert.alert(
+          "Invalid Date",
+          "Surgery date cannot be in the future. Please verify the date.",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+
+      // VALIDATION: Check for unrealistic old dates (50+ years ago)
+      const fiftyYearsAgo = new Date();
+      fiftyYearsAgo.setFullYear(now.getFullYear() - 50);
+      if (selectedDate < fiftyYearsAgo) {
+        Alert.alert(
+          "Invalid Date",
+          "Surgery date seems incorrect. Please verify the date is within the last 50 years.",
+          [{ text: "OK" }],
+        );
+        return;
+      }
+
       setSurgeryDates({ ...surgeryDates, [type]: selectedDate });
       if (Platform.OS === "android") {
         setShowDatePicker(null);
@@ -217,14 +278,27 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
 
   const formatDate = (date: Date | null): string => {
     if (!date) return "";
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
     return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   };
 
   const handleContinue = async () => {
     try {
       const surgeries: SurgeryType[] = [];
-      
+
       if (hasSurgeries === true) {
         Array.from(selectedTypes).forEach((type) => {
           const date = surgeryDates[type];
@@ -241,7 +315,10 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
         });
       }
 
-      await updateProfile({ surgeries });
+      await updateProfile({
+        surgeries,
+        surgeon_cleared: surgeonClearance, // CRITICAL FIX: Save surgeon clearance data
+      });
       navigation.navigate("Goals");
     } catch (error) {
       console.error("Error saving surgery info:", error);
@@ -252,15 +329,18 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
     navigation.goBack();
   };
 
-  const canContinue = 
-    hasSurgeries === false || 
-    (hasSurgeries === true && selectedTypes.size > 0 && 
-     Array.from(selectedTypes).every(type => surgeryDates[type] !== null));
+  const canContinue =
+    hasSurgeries === false ||
+    (hasSurgeries === true &&
+      selectedTypes.size > 0 &&
+      Array.from(selectedTypes).every((type) => surgeryDates[type] !== null));
 
-  const hasActiveSurgeries = hasSurgeries && Array.from(selectedTypes).some(type => {
-    const weeks = calculateWeeksPostOp(surgeryDates[type]);
-    return weeks < 12;
-  });
+  const hasActiveSurgeries =
+    hasSurgeries &&
+    Array.from(selectedTypes).some((type) => {
+      const weeks = calculateWeeksPostOp(surgeryDates[type]);
+      return weeks < 12;
+    });
 
   return (
     <OnboardingLayout
@@ -275,20 +355,24 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
       <View style={styles.container}>
         {/* Yes/No Question */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Have you had gender-affirming surgery?</Text>
+          <Text style={styles.sectionTitle}>
+            Have you had gender-affirming surgery?
+          </Text>
           <View style={styles.buttonRow}>
             <Pressable
               onPress={() => setHasSurgeries(true)}
               style={({ pressed }) => [
                 styles.toggleButton,
                 hasSurgeries === true && styles.toggleButtonSelected,
-                pressed && styles.buttonPressed
+                pressed && styles.buttonPressed,
               ]}
             >
-              <Text style={[
-                styles.toggleButtonText,
-                hasSurgeries === true && styles.toggleButtonTextSelected
-              ]}>
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  hasSurgeries === true && styles.toggleButtonTextSelected,
+                ]}
+              >
                 Yes
               </Text>
             </Pressable>
@@ -300,13 +384,15 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
               style={({ pressed }) => [
                 styles.toggleButton,
                 hasSurgeries === false && styles.toggleButtonSelected,
-                pressed && styles.buttonPressed
+                pressed && styles.buttonPressed,
               ]}
             >
-              <Text style={[
-                styles.toggleButtonText,
-                hasSurgeries === false && styles.toggleButtonTextSelected
-              ]}>
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  hasSurgeries === false && styles.toggleButtonTextSelected,
+                ]}
+              >
                 No
               </Text>
             </Pressable>
@@ -318,7 +404,9 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
           <>
             {/* Surgery Type Checkboxes */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Which surgeries have you had?</Text>
+              <Text style={styles.sectionTitle}>
+                Which surgeries have you had?
+              </Text>
               <View style={styles.checkboxContainer}>
                 {SURGERY_OPTIONS.map((option) => {
                   const isSelected = selectedTypes.has(option.id);
@@ -329,15 +417,21 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
                       style={({ pressed }) => [
                         styles.checkboxRow,
                         isSelected && styles.checkboxRowSelected,
-                        pressed && styles.buttonPressed
+                        pressed && styles.buttonPressed,
                       ]}
                     >
-                      <View style={[
-                        styles.checkbox,
-                        isSelected && styles.checkboxChecked
-                      ]}>
+                      <View
+                        style={[
+                          styles.checkbox,
+                          isSelected && styles.checkboxChecked,
+                        ]}
+                      >
                         {isSelected && (
-                          <Ionicons name="checkmark" size={18} color={colors.text.primary} />
+                          <Ionicons
+                            name="checkmark"
+                            size={18}
+                            color={colors.text.primary}
+                          />
                         )}
                       </View>
                       <Text style={styles.checkboxLabel}>{option.label}</Text>
@@ -351,7 +445,7 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
             {Array.from(selectedTypes).map((type) => {
               const weeks = calculateWeeksPostOp(surgeryDates[type]);
               const phase = getRecoveryPhase(weeks);
-              const option = SURGERY_OPTIONS.find(o => o.id === type);
+              const option = SURGERY_OPTIONS.find((o) => o.id === type);
               const date = surgeryDates[type];
 
               return (
@@ -363,30 +457,54 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
                     <Text style={styles.inputLabel}>Surgery Date</Text>
                     <Pressable
                       onPress={() => openDatePicker(type)}
-                      style={({ pressed }) => [styles.dateButton, pressed && styles.buttonPressed]}
+                      style={({ pressed }) => [
+                        styles.dateButton,
+                        pressed && styles.buttonPressed,
+                      ]}
                     >
-                      <Text style={[
-                        styles.dateButtonText,
-                        !date && styles.dateButtonTextPlaceholder
-                      ]}>
+                      <Text
+                        style={[
+                          styles.dateButtonText,
+                          !date && styles.dateButtonTextPlaceholder,
+                        ]}
+                      >
                         {date ? formatDate(date) : "Select date"}
                       </Text>
-                      <Ionicons name="calendar-outline" size={20} color={colors.text.secondary} />
+                      <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color={colors.text.secondary}
+                      />
                     </Pressable>
                   </View>
 
                   {/* Recovery Phase (shown if date is set) */}
                   {date && (
-                    <View style={[
-                      styles.recoveryPhase,
-                      { backgroundColor: `${phase.color}15`, borderColor: `${phase.color}30` }
-                    ]}>
+                    <View
+                      style={[
+                        styles.recoveryPhase,
+                        {
+                          backgroundColor: `${phase.color}15`,
+                          borderColor: `${phase.color}30`,
+                        },
+                      ]}
+                    >
                       <View style={styles.recoveryPhaseLeft}>
-                        <Text style={[styles.recoveryPhaseLabel, { color: phase.color }]}>
+                        <Text
+                          style={[
+                            styles.recoveryPhaseLabel,
+                            { color: phase.color },
+                          ]}
+                        >
                           {phase.label}
                         </Text>
                       </View>
-                      <Text style={[styles.recoveryPhaseWeeks, { color: phase.color }]}>
+                      <Text
+                        style={[
+                          styles.recoveryPhaseWeeks,
+                          { color: phase.color },
+                        ]}
+                      >
                         {weeks} weeks post-op
                       </Text>
                     </View>
@@ -399,7 +517,9 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
                     </Text>
                     <TextInput
                       value={surgeryNotes[type]}
-                      onChangeText={(text) => setSurgeryNotes({ ...surgeryNotes, [type]: text })}
+                      onChangeText={(text) =>
+                        setSurgeryNotes({ ...surgeryNotes, [type]: text })
+                      }
                       placeholder="Any restrictions or considerations..."
                       placeholderTextColor={colors.text.tertiary}
                       multiline
@@ -412,13 +532,24 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
                   {date && (
                     <Pressable
                       onPress={() => openRecoveryGuide(type)}
-                      style={({ pressed }) => [styles.recoveryGuideLink, pressed && styles.buttonPressed]}
+                      style={({ pressed }) => [
+                        styles.recoveryGuideLink,
+                        pressed && styles.buttonPressed,
+                      ]}
                     >
-                      <Ionicons name="book-outline" size={18} color={colors.accent.primaryLight} />
+                      <Ionicons
+                        name="book-outline"
+                        size={18}
+                        color={colors.accent.primaryLight}
+                      />
                       <Text style={styles.recoveryGuideLinkText}>
                         View Recovery Guide
                       </Text>
-                      <Ionicons name="chevron-forward" size={16} color={colors.accent.primaryLight} />
+                      <Ionicons
+                        name="chevron-forward"
+                        size={16}
+                        color={colors.accent.primaryLight}
+                      />
                     </Pressable>
                   )}
                 </View>
@@ -439,7 +570,9 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
                     Modified Programming Required
                   </Text>
                   <Text style={styles.warningText}>
-                    Your workouts will be carefully modified to accommodate your recovery timeline. We'll avoid exercises that could stress surgical sites.
+                    Your workouts will be carefully modified to accommodate your
+                    recovery timeline. We'll avoid exercises that could stress
+                    surgical sites.
                   </Text>
                 </View>
               </View>
@@ -450,14 +583,23 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
               <View style={styles.clearanceSection}>
                 <Pressable
                   onPress={() => setSurgeonClearance(!surgeonClearance)}
-                  style={({ pressed }) => [styles.clearanceRow, pressed && styles.buttonPressed]}
+                  style={({ pressed }) => [
+                    styles.clearanceRow,
+                    pressed && styles.buttonPressed,
+                  ]}
                 >
-                  <View style={[
-                    styles.checkbox,
-                    surgeonClearance && styles.checkboxChecked
-                  ]}>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      surgeonClearance && styles.checkboxChecked,
+                    ]}
+                  >
                     {surgeonClearance && (
-                      <Ionicons name="checkmark" size={18} color={colors.text.primary} />
+                      <Ionicons
+                        name="checkmark"
+                        size={18}
+                        color={colors.text.primary}
+                      />
                     )}
                   </View>
                   <Text style={styles.clearanceLabel}>
@@ -474,7 +616,10 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
                       color={colors.accent.primaryLight}
                     />
                     <Text style={styles.clearanceWarningText}>
-                      If you haven't received clearance yet, we recommend consulting your surgeon before starting any exercise program. You can still continue, but please prioritize your doctor's guidance.
+                      If you haven't received clearance yet, we recommend
+                      consulting your surgeon before starting any exercise
+                      program. You can still continue, but please prioritize
+                      your doctor's guidance.
                     </Text>
                   </View>
                 )}
@@ -502,7 +647,11 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
                       onPress={() => setShowDatePicker(null)}
                       style={({ pressed }) => pressed && styles.buttonPressed}
                     >
-                      <Ionicons name="close" size={24} color={colors.text.primary} />
+                      <Ionicons
+                        name="close"
+                        size={24}
+                        color={colors.text.primary}
+                      />
                     </Pressable>
                   </View>
                   <DateTimePicker
@@ -521,7 +670,10 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
                   <View style={styles.modalActions}>
                     <Pressable
                       onPress={() => setShowDatePicker(null)}
-                      style={({ pressed }) => [styles.modalCancelButton, pressed && styles.buttonPressed]}
+                      style={({ pressed }) => [
+                        styles.modalCancelButton,
+                        pressed && styles.buttonPressed,
+                      ]}
                     >
                       <Text style={styles.modalCancelText}>Cancel</Text>
                     </Pressable>
@@ -530,7 +682,10 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
                         handleDateChange(null, datePickerDate, showDatePicker);
                         setShowDatePicker(null);
                       }}
-                      style={({ pressed }) => [styles.modalConfirmButton, pressed && styles.buttonPressed]}
+                      style={({ pressed }) => [
+                        styles.modalConfirmButton,
+                        pressed && styles.buttonPressed,
+                      ]}
                     >
                       <Text style={styles.modalConfirmText}>Confirm</Text>
                     </Pressable>
@@ -546,7 +701,9 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
               display="default"
               maximumDate={new Date()}
               textColor={colors.text.primary}
-              onChange={(event, selectedDate) => handleDateChange(event, selectedDate, showDatePicker)}
+              onChange={(event, selectedDate) =>
+                handleDateChange(event, selectedDate, showDatePicker)
+              }
             />
           )}
         </>
@@ -568,7 +725,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.base,
   },
   buttonRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.md,
   },
   toggleButton: {
@@ -578,8 +735,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass.bg,
     borderWidth: 2,
     borderColor: colors.glass.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   toggleButtonSelected: {
     backgroundColor: colors.glass.bgHero,
@@ -598,8 +755,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: spacing.base,
     borderRadius: borderRadius.base,
     backgroundColor: colors.glass.bg,
@@ -617,9 +774,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
     borderWidth: 2,
     borderColor: colors.glass.border,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
   },
   checkboxChecked: {
     backgroundColor: colors.accent.primary,
@@ -659,9 +816,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.glass.border,
     paddingHorizontal: spacing.base,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   dateButtonText: {
     ...textStyles.body,
@@ -672,33 +829,33 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   recoveryPhase: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: spacing.md,
     borderRadius: borderRadius.md,
     borderWidth: 1,
   },
   recoveryPhaseLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
   },
   recoveryPhaseLabel: {
     ...textStyles.label,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   recoveryPhaseWeeks: {
     ...textStyles.body,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   notesInput: {
     ...inputStyles.textInput,
     height: 80,
     paddingTop: spacing.base,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   warningIcon: {
     marginTop: 2,
@@ -709,7 +866,7 @@ const styles = StyleSheet.create({
   warningTitle: {
     ...textStyles.label,
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.semantic.warning,
     marginBottom: spacing.xs,
   },
@@ -719,19 +876,19 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: colors.bg.raised,
-    borderTopLeftRadius: borderRadius['2xl'],
-    borderTopRightRadius: borderRadius['2xl'],
+    borderTopLeftRadius: borderRadius["2xl"],
+    borderTopRightRadius: borderRadius["2xl"],
     paddingBottom: spacing.xl,
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: spacing.xl,
     borderBottomWidth: 1,
     borderBottomColor: colors.glass.border,
@@ -744,7 +901,7 @@ const styles = StyleSheet.create({
     height: 200,
   },
   modalActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.base,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.base,
@@ -756,8 +913,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass.bg,
     borderWidth: 1,
     borderColor: colors.glass.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalCancelText: {
     ...textStyles.label,
@@ -768,8 +925,8 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: borderRadius.base,
     backgroundColor: colors.accent.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalConfirmText: {
     ...textStyles.label,
@@ -780,8 +937,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.base,
   },
   clearanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: spacing.base,
     borderRadius: borderRadius.base,
     backgroundColor: colors.glass.bg,
@@ -796,8 +953,8 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   clearanceWarning: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: spacing.sm,
     padding: spacing.base,
     borderRadius: borderRadius.base,
@@ -812,8 +969,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   recoveryGuideLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
     paddingVertical: spacing.sm,
     marginTop: spacing.sm,

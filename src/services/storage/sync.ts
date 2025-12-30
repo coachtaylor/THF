@@ -2,16 +2,25 @@
 // Handles background syncing of local data to Supabase
 // Includes exponential backoff retry logic for failed syncs
 
-import { AppState, AppStateStatus } from 'react-native';
-import * as SQLite from 'expo-sqlite';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../../utils/supabase';
-import { getProfile, syncProfileToCloud } from './profile';
-import { logger } from '../../utils/logger';
-import { notifySyncError } from '../../utils/toast';
-import { syncAllUnsyncedFeedback } from '../feedback/feedbackReport';
+import { AppState, AppStateStatus } from "react-native";
+import * as SQLite from "expo-sqlite";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "../../utils/supabase";
+import { getProfile, syncProfileToCloud } from "./profile";
+import { logger } from "../../utils/logger";
+import { notifySyncError } from "../../utils/toast";
+import { syncAllUnsyncedFeedback } from "../feedback/feedbackReport";
 
-const db = SQLite.openDatabaseSync('transfitness.db');
+// Lazy-initialized database connection
+// Prevents crash when module is imported before React Native runtime is ready
+let _syncDb: SQLite.SQLiteDatabase | null = null;
+
+function getDb(): SQLite.SQLiteDatabase {
+  if (!_syncDb) {
+    _syncDb = SQLite.openDatabaseSync("transfitness.db");
+  }
+  return _syncDb;
+}
 
 // Sync status tracking
 let isSyncing = false;
@@ -26,11 +35,11 @@ const RETRY_CONFIG = {
 };
 
 // Retry queue stored in AsyncStorage
-const RETRY_QUEUE_KEY = '@transfitness/sync_retry_queue';
-const RETRY_COUNT_KEY = '@transfitness/sync_retry_count';
+const RETRY_QUEUE_KEY = "@transfitness/sync_retry_queue";
+const RETRY_COUNT_KEY = "@transfitness/sync_retry_count";
 
 interface RetryQueueItem {
-  type: 'session' | 'plan' | 'profile' | 'feedback';
+  type: "session" | "plan" | "profile" | "feedback";
   id: string;
   data: any;
   addedAt: string;
@@ -66,7 +75,7 @@ async function loadRetryQueue(): Promise<RetryQueueItem[]> {
       return JSON.parse(queueJson);
     }
   } catch (error) {
-    console.error('Failed to load retry queue:', error);
+    console.error("Failed to load retry queue:", error);
   }
   return [];
 }
@@ -79,18 +88,22 @@ async function saveRetryQueue(queue: RetryQueueItem[]): Promise<void> {
     await AsyncStorage.setItem(RETRY_QUEUE_KEY, JSON.stringify(queue));
     pendingSyncCount = queue.length;
   } catch (error) {
-    console.error('Failed to save retry queue:', error);
+    console.error("Failed to save retry queue:", error);
   }
 }
 
 /**
  * Add item to retry queue
  */
-async function addToRetryQueue(item: Omit<RetryQueueItem, 'addedAt' | 'retryCount'>): Promise<void> {
+async function addToRetryQueue(
+  item: Omit<RetryQueueItem, "addedAt" | "retryCount">,
+): Promise<void> {
   const queue = await loadRetryQueue();
 
   // Check if item already exists in queue
-  const existingIndex = queue.findIndex(q => q.type === item.type && q.id === item.id);
+  const existingIndex = queue.findIndex(
+    (q) => q.type === item.type && q.id === item.id,
+  );
   if (existingIndex >= 0) {
     // Increment retry count for existing item
     queue[existingIndex].retryCount++;
@@ -107,7 +120,9 @@ async function addToRetryQueue(item: Omit<RetryQueueItem, 'addedAt' | 'retryCoun
   await saveRetryQueue(queue);
 
   if (__DEV__) {
-    console.log(`☁️ Added to retry queue: ${item.type}/${item.id}. Queue size: ${queue.length}`);
+    console.log(
+      `☁️ Added to retry queue: ${item.type}/${item.id}. Queue size: ${queue.length}`,
+    );
   }
 }
 
@@ -116,7 +131,7 @@ async function addToRetryQueue(item: Omit<RetryQueueItem, 'addedAt' | 'retryCoun
  */
 async function removeFromRetryQueue(type: string, id: string): Promise<void> {
   const queue = await loadRetryQueue();
-  const filtered = queue.filter(q => !(q.type === type && q.id === id));
+  const filtered = queue.filter((q) => !(q.type === type && q.id === id));
   await saveRetryQueue(filtered);
 }
 
@@ -146,7 +161,9 @@ async function processRetryQueue(userId: string): Promise<number> {
     // Skip items that have exceeded max retries
     if (item.retryCount >= RETRY_CONFIG.maxRetries) {
       if (__DEV__) {
-        console.log(`☁️ Max retries exceeded for ${item.type}/${item.id}, removing from queue`);
+        console.log(
+          `☁️ Max retries exceeded for ${item.type}/${item.id}, removing from queue`,
+        );
       }
       continue; // Don't add to updated queue - item will be dropped
     }
@@ -155,13 +172,13 @@ async function processRetryQueue(userId: string): Promise<number> {
       let success = false;
 
       switch (item.type) {
-        case 'session':
+        case "session":
           success = await retrySyncSession(userId, item);
           break;
-        case 'plan':
+        case "plan":
           success = await retrySyncPlan(userId, item);
           break;
-        case 'profile':
+        case "profile":
           success = await retrySyncProfile(item);
           break;
         // Feedback handled separately
@@ -194,7 +211,9 @@ async function processRetryQueue(userId: string): Promise<number> {
     consecutiveFailures++;
 
     if (__DEV__) {
-      console.log(`☁️ Scheduling retry in ${nextRetryDelay}ms. Failures: ${consecutiveFailures}`);
+      console.log(
+        `☁️ Scheduling retry in ${nextRetryDelay}ms. Failures: ${consecutiveFailures}`,
+      );
     }
 
     // Clear existing timeout if any
@@ -218,30 +237,33 @@ async function processRetryQueue(userId: string): Promise<number> {
 /**
  * Retry syncing a single session
  */
-async function retrySyncSession(userId: string, item: RetryQueueItem): Promise<boolean> {
+async function retrySyncSession(
+  userId: string,
+  item: RetryQueueItem,
+): Promise<boolean> {
   try {
-    const { error } = await supabase.from('workout_sessions').upsert({
+    const { error } = await supabase.from("workout_sessions").upsert({
       ...item.data,
       user_id: userId,
       synced_at: new Date().toISOString(),
     });
 
     if (error) {
-      console.error('Retry session sync error:', error);
+      console.error("Retry session sync error:", error);
       return false;
     }
 
     // Mark as synced locally
-    const updateStmt = db.prepareSync(
-      'UPDATE sessions SET synced_at = ? WHERE id = ?;'
+    const updateStmt = getDb().prepareSync(
+      "UPDATE sessions SET synced_at = ? WHERE id = ?;",
     );
     updateStmt.executeSync([new Date().toISOString(), item.id]);
     updateStmt.finalizeSync();
 
-    await removeFromRetryQueue('session', item.id);
+    await removeFromRetryQueue("session", item.id);
     return true;
   } catch (error) {
-    console.error('Retry session sync failed:', error);
+    console.error("Retry session sync failed:", error);
     return false;
   }
 }
@@ -249,30 +271,33 @@ async function retrySyncSession(userId: string, item: RetryQueueItem): Promise<b
 /**
  * Retry syncing a single plan
  */
-async function retrySyncPlan(userId: string, item: RetryQueueItem): Promise<boolean> {
+async function retrySyncPlan(
+  userId: string,
+  item: RetryQueueItem,
+): Promise<boolean> {
   try {
-    const { error } = await supabase.from('workout_plans').upsert({
+    const { error } = await supabase.from("workout_plans").upsert({
       ...item.data,
       user_id: userId,
       synced_at: new Date().toISOString(),
     });
 
     if (error) {
-      console.error('Retry plan sync error:', error);
+      console.error("Retry plan sync error:", error);
       return false;
     }
 
     // Mark as synced locally
-    const updateStmt = db.prepareSync(
-      'UPDATE plans SET synced_at = ? WHERE id = ?;'
+    const updateStmt = getDb().prepareSync(
+      "UPDATE plans SET synced_at = ? WHERE id = ?;",
     );
     updateStmt.executeSync([new Date().toISOString(), item.id]);
     updateStmt.finalizeSync();
 
-    await removeFromRetryQueue('plan', item.id);
+    await removeFromRetryQueue("plan", item.id);
     return true;
   } catch (error) {
-    console.error('Retry plan sync failed:', error);
+    console.error("Retry plan sync failed:", error);
     return false;
   }
 }
@@ -283,10 +308,10 @@ async function retrySyncPlan(userId: string, item: RetryQueueItem): Promise<bool
 async function retrySyncProfile(item: RetryQueueItem): Promise<boolean> {
   try {
     await syncProfileToCloud(item.data);
-    await removeFromRetryQueue('profile', item.id);
+    await removeFromRetryQueue("profile", item.id);
     return true;
   } catch (error) {
-    console.error('Retry profile sync failed:', error);
+    console.error("Retry profile sync failed:", error);
     return false;
   }
 }
@@ -297,19 +322,22 @@ async function retrySyncProfile(item: RetryQueueItem): Promise<boolean> {
  */
 export function initSyncService(): () => void {
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
-    if (nextAppState === 'active') {
+    if (nextAppState === "active") {
       // App came to foreground - trigger sync
       syncToCloud().catch((error) => {
-        console.error('Background sync failed:', error);
+        console.error("Background sync failed:", error);
       });
     }
   };
 
-  const subscription = AppState.addEventListener('change', handleAppStateChange);
+  const subscription = AppState.addEventListener(
+    "change",
+    handleAppStateChange,
+  );
 
   // Initial sync on startup
   syncToCloud().catch((error) => {
-    console.error('Initial sync failed:', error);
+    console.error("Initial sync failed:", error);
   });
 
   return () => {
@@ -324,7 +352,7 @@ export async function syncToCloud(): Promise<SyncResult> {
   // Prevent concurrent syncs
   if (isSyncing) {
     if (__DEV__) {
-      console.log('☁️ Sync already in progress, skipping');
+      console.log("☁️ Sync already in progress, skipping");
     }
     const retryQueue = await loadRetryQueue();
     return {
@@ -334,7 +362,7 @@ export async function syncToCloud(): Promise<SyncResult> {
       plansSynced: 0,
       feedbackSynced: 0,
       pendingRetries: retryQueue.length,
-      errors: ['Sync already in progress'],
+      errors: ["Sync already in progress"],
     };
   }
 
@@ -347,7 +375,7 @@ export async function syncToCloud(): Promise<SyncResult> {
       plansSynced: 0,
       feedbackSynced: 0,
       pendingRetries: 0,
-      errors: ['Supabase not configured'],
+      errors: ["Supabase not configured"],
     };
   }
 
@@ -367,17 +395,19 @@ export async function syncToCloud(): Promise<SyncResult> {
 
   try {
     // Check if user is authenticated
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) {
       if (__DEV__) {
-        console.log('☁️ No auth session, skipping sync');
+        console.log("☁️ No auth session, skipping sync");
       }
-      result.errors.push('No auth session');
+      result.errors.push("No auth session");
       return result;
     }
 
     if (__DEV__) {
-      console.log('☁️ Starting cloud sync...');
+      console.log("☁️ Starting cloud sync...");
     }
 
     // First, process any items in the retry queue
@@ -396,17 +426,22 @@ export async function syncToCloud(): Promise<SyncResult> {
         result.profileSynced = true;
         consecutiveFailures = 0; // Reset on success
         if (__DEV__) {
-          console.log('☁️ Profile synced');
+          console.log("☁️ Profile synced");
         }
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Profile sync failed';
+      const errorMsg =
+        error instanceof Error ? error.message : "Profile sync failed";
       result.errors.push(errorMsg);
-      console.error('☁️ Profile sync error:', error);
+      console.error("☁️ Profile sync error:", error);
       // Add profile to retry queue
       const profile = await getProfile();
       if (profile) {
-        await addToRetryQueue({ type: 'profile', id: profile.user_id || 'current', data: profile });
+        await addToRetryQueue({
+          type: "profile",
+          id: profile.user_id || "current",
+          data: profile,
+        });
       }
     }
 
@@ -415,9 +450,10 @@ export async function syncToCloud(): Promise<SyncResult> {
       const sessionsSynced = await syncUnsyncedSessions(session.user.id);
       result.sessionsSynced = sessionsSynced;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Sessions sync failed';
+      const errorMsg =
+        error instanceof Error ? error.message : "Sessions sync failed";
       result.errors.push(errorMsg);
-      console.error('☁️ Sessions sync error:', error);
+      console.error("☁️ Sessions sync error:", error);
     }
 
     // Sync unsynced plans
@@ -425,9 +461,10 @@ export async function syncToCloud(): Promise<SyncResult> {
       const plansSynced = await syncUnsyncedPlans(session.user.id);
       result.plansSynced = plansSynced;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Plans sync failed';
+      const errorMsg =
+        error instanceof Error ? error.message : "Plans sync failed";
       result.errors.push(errorMsg);
-      console.error('☁️ Plans sync error:', error);
+      console.error("☁️ Plans sync error:", error);
     }
 
     // Sync unsynced feedback reports
@@ -435,9 +472,10 @@ export async function syncToCloud(): Promise<SyncResult> {
       const feedbackSynced = await syncAllUnsyncedFeedback(session.user.id);
       result.feedbackSynced = feedbackSynced;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Feedback sync failed';
+      const errorMsg =
+        error instanceof Error ? error.message : "Feedback sync failed";
       result.errors.push(errorMsg);
-      console.error('☁️ Feedback sync error:', error);
+      console.error("☁️ Feedback sync error:", error);
     }
 
     // Get current retry queue size
@@ -452,13 +490,13 @@ export async function syncToCloud(): Promise<SyncResult> {
     }
 
     if (__DEV__) {
-      console.log('☁️ Sync complete:', result);
+      console.log("☁️ Sync complete:", result);
     }
   } catch (error) {
     result.success = false;
-    const errorMsg = error instanceof Error ? error.message : 'Sync failed';
+    const errorMsg = error instanceof Error ? error.message : "Sync failed";
     result.errors.push(errorMsg);
-    console.error('☁️ Sync error:', error);
+    console.error("☁️ Sync error:", error);
   } finally {
     isSyncing = false;
   }
@@ -475,8 +513,8 @@ async function syncUnsyncedSessions(userId: string): Promise<number> {
 
   try {
     // Get unsynced sessions
-    const stmt = db.prepareSync(
-      'SELECT * FROM sessions WHERE synced_at IS NULL LIMIT 50;'
+    const stmt = getDb().prepareSync(
+      "SELECT * FROM sessions WHERE synced_at IS NULL LIMIT 50;",
     );
     const unsyncedSessions = stmt.executeSync().getAllSync() as Array<{
       id: string;
@@ -496,7 +534,7 @@ async function syncUnsyncedSessions(userId: string): Promise<number> {
     // Sync each session
     for (const session of unsyncedSessions) {
       try {
-        const { error } = await supabase.from('workout_sessions').upsert({
+        const { error } = await supabase.from("workout_sessions").upsert({
           id: session.id,
           user_id: userId,
           plan_id: session.plan_id,
@@ -508,10 +546,10 @@ async function syncUnsyncedSessions(userId: string): Promise<number> {
         });
 
         if (error) {
-          console.error('Session sync error:', error);
+          console.error("Session sync error:", error);
           // Add to retry queue instead of just continuing
           await addToRetryQueue({
-            type: 'session',
+            type: "session",
             id: session.id,
             data: {
               id: session.id,
@@ -526,8 +564,8 @@ async function syncUnsyncedSessions(userId: string): Promise<number> {
         }
 
         // Mark as synced locally
-        const updateStmt = db.prepareSync(
-          'UPDATE sessions SET synced_at = ? WHERE id = ?;'
+        const updateStmt = getDb().prepareSync(
+          "UPDATE sessions SET synced_at = ? WHERE id = ?;",
         );
         updateStmt.executeSync([new Date().toISOString(), session.id]);
         updateStmt.finalizeSync();
@@ -535,10 +573,10 @@ async function syncUnsyncedSessions(userId: string): Promise<number> {
         syncedCount++;
         consecutiveFailures = 0; // Reset on any success
       } catch (error) {
-        console.error('Error syncing session:', session.id, error);
+        console.error("Error syncing session:", session.id, error);
         // Add to retry queue on any error
         await addToRetryQueue({
-          type: 'session',
+          type: "session",
           id: session.id,
           data: {
             id: session.id,
@@ -554,7 +592,7 @@ async function syncUnsyncedSessions(userId: string): Promise<number> {
   } catch (error) {
     // Table might not exist yet
     if (__DEV__) {
-      console.log('☁️ Sessions table may not exist:', error);
+      console.log("☁️ Sessions table may not exist:", error);
     }
   }
 
@@ -570,8 +608,8 @@ async function syncUnsyncedPlans(userId: string): Promise<number> {
 
   try {
     // Get unsynced plans
-    const stmt = db.prepareSync(
-      'SELECT * FROM plans WHERE synced_at IS NULL LIMIT 10;'
+    const stmt = getDb().prepareSync(
+      "SELECT * FROM plans WHERE synced_at IS NULL LIMIT 10;",
     );
     const unsyncedPlans = stmt.executeSync().getAllSync() as Array<{
       id: string;
@@ -591,7 +629,7 @@ async function syncUnsyncedPlans(userId: string): Promise<number> {
     // Sync each plan
     for (const plan of unsyncedPlans) {
       try {
-        const { error } = await supabase.from('workout_plans').upsert({
+        const { error } = await supabase.from("workout_plans").upsert({
           id: plan.id,
           user_id: userId,
           block_length: plan.block_length,
@@ -603,10 +641,10 @@ async function syncUnsyncedPlans(userId: string): Promise<number> {
         });
 
         if (error) {
-          console.error('Plan sync error:', error);
+          console.error("Plan sync error:", error);
           // Add to retry queue instead of just continuing
           await addToRetryQueue({
-            type: 'plan',
+            type: "plan",
             id: plan.id,
             data: {
               id: plan.id,
@@ -621,8 +659,8 @@ async function syncUnsyncedPlans(userId: string): Promise<number> {
         }
 
         // Mark as synced locally
-        const updateStmt = db.prepareSync(
-          'UPDATE plans SET synced_at = ? WHERE id = ?;'
+        const updateStmt = getDb().prepareSync(
+          "UPDATE plans SET synced_at = ? WHERE id = ?;",
         );
         updateStmt.executeSync([new Date().toISOString(), plan.id]);
         updateStmt.finalizeSync();
@@ -630,10 +668,10 @@ async function syncUnsyncedPlans(userId: string): Promise<number> {
         syncedCount++;
         consecutiveFailures = 0; // Reset on any success
       } catch (error) {
-        console.error('Error syncing plan:', plan.id, error);
+        console.error("Error syncing plan:", plan.id, error);
         // Add to retry queue on any error
         await addToRetryQueue({
-          type: 'plan',
+          type: "plan",
           id: plan.id,
           data: {
             id: plan.id,
@@ -649,7 +687,7 @@ async function syncUnsyncedPlans(userId: string): Promise<number> {
   } catch (error) {
     // Table might not exist yet
     if (__DEV__) {
-      console.log('☁️ Plans table may not exist:', error);
+      console.log("☁️ Plans table may not exist:", error);
     }
   }
 

@@ -308,3 +308,205 @@ function formatSurgeryType(type: string): string {
 function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
+
+// ============================================================
+// SHORT SUMMARIES FOR VISIBLE SAFETY DISPLAY
+// ============================================================
+
+export interface ShortSummary {
+  category: 'binding' | 'post_op' | 'hrt' | 'dysphoria' | 'goal';
+  text: string; // ≤10 words
+  priority: number; // 1 = highest (show first)
+}
+
+/**
+ * Generate short, skimmable summaries for visible display in hero card
+ * Returns max 4 summaries, prioritized by importance
+ *
+ * Used by WorkoutOverviewScreen to show "Tailored for you" section
+ */
+export function getShortSummaries(profile: Profile): ShortSummary[] {
+  const summaries: ShortSummary[] = [];
+
+  // ========== BINDING (Priority 1-2) ==========
+  if (profile.binds_chest) {
+    const binderType = profile.binder_type;
+    const frequency = profile.binding_frequency;
+
+    if (binderType === 'ace_bandage' || binderType === 'diy') {
+      // Ace bandage/DIY gets strictest messaging
+      summaries.push({
+        category: 'binding',
+        text: '30-min limit, intensity reduced',
+        priority: 1,
+      });
+    } else if (frequency === 'daily' || frequency === 'sometimes') {
+      summaries.push({
+        category: 'binding',
+        text: 'Overhead volume reduced',
+        priority: 2,
+      });
+    }
+  }
+
+  // ========== POST-OP (Priority 1-2) ==========
+  if (profile.surgeries?.length) {
+    const activeSurgeries = profile.surgeries.filter(s => s.date && !s.fully_healed);
+
+    for (const surgery of activeSurgeries) {
+      const weeksPostOp = getWeeksPostOp(surgery.date);
+      const summaryText = getPostOpShortSummary(surgery.type, weeksPostOp);
+
+      if (summaryText) {
+        summaries.push({
+          category: 'post_op',
+          text: summaryText,
+          priority: 1, // Post-op is always high priority
+        });
+      }
+    }
+  }
+
+  // ========== HRT (Priority 2-3) ==========
+  if (profile.on_hrt && profile.hrt_type) {
+    const months = profile.hrt_months_duration || 0;
+    const hrtSummary = getHrtShortSummary(profile.hrt_type, months);
+
+    if (hrtSummary) {
+      summaries.push({
+        category: 'hrt',
+        text: hrtSummary,
+        priority: months < 3 ? 2 : 3, // Early HRT is higher priority
+      });
+    }
+  }
+
+  // ========== DYSPHORIA (Priority 3-4) ==========
+  if (profile.dysphoria_triggers?.length) {
+    const dysphoriaText = getDysphoriaShortSummary(profile.dysphoria_triggers);
+
+    if (dysphoriaText) {
+      summaries.push({
+        category: 'dysphoria',
+        text: dysphoriaText,
+        priority: 4,
+      });
+    }
+  }
+
+  // Sort by priority and limit to 4
+  return summaries
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, 4);
+}
+
+/**
+ * Calculate weeks since surgery date
+ */
+function getWeeksPostOp(dateString: string | undefined): number {
+  if (!dateString) return 0;
+
+  try {
+    const surgeryDate = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - surgeryDate.getTime();
+    return Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7));
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Get short summary for post-op status
+ */
+function getPostOpShortSummary(surgeryType: string, weeksPostOp: number): string | null {
+  // Format weeks display
+  const weeksText = weeksPostOp < 2 ? 'Early recovery' : `${weeksPostOp} wks`;
+
+  switch (surgeryType) {
+    case 'top_surgery':
+      if (weeksPostOp < 6) return `Chest loading excluded (${weeksText})`;
+      if (weeksPostOp < 12) return 'Light upper body only';
+      return null; // Healed enough, no summary needed
+
+    case 'vaginoplasty':
+    case 'bottom_surgery':
+      if (weeksPostOp < 12) return 'Pelvic floor focus';
+      return null;
+
+    case 'phalloplasty':
+      if (weeksPostOp < 12) return 'Grip/forearm exercises excluded';
+      return null;
+
+    case 'metoidioplasty':
+      if (weeksPostOp < 8) return 'Lower body limited';
+      return null;
+
+    case 'ffs':
+      if (weeksPostOp < 6) return 'Head inversion avoided';
+      return null;
+
+    case 'breast_augmentation':
+      if (weeksPostOp < 8) return 'Chest pressing excluded';
+      return null;
+
+    case 'orchiectomy':
+      if (weeksPostOp < 4) return 'Core exercises limited';
+      return null;
+
+    case 'hysterectomy':
+      if (weeksPostOp < 6) return 'Core/lower limited';
+      return null;
+
+    default:
+      if (weeksPostOp < 6) return `Recovery mode (${weeksText})`;
+      return null;
+  }
+}
+
+/**
+ * Get short summary for HRT status
+ */
+function getHrtShortSummary(hrtType: string, months: number): string | null {
+  if (hrtType === 'testosterone') {
+    if (months < 3) return 'Conservative load progression';
+    if (months < 6) return 'Progressive overload ramping';
+    return null; // Established, no special note needed
+  }
+
+  if (hrtType === 'estrogen' || hrtType === 'estrogen_blockers') {
+    if (months < 6) return 'Extended recovery periods';
+    return null;
+  }
+
+  return null;
+}
+
+/**
+ * Get short summary for dysphoria filters
+ */
+function getDysphoriaShortSummary(triggers: string[]): string | null {
+  // Show most impactful trigger as summary
+  if (triggers.includes('swimming') || triggers.includes('aquatic')) {
+    return 'Aquatic exercises excluded';
+  }
+  if (triggers.includes('mirrors')) {
+    return 'Mirror exercises filtered';
+  }
+  if (triggers.includes('crowded_spaces') || triggers.includes('locker_rooms')) {
+    return 'Home-friendly exercises prioritized';
+  }
+  if (triggers.includes('form_focused') || triggers.includes('body_contact')) {
+    return 'Simple movements preferred';
+  }
+  if (triggers.includes('looking_at_chest') || triggers.includes('chest')) {
+    return 'Chest-focus deprioritized';
+  }
+
+  // Generic fallback if triggers exist but no specific match
+  if (triggers.length > 0) {
+    return 'Comfort-adjusted exercises';
+  }
+
+  return null;
+}

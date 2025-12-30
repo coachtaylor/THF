@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, ActivityIndicator, Modal, Alert } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+  Modal,
+  Alert,
+  Linking,
+} from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
@@ -13,9 +22,15 @@ import { savePlan } from "../../../services/storage/plan";
 import { updateProfile } from "../../../services/storage/profile";
 import { formatEquipmentLabel } from "../../../utils/equipment";
 import { Platform } from "react-native";
-import { trackOnboardingCompleted, trackWorkoutGenerated } from "../../../services/analytics";
+import {
+  trackOnboardingCompleted,
+  trackWorkoutGenerated,
+} from "../../../services/analytics";
 
-type ReviewNavigationProp = StackNavigationProp<OnboardingStackParamList, "Review">;
+type ReviewNavigationProp = StackNavigationProp<
+  OnboardingStackParamList,
+  "Review"
+>;
 
 interface ReviewProps {
   navigation: ReviewNavigationProp;
@@ -25,7 +40,7 @@ const GENDER_IDENTITY_LABELS: Record<string, string> = {
   mtf: "Trans Woman",
   ftm: "Trans Man",
   nonbinary: "Non-Binary",
-  questioning: "Questioning"
+  questioning: "Questioning",
 };
 
 const GOAL_LABELS: Record<string, string> = {
@@ -33,26 +48,26 @@ const GOAL_LABELS: Record<string, string> = {
   masculinization: "Masculinization",
   general_fitness: "General Fitness",
   strength: "Strength",
-  endurance: "Endurance"
+  endurance: "Endurance",
 };
 
 const EXPERIENCE_LABELS: Record<string, string> = {
   beginner: "Beginner",
   intermediate: "Intermediate",
-  advanced: "Advanced"
+  advanced: "Advanced",
 };
 
 const BINDING_FREQUENCY_LABELS: Record<string, string> = {
   daily: "Daily",
   sometimes: "Sometimes",
   rarely: "Rarely",
-  never: "Never"
+  never: "Never",
 };
 
 const HRT_TYPE_LABELS: Record<string, string> = {
   estrogen_blockers: "Estrogen + Anti-androgens",
   testosterone: "Testosterone",
-  none: "None"
+  none: "None",
 };
 
 export default function Review({ navigation }: ReviewProps) {
@@ -88,18 +103,23 @@ export default function Review({ navigation }: ReviewProps) {
   };
 
   const getSecondaryGoal = (): string => {
-    if (!profile.secondary_goals || profile.secondary_goals.length === 0) return "None";
+    if (!profile.secondary_goals || profile.secondary_goals.length === 0)
+      return "None";
     const goal = profile.secondary_goals[0];
     return GOAL_LABELS[goal] || goal;
   };
 
   const getEquipmentCount = (): string => {
-    if (!profile.equipment || profile.equipment.length === 0) return "0 types available";
+    if (!profile.equipment || profile.equipment.length === 0)
+      return "0 types available";
     return `${profile.equipment.length} ${profile.equipment.length === 1 ? "type" : "types"} available`;
   };
 
   const getDysphoriaTriggersCount = (): string => {
-    if (!profile.dysphoria_triggers || profile.dysphoria_triggers.length === 0) {
+    if (
+      !profile.dysphoria_triggers ||
+      profile.dysphoria_triggers.length === 0
+    ) {
       return "0 preferences";
     }
     const count = profile.dysphoria_triggers.length;
@@ -112,22 +132,35 @@ export default function Review({ navigation }: ReviewProps) {
       title: "Identity & Medical",
       icon: "person-outline" as keyof typeof Ionicons.glyphMap,
       items: [
-        { label: "Gender Identity", value: GENDER_IDENTITY_LABELS[profile.gender_identity] || profile.gender_identity },
+        {
+          label: "Gender Identity",
+          value:
+            GENDER_IDENTITY_LABELS[profile.gender_identity] ||
+            profile.gender_identity,
+        },
         { label: "Pronouns", value: profile.pronouns || "Not specified" },
         { label: "HRT Status", value: getHRTStatus() },
         { label: "Chest Binding", value: getBindingStatus() },
-        { label: "Surgeries", value: getSurgeriesStatus() }
-      ]
+        { label: "Surgeries", value: getSurgeriesStatus() },
+      ],
     },
     {
       id: "goals",
       title: "Goals & Experience",
       icon: "sparkles" as keyof typeof Ionicons.glyphMap,
       items: [
-        { label: "Primary Goal", value: GOAL_LABELS[profile.primary_goal] || profile.primary_goal },
+        {
+          label: "Primary Goal",
+          value: GOAL_LABELS[profile.primary_goal] || profile.primary_goal,
+        },
         { label: "Secondary Goal", value: getSecondaryGoal() },
-        { label: "Experience Level", value: EXPERIENCE_LABELS[profile.fitness_experience] || profile.fitness_experience }
-      ]
+        {
+          label: "Experience Level",
+          value:
+            EXPERIENCE_LABELS[profile.fitness_experience] ||
+            profile.fitness_experience,
+        },
+      ],
     },
     {
       id: "preferences",
@@ -136,8 +169,8 @@ export default function Review({ navigation }: ReviewProps) {
       items: [
         { label: "Frequency", value: `${profile.workout_frequency} days/week` },
         { label: "Duration", value: `${profile.session_duration} minutes` },
-        { label: "Equipment", value: getEquipmentCount() }
-      ]
+        { label: "Equipment", value: getEquipmentCount() },
+      ],
     },
     {
       id: "dysphoria",
@@ -145,9 +178,12 @@ export default function Review({ navigation }: ReviewProps) {
       icon: "heart-outline" as keyof typeof Ionicons.glyphMap,
       items: [
         { label: "Triggers Selected", value: getDysphoriaTriggersCount() },
-        { label: "Additional Notes", value: profile.dysphoria_notes ? "Provided" : "None" }
-      ]
-    }
+        {
+          label: "Additional Notes",
+          value: profile.dysphoria_notes ? "Provided" : "None",
+        },
+      ],
+    },
   ];
 
   const handleEdit = (sectionId: string) => {
@@ -180,25 +216,28 @@ export default function Review({ navigation }: ReviewProps) {
         "Selecting exercises",
         "Creating workout schedule",
         "Applying safety protocols",
-        "Finalizing your program"
+        "Finalizing your program",
       ];
 
       for (let i = 0; i < steps.length; i++) {
         setCurrentStep(steps[i]);
         setGenerationProgress(((i + 1) / steps.length) * 100);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       // Generate the plan
       const plan = await generatePlan(profile);
 
       // Save the plan using consistent userId (prefer user_id, fall back to id)
-      const userId = profile.user_id || profile.id || 'default';
-      console.log('💾 Saving plan for userId:', userId);
+      const userId = profile.user_id || profile.id || "default";
+      console.log("💾 Saving plan for userId:", userId);
       await savePlan(plan as any, userId);
 
       // Clean up first_week_substitute_days (one-time use, no longer needed)
-      if (profile.first_week_substitute_days && profile.first_week_substitute_days.length > 0) {
+      if (
+        profile.first_week_substitute_days &&
+        profile.first_week_substitute_days.length > 0
+      ) {
         await updateProfile({ first_week_substitute_days: undefined });
       }
 
@@ -210,9 +249,9 @@ export default function Review({ navigation }: ReviewProps) {
         const firstWorkout = plan.days[0];
         await trackWorkoutGenerated(
           plan.id,
-          firstWorkout.workout?.name || 'Generated Workout',
+          firstWorkout.workout?.name || "Generated Workout",
           profile.session_duration || 45,
-          firstWorkout.workout?.exercises?.length || 0
+          firstWorkout.workout?.exercises?.length || 0,
         );
       }
 
@@ -220,14 +259,34 @@ export default function Review({ navigation }: ReviewProps) {
 
       // Navigate to ProgramSetup to show the generated program
       navigation.navigate("ProgramSetup");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating plan:", error);
       setIsGenerating(false);
-      Alert.alert(
-        'Error',
-        'Failed to generate your workout program. Please try again.',
-        [{ text: 'OK' }]
-      );
+
+      // Check if error is due to insufficient exercises after safety filtering
+      if (error?.message?.includes("INSUFFICIENT_EXERCISES")) {
+        Alert.alert(
+          "Unable to Generate Workout",
+          "Not enough safe exercises were found for your profile. This may be due to your recent surgery or specific safety requirements. Please contact support for assistance.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Contact Support",
+              onPress: () =>
+                Linking.openURL(
+                  "mailto:support@transfitness.app?subject=Insufficient Exercises Error",
+                ),
+            },
+          ],
+        );
+      } else {
+        // Generic error
+        Alert.alert(
+          "Error",
+          "Failed to generate your workout program. Please try again.",
+          [{ text: "OK" }],
+        );
+      }
     }
   };
 
@@ -255,15 +314,26 @@ export default function Review({ navigation }: ReviewProps) {
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionHeaderLeft}>
                   <View style={styles.sectionIconContainer}>
-                    <Ionicons name={section.icon} size={24} color={colors.accent.primary} />
+                    <Ionicons
+                      name={section.icon}
+                      size={24}
+                      color={colors.accent.primary}
+                    />
                   </View>
                   <Text style={styles.sectionTitle}>{section.title}</Text>
                 </View>
                 <Pressable
                   onPress={() => handleEdit(section.id)}
-                  style={({ pressed }) => [styles.editButton, pressed && styles.buttonPressed]}
+                  style={({ pressed }) => [
+                    styles.editButton,
+                    pressed && styles.buttonPressed,
+                  ]}
                 >
-                  <Ionicons name="create-outline" size={18} color={colors.text.secondary} />
+                  <Ionicons
+                    name="create-outline"
+                    size={18}
+                    color={colors.text.secondary}
+                  />
                 </Pressable>
               </View>
 
@@ -282,7 +352,11 @@ export default function Review({ navigation }: ReviewProps) {
           {/* What's Next Card */}
           <View style={styles.whatsNextCard}>
             <View style={styles.whatsNextHeader}>
-              <Ionicons name="sparkles" size={28} color={colors.accent.primary} />
+              <Ionicons
+                name="sparkles"
+                size={28}
+                color={colors.accent.primary}
+              />
               <Text style={styles.whatsNextTitle}>What's Next?</Text>
             </View>
             <View style={styles.whatsNextList}>
@@ -290,10 +364,15 @@ export default function Review({ navigation }: ReviewProps) {
                 "Your personalized workout program will be generated",
                 "Exercise selection tailored to your goals and safety needs",
                 "Progress tracking with your privacy in mind",
-                "Adaptive programming that evolves with you"
+                "Adaptive programming that evolves with you",
               ].map((item, index) => (
                 <View key={index} style={styles.whatsNextItem}>
-                  <Ionicons name="checkmark" size={20} color={colors.accent.primary} style={styles.checkmark} />
+                  <Ionicons
+                    name="checkmark"
+                    size={20}
+                    color={colors.accent.primary}
+                    style={styles.checkmark}
+                  />
                   <Text style={styles.whatsNextItemText}>{item}</Text>
                 </View>
               ))}
@@ -302,47 +381,56 @@ export default function Review({ navigation }: ReviewProps) {
 
           {/* Privacy Reminder */}
           <View style={cardStyles.success}>
-            <Ionicons 
-              name="shield-checkmark" 
-              size={20} 
-              color={colors.semantic.success} 
+            <Ionicons
+              name="shield-checkmark"
+              size={20}
+              color={colors.semantic.success}
               style={styles.privacyIcon}
             />
             <Text style={styles.privacyText}>
-              All your data stays on your device. Nothing is sent to external servers.
+              All your data stays on your device. Nothing is sent to external
+              servers.
             </Text>
           </View>
         </View>
       </OnboardingLayout>
 
       {/* Generation Modal */}
-      <Modal
-        visible={isGenerating}
-        transparent={true}
-        animationType="fade"
-      >
+      <Modal visible={isGenerating} transparent={true} animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             {/* Icon */}
             <View style={styles.modalIconContainer}>
-              <Ionicons name="sparkles" size={32} color={colors.accent.primary} />
+              <Ionicons
+                name="sparkles"
+                size={32}
+                color={colors.accent.primary}
+              />
             </View>
 
             {/* Title */}
             <Text style={styles.modalTitle}>Generating Your Program</Text>
-            
+
             {/* Subtitle */}
             <Text style={styles.modalSubtitle}>
-              Creating a personalized workout program tailored to your unique needs and goals
+              Creating a personalized workout program tailored to your unique
+              needs and goals
             </Text>
-            
+
             {/* Progress Bar */}
             <View style={styles.progressBarContainer}>
-              <View style={[styles.progressBar, { width: `${generationProgress}%` }]} />
+              <View
+                style={[
+                  styles.progressBar,
+                  { width: `${generationProgress}%` },
+                ]}
+              />
             </View>
-            
+
             {/* Percentage */}
-            <Text style={styles.progressText}>{Math.round(generationProgress)}%</Text>
+            <Text style={styles.progressText}>
+              {Math.round(generationProgress)}%
+            </Text>
 
             {/* Checklist */}
             <View style={styles.checklist}>
@@ -351,20 +439,26 @@ export default function Review({ navigation }: ReviewProps) {
                 "Selecting exercises",
                 "Creating workout schedule",
                 "Applying safety protocols",
-                "Finalizing your program"
+                "Finalizing your program",
               ].map((step, index) => {
-                const isComplete = generationProgress > (index * 20);
+                const isComplete = generationProgress > index * 20;
                 return (
                   <View key={index} style={styles.checklistItem}>
                     <Ionicons
                       name={isComplete ? "checkmark-circle" : "ellipse-outline"}
                       size={20}
-                      color={isComplete ? colors.accent.primary : colors.text.tertiary}
+                      color={
+                        isComplete
+                          ? colors.accent.primary
+                          : colors.text.tertiary
+                      }
                     />
-                    <Text style={[
-                      styles.checklistText,
-                      isComplete && styles.checklistTextComplete
-                    ]}>
+                    <Text
+                      style={[
+                        styles.checklistText,
+                        isComplete && styles.checklistTextComplete,
+                      ]}
+                    >
                       {step}
                     </Text>
                   </View>
@@ -387,10 +481,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.glass.border,
     padding: spacing.xl,
-    borderRadius: borderRadius['2xl'],
+    borderRadius: borderRadius["2xl"],
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
@@ -401,14 +495,14 @@ const styles = StyleSheet.create({
     }),
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: spacing.lg,
   },
   sectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
   },
   sectionIconContainer: {
@@ -418,13 +512,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
     borderColor: colors.accent.primaryGlow,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   sectionTitle: {
     ...textStyles.h3,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   editButton: {
     width: 36,
@@ -433,39 +527,39 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass.bg,
     borderWidth: 1,
     borderColor: colors.glass.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   sectionItems: {
     gap: spacing.md,
   },
   sectionItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     gap: spacing.base,
   },
   itemLabel: {
     ...textStyles.body,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.text.secondary,
     flex: 1,
   },
   itemValue: {
     ...textStyles.body,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
-    textAlign: 'right',
+    textAlign: "right",
     flex: 1,
   },
   whatsNextCard: {
     backgroundColor: colors.glass.bgHero,
     borderWidth: 1,
     borderColor: colors.accent.primary,
-    padding: spacing['2xl'],
-    borderRadius: borderRadius['3xl'],
+    padding: spacing["2xl"],
+    borderRadius: borderRadius["3xl"],
     ...Platform.select({
       ios: {
         shadowColor: colors.accent.primary,
@@ -479,23 +573,23 @@ const styles = StyleSheet.create({
     }),
   },
   whatsNextHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
     marginBottom: spacing.base,
   },
   whatsNextTitle: {
     ...textStyles.h2,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.accent.primary,
   },
   whatsNextList: {
     gap: spacing.md,
   },
   whatsNextItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: spacing.md,
   },
   checkmark: {
@@ -520,16 +614,16 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: spacing.xl,
   },
   modalContent: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
     backgroundColor: colors.bg.raised,
-    borderRadius: borderRadius['3xl'],
+    borderRadius: borderRadius["3xl"],
     padding: spacing.xl,
     gap: spacing.xl,
     borderWidth: 1,
@@ -553,9 +647,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1,
     borderColor: colors.accent.primaryGlow,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
     marginBottom: spacing.md,
     ...Platform.select({
       ios: {
@@ -572,8 +666,8 @@ const styles = StyleSheet.create({
   modalTitle: {
     ...textStyles.h1,
     fontSize: 26,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
     color: colors.text.primary,
     marginBottom: spacing.sm,
   },
@@ -581,19 +675,19 @@ const styles = StyleSheet.create({
     ...textStyles.body,
     fontSize: 16,
     lineHeight: 24,
-    textAlign: 'center',
+    textAlign: "center",
     color: colors.text.secondary,
     marginBottom: spacing.lg,
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: borderRadius.full,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: spacing.md,
   },
   progressBar: {
-    height: '100%',
+    height: "100%",
     backgroundColor: colors.accent.primary,
     borderRadius: borderRadius.full,
     ...Platform.select({
@@ -608,8 +702,8 @@ const styles = StyleSheet.create({
   progressText: {
     ...textStyles.h2,
     fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
     color: colors.accent.primary,
     marginBottom: spacing.lg,
     ...Platform.select({
@@ -625,8 +719,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   checklistItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.md,
   },
   checklistText: {

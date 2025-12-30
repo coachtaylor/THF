@@ -67,3 +67,5 @@ src/knowledge/
 
 # Safety rules seed data (contains proprietary formulas)
 scripts/seed_safety_config.sql
+
+.env.local

@@ -1,9 +1,10 @@
-import { initDatabase } from '../utils/database';
-import { initProfileStorage } from './storage/profile';
-import { initPlanStorage } from './storage/plan';
-import { initWorkoutLogStorage } from './storage/workoutLog';
-import { initAnalytics } from './analytics';
-import { initSyncService } from './storage/sync';
+import { initDatabase } from "../utils/database";
+import { initProfileStorage } from "./storage/profile";
+import { initPlanStorage } from "./storage/plan";
+import { initWorkoutLogStorage } from "./storage/workoutLog";
+import { initPRStorage } from "./storage/personalRecords";
+import { initAnalytics } from "./analytics";
+import { initSyncService } from "./storage/sync";
 
 // Cleanup function for sync service
 let cleanupSync: (() => void) | null = null;
@@ -17,14 +18,15 @@ export async function initializeApp(): Promise<void> {
     await initProfileStorage();
     await initPlanStorage();
     await initWorkoutLogStorage();
+    await initPRStorage();
     await initAnalytics();
 
     // Initialize cloud sync service (starts background sync)
     cleanupSync = initSyncService();
 
-    console.log('✅ App initialization complete');
+    console.log("✅ App initialization complete");
   } catch (error) {
-    console.error('❌ App initialization failed:', error);
+    console.error("❌ App initialization failed:", error);
     throw error;
   }
 }
@@ -38,4 +40,3 @@ export function cleanupApp(): void {
     cleanupSync = null;
   }
 }
-

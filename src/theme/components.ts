@@ -88,7 +88,7 @@ export const sectionStyles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 14,
     fontWeight: '500',
-    color: colors.accent.primary,
+    color: '#5BCEFA', // colors.accent.primary - inlined to avoid circular import
   },
 });
 
@@ -226,7 +226,7 @@ export const glassStyles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: colors.accent.primary,
+        shadowColor: '#5BCEFA', // colors.accent.primary - inlined to avoid circular import
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.15,
         shadowRadius: 24,
@@ -244,7 +244,7 @@ export const glassStyles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: colors.accent.primary,
+        shadowColor: '#5BCEFA', // colors.accent.primary - inlined to avoid circular import
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.25,
         shadowRadius: 32,
@@ -262,7 +262,7 @@ export const glassStyles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: colors.accent.secondary,
+        shadowColor: '#F5A9B8', // colors.accent.secondary - inlined to avoid circular import
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.2,
         shadowRadius: 32,
@@ -300,13 +300,13 @@ export const liquidGlass = {
   blue: {
     background: colors.glass.bgHero,
     border: colors.glass.borderCyan,
-    glow: colors.accent.primaryGlow,
+    glow: 'rgba(91, 206, 250, 0.3)', // colors.accent.primaryGlow - inlined to avoid circular import
   },
   // For cards with pink accent
   pink: {
     background: colors.glass.bgHeroPink,
     border: colors.glass.borderPink,
-    glow: colors.accent.secondaryGlow,
+    glow: 'rgba(245, 169, 184, 0.3)', // colors.accent.secondaryGlow - inlined to avoid circular import
   },
   // Neutral glass
   neutral: {

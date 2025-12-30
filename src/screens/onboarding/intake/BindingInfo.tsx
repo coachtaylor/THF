@@ -1,11 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Modal,
+  ScrollView,
+} from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import SelectionCard from "../../../components/onboarding/SelectionCard";
+import BinderSafetyWarningModal from "../../../components/onboarding/BinderSafetyWarningModal";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
 import { textStyles, cardStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
@@ -14,7 +22,10 @@ import { updateProfile } from "../../../services/storage/profile";
 type BindingFrequency = "daily" | "sometimes" | "rarely" | "never";
 type BinderType = "commercial" | "sports_bra" | "compression_top" | "other";
 
-type BindingInfoNavigationProp = StackNavigationProp<OnboardingStackParamList, "BindingInfo">;
+type BindingInfoNavigationProp = StackNavigationProp<
+  OnboardingStackParamList,
+  "BindingInfo"
+>;
 type BindingInfoRouteProp = RouteProp<OnboardingStackParamList, "BindingInfo">;
 
 interface BindingInfoProps {
@@ -24,7 +35,10 @@ interface BindingInfoProps {
 
 const BINDER_TYPE_OPTIONS = [
   { value: "" as const, label: "Select type (optional)" },
-  { value: "commercial" as const, label: "Commercial binder (gc2b, Underworks, etc.)" },
+  {
+    value: "commercial" as const,
+    label: "Commercial binder (gc2b, Underworks, etc.)",
+  },
   { value: "sports_bra" as const, label: "Sports bra" },
   { value: "compression_top" as const, label: "Compression top" },
   { value: "other" as const, label: "Other" },
@@ -38,6 +52,8 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
   const [durationHours, setDurationHours] = useState<number>(6);
   const [binderType, setBinderType] = useState<string>("");
   const [showBinderTypePicker, setShowBinderTypePicker] = useState(false);
+  const [showSafetyWarning, setShowSafetyWarning] = useState(false);
+  const [hasAcknowledgedRisk, setHasAcknowledgedRisk] = useState(false);
 
   // Load initial data from profile
   useEffect(() => {
@@ -53,9 +69,10 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
       }
       if (profile.binder_type) {
         // Map profile binder_type to our options
-        const mappedType = profile.binder_type === "ace_bandage" || profile.binder_type === "diy" 
-          ? "other" 
-          : profile.binder_type;
+        const mappedType =
+          profile.binder_type === "ace_bandage" || profile.binder_type === "diy"
+            ? "other"
+            : profile.binder_type;
         setBinderType(mappedType);
       }
     }
@@ -66,26 +83,26 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
       id: "daily" as BindingFrequency,
       icon: "time" as keyof typeof Ionicons.glyphMap,
       title: "Daily",
-      description: "I bind most days of the week"
+      description: "I bind most days of the week",
     },
     {
       id: "sometimes" as BindingFrequency,
       icon: "time" as keyof typeof Ionicons.glyphMap,
       title: "Sometimes",
-      description: "A few times per week"
+      description: "A few times per week",
     },
     {
       id: "rarely" as BindingFrequency,
       icon: "time" as keyof typeof Ionicons.glyphMap,
       title: "Rarely",
-      description: "Occasionally or for special occasions"
+      description: "Occasionally or for special occasions",
     },
     {
       id: "never" as BindingFrequency,
       icon: "shield-checkmark" as keyof typeof Ionicons.glyphMap,
       title: "Never",
-      description: "I don't currently bind"
-    }
+      description: "I don't currently bind",
+    },
   ];
 
   const handleContinue = async () => {
@@ -94,7 +111,12 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
         binds_chest: boolean;
         binding_frequency?: BindingFrequency;
         binding_duration_hours?: number;
-        binder_type?: "commercial" | "sports_bra" | "ace_bandage" | "diy" | "other";
+        binder_type?:
+          | "commercial"
+          | "sports_bra"
+          | "ace_bandage"
+          | "diy"
+          | "other";
       } = {
         binds_chest: bindsChest === true,
       };
@@ -106,9 +128,10 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
         }
         if (binderType && binderType !== "") {
           // Map compression_top to other for profile (or keep as is if profile supports it)
-          const profileBinderType = binderType === "compression_top" 
-            ? "other" 
-            : binderType as "commercial" | "sports_bra" | "other";
+          const profileBinderType =
+            binderType === "compression_top"
+              ? "other"
+              : (binderType as "commercial" | "sports_bra" | "other");
           bindingData.binder_type = profileBinderType;
         }
       }
@@ -124,10 +147,13 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
     navigation.goBack();
   };
 
-  const canContinue = bindsChest === false || (bindsChest === true && frequency !== null);
+  const canContinue =
+    bindsChest === false || (bindsChest === true && frequency !== null);
   const showWarning = durationHours > 8;
 
-  const selectedBinderTypeLabel = BINDER_TYPE_OPTIONS.find(opt => opt.value === binderType)?.label || "Select type (optional)";
+  const selectedBinderTypeLabel =
+    BINDER_TYPE_OPTIONS.find((opt) => opt.value === binderType)?.label ||
+    "Select type (optional)";
 
   return (
     <OnboardingLayout
@@ -154,13 +180,15 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
               style={({ pressed }) => [
                 styles.toggleButton,
                 bindsChest === true && styles.toggleButtonSelected,
-                pressed && styles.buttonPressed
+                pressed && styles.buttonPressed,
               ]}
             >
-              <Text style={[
-                styles.toggleButtonText,
-                bindsChest === true && styles.toggleButtonTextSelected
-              ]}>
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  bindsChest === true && styles.toggleButtonTextSelected,
+                ]}
+              >
                 Yes
               </Text>
             </Pressable>
@@ -172,13 +200,15 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
               style={({ pressed }) => [
                 styles.toggleButton,
                 bindsChest === false && styles.toggleButtonSelected,
-                pressed && styles.buttonPressed
+                pressed && styles.buttonPressed,
               ]}
             >
-              <Text style={[
-                styles.toggleButtonText,
-                bindsChest === false && styles.toggleButtonTextSelected
-              ]}>
+              <Text
+                style={[
+                  styles.toggleButtonText,
+                  bindsChest === false && styles.toggleButtonTextSelected,
+                ]}
+              >
                 No
               </Text>
             </Pressable>
@@ -208,16 +238,27 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
             {/* Duration Input */}
             {frequency && frequency !== "never" && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Typical binding duration</Text>
+                <Text style={styles.sectionTitle}>
+                  Typical binding duration
+                </Text>
                 <Text style={styles.label}>HOURS PER SESSION</Text>
-                
+
                 {/* Number Input with +/- buttons */}
                 <View style={styles.durationContainer}>
                   <Pressable
-                    onPress={() => setDurationHours(Math.max(1, durationHours - 1))}
-                    style={({ pressed }) => [styles.durationButton, pressed && styles.buttonPressed]}
+                    onPress={() =>
+                      setDurationHours(Math.max(1, durationHours - 1))
+                    }
+                    style={({ pressed }) => [
+                      styles.durationButton,
+                      pressed && styles.buttonPressed,
+                    ]}
                   >
-                    <Ionicons name="remove" size={24} color={colors.accent.primary} />
+                    <Ionicons
+                      name="remove"
+                      size={24}
+                      color={colors.accent.primary}
+                    />
                   </Pressable>
 
                   <View style={styles.durationDisplay}>
@@ -225,24 +266,35 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
                   </View>
 
                   <Pressable
-                    onPress={() => setDurationHours(Math.min(12, durationHours + 1))}
-                    style={({ pressed }) => [styles.durationButton, pressed && styles.buttonPressed]}
+                    onPress={() =>
+                      setDurationHours(Math.min(12, durationHours + 1))
+                    }
+                    style={({ pressed }) => [
+                      styles.durationButton,
+                      pressed && styles.buttonPressed,
+                    ]}
                   >
-                    <Ionicons name="add" size={24} color={colors.accent.primary} />
+                    <Ionicons
+                      name="add"
+                      size={24}
+                      color={colors.accent.primary}
+                    />
                   </Pressable>
                 </View>
 
                 {/* Warning if > 8 hours */}
                 {showWarning && (
                   <View style={cardStyles.warning}>
-                    <Ionicons 
-                      name="warning" 
-                      size={20} 
-                      color={colors.semantic.warning} 
+                    <Ionicons
+                      name="warning"
+                      size={20}
+                      color={colors.semantic.warning}
                       style={styles.warningIcon}
                     />
                     <Text style={styles.warningText}>
-                      Binding for more than 8 hours isn't recommended. We'll prioritize binding-safe exercises and shorter workout durations for your safety.
+                      Binding for more than 8 hours isn't recommended. We'll
+                      prioritize binding-safe exercises and shorter workout
+                      durations for your safety.
                     </Text>
                   </View>
                 )}
@@ -253,19 +305,29 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
             {frequency && frequency !== "never" && (
               <View style={styles.section}>
                 <Text style={styles.label}>
-                  Binder Type <Text style={styles.optionalText}>(Optional)</Text>
+                  Binder Type{" "}
+                  <Text style={styles.optionalText}>(Optional)</Text>
                 </Text>
                 <Pressable
                   onPress={() => setShowBinderTypePicker(true)}
-                  style={({ pressed }) => [styles.pickerButton, pressed && styles.buttonPressed]}
+                  style={({ pressed }) => [
+                    styles.pickerButton,
+                    pressed && styles.buttonPressed,
+                  ]}
                 >
-                  <Text style={[
-                    styles.pickerText,
-                    !binderType && styles.pickerTextPlaceholder
-                  ]}>
+                  <Text
+                    style={[
+                      styles.pickerText,
+                      !binderType && styles.pickerTextPlaceholder,
+                    ]}
+                  >
                     {selectedBinderTypeLabel}
                   </Text>
-                  <Ionicons name="chevron-down" size={20} color={colors.text.primary} />
+                  <Ionicons
+                    name="chevron-down"
+                    size={20}
+                    color={colors.text.primary}
+                  />
                 </Pressable>
               </View>
             )}
@@ -296,24 +358,37 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
                 <Pressable
                   key={option.value}
                   onPress={() => {
-                    setBinderType(option.value);
-                    setShowBinderTypePicker(false);
+                    // Show safety warning for "other" type (ace bandages, DIY binders)
+                    if (option.value === "other" && !hasAcknowledgedRisk) {
+                      setShowBinderTypePicker(false);
+                      setShowSafetyWarning(true);
+                    } else {
+                      setBinderType(option.value);
+                      setShowBinderTypePicker(false);
+                    }
                   }}
                   style={({ pressed }) => [
                     styles.modalOption,
                     binderType === option.value && styles.modalOptionSelected,
-                    pressed && styles.buttonPressed
+                    pressed && styles.buttonPressed,
                   ]}
                 >
-                  <Text style={[
-                    styles.modalOptionText,
-                    binderType === option.value && styles.modalOptionTextSelected,
-                    !option.value && styles.modalOptionTextPlaceholder
-                  ]}>
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      binderType === option.value &&
+                        styles.modalOptionTextSelected,
+                      !option.value && styles.modalOptionTextPlaceholder,
+                    ]}
+                  >
                     {option.label}
                   </Text>
                   {binderType === option.value && (
-                    <Ionicons name="checkmark" size={20} color={colors.accent.primary} />
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={colors.accent.primary}
+                    />
                   )}
                 </Pressable>
               ))}
@@ -321,6 +396,17 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
           </View>
         </View>
       </Modal>
+
+      {/* Binder Safety Warning Modal */}
+      <BinderSafetyWarningModal
+        visible={showSafetyWarning}
+        onClose={() => setShowSafetyWarning(false)}
+        onAcknowledge={() => {
+          setHasAcknowledgedRisk(true);
+          setBinderType("other");
+          setShowSafetyWarning(false);
+        }}
+      />
     </OnboardingLayout>
   );
 }
@@ -342,14 +428,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.secondary,
     marginBottom: spacing.md,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   optionalText: {
     color: colors.text.tertiary,
-    textTransform: 'none',
+    textTransform: "none",
   },
   buttonRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.md,
   },
   toggleButton: {
@@ -359,8 +445,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass.bg,
     borderWidth: 2,
     borderColor: colors.glass.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   toggleButtonSelected: {
     backgroundColor: colors.glass.bgHero,
@@ -379,8 +465,8 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   durationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.base,
   },
   durationButton: {
@@ -390,8 +476,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass.bg,
     borderWidth: 1,
     borderColor: colors.glass.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   durationDisplay: {
     flex: 1,
@@ -400,8 +486,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass.bg,
     borderWidth: 1,
     borderColor: colors.glass.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   durationText: {
     ...textStyles.statMedium,
@@ -423,9 +509,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.glass.border,
     paddingHorizontal: spacing.base,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   pickerText: {
     ...textStyles.label,
@@ -438,19 +524,19 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: colors.bg.raised,
-    borderTopLeftRadius: borderRadius['2xl'],
-    borderTopRightRadius: borderRadius['2xl'],
-    maxHeight: '70%',
+    borderTopLeftRadius: borderRadius["2xl"],
+    borderTopRightRadius: borderRadius["2xl"],
+    maxHeight: "70%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: spacing.xl,
     borderBottomWidth: 1,
     borderBottomColor: colors.glass.border,
@@ -463,9 +549,9 @@ const styles = StyleSheet.create({
     maxHeight: 400,
   },
   modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: spacing.xl,
     borderBottomWidth: 1,
     borderBottomColor: colors.glass.border,

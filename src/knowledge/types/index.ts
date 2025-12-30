@@ -18,7 +18,7 @@ export type KnowledgeCategory =
   | 'dysphoria'
   | 'general';
 
-export type HrtType = 'estrogen_blockers' | 'testosterone';
+export type HrtType = 'estrogen' | 'testosterone';
 
 export type SurgeryType =
   | 'top_surgery'

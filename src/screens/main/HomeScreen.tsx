@@ -98,7 +98,7 @@ export default function HomeScreen() {
     loadExercises();
   }, []);
 
-  // Check for weekly transition (show summary on Sunday if new week)
+  // Check for weekly transition (show summary if new week needs plan)
   useEffect(() => {
     const checkWeeklyTransition = async () => {
       if (!profile || !userId || userId === 'default') return;

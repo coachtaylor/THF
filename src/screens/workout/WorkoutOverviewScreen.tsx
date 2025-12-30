@@ -16,7 +16,7 @@ import EducationSnippets from '../../components/education/EducationSnippets';
 import { selectSnippetsForUser, initEducationSnippets } from '../../services/education/snippets';
 import { SelectedSnippets, UserSnippetContext } from '../../services/education/types';
 import { WorkoutExplanation, WorkoutPersonalizationSummary } from '../../types/explanations';
-import { generatePersonalizationSummary } from '../../services/explanations/personalizationExplainer';
+import { generatePersonalizationSummary, getShortSummaries, ShortSummary } from '../../services/explanations/personalizationExplainer';
 import { trackWorkoutStarted, trackWhyThisWorkoutOpened } from '../../services/analytics';
 import { useWorkoutLimit } from '../../hooks/useWorkoutLimit';
 import { FeedbackFAB } from '../../components/feedback';
@@ -65,6 +65,7 @@ export default function WorkoutOverviewScreen() {
   const [snippets, setSnippets] = useState<SelectedSnippets>({});
   const [explanations, setExplanations] = useState<WorkoutExplanation[]>([]);
   const [personalizationSummary, setPersonalizationSummary] = useState<WorkoutPersonalizationSummary | null>(null);
+  const [shortSummaries, setShortSummaries] = useState<ShortSummary[]>([]);
 
   // Workout limit tracking for free tier
   const userId = profile?.user_id || profile?.id || 'default';
@@ -122,6 +123,10 @@ export default function WorkoutOverviewScreen() {
       if (profile) {
         const summary = generatePersonalizationSummary(profile);
         setPersonalizationSummary(summary);
+
+        // Generate short summaries for visible display in hero card
+        const summaries = getShortSummaries(profile);
+        setShortSummaries(summaries);
       }
     } catch (error) {
       console.error('Failed to load workout:', error);
@@ -430,6 +435,22 @@ export default function WorkoutOverviewScreen() {
             </View>
           )}
 
+          {/* Visible Safety Summary - always shown if summaries exist */}
+          {shortSummaries.length > 0 && (
+            <View style={styles.safetySummary}>
+              <View style={styles.safetySummaryHeader}>
+                <Ionicons name="shield-checkmark" size={14} color={colors.accent.secondary} />
+                <Text style={styles.safetySummaryTitle}>Tailored for you</Text>
+              </View>
+              {shortSummaries.map((summary, index) => (
+                <View key={index} style={styles.safetySummaryItem}>
+                  <View style={styles.safetySummaryDot} />
+                  <Text style={styles.safetySummaryText}>{summary.text}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Why this workout? Button */}
           <Pressable
             style={styles.whyButton}
@@ -441,9 +462,9 @@ export default function WorkoutOverviewScreen() {
           </Pressable>
         </GlassCard>
 
-        {/* Education Snippets Section */}
+        {/* Education Snippets Section - reduced to 1 since safety summary is now visible */}
         {(snippets.binder || snippets.hrt || snippets.post_op || snippets.recovery_general) && (
-          <EducationSnippets snippets={snippets} maxVisible={2} />
+          <EducationSnippets snippets={snippets} maxVisible={1} />
         )}
 
         {/* Warm-Up Section */}
@@ -694,6 +715,44 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.accent.primary,
+  },
+  safetySummary: {
+    marginTop: spacing.l,
+    paddingTop: spacing.m,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.subtle,
+  },
+  safetySummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.s,
+  },
+  safetySummaryTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.accent.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  safetySummaryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.s,
+    paddingVertical: spacing.xxs,
+  },
+  safetySummaryDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.text.tertiary,
+  },
+  safetySummaryText: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.secondary,
   },
   whyButton: {
     flexDirection: 'row',

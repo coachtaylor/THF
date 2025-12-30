@@ -1,6 +1,33 @@
-import { openDatabaseSync } from 'expo-sqlite';
+import { openDatabaseSync, SQLiteDatabase } from "expo-sqlite";
 
-const db = openDatabaseSync('transfitness.db');
+// Lazy-initialized database connection
+// Prevents crash when module is imported before React Native runtime is ready
+let _db: SQLiteDatabase | null = null;
+
+function getDb(): SQLiteDatabase {
+  if (!_db) {
+    _db = openDatabaseSync("transfitness.db");
+  }
+  return _db;
+}
+
+// For backwards compatibility - use getter pattern
+export const db = {
+  get instance(): SQLiteDatabase {
+    return getDb();
+  },
+  withTransactionSync<T>(callback: () => T): T {
+    // The callback may return void, so we need to handle that case
+    const result = getDb().withTransactionSync(callback);
+    return result as T;
+  },
+  execSync(sql: string): void {
+    getDb().execSync(sql);
+  },
+  prepareSync(sql: string) {
+    return getDb().prepareSync(sql);
+  },
+};
 
 const tableStatements = [
   `CREATE TABLE IF NOT EXISTS profiles (
@@ -90,24 +117,23 @@ const tableStatements = [
   );`,
   `CREATE INDEX IF NOT EXISTS idx_feedback_unsynced ON feedback_reports(synced_at) WHERE synced_at IS NULL;`,
   `CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback_reports(user_id);`,
-  `CREATE INDEX IF NOT EXISTS idx_feedback_category ON feedback_reports(category);`
+  `CREATE INDEX IF NOT EXISTS idx_feedback_category ON feedback_reports(category);`,
 ];
 
 export async function initDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      db.withTransactionSync(() => {
-        tableStatements.forEach(statement => {
-          db.execSync(statement);
+      const database = getDb();
+      database.withTransactionSync(() => {
+        tableStatements.forEach((statement) => {
+          database.execSync(statement);
         });
       });
-      console.log('✅ Database initialized successfully');
+      console.log("✅ Database initialized successfully");
       resolve();
     } catch (error) {
-      console.error('Database initialization failed:', error);
+      console.error("Database initialization failed:", error);
       reject(error);
     }
   });
 }
-
-export { db };
