@@ -100,7 +100,11 @@ export function BetaDetails() {
               <div className="absolute top-0 right-0 w-64 h-64 bg-accent-blue/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
 
               <div className="relative">
-                <div className="flex items-center gap-2 mb-6">
+                <p className="text-base text-accent-blue font-semibold mb-4">
+                  Launching January 1st, 2026
+                </p>
+
+                <div className="flex items-center gap-2 mb-4">
                   <Sparkles size={20} className="text-accent-blue" />
                   <span className="text-sm font-semibold text-accent-blue uppercase tracking-wider">
                     Founding Price
