@@ -430,7 +430,7 @@ describe('Workout Generation Safety', () => {
       const safetyContext = await evaluateSafetyRules(ftmOnTestosteroneProfile, mockExercisePool);
 
       // Should have progressive overload adjustment
-      const hrt02 = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-02');
+      const hrt02 = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-T-DYNAMIC');
       expect(hrt02).toBeDefined();
       expect(safetyContext.modified_parameters.progressive_overload_rate).toBeGreaterThan(1);
     });
@@ -939,7 +939,7 @@ describe('Workout Generation Safety', () => {
 
       const safetyContext = await evaluateSafetyRules(firstMonthEProfile, mockExercisePool);
 
-      const initialRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-E-01');
+      const initialRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-E-DYNAMIC');
       expect(initialRule).toBeDefined();
 
       // Check for higher volume reduction in initial phase
@@ -956,7 +956,7 @@ describe('Workout Generation Safety', () => {
 
       const safetyContext = await evaluateSafetyRules(twoMonthEProfile, mockExercisePool);
 
-      const earlyRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-E-02');
+      const earlyRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-E-DYNAMIC');
       expect(earlyRule).toBeDefined();
     });
 
@@ -970,7 +970,7 @@ describe('Workout Generation Safety', () => {
 
       const safetyContext = await evaluateSafetyRules(fourMonthEProfile, mockExercisePool);
 
-      const adaptationRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-E-03');
+      const adaptationRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-E-DYNAMIC');
       expect(adaptationRule).toBeDefined();
     });
 
@@ -984,7 +984,7 @@ describe('Workout Generation Safety', () => {
 
       const safetyContext = await evaluateSafetyRules(firstMonthTProfile, mockExercisePool);
 
-      const initialRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-T-01b');
+      const initialRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-T-DYNAMIC');
       expect(initialRule).toBeDefined();
 
       // Check for slower progression (0.9x)
@@ -1001,7 +1001,7 @@ describe('Workout Generation Safety', () => {
 
       const safetyContext = await evaluateSafetyRules(eightMonthTProfile, mockExercisePool);
 
-      const acceleratingRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-T-04');
+      const acceleratingRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-T-DYNAMIC');
       expect(acceleratingRule).toBeDefined();
 
       // Check for faster progression (1.1x)
@@ -1018,7 +1018,7 @@ describe('Workout Generation Safety', () => {
 
       const safetyContext = await evaluateSafetyRules(thirtyMonthTProfile, mockExercisePool);
 
-      const peakRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-T-06');
+      const peakRule = safetyContext.rules_applied.find(r => r.rule_id === 'HRT-T-DYNAMIC');
       expect(peakRule).toBeDefined();
 
       // Check for maximum progression (1.2x)

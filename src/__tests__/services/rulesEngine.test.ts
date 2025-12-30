@@ -176,7 +176,7 @@ describe('Rules Engine', () => {
       const result = await evaluateSafetyRules(recentTopSurgeryProfile, []);
 
       // Should have critical block for push patterns
-      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-01');
+      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-TOP-CRITICAL');
       expect(po01Applied).toBeDefined();
       expect(result.critical_blocks.length).toBeGreaterThan(0);
     });
@@ -195,7 +195,7 @@ describe('Rules Engine', () => {
       const result = await evaluateSafetyRules(midRecoveryProfile, []);
 
       // Should apply parameter modifications for mid-recovery
-      const po02Applied = result.rules_applied.find(r => r.rule_id === 'PO-02');
+      const po02Applied = result.rules_applied.find(r => r.rule_id === 'PO-TOP-MODIFY');
       expect(po02Applied).toBeDefined();
     });
 
@@ -215,7 +215,7 @@ describe('Rules Engine', () => {
       const result = await evaluateSafetyRules(recentVaginoplastyProfile, []);
 
       // Should have critical block for lower body patterns
-      const po06Applied = result.rules_applied.find(r => r.rule_id === 'PO-06');
+      const po06Applied = result.rules_applied.find(r => r.rule_id === 'PO-VAG-CRITICAL');
       expect(po06Applied).toBeDefined();
     });
 
@@ -280,8 +280,8 @@ describe('Rules Engine', () => {
 
       const result = await evaluateSafetyRules(ftmOnTestosteroneProfile, []);
 
-      // 8 months falls into HRT-T-04: Accelerating Phase (6-12 months)
-      const hrtT04Applied = result.rules_applied.find(r => r.rule_id === 'HRT-T-04');
+      // 8 months falls into HRT-T-DYNAMIC: Accelerating Phase (6-12 months)
+      const hrtT04Applied = result.rules_applied.find(r => r.rule_id === 'HRT-T-DYNAMIC');
       expect(hrtT04Applied).toBeDefined();
     });
 
@@ -297,8 +297,8 @@ describe('Rules Engine', () => {
 
       const result = await evaluateSafetyRules(earlyTestosteroneProfile, []);
 
-      // 2 months falls into HRT-T-02: Early Phase (1-3 months)
-      const hrtT02Applied = result.rules_applied.find(r => r.rule_id === 'HRT-T-02');
+      // 2 months falls into HRT-T-DYNAMIC: Early Phase (1-3 months)
+      const hrtT02Applied = result.rules_applied.find(r => r.rule_id === 'HRT-T-DYNAMIC');
       expect(hrtT02Applied).toBeDefined();
     });
 
@@ -485,8 +485,8 @@ describe('Rules Engine', () => {
 
       const result = await evaluateSafetyRules(undefinedDateProfile, []);
 
-      // Should apply PO-01 (critical block for weeks 0-6) since undefined = 0 weeks
-      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-01');
+      // Should apply PO-TOP-CRITICAL (critical block for weeks 0-6) since undefined = 0 weeks
+      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-TOP-CRITICAL');
       expect(po01Applied).toBeDefined();
       expect(result.critical_blocks.length).toBeGreaterThan(0);
     });
@@ -505,7 +505,7 @@ describe('Rules Engine', () => {
       const result = await evaluateSafetyRules(invalidDateProfile, []);
 
       // Should apply critical block since invalid = 0 weeks
-      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-01');
+      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-TOP-CRITICAL');
       expect(po01Applied).toBeDefined();
     });
 
@@ -523,7 +523,7 @@ describe('Rules Engine', () => {
       const result = await evaluateSafetyRules(futureDateProfile, []);
 
       // Should apply critical block since future = treated as 0 weeks
-      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-01');
+      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-TOP-CRITICAL');
       expect(po01Applied).toBeDefined();
     });
   });
@@ -553,8 +553,8 @@ describe('Rules Engine', () => {
 
       const result = await evaluateSafetyRules(revisionSurgeryProfile, []);
 
-      // Should apply PO-01 for the 3-week-old revision, not skip due to healed older surgery
-      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-01');
+      // Should apply PO-TOP-CRITICAL for the 3-week-old revision, not skip due to healed older surgery
+      const po01Applied = result.rules_applied.find(r => r.rule_id === 'PO-TOP-CRITICAL');
       expect(po01Applied).toBeDefined();
       expect(result.critical_blocks.length).toBeGreaterThan(0);
     });
@@ -584,7 +584,7 @@ describe('Rules Engine', () => {
       const result = await evaluateSafetyRules(multipleDifferentSurgeriesProfile, []);
 
       // Should have critical blocks from vaginoplasty (the more recent/restrictive)
-      const po06Applied = result.rules_applied.find(r => r.rule_id === 'PO-06');
+      const po06Applied = result.rules_applied.find(r => r.rule_id === 'PO-VAG-CRITICAL');
       expect(po06Applied).toBeDefined();
     });
 

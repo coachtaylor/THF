@@ -55,7 +55,8 @@ export async function evaluateSafetyRules(
       // Rule triggered!
       if (__DEV__) console.log(`✅ Rule triggered: ${rule.rule_id}`);
 
-      applyRuleAction(rule, context, safetyContext);
+      // CRITICAL FIX: Await async rule actions (post-op rules use async getCriteria/getModification)
+      await applyRuleAction(rule, context, safetyContext);
 
       // Generate user-facing message
       const userMessage = generateUserMessage(rule, userProfile);
@@ -77,30 +78,43 @@ export async function evaluateSafetyRules(
   return safetyContext;
 }
 
-function applyRuleAction(
+async function applyRuleAction(
   rule: Rule,
   context: EvaluationContext,
   safetyContext: SafetyContext
-): void {
+): Promise<void> {
   const action = rule.action;
 
   switch (action.type) {
     case 'critical_block':
-      safetyContext.critical_blocks.push(action.criteria);
+      // Handle both static criteria and dynamic async getCriteria
+      const blockCriteria = action.getCriteria
+        ? await action.getCriteria(context)
+        : action.criteria || {};
+      safetyContext.critical_blocks.push(blockCriteria);
       break;
 
     case 'exclude_exercises':
+      // Handle both static criteria and async getCriteria
+      const exclusionCriteria = action.getCriteria
+        ? await action.getCriteria(context)
+        : action.criteria || {};
+
       const excludedIds = filterExcludedExercises(
         context.exercise_pool,
-        action.criteria
+        exclusionCriteria
       );
       safetyContext.excluded_exercise_ids.push(...excludedIds);
       break;
 
     case 'modify_parameters':
+      // Handle both static modification and dynamic async getModification
+      const modification = action.getModification
+        ? await action.getModification(context)
+        : action.modification || {};
       // Merge parameters using the most RESTRICTIVE values
       // This handles overlapping surgeries by always choosing the safer option
-      mergeModifiedParameters(safetyContext.modified_parameters, action.modification);
+      mergeModifiedParameters(safetyContext.modified_parameters, modification);
       break;
 
     case 'inject_checkpoint':
@@ -108,8 +122,13 @@ function applyRuleAction(
       break;
 
     case 'soft_filter':
-      if (action.filter) {
-        safetyContext.soft_filters.push(action.filter);
+      // Handle both static filter and async getFilter
+      const filterResult = action.getFilter
+        ? await action.getFilter(context)
+        : action.filter;
+
+      if (filterResult) {
+        safetyContext.soft_filters.push(filterResult);
       }
       break;
   }
@@ -192,6 +211,12 @@ function filterExcludedExercises(
 ): number[] {
   return exercises
     .filter(ex => {
+      // SAFETY: Skip undefined/null exercises to prevent crashes
+      if (!ex) {
+        console.warn('⚠️ Encountered undefined exercise in pool - skipping');
+        return false;
+      }
+
       // Check contraindications (only if both arrays exist)
       if (criteria.contraindications && ex.contraindications) {
         const hasContra = criteria.contraindications.some((c: string) =>
@@ -200,7 +225,7 @@ function filterExcludedExercises(
         if (hasContra) return true;
       }
 
-      // Check custom filter
+      // Check custom filter - now safe because ex is guaranteed non-null
       if (criteria.custom_filter && criteria.custom_filter(ex)) {
         return true;
       }
