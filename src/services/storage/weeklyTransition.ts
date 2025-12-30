@@ -86,19 +86,14 @@ export async function setLastPlanGeneratedWeek(userId: string, weekStart: Date):
 /**
  * Check if a new week has started and the user needs to generate a new plan
  * Returns true if:
- * 1. It's Sunday (day 0)
- * 2. AND either:
- *    a. No plan has ever been generated, OR
- *    b. The last plan was generated for a previous week
+ * 1. No plan has ever been generated for this week, OR
+ * 2. The last plan was generated for a previous week
+ *
+ * Note: This check runs on ANY day of the week - the prompt will appear
+ * until the user generates a plan for the current week.
  */
 export async function isNewWeekNeedingPlan(userId: string): Promise<boolean> {
   const today = new Date();
-
-  // Must be Sunday
-  if (today.getDay() !== 0) {
-    return false;
-  }
-
   const currentWeekStart = getWeekStart(today);
   const currentWeekStartISO = currentWeekStart.toISOString();
 

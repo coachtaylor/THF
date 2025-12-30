@@ -1,14 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { colors, spacing, borderRadius } from '../../theme/theme';
-import { GlassCard, ProgressRing } from '../../components/common';
-import { VolumeChart, FrequencyChart, ExerciseProgressChart } from '../../components/progress';
-import { PremiumGate } from '../../components/paywall/PremiumGate';
-import { useProfile } from '../../hooks/useProfile';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { colors, spacing, borderRadius } from "../../theme/theme";
+import { GlassCard, ProgressRing } from "../../components/common";
+import {
+  VolumeChart,
+  FrequencyChart,
+  ExerciseProgressChart,
+  PRListItem,
+} from "../../components/progress";
+import { PremiumGate } from "../../components/paywall/PremiumGate";
+import { useProfile } from "../../hooks/useProfile";
 import {
   getCurrentStreak,
   getWeeklyStats,
@@ -20,7 +33,9 @@ import {
   type WeeklyVolumeData,
   type FrequencyData,
   type ExerciseProgressData,
-} from '../../services/storage/stats';
+} from "../../services/storage/stats";
+import { getRecentPRs } from "../../services/storage/personalRecords";
+import { PRWithExercise } from "../../types/personalRecords";
 
 type MainTabParamList = {
   Home: undefined;
@@ -29,18 +44,30 @@ type MainTabParamList = {
   Settings: undefined;
 };
 
-type ProgressScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Progress'>;
+type ProgressScreenNavigationProp = BottomTabNavigationProp<
+  MainTabParamList,
+  "Progress"
+>;
 
 interface FeatureCardProps {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   description: string;
-  accentColor: 'primary' | 'secondary';
+  accentColor: "primary" | "secondary";
 }
 
-function FeatureCard({ icon, title, description, accentColor }: FeatureCardProps) {
-  const bgColor = accentColor === 'primary' ? colors.accent.primaryMuted : colors.accent.secondaryMuted;
-  const iconColor = accentColor === 'primary' ? colors.accent.primary : colors.accent.secondary;
+function FeatureCard({
+  icon,
+  title,
+  description,
+  accentColor,
+}: FeatureCardProps) {
+  const bgColor =
+    accentColor === "primary"
+      ? colors.accent.primaryMuted
+      : colors.accent.secondaryMuted;
+  const iconColor =
+    accentColor === "primary" ? colors.accent.primary : colors.accent.secondary;
 
   return (
     <View style={styles.featureCard}>
@@ -74,9 +101,14 @@ export default function ProgressScreen() {
   // Chart data state
   const [volumeData, setVolumeData] = useState<WeeklyVolumeData[]>([]);
   const [frequencyData, setFrequencyData] = useState<FrequencyData[]>([]);
-  const [exerciseProgress, setExerciseProgress] = useState<ExerciseProgressData | null>(null);
-  const [availableExercises, setAvailableExercises] = useState<{ exerciseId: string; exerciseName: string; sessionCount: number }[]>([]);
-  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [exerciseProgress, setExerciseProgress] =
+    useState<ExerciseProgressData | null>(null);
+  const [availableExercises, setAvailableExercises] = useState<
+    { exerciseId: string; exerciseName: string; sessionCount: number }[]
+  >([]);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(
+    null,
+  );
   const [timeRange, setTimeRange] = useState<4 | 8 | 12>(8); // weeks
 
   // Load stats on mount
@@ -101,15 +133,16 @@ export default function ProgressScreen() {
   const loadStats = async () => {
     try {
       setIsLoading(true);
-      const userId = profile?.user_id || 'default';
+      const userId = profile?.user_id || "default";
 
-      const [currentStreak, stats, volume, frequency, exercises] = await Promise.all([
-        getCurrentStreak(userId),
-        getWeeklyStats(userId),
-        getVolumeByWeek(userId, timeRange),
-        getWorkoutFrequency(userId, timeRange),
-        getExercisesWithData(userId),
-      ]);
+      const [currentStreak, stats, volume, frequency, exercises] =
+        await Promise.all([
+          getCurrentStreak(userId),
+          getWeeklyStats(userId),
+          getVolumeByWeek(userId, timeRange),
+          getWorkoutFrequency(userId, timeRange),
+          getExercisesWithData(userId),
+        ]);
 
       setStreak(currentStreak);
       setWeeklyStats(stats);
@@ -122,7 +155,7 @@ export default function ProgressScreen() {
         setSelectedExerciseId(exercises[0].exerciseId);
       }
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      console.error("Failed to load stats:", error);
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +163,7 @@ export default function ProgressScreen() {
 
   const loadChartData = async () => {
     try {
-      const userId = profile?.user_id || 'default';
+      const userId = profile?.user_id || "default";
       const [volume, frequency] = await Promise.all([
         getVolumeByWeek(userId, timeRange),
         getWorkoutFrequency(userId, timeRange),
@@ -138,25 +171,32 @@ export default function ProgressScreen() {
       setVolumeData(volume);
       setFrequencyData(frequency);
     } catch (error) {
-      console.error('Failed to load chart data:', error);
+      console.error("Failed to load chart data:", error);
     }
   };
 
   const loadExerciseProgress = async (exerciseId: string) => {
     try {
-      const userId = profile?.user_id || 'default';
-      const exercise = availableExercises.find(e => e.exerciseId === exerciseId);
-      const progress = await getExerciseProgress(userId, exerciseId, exercise?.exerciseName);
+      const userId = profile?.user_id || "default";
+      const exercise = availableExercises.find(
+        (e) => e.exerciseId === exerciseId,
+      );
+      const progress = await getExerciseProgress(
+        userId,
+        exerciseId,
+        exercise?.exerciseName,
+      );
       setExerciseProgress(progress);
     } catch (error) {
-      console.error('Failed to load exercise progress:', error);
+      console.error("Failed to load exercise progress:", error);
     }
   };
 
   // Calculate weekly completion percentage
-  const weeklyProgress = weeklyStats.scheduledWorkouts > 0
-    ? weeklyStats.completedWorkouts / weeklyStats.scheduledWorkouts
-    : 0;
+  const weeklyProgress =
+    weeklyStats.scheduledWorkouts > 0
+      ? weeklyStats.completedWorkouts / weeklyStats.scheduledWorkouts
+      : 0;
 
   // Format volume for display
   const formatVolume = (vol: number): string => {
@@ -172,11 +212,15 @@ export default function ProgressScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Progress</Text>
         <Pressable
-          onPress={() => navigation.navigate('Settings')}
+          onPress={() => navigation.navigate("Settings")}
           style={styles.profileButton}
           hitSlop={8}
         >
-          <Ionicons name="person-circle-outline" size={26} color={colors.text.primary} />
+          <Ionicons
+            name="person-circle-outline"
+            size={26}
+            color={colors.text.primary}
+          />
         </Pressable>
       </View>
 
@@ -204,7 +248,10 @@ export default function ProgressScreen() {
               />
               <View style={styles.ringCenter}>
                 {isLoading ? (
-                  <ActivityIndicator size="small" color={colors.accent.primary} />
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.accent.primary}
+                  />
                 ) : (
                   <Text style={styles.streakNumber}>{streak}</Text>
                 )}
@@ -214,10 +261,11 @@ export default function ProgressScreen() {
 
           <View style={styles.heroContent}>
             <Text style={styles.heroTitle}>
-              {streak > 0 ? `${streak} Day Streak` : 'Start Your Streak'}
+              {streak > 0 ? `${streak} Day Streak` : "Start Your Streak"}
             </Text>
             <Text style={styles.heroSubtitle}>
-              {weeklyStats.completedWorkouts}/{weeklyStats.scheduledWorkouts} This Week
+              {weeklyStats.completedWorkouts}/{weeklyStats.scheduledWorkouts}{" "}
+              This Week
             </Text>
             <Text style={styles.heroDescription}>
               {streak >= 7
@@ -236,54 +284,92 @@ export default function ProgressScreen() {
 
         <View style={styles.statsGrid}>
           <GlassCard variant="default" style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: colors.accent.primaryMuted }]}>
-              <Ionicons name="barbell" size={20} color={colors.accent.primary} />
+            <View
+              style={[
+                styles.statIconContainer,
+                { backgroundColor: colors.accent.primaryMuted },
+              ]}
+            >
+              <Ionicons
+                name="barbell"
+                size={20}
+                color={colors.accent.primary}
+              />
             </View>
             {isLoading ? (
               <ActivityIndicator size="small" color={colors.accent.primary} />
             ) : (
               <Text style={styles.statValue}>
-                {weeklyStats.totalVolume > 0 ? formatVolume(weeklyStats.totalVolume) : '--'}
+                {weeklyStats.totalVolume > 0
+                  ? formatVolume(weeklyStats.totalVolume)
+                  : "--"}
               </Text>
             )}
             <Text style={styles.statLabel}>Week Volume</Text>
           </GlassCard>
 
           <GlassCard variant="default" style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: colors.accent.secondaryMuted }]}>
-              <Ionicons name="flame" size={20} color={colors.accent.secondary} />
+            <View
+              style={[
+                styles.statIconContainer,
+                { backgroundColor: colors.accent.secondaryMuted },
+              ]}
+            >
+              <Ionicons
+                name="flame"
+                size={20}
+                color={colors.accent.secondary}
+              />
             </View>
             {isLoading ? (
               <ActivityIndicator size="small" color={colors.accent.secondary} />
             ) : (
-              <Text style={styles.statValue}>{streak > 0 ? streak : '--'}</Text>
+              <Text style={styles.statValue}>{streak > 0 ? streak : "--"}</Text>
             )}
             <Text style={styles.statLabel}>Day Streak</Text>
           </GlassCard>
 
           <GlassCard variant="default" style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: colors.accent.successMuted }]}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+            <View
+              style={[
+                styles.statIconContainer,
+                { backgroundColor: colors.accent.successMuted },
+              ]}
+            >
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={colors.success}
+              />
             </View>
             {isLoading ? (
               <ActivityIndicator size="small" color={colors.success} />
             ) : (
               <Text style={styles.statValue}>
-                {weeklyStats.totalWorkouts > 0 ? weeklyStats.totalWorkouts : '--'}
+                {weeklyStats.totalWorkouts > 0
+                  ? weeklyStats.totalWorkouts
+                  : "--"}
               </Text>
             )}
             <Text style={styles.statLabel}>Total Workouts</Text>
           </GlassCard>
 
           <GlassCard variant="default" style={styles.statCard}>
-            <View style={[styles.statIconContainer, { backgroundColor: colors.glass.bgLight }]}>
+            <View
+              style={[
+                styles.statIconContainer,
+                { backgroundColor: colors.glass.bgLight },
+              ]}
+            >
               <Ionicons name="pulse" size={20} color={colors.text.secondary} />
             </View>
             {isLoading ? (
               <ActivityIndicator size="small" color={colors.text.secondary} />
             ) : (
               <Text style={styles.statValue}>
-                {weeklyStats.averageRPE > 0 ? weeklyStats.averageRPE.toFixed(1) : '--'}
+                {weeklyStats.averageRPE > 0
+                  ? weeklyStats.averageRPE.toFixed(1)
+                  : "--"}
               </Text>
             )}
             <Text style={styles.statLabel}>Avg RPE</Text>
@@ -308,10 +394,12 @@ export default function ProgressScreen() {
                   ]}
                   onPress={() => setTimeRange(weeks as 4 | 8 | 12)}
                 >
-                  <Text style={[
-                    styles.timeRangePillText,
-                    timeRange === weeks && styles.timeRangePillTextActive,
-                  ]}>
+                  <Text
+                    style={[
+                      styles.timeRangePillText,
+                      timeRange === weeks && styles.timeRangePillTextActive,
+                    ]}
+                  >
                     {weeks}w
                   </Text>
                 </Pressable>
@@ -322,7 +410,11 @@ export default function ProgressScreen() {
           {/* Volume Chart */}
           <GlassCard variant="default" style={styles.chartCard}>
             <View style={styles.chartHeader}>
-              <Ionicons name="barbell" size={18} color={colors.accent.primary} />
+              <Ionicons
+                name="barbell"
+                size={18}
+                color={colors.accent.primary}
+              />
               <Text style={styles.chartTitle}>Weekly Volume</Text>
             </View>
             <VolumeChart data={volumeData} height={180} />
@@ -331,7 +423,11 @@ export default function ProgressScreen() {
           {/* Frequency Chart */}
           <GlassCard variant="default" style={styles.chartCard}>
             <View style={styles.chartHeader}>
-              <Ionicons name="calendar" size={18} color={colors.accent.secondary} />
+              <Ionicons
+                name="calendar"
+                size={18}
+                color={colors.accent.secondary}
+              />
               <Text style={styles.chartTitle}>Workout Consistency</Text>
             </View>
             <FrequencyChart data={frequencyData} height={160} />
@@ -357,14 +453,18 @@ export default function ProgressScreen() {
                     key={exercise.exerciseId}
                     style={[
                       styles.exercisePill,
-                      selectedExerciseId === exercise.exerciseId && styles.exercisePillActive,
+                      selectedExerciseId === exercise.exerciseId &&
+                        styles.exercisePillActive,
                     ]}
                     onPress={() => setSelectedExerciseId(exercise.exerciseId)}
                   >
-                    <Text style={[
-                      styles.exercisePillText,
-                      selectedExerciseId === exercise.exerciseId && styles.exercisePillTextActive,
-                    ]}>
+                    <Text
+                      style={[
+                        styles.exercisePillText,
+                        selectedExerciseId === exercise.exerciseId &&
+                          styles.exercisePillTextActive,
+                      ]}
+                    >
                       {exercise.exerciseName}
                     </Text>
                   </Pressable>
@@ -432,16 +532,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.primary,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.m,
   },
   headerTitle: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
     letterSpacing: -0.3,
   },
@@ -457,29 +557,29 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     marginBottom: spacing.xl,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: spacing.xxl,
   },
   decorativeRings: {
     width: 100,
     height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: spacing.l,
   },
   ringOverlay: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "absolute",
+    justifyContent: "center",
+    alignItems: "center",
   },
   ringCenter: {
-    position: 'absolute',
+    position: "absolute",
     width: 48,
     height: 48,
     borderRadius: 24,
     backgroundColor: colors.glass.bgHero,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     ...Platform.select({
       ios: {
         shadowColor: colors.accent.primary,
@@ -491,38 +591,38 @@ const styles = StyleSheet.create({
     }),
   },
   heroContent: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: spacing.l,
   },
   heroTitle: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
     letterSpacing: -0.3,
     marginBottom: spacing.xs,
   },
   heroSubtitle: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.accent.primary,
     letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     marginBottom: spacing.m,
   },
   heroDescription: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 14,
-    fontWeight: '400',
+    fontWeight: "400",
     color: colors.text.secondary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 22,
   },
   sectionTitle: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
     letterSpacing: -0.2,
     marginBottom: spacing.m,
@@ -531,8 +631,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   featureCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: spacing.m,
     paddingVertical: spacing.s,
   },
@@ -540,23 +640,23 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   featureTextContainer: {
     flex: 1,
   },
   featureTitle: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
     marginBottom: 2,
   },
   featureDescription: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 13,
-    fontWeight: '400',
+    fontWeight: "400",
     color: colors.text.secondary,
     lineHeight: 18,
   },
@@ -566,14 +666,14 @@ const styles = StyleSheet.create({
     marginVertical: spacing.m,
   },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.m,
     marginBottom: spacing.xl,
   },
   statCard: {
-    width: '47%',
-    alignItems: 'center',
+    width: "47%",
+    alignItems: "center",
     paddingVertical: spacing.l,
   },
   statIconContainer: {
@@ -581,72 +681,72 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.glass.bgLight,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: spacing.s,
   },
   statValue: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   statPlaceholder: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.tertiary,
     marginBottom: spacing.xs,
   },
   streakNumber: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.accent.primary,
   },
   statLabel: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.text.tertiary,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   stayTunedCard: {
     marginBottom: spacing.l,
   },
   stayTunedContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: spacing.m,
   },
   stayTunedText: {
     flex: 1,
   },
   stayTunedTitle: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   stayTunedDescription: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 13,
-    fontWeight: '400',
+    fontWeight: "400",
     color: colors.text.secondary,
     lineHeight: 20,
   },
   // Chart styles
   timeRangeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: spacing.m,
   },
   timeRangePills: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.xs,
   },
   timeRangePill: {
@@ -662,28 +762,28 @@ const styles = StyleSheet.create({
     borderColor: colors.accent.primary,
   },
   timeRangePillText: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.text.tertiary,
   },
   timeRangePillTextActive: {
     color: colors.accent.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   chartCard: {
     marginBottom: spacing.m,
   },
   chartHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.s,
     marginBottom: spacing.s,
   },
   chartTitle: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text.primary,
   },
   exerciseSelector: {
@@ -703,17 +803,17 @@ const styles = StyleSheet.create({
     borderColor: colors.border.default,
   },
   exercisePillActive: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    backgroundColor: "rgba(52, 211, 153, 0.15)",
     borderColor: colors.success,
   },
   exercisePillText: {
-    fontFamily: 'Poppins',
+    fontFamily: "Poppins",
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.text.tertiary,
   },
   exercisePillTextActive: {
     color: colors.success,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

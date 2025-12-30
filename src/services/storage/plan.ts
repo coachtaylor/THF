@@ -1,34 +1,49 @@
-import * as SQLite from 'expo-sqlite';
-import { Plan } from '../../types/plan';
+import * as SQLite from "expo-sqlite";
+import { Plan } from "../../types/plan";
 
-// Open database connection for plan storage
-const planDb = SQLite.openDatabaseSync('transfitness.db');
+// Lazy-initialized database connection for plan storage
+// Prevents crash when module is imported before React Native runtime is ready
+let planDb: SQLite.SQLiteDatabase | null = null;
+
+function getDb(): SQLite.SQLiteDatabase {
+  if (!planDb) {
+    planDb = SQLite.openDatabaseSync("transfitness.db");
+  }
+  return planDb;
+}
 
 // Ensure plans table exists with correct schema
 export async function initPlanStorage(): Promise<void> {
   try {
-    planDb.withTransactionSync(() => {
+    getDb().withTransactionSync(() => {
       // Check if table exists and has old schema
       try {
-        const checkStmt = planDb.prepareSync('PRAGMA table_info(plans);');
-        const columns = checkStmt.executeSync().getAllSync() as Array<{ name: string }>;
+        const checkStmt = getDb().prepareSync("PRAGMA table_info(plans);");
+        const columns = checkStmt.executeSync().getAllSync() as Array<{
+          name: string;
+        }>;
         checkStmt.finalizeSync();
-        
-        const hasGoals = columns.some(col => col.name === 'goals');
-        const hasGoalWeighting = columns.some(col => col.name === 'goal_weighting');
-        const hasSyncedAt = columns.some(col => col.name === 'synced_at');
-        
+
+        const hasGoals = columns.some((col) => col.name === "goals");
+        const hasGoalWeighting = columns.some(
+          (col) => col.name === "goal_weighting",
+        );
+        const hasSyncedAt = columns.some((col) => col.name === "synced_at");
+
         // If table exists but missing columns, drop and recreate
-        if (columns.length > 0 && (!hasGoals || !hasGoalWeighting || !hasSyncedAt)) {
-          console.log('⚠️ Plans table has old schema, recreating...');
-          planDb.execSync('DROP TABLE IF EXISTS plans;');
+        if (
+          columns.length > 0 &&
+          (!hasGoals || !hasGoalWeighting || !hasSyncedAt)
+        ) {
+          console.log("⚠️ Plans table has old schema, recreating...");
+          getDb().execSync("DROP TABLE IF EXISTS plans;");
         }
       } catch (e) {
         // Table doesn't exist, will be created below
       }
-      
+
       // Create table with correct schema
-      planDb.execSync(`
+      getDb().execSync(`
         CREATE TABLE IF NOT EXISTS plans (
           id TEXT PRIMARY KEY,
           user_id TEXT,
@@ -42,26 +57,29 @@ export async function initPlanStorage(): Promise<void> {
         );
       `);
     });
-    console.log('✅ Plan storage initialized');
+    console.log("✅ Plan storage initialized");
   } catch (error) {
-    console.error('❌ Plan storage initialization failed:', error);
+    console.error("❌ Plan storage initialization failed:", error);
     throw error;
   }
 }
 
 // Save plan to database
-export async function savePlan(plan: Plan, userId: string = 'default'): Promise<void> {
+export async function savePlan(
+  plan: Plan,
+  userId: string = "default",
+): Promise<void> {
   try {
     const planDataJson = JSON.stringify(plan);
     const goalsJson = JSON.stringify(plan.goals);
     const goalWeightingJson = JSON.stringify(plan.goalWeighting);
     const startDateStr = plan.startDate.toISOString();
 
-    planDb.withTransactionSync(() => {
-      const stmt = planDb.prepareSync(
+    getDb().withTransactionSync(() => {
+      const stmt = getDb().prepareSync(
         `INSERT OR REPLACE INTO plans 
          (id, user_id, block_length, start_date, goals, goal_weighting, plan_data, synced_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?);`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?);`,
       );
       stmt.executeSync([
         plan.id,
@@ -76,15 +94,17 @@ export async function savePlan(plan: Plan, userId: string = 'default'): Promise<
       stmt.finalizeSync();
     });
 
-    console.log('✅ Plan saved:', plan.id);
+    console.log("✅ Plan saved:", plan.id);
   } catch (error) {
-    console.error('❌ Error saving plan:', error);
+    console.error("❌ Error saving plan:", error);
     throw error;
   }
 }
 
 // Get current plan
-export async function getPlan(userId: string = 'default'): Promise<Plan | null> {
+export async function getPlan(
+  userId: string = "default",
+): Promise<Plan | null> {
   try {
     type PlanRow = {
       id: string;
@@ -93,9 +113,9 @@ export async function getPlan(userId: string = 'default'): Promise<Plan | null> 
 
     const resultRef: { value: PlanRow | null } = { value: null };
 
-    planDb.withTransactionSync(() => {
-      const stmt = planDb.prepareSync(
-        'SELECT id, plan_data FROM plans WHERE user_id = ? ORDER BY created_at DESC LIMIT 1;'
+    getDb().withTransactionSync(() => {
+      const stmt = getDb().prepareSync(
+        "SELECT id, plan_data FROM plans WHERE user_id = ? ORDER BY created_at DESC LIMIT 1;",
       );
       const rows = stmt.executeSync([userId]).getAllSync() as any[];
       if (rows.length > 0) {
@@ -106,7 +126,7 @@ export async function getPlan(userId: string = 'default'): Promise<Plan | null> 
 
     const result = resultRef.value;
     if (result) {
-      const planData = JSON.parse(result.plan_data || '{}');
+      const planData = JSON.parse(result.plan_data || "{}");
       // Convert date strings back to Date objects
       if (planData.startDate) {
         planData.startDate = new Date(planData.startDate);
@@ -122,7 +142,7 @@ export async function getPlan(userId: string = 'default'): Promise<Plan | null> 
       return null;
     }
   } catch (error) {
-    console.error('Error getting plan:', error);
+    console.error("Error getting plan:", error);
     throw error;
   }
 }
@@ -130,15 +150,14 @@ export async function getPlan(userId: string = 'default'): Promise<Plan | null> 
 // Delete plan
 export async function deletePlan(planId: string): Promise<void> {
   try {
-    planDb.withTransactionSync(() => {
-      const stmt = planDb.prepareSync('DELETE FROM plans WHERE id = ?;');
+    getDb().withTransactionSync(() => {
+      const stmt = getDb().prepareSync("DELETE FROM plans WHERE id = ?;");
       stmt.executeSync([planId]);
       stmt.finalizeSync();
     });
-    console.log('✅ Plan deleted:', planId);
+    console.log("✅ Plan deleted:", planId);
   } catch (error) {
-    console.error('❌ Error deleting plan:', error);
+    console.error("❌ Error deleting plan:", error);
     throw error;
   }
 }
-

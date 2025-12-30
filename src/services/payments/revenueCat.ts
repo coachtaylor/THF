@@ -10,27 +10,29 @@ import Purchases, {
   CustomerInfo,
   PurchasesOfferings,
   LOG_LEVEL,
-} from 'react-native-purchases';
-import { Platform } from 'react-native';
+} from "react-native-purchases";
+import { Platform } from "react-native";
 
-// RevenueCat API Keys - These are public keys safe to include in client code
-const REVENUECAT_API_KEY_IOS = 'appl_rDnaxdyQKXfliYpbbOThDISJZpJ';
-const REVENUECAT_API_KEY_ANDROID = 'appl_rDnaxdyQKXfliYpbbOThDISJZpJ';
+// RevenueCat API Keys - loaded from environment variables
+const REVENUECAT_API_KEY_IOS =
+  process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS || "";
+const REVENUECAT_API_KEY_ANDROID =
+  process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID || "";
 
 // Entitlement identifier - matches what you set up in RevenueCat dashboard
-export const ENTITLEMENT_ID = 'premium';
+export const ENTITLEMENT_ID = "premium";
 
 // Product identifiers for App Store Connect / Google Play Console
 export const PRODUCT_IDS = {
-  MONTHLY: 'transfitness_premium_monthly',
-  ANNUAL: 'transfitness_premium_annual',
+  MONTHLY: "transfitness_premium_monthly",
+  ANNUAL: "transfitness_premium_annual",
 } as const;
 
-export type ProductId = typeof PRODUCT_IDS[keyof typeof PRODUCT_IDS];
+export type ProductId = (typeof PRODUCT_IDS)[keyof typeof PRODUCT_IDS];
 
 export interface SubscriptionStatus {
   isSubscribed: boolean;
-  tier: 'free' | 'premium';
+  tier: "free" | "premium";
   expirationDate: Date | null;
   willRenew: boolean;
   productId: ProductId | null;
@@ -45,14 +47,15 @@ let isInitialized = false;
  */
 export async function initializeRevenueCat(userId?: string): Promise<void> {
   if (isInitialized) {
-    if (__DEV__) console.log('[RevenueCat] Already initialized');
+    if (__DEV__) console.log("[RevenueCat] Already initialized");
     return;
   }
 
   try {
-    const apiKey = Platform.OS === 'ios'
-      ? REVENUECAT_API_KEY_IOS
-      : REVENUECAT_API_KEY_ANDROID;
+    const apiKey =
+      Platform.OS === "ios"
+        ? REVENUECAT_API_KEY_IOS
+        : REVENUECAT_API_KEY_ANDROID;
 
     // Enable debug logs in development
     if (__DEV__) {
@@ -68,9 +71,9 @@ export async function initializeRevenueCat(userId?: string): Promise<void> {
     }
 
     isInitialized = true;
-    if (__DEV__) console.log('[RevenueCat] Initialized successfully');
+    if (__DEV__) console.log("[RevenueCat] Initialized successfully");
   } catch (error) {
-    console.error('[RevenueCat] Initialization failed:', error);
+    console.error("[RevenueCat] Initialization failed:", error);
     throw error;
   }
 }
@@ -82,10 +85,10 @@ export async function initializeRevenueCat(userId?: string): Promise<void> {
 export async function identifyUser(userId: string): Promise<CustomerInfo> {
   try {
     const { customerInfo } = await Purchases.logIn(userId);
-    if (__DEV__) console.log('[RevenueCat] User identified:', userId);
+    if (__DEV__) console.log("[RevenueCat] User identified:", userId);
     return customerInfo;
   } catch (error) {
-    console.error('[RevenueCat] Failed to identify user:', error);
+    console.error("[RevenueCat] Failed to identify user:", error);
     throw error;
   }
 }
@@ -98,21 +101,22 @@ export async function logoutUser(): Promise<CustomerInfo | null> {
   try {
     // Check if user is already anonymous before attempting logout
     const customerInfo = await Purchases.getCustomerInfo();
-    if (customerInfo.originalAppUserId.startsWith('$RCAnonymousID:')) {
-      if (__DEV__) console.log('[RevenueCat] User is already anonymous, skipping logout');
+    if (customerInfo.originalAppUserId.startsWith("$RCAnonymousID:")) {
+      if (__DEV__)
+        console.log("[RevenueCat] User is already anonymous, skipping logout");
       return customerInfo;
     }
 
     const loggedOutInfo = await Purchases.logOut();
-    if (__DEV__) console.log('[RevenueCat] User logged out');
+    if (__DEV__) console.log("[RevenueCat] User logged out");
     return loggedOutInfo;
   } catch (error) {
     // Handle the case where logout is called on an anonymous user
-    if (error instanceof Error && error.message.includes('anonymous')) {
-      if (__DEV__) console.log('[RevenueCat] User was already anonymous');
+    if (error instanceof Error && error.message.includes("anonymous")) {
+      if (__DEV__) console.log("[RevenueCat] User was already anonymous");
       return null;
     }
-    console.error('[RevenueCat] Failed to logout user:', error);
+    console.error("[RevenueCat] Failed to logout user:", error);
     throw error;
   }
 }
@@ -125,11 +129,11 @@ export async function getSubscriptionStatus(): Promise<SubscriptionStatus> {
     const customerInfo = await Purchases.getCustomerInfo();
     return parseCustomerInfo(customerInfo);
   } catch (error) {
-    console.error('[RevenueCat] Failed to get subscription status:', error);
+    console.error("[RevenueCat] Failed to get subscription status:", error);
     // Return free tier on error to not block the app
     return {
       isSubscribed: false,
-      tier: 'free',
+      tier: "free",
       expirationDate: null,
       willRenew: false,
       productId: null,
@@ -146,13 +150,13 @@ export async function getOfferings(): Promise<PurchasesOfferings | null> {
     const offerings = await Purchases.getOfferings();
 
     if (!offerings.current) {
-      console.warn('[RevenueCat] No current offering configured');
+      console.warn("[RevenueCat] No current offering configured");
       return null;
     }
 
     return offerings;
   } catch (error) {
-    console.error('[RevenueCat] Failed to get offerings:', error);
+    console.error("[RevenueCat] Failed to get offerings:", error);
     return null;
   }
 }
@@ -170,7 +174,7 @@ export async function getPackages(): Promise<PurchasesPackage[]> {
 
     return offerings.current.availablePackages;
   } catch (error) {
-    console.error('[RevenueCat] Failed to get packages:', error);
+    console.error("[RevenueCat] Failed to get packages:", error);
     return [];
   }
 }
@@ -179,14 +183,20 @@ export async function getPackages(): Promise<PurchasesPackage[]> {
  * Purchase a subscription package
  */
 export async function purchasePackage(
-  pkg: PurchasesPackage
-): Promise<{ success: boolean; customerInfo: CustomerInfo | null; error?: string }> {
+  pkg: PurchasesPackage,
+): Promise<{
+  success: boolean;
+  customerInfo: CustomerInfo | null;
+  error?: string;
+}> {
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
 
-    const isSubscribed = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
+    const isSubscribed =
+      customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
 
-    if (__DEV__) console.log('[RevenueCat] Purchase completed, subscribed:', isSubscribed);
+    if (__DEV__)
+      console.log("[RevenueCat] Purchase completed, subscribed:", isSubscribed);
 
     return {
       success: isSubscribed,
@@ -194,20 +204,25 @@ export async function purchasePackage(
     };
   } catch (error: unknown) {
     // Handle user cancellation gracefully
-    if (error && typeof error === 'object' && 'userCancelled' in error && error.userCancelled) {
-      if (__DEV__) console.log('[RevenueCat] User cancelled purchase');
+    if (
+      error &&
+      typeof error === "object" &&
+      "userCancelled" in error &&
+      error.userCancelled
+    ) {
+      if (__DEV__) console.log("[RevenueCat] User cancelled purchase");
       return {
         success: false,
         customerInfo: null,
-        error: 'cancelled',
+        error: "cancelled",
       };
     }
 
-    console.error('[RevenueCat] Purchase failed:', error);
+    console.error("[RevenueCat] Purchase failed:", error);
     return {
       success: false,
       customerInfo: null,
-      error: error instanceof Error ? error.message : 'Purchase failed',
+      error: error instanceof Error ? error.message : "Purchase failed",
     };
   }
 }
@@ -223,20 +238,22 @@ export async function restorePurchases(): Promise<{
 }> {
   try {
     const customerInfo = await Purchases.restorePurchases();
-    const isSubscribed = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
+    const isSubscribed =
+      customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
 
-    if (__DEV__) console.log('[RevenueCat] Restore completed, subscribed:', isSubscribed);
+    if (__DEV__)
+      console.log("[RevenueCat] Restore completed, subscribed:", isSubscribed);
 
     return {
       success: true,
       isSubscribed,
     };
   } catch (error) {
-    console.error('[RevenueCat] Restore failed:', error);
+    console.error("[RevenueCat] Restore failed:", error);
     return {
       success: false,
       isSubscribed: false,
-      error: error instanceof Error ? error.message : 'Restore failed',
+      error: error instanceof Error ? error.message : "Restore failed",
     };
   }
 }
@@ -246,7 +263,7 @@ export async function restorePurchases(): Promise<{
  * Returns cleanup function
  */
 export function addCustomerInfoListener(
-  listener: (customerInfo: CustomerInfo) => void
+  listener: (customerInfo: CustomerInfo) => void,
 ): () => void {
   Purchases.addCustomerInfoUpdateListener(listener);
 
@@ -264,7 +281,7 @@ function parseCustomerInfo(customerInfo: CustomerInfo): SubscriptionStatus {
   if (!entitlement) {
     return {
       isSubscribed: false,
-      tier: 'free',
+      tier: "free",
       expirationDate: null,
       willRenew: false,
       productId: null,
@@ -274,7 +291,7 @@ function parseCustomerInfo(customerInfo: CustomerInfo): SubscriptionStatus {
 
   return {
     isSubscribed: true,
-    tier: 'premium',
+    tier: "premium",
     expirationDate: entitlement.expirationDate
       ? new Date(entitlement.expirationDate)
       : null,
@@ -299,7 +316,7 @@ export async function getCustomerInfo(): Promise<CustomerInfo | null> {
   try {
     return await Purchases.getCustomerInfo();
   } catch (error) {
-    console.error('[RevenueCat] Failed to get customer info:', error);
+    console.error("[RevenueCat] Failed to get customer info:", error);
     return null;
   }
 }

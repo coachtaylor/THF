@@ -6,11 +6,11 @@
  * Categories of red flag keywords that should trigger deflection
  */
 export type RedFlagCategory =
-  | 'acute_symptoms'      // Immediate physical symptoms
-  | 'medical_emergency'   // Emergency situations
-  | 'medication_dosing'   // HRT dosing questions
-  | 'diagnosis_seeking'   // Asking for diagnosis
-  | 'surgical_clearance'; // Post-op medical clearance
+  | "acute_symptoms" // Immediate physical symptoms
+  | "medical_emergency" // Emergency situations
+  | "medication_dosing" // HRT dosing questions
+  | "diagnosis_seeking" // Asking for diagnosis
+  | "surgical_clearance"; // Post-op medical clearance
 
 /**
  * Result of checking text for red flags
@@ -41,7 +41,7 @@ const RED_FLAG_PATTERNS: Record<RedFlagCategory, RegExp[]> = {
     /dizzy\s*(and|while)/i,
     /fever\s*(after|and)/i,
     /infection/i,
-    /pus|discharge\s*(from|at)\s*(incision|wound)/i,
+    /\bpus\b|discharge\s*(from|at)\s*(incision|wound)/i,
     /incision\s*(opening|splitting|bleeding)/i,
     /extreme\s*(fatigue|weakness)/i,
   ],
@@ -91,26 +91,26 @@ const RED_FLAG_PATTERNS: Record<RedFlagCategory, RegExp[]> = {
  */
 const DEFLECTION_MESSAGES: Record<RedFlagCategory, string> = {
   acute_symptoms:
-    'This sounds like it could be a medical concern. Please stop your workout and contact your healthcare provider or seek medical attention. TransFitness cannot assess symptoms or provide medical advice.',
+    "This sounds like it could be a medical concern. Please stop your workout and contact your healthcare provider or seek medical attention. TransFitness cannot assess symptoms or provide medical advice.",
 
   medical_emergency:
-    'If you are experiencing a medical emergency, please call 911 or your local emergency services immediately. If you are having thoughts of self-harm, please reach out to the 988 Suicide & Crisis Lifeline (call or text 988) or the Trans Lifeline (877-565-8860).',
+    "If you are experiencing a medical emergency, please call 911 or your local emergency services immediately. If you are having thoughts of self-harm, please reach out to the 988 Suicide & Crisis Lifeline (call or text 988) or the Trans Lifeline (877-565-8860).",
 
   medication_dosing:
-    'HRT dosing should only be managed by your prescribing provider. Please contact your doctor or endocrinologist about any medication questions. TransFitness cannot provide advice on hormone dosing.',
+    "HRT dosing should only be managed by your prescribing provider. Please contact your doctor or endocrinologist about any medication questions. TransFitness cannot provide advice on hormone dosing.",
 
   diagnosis_seeking:
     'TransFitness cannot diagnose conditions or determine if something is "normal." If you have concerns about your health or recovery, please contact your healthcare provider.',
 
   surgical_clearance:
-    'Your surgeon knows your specific situation best. Please follow their post-op instructions. TransFitness provides general movement guidance, but your surgeon\'s clearance is required before returning to exercise.',
+    "Your surgeon knows your specific situation best. Please follow their post-op instructions. TransFitness provides general movement guidance, but your surgeon's clearance is required before returning to exercise.",
 };
 
 /**
  * General fallback deflection message
  */
 const GENERAL_DEFLECTION =
-  'This question is outside what TransFitness can help with. For medical questions, please consult your healthcare provider. We\'re here to help with fitness guidance within safe boundaries.';
+  "This question is outside what TransFitness can help with. For medical questions, please consult your healthcare provider. We're here to help with fitness guidance within safe boundaries.";
 
 /**
  * Check if text contains red flag keywords that should trigger deflection
@@ -125,11 +125,11 @@ export function checkForRedFlags(text: string): RedFlagResult {
 
   // Check each category in priority order (emergencies first)
   const categoryPriority: RedFlagCategory[] = [
-    'medical_emergency',
-    'acute_symptoms',
-    'medication_dosing',
-    'surgical_clearance',
-    'diagnosis_seeking',
+    "medical_emergency",
+    "acute_symptoms",
+    "medication_dosing",
+    "surgical_clearance",
+    "diagnosis_seeking",
   ];
 
   for (const category of categoryPriority) {
@@ -195,23 +195,23 @@ export function getDeflectionMessage(category?: RedFlagCategory): string {
  */
 export const CRISIS_RESOURCES = {
   suicideLifeline: {
-    name: '988 Suicide & Crisis Lifeline',
-    number: '988',
-    description: 'Call or text 24/7',
+    name: "988 Suicide & Crisis Lifeline",
+    number: "988",
+    description: "Call or text 24/7",
   },
   transLifeline: {
-    name: 'Trans Lifeline',
-    number: '877-565-8860',
-    description: 'Peer support for trans people',
+    name: "Trans Lifeline",
+    number: "877-565-8860",
+    description: "Peer support for trans people",
   },
   crisisTextLine: {
-    name: 'Crisis Text Line',
-    number: 'Text HOME to 741741',
-    description: 'Free 24/7 text support',
+    name: "Crisis Text Line",
+    number: "Text HOME to 741741",
+    description: "Free 24/7 text support",
   },
   trevorProject: {
-    name: 'The Trevor Project',
-    number: '1-866-488-7386',
-    description: 'LGBTQ+ youth crisis support',
+    name: "The Trevor Project",
+    number: "1-866-488-7386",
+    description: "LGBTQ+ youth crisis support",
   },
 };

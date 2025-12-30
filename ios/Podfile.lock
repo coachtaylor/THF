@@ -2375,6 +2375,30 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNSentry (7.8.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-hermes
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Sentry/HybridSDK (= 8.57.3)
+    - Yoga
   - RNSVG (15.9.0):
     - hermes-engine
     - RCTRequired
@@ -2420,6 +2444,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - Sentry/HybridSDK (8.57.3)
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2531,6 +2556,7 @@ DEPENDENCIES:
   - RNPurchases (from `../node_modules/react-native-purchases`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
+  - "RNSentry (from `../node_modules/@sentry/react-native`)"
   - RNSVG (from `../node_modules/react-native-svg`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -2547,6 +2573,7 @@ SPEC REPOS:
     - PurchasesHybridCommonUI
     - RevenueCat
     - RevenueCatUI
+    - Sentry
 
 EXTERNAL SOURCES:
   BVLinearGradient:
@@ -2764,6 +2791,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
     :path: "../node_modules/react-native-screens"
+  RNSentry:
+    :path: "../node_modules/@sentry/react-native"
   RNSVG:
     :path: "../node_modules/react-native-svg"
   Yoga:
@@ -2888,7 +2917,9 @@ SPEC CHECKSUMS:
   RNPurchases: 393312c7ac9cfb3852e3f14a91520d305fa05be6
   RNReanimated: a5adb9a65b706d404fbdcce2ffd06dc5809f7ad1
   RNScreens: d8d6f1792f6e7ac12b0190d33d8d390efc0c1845
+  RNSentry: d32cbfc5b5a7cbefbcf51daa5bf00587d1298049
   RNSVG: a8d623813dc86539a49233c31b627fc141ee737e
+  Sentry: c643eb180df401dd8c734c5036ddd9dd9218daa6
   Yoga: 5934998fbeaef7845dbf698f698518695ab4cd1a
 
 PODFILE CHECKSUM: f786674fce270ad70c5a957319e5ede7fc5c375e

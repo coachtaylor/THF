@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Sparkles } from "lucide-react";
 import { GlassButton } from "./ui/GlassButton";
 import { heroStagger, heroItem } from "@/lib/animations";
 import Image from "next/image";
@@ -25,6 +26,22 @@ export function Hero() {
             animate="animate"
             className="text-left"
           >
+            {/* Launch Announcement */}
+            <motion.div
+              variants={heroItem}
+              className="mb-10"
+            >
+              <p className="text-sm font-semibold uppercase tracking-widest text-accent-pink mb-2">
+                Coming Soon
+              </p>
+              <p className="text-3xl md:text-4xl font-bold text-text-primary">
+                Launching <span className="text-accent-blue">January 1st, 2026</span>
+              </p>
+              <p className="text-base text-text-secondary mt-2">
+                Be one of the first to get access — limited founding athlete spots available
+              </p>
+            </motion.div>
+
             {/* Headline */}
             <motion.h1
               variants={heroItem}
@@ -74,7 +91,7 @@ export function Hero() {
               </div>
               <div className="text-sm">
                 <span className="text-text-primary font-semibold">Spots filling fast</span>
-                <span className="text-text-tertiary"> — limited founding access</span>
+                <span className="text-text-tertiary"> — apply now to secure your spot</span>
               </div>
             </motion.div>
           </motion.div>
