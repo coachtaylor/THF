@@ -1926,6 +1926,9 @@ const styles = StyleSheet.create({
     padding: spacing.l,
     margin: spacing.l,
     maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: borderRadius.lg,
   },
   modalCard: {
     backgroundColor: colors.bg.elevated,

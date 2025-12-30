@@ -1,0 +1,220 @@
+[
+  {
+    "id": "guide_binder_safety",
+    "slug": "binder_safety",
+    "title": "Binder Safety",
+    "category": "binding",
+    "summary": "Exercise Safely While Binding",
+    "hero_icon": "shield-checkmark",
+    "hero_subtitle": "Practical guidance to help you train while respecting your body's limits",
+    "disclaimer": "This guide provides general information only. It is not medical advice. If you experience pain or concerning symptoms, stop and consult a healthcare provider.",
+    "sections": [
+      {
+        "icon": "time-outline",
+        "title": "Time Limits",
+        "iconBg": "rgba(56, 189, 248, 0.15)",
+        "content": [
+          "Limit binding to 8-10 hours maximum per day",
+          "Take breaks every few hours when possible",
+          "Never sleep in a binder",
+          "On workout days, consider shorter binding sessions"
+        ],
+        "iconColor": "#38bdf8"
+      },
+      {
+        "icon": "fitness-outline",
+        "title": "Exercise Modifications",
+        "iconBg": "rgba(244, 114, 182, 0.15)",
+        "content": [
+          "Avoid high-intensity cardio while binding",
+          "Reduce weights for chest-loading exercises",
+          "Take longer rest periods between sets",
+          "Skip jumping and high-impact movements",
+          "Focus on lower body and core work"
+        ],
+        "iconColor": "#f472b6"
+      },
+      {
+        "icon": "alert-circle-outline",
+        "title": "Warning Signs to Stop",
+        "iconBg": "rgba(245, 158, 11, 0.15)",
+        "content": [
+          "Sharp or stabbing chest pain",
+          "Difficulty taking a full breath",
+          "Lightheadedness or dizziness",
+          "Rib tenderness or bruising",
+          "Numbness in arms or chest"
+        ],
+        "iconColor": "#f59e0b"
+      },
+      {
+        "icon": "heart-outline",
+        "title": "Safer Alternatives",
+        "iconBg": "rgba(52, 211, 153, 0.15)",
+        "content": [
+          "Trans tape for longer activities",
+          "Compression sports bras",
+          "Layered loose clothing",
+          "Consider binding less on workout days"
+        ],
+        "iconColor": "#34d399"
+      },
+      {
+        "icon": "checkmark-circle-outline",
+        "title": "Best Practices",
+        "iconBg": "rgba(56, 189, 248, 0.15)",
+        "content": [
+          "Use properly sized binders (never too tight)",
+          "Take full unbinding rest days each week",
+          "Listen to your body—discomfort is a signal",
+          "Stay hydrated during exercise",
+          "Consider the post-workout binder break"
+        ],
+        "iconColor": "#38bdf8"
+      }
+    ],
+    "integration_info": {
+      "items": [
+        "Reduce high-impact exercises",
+        "Add breathing check-ins to your workout",
+        "Adjust rest periods for recovery",
+        "Show relevant safety reminders"
+      ],
+      "title": "How TransFitness Helps",
+      "description": "When you tell us you bind, we automatically:"
+    },
+    "external_resources": "For comprehensive medical information about binding safety, consult organizations like GLMA, Fenway Health, or your healthcare provider.",
+    "footer_note": null,
+    "surgery_type": null,
+    "hrt_type": null,
+    "source_citations": null,
+    "medical_reviewer": null,
+    "last_medical_review": null,
+    "is_active": true,
+    "created_at": "2025-12-11T07:35:31.109038+00:00",
+    "updated_at": "2025-12-11T08:02:29.770035+00:00",
+    "version": 1
+  },
+  {
+    "id": "guide_post_op_movement",
+    "slug": "post_op_movement",
+    "title": "Post-Op Movement",
+    "category": "post_op",
+    "summary": "Returning to Movement",
+    "hero_icon": "trending-up",
+    "hero_subtitle": "A general outline for getting back to training after top surgery",
+    "disclaimer": "This is a general educational outline, not a medical protocol. Your surgeon's instructions take priority. Every surgery and every body is different—these phases are approximate guidelines, not strict rules.",
+    "sections": [
+      {
+        "icon": "bed-outline",
+        "type": "phase",
+        "avoid": [
+          "Any upper body movement",
+          "Raising arms above shoulder level",
+          "Lifting anything heavier than 5 lbs",
+          "Driving (first week minimum)"
+        ],
+        "focus": "Complete rest and initial healing",
+        "title": "Phase 1: Rest & Heal",
+        "weeks": "Weeks 0-2",
+        "iconBg": "rgba(244, 114, 182, 0.15)",
+        "content": [],
+        "iconColor": "#f472b6",
+        "activities": [
+          "Short, gentle walks (5-10 minutes)",
+          "Light stretching of lower body only",
+          "Deep breathing exercises",
+          "Focus on sleep and nutrition"
+        ]
+      },
+      {
+        "icon": "walk-outline",
+        "type": "phase",
+        "avoid": [
+          "Chest exercises of any kind",
+          "Overhead movements",
+          "Heavy carrying or lifting",
+          "High-impact activities"
+        ],
+        "focus": "Gradual mobility restoration",
+        "title": "Phase 2: Gentle Mobility",
+        "weeks": "Weeks 2-6",
+        "iconBg": "rgba(56, 189, 248, 0.15)",
+        "content": [],
+        "iconColor": "#38bdf8",
+        "activities": [
+          "Walking (gradually increasing distance)",
+          "Gentle lower body movements",
+          "Light core work (no crunches)",
+          "Range of motion for shoulders (if cleared)"
+        ]
+      },
+      {
+        "icon": "barbell-outline",
+        "type": "phase",
+        "avoid": [
+          "Heavy pressing movements",
+          "Direct chest loading",
+          "Pull-ups and dips",
+          "Pushing to failure"
+        ],
+        "focus": "Conservative strength rebuilding",
+        "title": "Phase 3: Building Back",
+        "weeks": "Weeks 6-12",
+        "iconBg": "rgba(52, 211, 153, 0.15)",
+        "content": [],
+        "iconColor": "#34d399",
+        "activities": [
+          "Light upper body work (surgeon approved)",
+          "Bodyweight exercises",
+          "Resistance bands",
+          "Stationary cardio"
+        ]
+      },
+      {
+        "icon": "rocket-outline",
+        "type": "phase",
+        "avoid": [
+          "Maximal lifts (PRs)",
+          "Anything causing pulling at incisions",
+          "Ignoring pain signals",
+          "Rushing the process"
+        ],
+        "focus": "Gradual return to normal training",
+        "title": "Phase 4: Progressive Return",
+        "weeks": "Weeks 12-24",
+        "iconBg": "rgba(56, 189, 248, 0.15)",
+        "content": [],
+        "iconColor": "#38bdf8",
+        "activities": [
+          "Progressive overload (slowly)",
+          "Full range of motion work",
+          "Most exercises with modifications",
+          "Scar massage and mobility"
+        ]
+      }
+    ],
+    "integration_info": {
+      "items": [
+        "Calculate your current recovery phase",
+        "Exclude exercises that are typically too risky",
+        "Suggest appropriate movement for your phase",
+        "Gradually reintroduce upper body work",
+        "Include scar care reminders when relevant"
+      ],
+      "title": "How TransFitness Adapts",
+      "description": "When you enter your surgery date, we:"
+    },
+    "external_resources": "For comprehensive medical information, consult your surgeon or organizations like Fenway Health.",
+    "footer_note": "Recovery is not linear. Some weeks will feel great, others less so. Trust the process and give yourself grace.",
+    "surgery_type": "top_surgery",
+    "hrt_type": null,
+    "source_citations": null,
+    "medical_reviewer": null,
+    "last_medical_review": null,
+    "is_active": true,
+    "created_at": "2025-12-11T07:35:31.109038+00:00",
+    "updated_at": "2025-12-11T08:02:29.770035+00:00",
+    "version": 1
+  }
+]

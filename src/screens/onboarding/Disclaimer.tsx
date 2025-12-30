@@ -269,6 +269,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    marginBottom: spacing.xl,
   },
   scrollContent: {
     gap: spacing.base,
