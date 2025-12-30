@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, borderRadius, spacing, typography } from '../../theme/theme';
+import { useSensoryMode } from '../../contexts/SensoryModeContext';
 
 export type GlassButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 export type GlassButtonSize = 'small' | 'medium' | 'large';
@@ -78,9 +79,13 @@ export default function GlassButton({
   const sizeStyles = sizeConfig[size];
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const { disableAnimations } = useSensoryMode();
+
+  // Effective shimmer - disabled in low sensory mode
+  const effectiveShimmer = shimmer && variant === 'primary' && !disabled && !disableAnimations;
 
   useEffect(() => {
-    if (shimmer && variant === 'primary' && !disabled) {
+    if (effectiveShimmer) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(shimmerAnim, {
@@ -96,7 +101,7 @@ export default function GlassButton({
         ])
       ).start();
     }
-  }, [shimmer, variant, disabled]);
+  }, [effectiveShimmer]);
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -221,8 +226,8 @@ export default function GlassButton({
           style={styles.glassOverlay}
         />
 
-        {/* Shimmer effect */}
-        {shimmer && !disabled && (
+        {/* Shimmer effect - hidden in low sensory mode */}
+        {effectiveShimmer && (
           <Animated.View
             style={[
               styles.shimmer,

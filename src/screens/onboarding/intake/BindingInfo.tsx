@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from "react-native";
+import { View, Text, Pressable, StyleSheet, Modal, ScrollView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import SelectionCard from "../../../components/onboarding/SelectionCard";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
-import { glassStyles, textStyles, cardStyles } from "../../../theme/components";
+import { textStyles, cardStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile } from "../../../services/storage/profile";
 
@@ -14,9 +15,11 @@ type BindingFrequency = "daily" | "sometimes" | "rarely" | "never";
 type BinderType = "commercial" | "sports_bra" | "compression_top" | "other";
 
 type BindingInfoNavigationProp = StackNavigationProp<OnboardingStackParamList, "BindingInfo">;
+type BindingInfoRouteProp = RouteProp<OnboardingStackParamList, "BindingInfo">;
 
 interface BindingInfoProps {
   navigation: BindingInfoNavigationProp;
+  route: BindingInfoRouteProp;
 }
 
 const BINDER_TYPE_OPTIONS = [
@@ -27,7 +30,8 @@ const BINDER_TYPE_OPTIONS = [
   { value: "other" as const, label: "Other" },
 ];
 
-export default function BindingInfo({ navigation }: BindingInfoProps) {
+export default function BindingInfo({ navigation, route }: BindingInfoProps) {
+  const genderIdentity = route.params?.genderIdentity;
   const { profile } = useProfile();
   const [bindsChest, setBindsChest] = useState<boolean | null>(null);
   const [frequency, setFrequency] = useState<BindingFrequency | null>(null);
@@ -110,7 +114,7 @@ export default function BindingInfo({ navigation }: BindingInfoProps) {
       }
 
       await updateProfile(bindingData);
-      navigation.navigate("Surgery");
+      navigation.navigate("Surgery", { genderIdentity });
     } catch (error) {
       console.error("Error saving binding info:", error);
     }
@@ -140,17 +144,17 @@ export default function BindingInfo({ navigation }: BindingInfoProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Do you bind your chest?</Text>
           <View style={styles.buttonRow}>
-            <TouchableOpacity
+            <Pressable
               onPress={() => {
                 setBindsChest(true);
                 if (!frequency) {
                   setFrequency("sometimes");
                 }
               }}
-              activeOpacity={0.7}
-              style={[
+              style={({ pressed }) => [
                 styles.toggleButton,
-                bindsChest === true && styles.toggleButtonSelected
+                bindsChest === true && styles.toggleButtonSelected,
+                pressed && styles.buttonPressed
               ]}
             >
               <Text style={[
@@ -159,16 +163,16 @@ export default function BindingInfo({ navigation }: BindingInfoProps) {
               ]}>
                 Yes
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               onPress={() => {
                 setBindsChest(false);
                 setFrequency(null);
               }}
-              activeOpacity={0.7}
-              style={[
+              style={({ pressed }) => [
                 styles.toggleButton,
-                bindsChest === false && styles.toggleButtonSelected
+                bindsChest === false && styles.toggleButtonSelected,
+                pressed && styles.buttonPressed
               ]}
             >
               <Text style={[
@@ -177,7 +181,7 @@ export default function BindingInfo({ navigation }: BindingInfoProps) {
               ]}>
                 No
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -209,25 +213,23 @@ export default function BindingInfo({ navigation }: BindingInfoProps) {
                 
                 {/* Number Input with +/- buttons */}
                 <View style={styles.durationContainer}>
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => setDurationHours(Math.max(1, durationHours - 1))}
-                    activeOpacity={0.7}
-                    style={styles.durationButton}
+                    style={({ pressed }) => [styles.durationButton, pressed && styles.buttonPressed]}
                   >
-                    <Ionicons name="remove" size={24} color={colors.cyan[500]} />
-                  </TouchableOpacity>
+                    <Ionicons name="remove" size={24} color={colors.accent.primary} />
+                  </Pressable>
 
                   <View style={styles.durationDisplay}>
                     <Text style={styles.durationText}>{durationHours}</Text>
                   </View>
 
-                  <TouchableOpacity
+                  <Pressable
                     onPress={() => setDurationHours(Math.min(12, durationHours + 1))}
-                    activeOpacity={0.7}
-                    style={styles.durationButton}
+                    style={({ pressed }) => [styles.durationButton, pressed && styles.buttonPressed]}
                   >
-                    <Ionicons name="add" size={24} color={colors.cyan[500]} />
-                  </TouchableOpacity>
+                    <Ionicons name="add" size={24} color={colors.accent.primary} />
+                  </Pressable>
                 </View>
 
                 {/* Warning if > 8 hours */}
@@ -253,10 +255,9 @@ export default function BindingInfo({ navigation }: BindingInfoProps) {
                 <Text style={styles.label}>
                   Binder Type <Text style={styles.optionalText}>(Optional)</Text>
                 </Text>
-                <TouchableOpacity
+                <Pressable
                   onPress={() => setShowBinderTypePicker(true)}
-                  activeOpacity={0.7}
-                  style={styles.pickerButton}
+                  style={({ pressed }) => [styles.pickerButton, pressed && styles.buttonPressed]}
                 >
                   <Text style={[
                     styles.pickerText,
@@ -265,7 +266,7 @@ export default function BindingInfo({ navigation }: BindingInfoProps) {
                     {selectedBinderTypeLabel}
                   </Text>
                   <Ionicons name="chevron-down" size={20} color={colors.text.primary} />
-                </TouchableOpacity>
+                </Pressable>
               </View>
             )}
           </>
@@ -283,25 +284,25 @@ export default function BindingInfo({ navigation }: BindingInfoProps) {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Binder Type</Text>
-              <TouchableOpacity
+              <Pressable
                 onPress={() => setShowBinderTypePicker(false)}
-                activeOpacity={0.7}
+                style={({ pressed }) => pressed && styles.buttonPressed}
               >
                 <Ionicons name="close" size={24} color={colors.text.primary} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
             <ScrollView style={styles.modalScrollView}>
               {BINDER_TYPE_OPTIONS.map((option) => (
-                <TouchableOpacity
+                <Pressable
                   key={option.value}
                   onPress={() => {
                     setBinderType(option.value);
                     setShowBinderTypePicker(false);
                   }}
-                  activeOpacity={0.7}
-                  style={[
+                  style={({ pressed }) => [
                     styles.modalOption,
-                    binderType === option.value && styles.modalOptionSelected
+                    binderType === option.value && styles.modalOptionSelected,
+                    pressed && styles.buttonPressed
                   ]}
                 >
                   <Text style={[
@@ -312,9 +313,9 @@ export default function BindingInfo({ navigation }: BindingInfoProps) {
                     {option.label}
                   </Text>
                   {binderType === option.value && (
-                    <Ionicons name="checkmark" size={20} color={colors.cyan[500]} />
+                    <Ionicons name="checkmark" size={20} color={colors.accent.primary} />
                   )}
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </ScrollView>
           </View>
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
   },
   toggleButtonSelected: {
     backgroundColor: colors.glass.bgHero,
-    borderColor: colors.cyan[500],
+    borderColor: colors.accent.primary,
     borderWidth: 2,
   },
   toggleButtonText: {
@@ -372,7 +373,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   toggleButtonTextSelected: {
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   frequencyContainer: {
     gap: spacing.md,
@@ -405,7 +406,7 @@ const styles = StyleSheet.create({
   durationText: {
     ...textStyles.statMedium,
     fontSize: 36,
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   warningIcon: {
     marginTop: 2,
@@ -478,9 +479,12 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   modalOptionTextSelected: {
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   modalOptionTextPlaceholder: {
     color: colors.text.tertiary,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });

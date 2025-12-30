@@ -21,3 +21,17 @@ export {
   type SurveyTriggerPoint,
   type SurveyTriggerResult,
 } from './surveyTrigger';
+
+// Feedback Reports
+export {
+  saveFeedbackReport,
+  syncAllUnsyncedFeedback,
+  getUnsyncedFeedback,
+  getAllFeedbackReports,
+  flagExerciseInSession,
+  unflagExerciseInSession,
+  getSessionFlags,
+  clearSessionFlags,
+  submitFlaggedExercisesAsFeedback,
+  clearFeedbackData,
+} from './feedbackReport';

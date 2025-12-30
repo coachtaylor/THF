@@ -4,6 +4,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
+import * as Sentry from '@sentry/react-native';
 import {
   Poppins_300Light,
   Poppins_400Regular,
@@ -22,7 +23,36 @@ import { onOnboardingComplete, clearOnboardingCallback, onLogout, clearLogoutCal
 import { AuthProvider } from './src/contexts/AuthContext';
 import { SubscriptionProvider } from './src/contexts/SubscriptionContext';
 import { ToastProvider } from './src/contexts/ToastContext';
+import { SensoryModeProvider } from './src/contexts/SensoryModeContext';
+import { SyncProvider } from './src/contexts/SyncContext';
 import { theme } from './src/theme';
+
+// Initialize Sentry for error tracking
+// Privacy-safe: Only sends anonymized error data, no personal info
+Sentry.init({
+  dsn: process.env.SENTRY_DSN || '', // Add your Sentry DSN to .env
+  enabled: !__DEV__, // Only enable in production
+  debug: __DEV__, // Enable debug mode in development
+  tracesSampleRate: 0.2, // Sample 20% of transactions for performance monitoring
+  // Privacy: Don't send any PII
+  beforeSend(event) {
+    // Remove any potential PII from the event
+    if (event.user) {
+      delete event.user.email;
+      delete event.user.username;
+      delete event.user.ip_address;
+    }
+    return event;
+  },
+  // Don't capture breadcrumbs that might contain sensitive data
+  beforeBreadcrumb(breadcrumb) {
+    // Filter out console breadcrumbs that might contain sensitive info
+    if (breadcrumb.category === 'console') {
+      return null;
+    }
+    return breadcrumb;
+  },
+});
 
 // Deep linking configuration for React Navigation
 const linking: LinkingOptions<ReactNavigation.RootParamList> = {
@@ -152,11 +182,15 @@ export default function App() {
       <PaperProvider theme={theme}>
         <ToastProvider>
           <AuthProvider>
-            <SubscriptionProvider>
-              <NavigationContainer ref={navigationRef} linking={linking}>
-                {hasCompletedOnboarding ? <MainNavigator /> : <OnboardingNavigator />}
-              </NavigationContainer>
-            </SubscriptionProvider>
+            <SensoryModeProvider>
+              <SyncProvider>
+                <SubscriptionProvider>
+                  <NavigationContainer ref={navigationRef} linking={linking}>
+                    {hasCompletedOnboarding ? <MainNavigator /> : <OnboardingNavigator />}
+                  </NavigationContainer>
+                </SubscriptionProvider>
+              </SyncProvider>
+            </SensoryModeProvider>
           </AuthProvider>
         </ToastProvider>
       </PaperProvider>

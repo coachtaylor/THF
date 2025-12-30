@@ -1,6 +1,13 @@
 import { Exercise, Swap, ExerciseDetail } from '../types/plan';
 import { Profile } from '../services/storage/profile';
 import { supabase } from '../utils/supabase';
+import { formatExerciseName } from '../utils/exerciseNames';
+
+// Type for swap data stored in database
+interface DatabaseSwap {
+  exercise_id: number;
+  rationale: string;
+}
 
 // Type for exercise data from Supabase public.exercises table
 interface DatabaseExercise {
@@ -28,6 +35,8 @@ interface DatabaseExercise {
   notes?: string | null;
   dysphoria_tags?: string[] | null;
   post_op_safe_weeks?: number | null;
+  gender_goal_emphasis?: string | null;
+  swaps?: string | DatabaseSwap[] | null; // JSON string or parsed array
   created_at?: string;
   version?: string;
   flags_reviewed?: boolean;
@@ -35,8 +44,59 @@ interface DatabaseExercise {
 }
 
 
+/**
+ * Parse swaps from database
+ * Handles both JSON string and already-parsed array formats
+ */
+function parseSwaps(swaps: string | DatabaseSwap[] | null | undefined): Swap[] {
+  if (!swaps) return [];
+
+  try {
+    // If it's already an array, map it
+    if (Array.isArray(swaps)) {
+      return swaps.map(s => ({
+        exercise_id: String(s.exercise_id),
+        exerciseId: String(s.exercise_id),
+        rationale: s.rationale || 'Alternative exercise'
+      }));
+    }
+
+    // If it's a string, parse it as JSON
+    if (typeof swaps === 'string') {
+      const parsed = JSON.parse(swaps) as DatabaseSwap[];
+      if (Array.isArray(parsed)) {
+        return parsed.map(s => ({
+          exercise_id: String(s.exercise_id),
+          exerciseId: String(s.exercise_id),
+          rationale: s.rationale || 'Alternative exercise'
+        }));
+      }
+    }
+  } catch (e) {
+    if (__DEV__) console.warn('Failed to parse swaps:', e);
+  }
+
+  return [];
+}
+
 // Exercises that are NOT safe for heavy binding (from BRD)
-const HEAVY_BINDING_UNSAFE_PATTERNS = ['jumping_jack', 'high_knees', 'mountain_climber', 'burpee', 'squat_thrust'];
+// Extended list to include all high-impact plyometric and chest-straining movements
+const HEAVY_BINDING_UNSAFE_PATTERNS = [
+  // Original patterns
+  'jumping_jack', 'high_knees', 'mountain_climber', 'burpee', 'squat_thrust',
+  // Plyometric/explosive movements
+  'box_jump', 'depth_jump', 'broad_jump', 'tuck_jump', 'scissor_jump', 'star_jump',
+  'jump_squat', 'jump_lunge', 'power_skip', 'bounding',
+  // Explosive upper body
+  'plyo_pushup', 'plyometric_pushup', 'clap_pushup', 'explosive_pushup',
+  'kipping_pullup', 'kipping', 'muscle_up',
+  // Inverted/handstand movements (rib pressure)
+  'handstand_pushup', 'handstand', 'pike_pushup', 'wall_walk',
+  // High-intensity cardio
+  'sprint', 'sled_push', 'battle_rope', 'battlerope',
+  // Swimming movements
+  'swim', 'freestyle', 'butterfly', 'breaststroke'
+];
 
 // Map database exercise to Exercise interface
 function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
@@ -106,7 +166,7 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
   return {
     id: String(db.id) || db.slug, // Use numeric ID as string (matches plan generator), fallback to slug
     slug: db.slug || String(db.id),
-    name: db.name,
+    name: formatExerciseName(db.name),
     pattern: db.pattern || '',
     goal: db.goal || '',
     equipment: db.equipment,
@@ -135,7 +195,8 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
       ? db.dysphoria_tags.join(', ')
       : (db.dysphoria_tags ?? undefined),
     post_op_safe_weeks: db.post_op_safe_weeks ?? undefined,
-    swaps: [], // TODO: Add swaps column to database
+    gender_goal_emphasis: (db.gender_goal_emphasis as Exercise['gender_goal_emphasis']) ?? undefined,
+    swaps: parseSwaps(db.swaps),
     trans_notes,
     commonErrors: [],
     created_at: db.created_at ? new Date(db.created_at) : new Date(),
@@ -147,17 +208,17 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
 
 // Fetch exercises from Supabase
 export async function fetchExercises(): Promise<Exercise[]> {
-  console.log('🔍 fetchExercises: Starting...');
-  
+  if (__DEV__) console.log('🔍 fetchExercises: Starting...');
+
   if (!supabase) {
-    console.warn('⚠️ Supabase not configured - cannot fetch exercises');
+    if (__DEV__) console.warn('⚠️ Supabase not configured - cannot fetch exercises');
     return [];
   }
 
-  console.log('✅ Supabase client is available');
+  if (__DEV__) console.log('✅ Supabase client is available');
 
   try {
-    console.log('📡 Querying Supabase exercises table...');
+    if (__DEV__) console.log('📡 Querying Supabase exercises table...');
     const { data, error } = await supabase
       .from('exercises')
       .select(`
@@ -186,6 +247,7 @@ export async function fetchExercises(): Promise<Exercise[]> {
         notes,
         dysphoria_tags,
         post_op_safe_weeks,
+        swaps,
         created_at,
         version,
         flags_reviewed,
@@ -193,36 +255,38 @@ export async function fetchExercises(): Promise<Exercise[]> {
       `);
 
     if (error) {
-      console.error('❌ Error fetching exercises:', error);
-      console.error('   Error details:', JSON.stringify(error, null, 2));
+      if (__DEV__) {
+        console.error('❌ Error fetching exercises:', error);
+        console.error('   Error details:', JSON.stringify(error, null, 2));
+      }
       throw error;
     }
 
-    console.log(`📊 Supabase returned ${data?.length || 0} raw exercises`);
-    
+    if (__DEV__) console.log(`📊 Supabase returned ${data?.length || 0} raw exercises`);
+
     if (!data) {
-      console.warn('⚠️ Supabase returned null data');
+      if (__DEV__) console.warn('⚠️ Supabase returned null data');
       return [];
     }
 
     if (data.length === 0) {
-      console.warn('⚠️ Supabase returned empty array - exercises table may be empty');
+      if (__DEV__) console.warn('⚠️ Supabase returned empty array - exercises table may be empty');
       return [];
     }
 
-    console.log(`🔄 Mapping ${data.length} exercises...`);
+    if (__DEV__) console.log(`🔄 Mapping ${data.length} exercises...`);
     const mapped = data.map(mapDatabaseExerciseToExercise);
-    console.log(`✅ Successfully mapped ${mapped.length} exercises`);
-    
+    if (__DEV__) console.log(`✅ Successfully mapped ${mapped.length} exercises`);
+
     // Log sample exercise
-    if (mapped.length > 0) {
+    if (__DEV__ && mapped.length > 0) {
       const sample = mapped[0];
       console.log(`   Sample: ${sample.name} (id: ${sample.id}, equipment: ${sample.equipment.join(', ')})`);
     }
-    
+
     return mapped;
   } catch (error) {
-    console.error('❌ Failed to fetch exercises:', error);
+    if (__DEV__) console.error('❌ Failed to fetch exercises:', error);
     throw error;
   }
 }
@@ -233,19 +297,115 @@ let exerciseLibraryCache: Exercise[] | null = null;
 // Get exercise library (cached)
 export async function getExerciseLibrary(): Promise<Exercise[]> {
   if (exerciseLibraryCache) {
-    console.log(`📚 Using cached exercise library (${exerciseLibraryCache.length} exercises)`);
+    if (__DEV__) console.log(`📚 Using cached exercise library (${exerciseLibraryCache.length} exercises)`);
     return exerciseLibraryCache;
   }
-  
-  console.log('🔄 Cache miss - fetching exercises from Supabase...');
+
+  if (__DEV__) console.log('🔄 Cache miss - fetching exercises from Supabase...');
   exerciseLibraryCache = await fetchExercises();
-  console.log(`📚 Cached ${exerciseLibraryCache.length} exercises`);
+  if (__DEV__) console.log(`📚 Cached ${exerciseLibraryCache.length} exercises`);
   return exerciseLibraryCache;
 }
 
 // Clear cache (useful for refreshing after updates)
 export function clearExerciseCache(): void {
   exerciseLibraryCache = null;
+}
+
+/**
+ * Validation result for exercise safety fields
+ */
+export interface ExerciseValidationResult {
+  isValid: boolean;
+  totalExercises: number;
+  missingFields: {
+    effectiveness_rating: number;
+    gender_goal_emphasis: number;
+    dysphoria_tags: number;
+    pelvic_floor_safe: number;
+    binder_aware: number;
+  };
+  warnings: string[];
+}
+
+/**
+ * Validate that exercises have required safety fields populated.
+ * This helps ensure workout generation works correctly.
+ *
+ * CRITICAL for trans user safety: If these fields are missing,
+ * dysphoria filtering and gender-affirming selection may not work.
+ */
+export async function validateExerciseSafetyFields(): Promise<ExerciseValidationResult> {
+  const exercises = await getExerciseLibrary();
+
+  const missingFields = {
+    effectiveness_rating: 0,
+    gender_goal_emphasis: 0,
+    dysphoria_tags: 0,
+    pelvic_floor_safe: 0,
+    binder_aware: 0,
+  };
+
+  const warnings: string[] = [];
+
+  for (const ex of exercises) {
+    if (ex.effectiveness_rating === undefined || ex.effectiveness_rating === null) {
+      missingFields.effectiveness_rating++;
+    }
+    if (!ex.gender_goal_emphasis) {
+      missingFields.gender_goal_emphasis++;
+    }
+    if (!ex.dysphoria_tags) {
+      missingFields.dysphoria_tags++;
+    }
+    // binder_aware and pelvic_floor_safe are booleans, check they're defined
+    if (ex.binder_aware === undefined) {
+      missingFields.binder_aware++;
+    }
+    if (ex.pelvic_floor_safe === undefined) {
+      missingFields.pelvic_floor_safe++;
+    }
+  }
+
+  // Generate warnings for critical missing fields
+  if (missingFields.gender_goal_emphasis > 0) {
+    const pct = Math.round((missingFields.gender_goal_emphasis / exercises.length) * 100);
+    warnings.push(
+      `⚠️ ${missingFields.gender_goal_emphasis}/${exercises.length} exercises (${pct}%) missing gender_goal_emphasis - gender-affirming selection may not work correctly`
+    );
+  }
+
+  if (missingFields.dysphoria_tags > 0) {
+    const pct = Math.round((missingFields.dysphoria_tags / exercises.length) * 100);
+    warnings.push(
+      `⚠️ ${missingFields.dysphoria_tags}/${exercises.length} exercises (${pct}%) missing dysphoria_tags - dysphoria filtering will be less effective`
+    );
+  }
+
+  if (missingFields.effectiveness_rating > 0) {
+    const pct = Math.round((missingFields.effectiveness_rating / exercises.length) * 100);
+    warnings.push(
+      `⚠️ ${missingFields.effectiveness_rating}/${exercises.length} exercises (${pct}%) missing effectiveness_rating - using default scores`
+    );
+  }
+
+  // Validation passes if critical fields are mostly populated (>50%)
+  const criticalFieldsOk =
+    missingFields.gender_goal_emphasis < exercises.length * 0.5 &&
+    missingFields.binder_aware < exercises.length * 0.1 &&
+    missingFields.pelvic_floor_safe < exercises.length * 0.1;
+
+  if (__DEV__ && warnings.length > 0) {
+    console.log('\n🔍 Exercise Database Validation:');
+    warnings.forEach(w => console.log(`   ${w}`));
+  }
+
+  return {
+    isValid: criticalFieldsOk,
+    totalExercises: exercises.length,
+    missingFields,
+    warnings,
+  };
 }
 
 // Legacy export for backward compatibility (deprecated - use getExerciseLibrary instead)
@@ -404,12 +564,12 @@ export async function getExerciseDetail(
   profile: Profile
 ): Promise<ExerciseDetail | null> {
   if (!supabase) {
-    console.warn('⚠️ Supabase not configured - cannot fetch exercise detail');
+    if (__DEV__) console.warn('⚠️ Supabase not configured - cannot fetch exercise detail');
     return null;
   }
 
   try {
-    console.log(`📋 Fetching exercise detail for ID: ${exerciseId}`);
+    if (__DEV__) console.log(`📋 Fetching exercise detail for ID: ${exerciseId}`);
 
     // Fetch exercise from public.exercises by ID
     // Only select columns that exist in the database
@@ -435,14 +595,14 @@ export async function getExerciseDetail(
       .single();
 
     if (exerciseError) {
-      console.error(`❌ Error fetching exercise ${exerciseId}:`, JSON.stringify(exerciseError));
+      if (__DEV__) console.error(`❌ Error fetching exercise ${exerciseId}:`, JSON.stringify(exerciseError));
       return null;
     }
 
-    console.log(`✅ Exercise data fetched:`, exerciseData?.name);
+    if (__DEV__) console.log(`✅ Exercise data fetched:`, exerciseData?.name);
 
     if (!exerciseData) {
-      console.warn(`⚠️ Exercise ${exerciseId} not found`);
+      if (__DEV__) console.warn(`⚠️ Exercise ${exerciseId} not found`);
       return null;
     }
 
@@ -459,7 +619,7 @@ export async function getExerciseDetail(
       .eq('exercise_id', exerciseId);
 
     if (tipsError) {
-      console.error(`❌ Error fetching trans tips for exercise ${exerciseId}:`, tipsError);
+      if (__DEV__) console.error(`❌ Error fetching trans tips for exercise ${exerciseId}:`, tipsError);
       // Continue without tips if tips fetch fails - we still have exercise data
     }
 
@@ -496,7 +656,7 @@ export async function getExerciseDetail(
     const exerciseDetail: ExerciseDetail = {
       id: dbExercise.id,
       slug: dbExercise.slug,
-      name: dbExercise.name,
+      name: formatExerciseName(dbExercise.name),
       pattern: dbExercise.pattern,
       goal: dbExercise.goal,
       difficulty: (dbExercise.difficulty as ExerciseDetail['difficulty']) || 'beginner',
@@ -518,7 +678,7 @@ export async function getExerciseDetail(
 
     return exerciseDetail;
   } catch (error) {
-    console.error(`❌ Failed to fetch exercise detail for ${exerciseId}:`, error);
+    if (__DEV__) console.error(`❌ Failed to fetch exercise detail for ${exerciseId}:`, error);
     return null;
   }
 }

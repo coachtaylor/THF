@@ -14,8 +14,8 @@ import Purchases, {
 import { Platform } from 'react-native';
 
 // RevenueCat API Keys - These are public keys safe to include in client code
-const REVENUECAT_API_KEY_IOS = 'test_mcyttscsPxbPBPFSLrnSahepHKI';
-const REVENUECAT_API_KEY_ANDROID = 'test_mcyttscsPxbPBPFSLrnSahepHKI';
+const REVENUECAT_API_KEY_IOS = 'appl_rDnaxdyQKXfliYpbbOThDISJZpJ';
+const REVENUECAT_API_KEY_ANDROID = 'appl_rDnaxdyQKXfliYpbbOThDISJZpJ';
 
 // Entitlement identifier - matches what you set up in RevenueCat dashboard
 export const ENTITLEMENT_ID = 'premium';

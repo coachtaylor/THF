@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, useWindowDimensions, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from 'react-native-paper';
 import type { OnboardingScreenProps } from '../../../types/onboarding';
 import { useProfile } from '../../../hooks/useProfile';
-import { palette, spacing, typography } from '../../../theme';
+import { colors, spacing, borderRadius } from '../../../theme/theme';
 import ProgressIndicator from '../../../components/onboarding/ProgressIndicator';
 import BodyRegionChip from '../../../components/onboarding/BodyRegionChip';
 
@@ -195,7 +195,7 @@ export default function BodyFocus({ navigation }: OnboardingScreenProps<'BodyFoc
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: palette.deepBlack,
+    backgroundColor: colors.bg.primary,
     paddingHorizontal: spacing.l,
   },
   header: {
@@ -203,7 +203,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.s,
   },
   headline: {
-    ...typography.h1,
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.text.primary,
     textAlign: 'left',
     marginBottom: spacing.xs,
     letterSpacing: -0.8,
@@ -212,10 +214,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   subheadline: {
-    ...typography.bodyLarge,
-    textAlign: 'left',
-    color: palette.midGray,
+    fontSize: 17,
+    fontWeight: '400',
     lineHeight: 24,
+    letterSpacing: -0.2,
+    textAlign: 'left',
+    color: colors.text.tertiary,
   },
   subheadlineSmall: {
     fontSize: 15,
@@ -230,11 +234,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.l,
   },
   bodyFocusCard: {
-    backgroundColor: palette.darkCard,
-    borderRadius: 14,
+    backgroundColor: colors.bg.tertiary,
+    borderRadius: borderRadius.md,
     padding: spacing.m,
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: colors.border.default,
   },
   bodyFocusCardHeader: {
     flexDirection: 'row',
@@ -246,24 +250,24 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: palette.tealGlow,
+    backgroundColor: colors.accent.primaryMuted,
     borderWidth: 1.5,
-    borderColor: palette.tealPrimary,
+    borderColor: colors.accent.primary,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
   },
   bodyFocusIconContainerGentle: {
-    backgroundColor: 'rgba(255, 184, 77, 0.15)',
-    borderColor: palette.warning,
+    backgroundColor: colors.accent.warningMuted,
+    borderColor: colors.accent.warning,
   },
   bodyFocusIcon: {
     fontSize: 16,
-    color: palette.tealPrimary,
+    color: colors.accent.primary,
     fontWeight: '700',
   },
   bodyFocusIconGentle: {
-    color: palette.warning,
+    color: colors.accent.warning,
   },
   bodyFocusHeaderText: {
     flex: 1,
@@ -271,12 +275,12 @@ const styles = StyleSheet.create({
   bodyFocusGroupTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: palette.white,
+    color: colors.text.primary,
     marginBottom: spacing.xxs,
   },
   bodyFocusGroupDescription: {
-    ...typography.bodySmall,
-    color: palette.midGray,
+    fontSize: 13,
+    color: colors.text.tertiary,
     lineHeight: 18,
   },
   chipContainer: {
@@ -288,11 +292,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.m,
     paddingTop: spacing.m,
     borderTopWidth: 1,
-    borderTopColor: palette.border,
+    borderTopColor: colors.border.default,
   },
   selectionCountText: {
-    ...typography.caption,
-    color: palette.tealPrimary,
+    fontSize: 11,
+    color: colors.accent.primary,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -300,12 +304,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.s,
     paddingTop: spacing.m,
     borderTopWidth: 1,
-    borderTopColor: palette.border,
+    borderTopColor: colors.border.default,
   },
   continueButton: {
-    borderRadius: 12,
+    borderRadius: borderRadius.base,
     marginBottom: spacing.xs,
-    shadowColor: palette.tealPrimary,
+    shadowColor: colors.accent.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -313,12 +317,15 @@ const styles = StyleSheet.create({
   },
   continueButtonContent: {
     paddingVertical: spacing.m,
-    backgroundColor: palette.tealPrimary,
+    backgroundColor: colors.accent.primary,
   },
   continueButtonLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: palette.deepBlack,
+    color: colors.bg.primary,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });
 

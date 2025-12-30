@@ -29,13 +29,15 @@ import WorkoutSummaryScreen from '../screens/workout/WorkoutSummaryScreen';
 // Auth screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
-import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import EmailVerificationScreen from '../screens/auth/EmailVerificationScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 
 // Paywall
 import PaywallScreen from '../screens/paywall/PaywallScreen';
+
+// Guides
+import { PostOpMovementGuide } from '../screens/guides';
 
 const Stack = createStackNavigator<OnboardingStackParamList>();
 
@@ -75,7 +77,6 @@ export default function OnboardingNavigator() {
       <Stack.Screen name="WorkoutSummary" component={WorkoutSummaryScreen} />
 
       {/* Auth screens */}
-      <Stack.Screen name="Welcome" component={WelcomeScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
       <Stack.Screen name="EmailVerification" component={EmailVerificationScreen} />
@@ -86,6 +87,7 @@ export default function OnboardingNavigator() {
         component={PaywallScreen}
         options={{ presentation: 'modal' }}
       />
+      <Stack.Screen name="PostOpMovementGuide" component={PostOpMovementGuide} />
     </Stack.Navigator>
   );
 }

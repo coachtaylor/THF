@@ -100,18 +100,30 @@ const ExerciseFilterBar: React.FC<ExerciseFilterBarProps> = ({
     label: string,
     isActive: boolean,
     onToggle: () => void,
-    icon: string
+    icon: string,
+    color: string,
+    mutedColor: string
   ) => (
     <TouchableOpacity
-      style={[styles.safetyChip, isActive && styles.safetyChipActive]}
+      style={[
+        styles.safetyChip,
+        { backgroundColor: mutedColor, borderColor: color },
+        isActive && { backgroundColor: color },
+      ]}
       onPress={onToggle}
     >
       <Ionicons
         name={icon as any}
         size={14}
-        color={isActive ? colors.text.inverse : colors.accent.primary}
+        color={isActive ? colors.text.inverse : color}
       />
-      <Text style={[styles.safetyChipText, isActive && styles.safetyChipTextActive]}>
+      <Text
+        style={[
+          styles.safetyChipText,
+          { color: color },
+          isActive && styles.safetyChipTextActive,
+        ]}
+      >
         {label}
       </Text>
     </TouchableOpacity>
@@ -218,19 +230,25 @@ const ExerciseFilterBar: React.FC<ExerciseFilterBarProps> = ({
             'Binder Safe',
             filters.binderSafe,
             () => toggleSafetyFilter('binderSafe'),
-            'shield-checkmark'
+            'shield-checkmark',
+            colors.accent.primary,
+            colors.accent.primaryMuted
           )}
           {renderSafetyChip(
             'Heavy Binding',
             filters.heavyBindingSafe,
             () => toggleSafetyFilter('heavyBindingSafe'),
-            'shield'
+            'shield',
+            colors.accent.secondary,
+            colors.accent.secondaryMuted
           )}
           {renderSafetyChip(
             'Pelvic Floor Safe',
             filters.pelvicFloorSafe,
             () => toggleSafetyFilter('pelvicFloorSafe'),
-            'heart'
+            'heart',
+            colors.success,
+            colors.accent.successMuted
           )}
         </ScrollView>
       </View>

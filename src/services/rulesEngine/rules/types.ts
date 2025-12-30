@@ -43,11 +43,17 @@ export interface Rule {
     max_weight?: string;
     rep_range?: string;
     rest_seconds_increase?: number;
+    rest_seconds_reduction?: number;
+    progressive_overload_rate?: number;
+    upper_body_volume_percent?: number;
+    lower_body_volume_percent?: number;
+    suggested_intensity?: 'light' | 'moderate' | 'normal';
+    max_workout_minutes?: number; // SAFETY: Max workout duration for ace bandage/DIY binder users
   }
   
   export interface SafetyCheckpoint {
-    type: 'binder_break' | 'scar_care' | 'sensitivity_check' | 'post_workout_reminder';
-    trigger: 'every_90_minutes' | 'before_cardio' | 'cool_down' | 'workout_completion';
+    type: 'binder_break' | 'scar_care' | 'sensitivity_check' | 'post_workout_reminder' | 'safety_reminder' | 'hrt_reminder';
+    trigger: 'every_90_minutes' | 'before_cardio' | 'cool_down' | 'workout_completion' | 'before_strength' | 'workout_start';
     message: string;
     severity: 'critical' | 'high' | 'medium' | 'low';
   }
@@ -58,6 +64,7 @@ export interface Rule {
     modified_parameters: ParameterModification;
     required_checkpoints: SafetyCheckpoint[];
     rules_applied: RuleApplication[];
+    soft_filters: SoftFilterCriteria[];
   }
   
   export interface RuleApplication {
@@ -67,4 +74,10 @@ export interface Rule {
     context: any;
     // User-facing message explaining why this rule was applied
     userMessage?: string;
+  }
+
+  export interface SoftFilterCriteria {
+    prefer_tags?: string[];
+    deprioritize_tags?: string[];
+    prefer_alternatives?: boolean;
   }

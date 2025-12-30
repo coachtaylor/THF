@@ -19,7 +19,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { checkOnboardingStatus } from '../../services/storage/onboarding';
 import { checkTierSelection } from '../../services/storage/tierSelection';
 import { signalOnboardingComplete } from '../../services/events/onboardingEvents';
-import { colors, spacing, borderRadius } from '../../theme/theme';
+import { colors, spacing, borderRadius, timing, gradients, layout } from '../../theme/theme';
+import { headerStyles, screenStyles } from '../../theme/components';
 import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
 import OrDivider from '../../components/auth/OrDivider';
 
@@ -42,12 +43,12 @@ export default function LoginScreen({ navigation }: any) {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 2000,
+          duration: timing.shimmer,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 2000,
+          duration: timing.shimmer,
           useNativeDriver: true,
         }),
       ])
@@ -94,9 +95,12 @@ export default function LoginScreen({ navigation }: any) {
       }
     } catch (err: any) {
       console.error('Login failed:', err);
+
+      // Check for Supabase error codes first (more reliable than string matching)
+      const errorCode = err?.code || err?.error_code || err?.__isAuthError && err?.status;
       const errorMessage = err.message?.toLowerCase() || '';
 
-      if (errorMessage.includes('locked')) {
+      if (errorMessage.includes('locked') || errorCode === 'too_many_requests') {
         Alert.alert(
           'Account Locked',
           'Your account has been locked due to multiple failed login attempts. Please try again in 15 minutes or reset your password.',
@@ -109,11 +113,12 @@ export default function LoginScreen({ navigation }: any) {
           ]
         );
       } else if (
+        errorCode === 'email_not_confirmed' ||
+        errorCode === 'user_not_confirmed' ||
         errorMessage.includes('email not confirmed') ||
-        errorMessage.includes('not confirmed') ||
-        errorMessage.includes('json parse error')
+        errorMessage.includes('not confirmed')
       ) {
-        // JSON parse errors often occur when email is not verified
+        // Email verification required - use error codes for reliable detection
         Alert.alert(
           'Email Verification Required',
           'Please check your email and click the verification link to activate your account.',
@@ -121,7 +126,11 @@ export default function LoginScreen({ navigation }: any) {
             { text: 'OK', style: 'default' },
           ]
         );
-      } else if (errorMessage.includes('invalid login credentials') || errorMessage.includes('invalid credentials')) {
+      } else if (
+        errorCode === 'invalid_credentials' ||
+        errorMessage.includes('invalid login credentials') ||
+        errorMessage.includes('invalid credentials')
+      ) {
         setError('Invalid email or password');
       } else {
         setError(err.message || 'Invalid email or password');
@@ -174,18 +183,18 @@ export default function LoginScreen({ navigation }: any) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + spacing.m }]}>
+        <View style={[headerStyles.container, { paddingTop: insets.top + spacing.m }]}>
           <Pressable
             onPress={() => navigation.goBack()}
             style={({ pressed }) => [
-              styles.backButton,
+              headerStyles.backButton,
               pressed && styles.buttonPressed,
             ]}
             hitSlop={8}
           >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Log In</Text>
+          <Text style={headerStyles.title}>Log In</Text>
           <View style={{ width: 44 }} />
         </View>
 
@@ -220,7 +229,7 @@ export default function LoginScreen({ navigation }: any) {
               emailFocused && styles.inputContainerFocused,
             ]}>
               <LinearGradient
-                colors={['#141418', '#0A0A0C']}
+                colors={gradients.inputBg}
                 style={StyleSheet.absoluteFill}
               />
               <View style={styles.glassHighlight} />
@@ -254,7 +263,7 @@ export default function LoginScreen({ navigation }: any) {
               passwordFocused && styles.inputContainerFocused,
             ]}>
               <LinearGradient
-                colors={['#141418', '#0A0A0C']}
+                colors={gradients.inputBg}
                 style={StyleSheet.absoluteFill}
               />
               <View style={styles.glassHighlight} />
@@ -384,6 +393,7 @@ export default function LoginScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  // Note: header, headerTitle, backButton now use headerStyles from components.ts
   container: {
     flex: 1,
     backgroundColor: colors.bg.primary,
@@ -391,32 +401,11 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.m,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: colors.glass.bg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.xl,
   },
   welcome: {

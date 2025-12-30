@@ -1,51 +1,74 @@
 // Template Selection Logic
 // Selects and customizes workout templates based on user profile
+// Supports hybrid templates for users with non-standard body focus preferences
 
-import { Profile } from '../types';
+import { Profile } from '../../types';
 import { SelectedTemplate, WorkoutTemplate, PrimaryGoal } from './templates/types';
 import { feminizationTemplates } from './templates/feminization';
 import { masculinizationTemplates } from './templates/masculinization';
+import { generalFitnessTemplates } from './templates/generalFitness';
+import { strengthTemplates } from './templates/strength';
+import { enduranceTemplates } from './templates/endurance';
+import { detectHybridNeed, buildHybridRequest, createHybridTemplate, HybridConfig } from './templates/hybrid';
+
+// Extended SelectedTemplate that can include hybrid config
+export interface HybridSelectedTemplate extends SelectedTemplate {
+  hybrid_config?: HybridConfig;
+  is_hybrid?: boolean;
+}
 
 // Combine all available templates
 const allTemplates: WorkoutTemplate[] = [
   ...feminizationTemplates,
   ...masculinizationTemplates,
+  ...generalFitnessTemplates,
+  ...strengthTemplates,
+  ...enduranceTemplates,
 ];
 
 /**
  * Select and customize a workout template based on user profile
  * Returns a SelectedTemplate with HRT adjustments applied
+ *
+ * If user has body focus preferences that conflict with their primary goal,
+ * a hybrid template will be generated with 65-70% primary emphasis and
+ * 30-35% secondary focus on the preferred areas.
  */
-export function selectTemplate(profile: Profile): SelectedTemplate {
-  // Map primary goal to gender-affirming templates based on gender identity
-  // This ensures transmasc users get masculinization templates and transfem users get feminization templates
-  let targetGoal: PrimaryGoal = profile.primary_goal;
-  
-  // Map strength/endurance/general_fitness to gender-affirming goals based on gender identity
-  if (profile.primary_goal === 'strength' || profile.primary_goal === 'endurance' || profile.primary_goal === 'general_fitness') {
-    if (profile.gender_identity === 'mtf') {
-      targetGoal = 'feminization';
-    } else if (profile.gender_identity === 'ftm') {
-      targetGoal = 'masculinization';
-    } else {
-      // For nonbinary/questioning, default to general_fitness (will fallback below)
-      targetGoal = 'general_fitness';
+export function selectTemplate(profile: Profile): HybridSelectedTemplate {
+  // Check if user needs a hybrid template
+  // (e.g., MTF user with feminization goal who also wants shoulder focus)
+  if (detectHybridNeed(profile)) {
+    const hybridRequest = buildHybridRequest(profile);
+    if (hybridRequest) {
+      console.log(
+        `🔀 Creating hybrid template: ${hybridRequest.base_goal} + ${hybridRequest.secondary_focus_areas.join(', ')}`
+      );
+
+      const hybridTemplate = createHybridTemplate(hybridRequest);
+      const adjusted_for_hrt = profile.on_hrt === true;
+      const volume_multiplier = calculateHrtVolumeMultiplier(profile);
+
+      return {
+        ...hybridTemplate,
+        adjusted_for_hrt,
+        volume_multiplier,
+        is_hybrid: true,
+      };
     }
   }
 
-  // Filter templates by mapped primary goal
+  // Standard template selection (no hybrid needed)
+  // Use the user's explicitly selected primary goal
+  const targetGoal: PrimaryGoal = profile.primary_goal;
+
+  // Filter templates by user's selected primary goal
   let candidates = allTemplates.filter(
     template => template.primary_goal === targetGoal
   );
 
-  // If still no match (e.g., nonbinary with general_fitness), fallback based on gender identity
+  // If no match found, fallback to general_fitness templates
   if (candidates.length === 0) {
-    // Fallback: use feminization for mtf, masculinization for ftm, or first available
-    if (profile.gender_identity === 'mtf') {
-      candidates = allTemplates.filter(t => t.primary_goal === 'feminization');
-    } else if (profile.gender_identity === 'ftm') {
-      candidates = allTemplates.filter(t => t.primary_goal === 'masculinization');
-    }
+    candidates = allTemplates.filter(t => t.primary_goal === 'general_fitness');
   }
 
   // Filter by experience level
@@ -84,14 +107,25 @@ export function selectTemplate(profile: Profile): SelectedTemplate {
     }
   }
 
-  // If still no template found, use first available template as fallback
+  // If still no template found, fallback to general fitness
   if (!selectedTemplate) {
     console.warn(
       `⚠️ No matching template found for profile. ` +
       `Goal: ${profile.primary_goal}, Experience: ${profile.fitness_experience}, ` +
-      `Frequency: ${profile.workout_frequency}. Using first available template.`
+      `Frequency: ${profile.workout_frequency}. Falling back to general fitness template.`
     );
-    selectedTemplate = allTemplates[0];
+
+    // Fallback to general fitness templates (body-neutral)
+    const fallbackCandidates = allTemplates.filter(t => t.primary_goal === 'general_fitness');
+
+    if (fallbackCandidates.length > 0) {
+      // Prefer beginner templates for safety when falling back
+      const beginnerFallback = fallbackCandidates.find(t => t.experience_level === 'beginner');
+      selectedTemplate = beginnerFallback || fallbackCandidates[0];
+    } else {
+      // Last resort: use any available template
+      selectedTemplate = allTemplates[0];
+    }
   }
 
   if (!selectedTemplate) {
@@ -100,28 +134,36 @@ export function selectTemplate(profile: Profile): SelectedTemplate {
 
   // Create SelectedTemplate with HRT adjustments
   const adjusted_for_hrt = profile.on_hrt === true;
-  
-  // Determine volume multiplier based on HRT status and gender identity
-  // MTF on estrogen: slightly reduced volume (0.85)
-  // FTM on testosterone: standard volume (1.0)
-  let volume_multiplier = 1.0;
-  if (adjusted_for_hrt) {
-    if (profile.gender_identity === 'mtf') {
-      volume_multiplier = 0.85; // MTF on estrogen - slightly reduced volume
-    } else if (profile.gender_identity === 'ftm') {
-      volume_multiplier = 1.0; // FTM on testosterone - standard volume
-    } else {
-      // Nonbinary/questioning on HRT: slight reduction for safety
-      volume_multiplier = 0.9;
-    }
-  }
+  const volume_multiplier = calculateHrtVolumeMultiplier(profile);
 
-  const selected: SelectedTemplate = {
+  const selected: HybridSelectedTemplate = {
     ...selectedTemplate,
     adjusted_for_hrt,
     volume_multiplier,
+    is_hybrid: false,
   };
 
   return selected;
+}
+
+/**
+ * Calculate HRT volume multiplier based on profile
+ */
+function calculateHrtVolumeMultiplier(profile: Profile): number {
+  if (!profile.on_hrt) {
+    return 1.0;
+  }
+
+  // Determine volume multiplier based on HRT status and gender identity
+  // MTF on estrogen: slightly reduced volume (0.85)
+  // FTM on testosterone: standard volume (1.0)
+  if (profile.gender_identity === 'mtf') {
+    return 0.85; // MTF on estrogen - slightly reduced volume
+  } else if (profile.gender_identity === 'ftm') {
+    return 1.0; // FTM on testosterone - standard volume
+  } else {
+    // Nonbinary/questioning on HRT: slight reduction for safety
+    return 0.9;
+  }
 }
 

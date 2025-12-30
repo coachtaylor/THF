@@ -15,11 +15,14 @@ export default {
       backgroundColor: '#0A0A0C',
     },
     extra: {
-      supabaseUrl: process.env.SUPABASE_URL || '',
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
-      googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID || '',
-      googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID || '',
-      googleAndroidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID || '',
+      supabaseUrl: process.env.SUPABASE_URL || 'https://xqcwywoqumblogoyzkhf.supabase.co',
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxY3d5d29xdW1ibG9nb3l6a2hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMjU1MDUsImV4cCI6MjA3ODcwMTUwNX0.RNXzHLU_uiWle3bE7ueWgkoW5F6zFLHc-NoS656s03I',
+      googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID || '590532149610-4o8ummmenngdprtbm71pr13bsakev3ps.apps.googleusercontent.com',
+      googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID || '590532149610-c7k0i9bp5b2uom336v5ishq7to834nbe.apps.googleusercontent.com',
+      googleAndroidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID || '590532149610-sa5o2oitntrl40rsk8q986c9nkc7jbnf.apps.googleusercontent.com',
+      eas: {
+        projectId: 'e0993d53-6954-4acc-80e6-abfb3c5b8e4e',
+      },
     },
     assetBundlePatterns: ['**/*'],
     ios: {
@@ -78,6 +81,13 @@ export default {
             ? `com.googleusercontent.apps.${process.env.GOOGLE_IOS_CLIENT_ID.split('.')[0]}`
             : 'com.googleusercontent.apps.590532149610-c7k0i9bp5b2uom336v5ishq7to834nbe',
           iosClientId: process.env.GOOGLE_IOS_CLIENT_ID || '590532149610-c7k0i9bp5b2uom336v5ishq7to834nbe.apps.googleusercontent.com',
+        },
+      ],
+      [
+        '@sentry/react-native/expo',
+        {
+          organization: process.env.SENTRY_ORG || 'your-org', // Set your Sentry org in .env
+          project: process.env.SENTRY_PROJECT || 'transfitness', // Set your Sentry project in .env
         },
       ],
     ],

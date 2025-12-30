@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, StatusBar, Platform, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, StatusBar, Platform, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -9,17 +9,22 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useProfile } from '../../hooks/useProfile';
 import { usePlan } from '../../hooks/usePlan';
 import { getCurrentStreak, getWeeklyStats, type WeeklyStats } from '../../services/storage/stats';
-import { getWorkoutFromPlan } from '../../services/planGenerator';
+import { getWorkoutFromPlan, generatePlan } from '../../services/planGenerator';
 import { getExerciseLibrary } from '../../data/exercises';
-import { colors } from '../../theme/theme';
+import { colors, spacing, borderRadius, gradients, layout, interaction } from '../../theme/theme';
+import { restDayCardStyles, screenStyles } from '../../theme/components';
 import type { Exercise } from '../../types';
 import { saveWorkout, isWorkoutSaved, deleteSavedWorkout, findSavedWorkout } from '../../services/storage/savedWorkouts';
+import { savePlan } from '../../services/storage/plan';
 import WelcomeSection from '../../components/home/WelcomeSection';
 import ThisWeekSection from '../../components/home/ThisWeekSection';
 import TodayWorkoutCard from '../../components/home/TodayWorkoutCard';
 import { StatsRow } from '../../components/home/Statcard';
-import TodaysReminderCard from '../../components/home/TodaysReminderCard';
 import UpcomingWorkoutsSection from '../../components/home/UpcomingWorkoutsSection';
+import WeeklySummaryModal from '../../components/home/WeeklySummaryModal';
+import { isNewWeekNeedingPlan, setLastPlanGeneratedWeek, getWeekStart } from '../../services/storage/weeklyTransition';
+import { getLastWeekSummary, WeeklySummaryData } from '../../services/storage/weeklySummary';
+import { FeedbackFAB } from '../../components/feedback';
 
 type MainTabParamList = {
   Home: undefined;
@@ -68,6 +73,11 @@ export default function HomeScreen() {
   const [exerciseMap, setExerciseMap] = useState<Record<string, Exercise>>({});
   const [isTodayWorkoutSaved, setIsTodayWorkoutSaved] = useState(false);
 
+  // Weekly Summary Modal state
+  const [showWeeklySummary, setShowWeeklySummary] = useState(false);
+  const [weeklySummaryData, setWeeklySummaryData] = useState<WeeklySummaryData | null>(null);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const todayName = dayNames[new Date().getDay()];
 
@@ -87,6 +97,72 @@ export default function HomeScreen() {
     };
     loadExercises();
   }, []);
+
+  // Check for weekly transition (show summary on Sunday if new week)
+  useEffect(() => {
+    const checkWeeklyTransition = async () => {
+      if (!profile || !userId || userId === 'default') return;
+
+      try {
+        const needsNewPlan = await isNewWeekNeedingPlan(userId);
+        console.log('🗓️ Weekly transition check - needs new plan:', needsNewPlan);
+
+        if (needsNewPlan) {
+          const summaryData = await getLastWeekSummary(userId);
+          setWeeklySummaryData(summaryData);
+          setShowWeeklySummary(true);
+        }
+      } catch (error) {
+        console.error('Error checking weekly transition:', error);
+      }
+    };
+
+    checkWeeklyTransition();
+  }, [profile, userId]);
+
+  // Handle generating new weekly plan
+  const handleGenerateNewPlan = async () => {
+    if (!profile) return;
+
+    setIsGeneratingPlan(true);
+    try {
+      console.log('🏋️ Generating new weekly plan...');
+
+      // Generate plan with current profile (includes recovery context)
+      const newPlan = await generatePlan(profile);
+
+      // Save the new plan (cast to Plan type from types/plan.ts for savePlan)
+      await savePlan(newPlan as any, userId);
+
+      // Mark this week as having a plan generated
+      await setLastPlanGeneratedWeek(userId, getWeekStart(new Date()));
+
+      // Close the modal
+      setShowWeeklySummary(false);
+
+      // Refresh the plan to show new workouts
+      await refreshPlan();
+
+      // Reload stats
+      const streak = await getCurrentStreak(userId);
+      const stats = await getWeeklyStats(userId);
+      setCurrentStreak(streak);
+      setWeeklyStats(stats);
+      setWorkoutsCompleted(stats.totalWorkouts);
+      setWeekProgress(stats.completedWorkouts);
+
+      console.log('✅ New plan generated successfully!');
+    } catch (error) {
+      console.error('Error generating new plan:', error);
+      Alert.alert(
+        'Error',
+        'Failed to generate your new plan. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  };
 
   useEffect(() => {
     const loadStats = async () => {
@@ -311,6 +387,14 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
 
+      {/* Weekly Summary Modal */}
+      <WeeklySummaryModal
+        visible={showWeeklySummary}
+        summaryData={weeklySummaryData}
+        onGeneratePlan={handleGenerateNewPlan}
+        isGenerating={isGeneratingPlan}
+      />
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -330,7 +414,7 @@ export default function HomeScreen() {
         )}
 
         {/* 2. Welcome Section */}
-        <WelcomeSection />
+        <WelcomeSection userName={profile?.chosen_name} />
 
         {/* 3. Stats Section */}
         <View style={styles.statsSection}>
@@ -342,10 +426,7 @@ export default function HomeScreen() {
         </View>
 
 
-        {/* 5. Safety Reminder (above workout card) */}
-        <TodaysReminderCard />
-
-        {/* 5. Today's Workout - Hero Card */}
+        {/* Today's Workout - Hero Card */}
         <View style={styles.workoutSection}>
           {plan && todayWorkoutDetails ? (
             <TodayWorkoutCard
@@ -357,35 +438,35 @@ export default function HomeScreen() {
           ) : plan && todayWorkout ? (
             <Pressable
               style={({ pressed }) => [
-                styles.restDayCard,
-                pressed && styles.restDayCardPressed
+                restDayCardStyles.container,
+                pressed && restDayCardStyles.containerPressed
               ]}
               onPress={() => {
                 navigation.navigate('RestDayOverview', { day: todayWorkout, planId: plan.id });
               }}
             >
               <LinearGradient
-                colors={['#141418', '#0A0A0C']}
+                colors={gradients.cardBg}
                 style={StyleSheet.absoluteFill}
               />
               {/* Subtle pink glow for rest day */}
               <LinearGradient
-                colors={['rgba(245, 169, 184, 0.1)', 'transparent']}
+                colors={gradients.restDayGlow}
                 start={{ x: 0.5, y: 0 }}
                 end={{ x: 0.5, y: 1 }}
-                style={styles.restDayGlow}
+                style={restDayCardStyles.glow}
               />
-              <Text style={styles.restDayTitle}>REST DAY</Text>
-              <Text style={styles.restDaySubtitle}>Tap to generate a workout anyway</Text>
+              <Text style={restDayCardStyles.title}>REST DAY</Text>
+              <Text style={restDayCardStyles.subtitle}>Tap to generate a workout anyway</Text>
             </Pressable>
           ) : (
-            <View style={styles.restDayCard}>
+            <View style={restDayCardStyles.container}>
               <LinearGradient
-                colors={['#141418', '#0A0A0C']}
+                colors={gradients.cardBg}
                 style={StyleSheet.absoluteFill}
               />
-              <Text style={styles.restDayTitle}>No Workout Scheduled</Text>
-              <Text style={styles.restDaySubtitle}>Check back tomorrow or regenerate your plan</Text>
+              <Text style={restDayCardStyles.title}>No Workout Scheduled</Text>
+              <Text style={restDayCardStyles.subtitle}>Check back tomorrow or regenerate your plan</Text>
             </View>
           )}
         </View>
@@ -414,6 +495,9 @@ export default function HomeScreen() {
           />
         )}
       </ScrollView>
+
+      {/* Feedback FAB - positioned in empty space below content, just above tab bar */}
+      <FeedbackFAB context="general" bottomOffset={16} />
     </View>
   );
 }
@@ -427,60 +511,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: 120, // Space for FAB at bottom
   },
   weekSection: {
     marginBottom: 0,
   },
   workoutSection: {
-    marginBottom: 8,
+    marginBottom: spacing.s,
   },
   statsSection: {
     marginBottom: 0,
-  },
-  restDayCard: {
-    height: 150,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    backgroundColor: 'rgba(25, 25, 30, 0.7)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.35,
-        shadowRadius: 24,
-      },
-      android: { elevation: 8 },
-    }),
-  },
-  restDayGlow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '60%',
-  },
-  restDayTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 20,
-    fontWeight: '300',
-    color: colors.text.secondary,
-    letterSpacing: 2,
-    marginBottom: 6,
-  },
-  restDaySubtitle: {
-    fontFamily: 'Poppins',
-    fontSize: 12,
-    fontWeight: '400',
-    color: colors.text.disabled,
-  },
-  restDayCardPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
   },
   loadingContainer: {
     flex: 1,
@@ -488,9 +529,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: spacing.s,
+    height: spacing.s,
+    borderRadius: spacing.xs,
     backgroundColor: colors.accent.primary,
   },
 });

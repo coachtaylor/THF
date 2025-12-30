@@ -8,6 +8,7 @@ import {
   AuthTokens,
 } from '../../types/auth';
 import { clearTokens } from './tokens';
+import { clearTierSelection } from '../storage/tierSelection';
 
 /**
  * Sign up with email and password
@@ -91,6 +92,7 @@ export async function logout(): Promise<void> {
   }
 
   await clearTokens();
+  await clearTierSelection();
   console.log('✅ Logged out');
 }
 

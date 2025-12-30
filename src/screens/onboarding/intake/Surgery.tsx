@@ -1,52 +1,121 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Modal, ScrollView, Platform } from "react-native";
+import React, { useState, useEffect, useMemo } from "react";
+import { View, Text, Pressable, StyleSheet, TextInput, Modal, ScrollView, Platform } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import { Surgery as SurgeryType } from "../../../types";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { useNavigation as useRootNavigation } from "@react-navigation/native";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
 import { glassStyles, textStyles, cardStyles, inputStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile } from "../../../services/storage/profile";
 
-type SurgeryTypeOption = "top_surgery" | "bottom_surgery" | "ffs" | "orchiectomy" | "other";
+type SurgeryTypeOption =
+  | "top_surgery"
+  | "bottom_surgery"
+  | "vaginoplasty"
+  | "phalloplasty"
+  | "metoidioplasty"
+  | "ffs"
+  | "orchiectomy"
+  | "hysterectomy"
+  | "breast_augmentation"
+  | "other";
 
 type SurgeryNavigationProp = StackNavigationProp<OnboardingStackParamList, "Surgery">;
+type SurgeryRouteProp = RouteProp<OnboardingStackParamList, "Surgery">;
 
 interface SurgeryProps {
   navigation: SurgeryNavigationProp;
+  route: SurgeryRouteProp;
 }
 
-const SURGERY_OPTIONS: Array<{ id: SurgeryTypeOption; label: string }> = [
-  { id: "top_surgery", label: "Top Surgery" },
-  { id: "bottom_surgery", label: "Bottom Surgery" },
-  { id: "ffs", label: "Facial Feminization Surgery (FFS)" },
+// All surgery options
+const ALL_SURGERY_OPTIONS: Array<{ id: SurgeryTypeOption; label: string }> = [
+  { id: "top_surgery", label: "Top Surgery / Chest Masculinization" },
+  { id: "vaginoplasty", label: "Vaginoplasty" },
+  { id: "phalloplasty", label: "Phalloplasty" },
+  { id: "metoidioplasty", label: "Metoidioplasty" },
   { id: "orchiectomy", label: "Orchiectomy" },
+  { id: "hysterectomy", label: "Hysterectomy" },
+  { id: "breast_augmentation", label: "Breast Augmentation" },
+  { id: "ffs", label: "Facial Feminization Surgery (FFS)" },
+  { id: "bottom_surgery", label: "Other Bottom Surgery" },
   { id: "other", label: "Other Gender-Affirming Surgery" },
 ];
 
-export default function Surgery({ navigation }: SurgeryProps) {
+// Surgeries typically for trans women (MTF)
+const MTF_SURGERY_IDS: SurgeryTypeOption[] = [
+  "breast_augmentation",
+  "vaginoplasty",
+  "orchiectomy",
+  "ffs",
+  "bottom_surgery",
+  "other",
+];
+
+// Surgeries typically for trans men (FTM)
+const FTM_SURGERY_IDS: SurgeryTypeOption[] = [
+  "top_surgery",
+  "phalloplasty",
+  "metoidioplasty",
+  "hysterectomy",
+  "bottom_surgery",
+  "other",
+];
+
+export default function Surgery({ navigation, route }: SurgeryProps) {
+  const genderIdentity = route.params?.genderIdentity;
+
+  // Filter surgery options based on gender identity
+  const SURGERY_OPTIONS = useMemo(() => {
+    if (genderIdentity === "mtf") {
+      return ALL_SURGERY_OPTIONS.filter(opt => MTF_SURGERY_IDS.includes(opt.id));
+    } else if (genderIdentity === "ftm") {
+      return ALL_SURGERY_OPTIONS.filter(opt => FTM_SURGERY_IDS.includes(opt.id));
+    }
+    // Non-binary, questioning, or undefined: show all options
+    return ALL_SURGERY_OPTIONS;
+  }, [genderIdentity]);
   const { profile } = useProfile();
+  const rootNavigation = useRootNavigation<any>();
+
+  const openRecoveryGuide = (surgeryType: SurgeryTypeOption) => {
+    // Navigate to the PostOpMovementGuide screen with the surgery type
+    rootNavigation.navigate('PostOpMovementGuide', { surgeryType });
+  };
   const [hasSurgeries, setHasSurgeries] = useState<boolean | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<Set<SurgeryTypeOption>>(new Set());
   const [surgeryDates, setSurgeryDates] = useState<Record<SurgeryTypeOption, Date | null>>({
     top_surgery: null,
     bottom_surgery: null,
+    vaginoplasty: null,
+    phalloplasty: null,
+    metoidioplasty: null,
     ffs: null,
     orchiectomy: null,
+    hysterectomy: null,
+    breast_augmentation: null,
     other: null,
   });
   const [surgeryNotes, setSurgeryNotes] = useState<Record<SurgeryTypeOption, string>>({
     top_surgery: "",
     bottom_surgery: "",
+    vaginoplasty: "",
+    phalloplasty: "",
+    metoidioplasty: "",
     ffs: "",
     orchiectomy: "",
+    hysterectomy: "",
+    breast_augmentation: "",
     other: "",
   });
   const [showDatePicker, setShowDatePicker] = useState<SurgeryTypeOption | null>(null);
   const [datePickerDate, setDatePickerDate] = useState(new Date());
+  const [surgeonClearance, setSurgeonClearance] = useState<boolean>(false);
 
   // Load initial data from profile
   useEffect(() => {
@@ -56,15 +125,25 @@ export default function Surgery({ navigation }: SurgeryProps) {
       const dates: Record<SurgeryTypeOption, Date | null> = {
         top_surgery: null,
         bottom_surgery: null,
+        vaginoplasty: null,
+        phalloplasty: null,
+        metoidioplasty: null,
         ffs: null,
         orchiectomy: null,
+        hysterectomy: null,
+        breast_augmentation: null,
         other: null,
       };
       const notes: Record<SurgeryTypeOption, string> = {
         top_surgery: "",
         bottom_surgery: "",
+        vaginoplasty: "",
+        phalloplasty: "",
+        metoidioplasty: "",
         ffs: "",
         orchiectomy: "",
+        hysterectomy: "",
+        breast_augmentation: "",
         other: "",
       };
 
@@ -198,12 +277,12 @@ export default function Surgery({ navigation }: SurgeryProps) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Have you had gender-affirming surgery?</Text>
           <View style={styles.buttonRow}>
-            <TouchableOpacity
+            <Pressable
               onPress={() => setHasSurgeries(true)}
-              activeOpacity={0.7}
-              style={[
+              style={({ pressed }) => [
                 styles.toggleButton,
-                hasSurgeries === true && styles.toggleButtonSelected
+                hasSurgeries === true && styles.toggleButtonSelected,
+                pressed && styles.buttonPressed
               ]}
             >
               <Text style={[
@@ -212,16 +291,16 @@ export default function Surgery({ navigation }: SurgeryProps) {
               ]}>
                 Yes
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
+            </Pressable>
+            <Pressable
               onPress={() => {
                 setHasSurgeries(false);
                 setSelectedTypes(new Set());
               }}
-              activeOpacity={0.7}
-              style={[
+              style={({ pressed }) => [
                 styles.toggleButton,
-                hasSurgeries === false && styles.toggleButtonSelected
+                hasSurgeries === false && styles.toggleButtonSelected,
+                pressed && styles.buttonPressed
               ]}
             >
               <Text style={[
@@ -230,7 +309,7 @@ export default function Surgery({ navigation }: SurgeryProps) {
               ]}>
                 No
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -244,13 +323,13 @@ export default function Surgery({ navigation }: SurgeryProps) {
                 {SURGERY_OPTIONS.map((option) => {
                   const isSelected = selectedTypes.has(option.id);
                   return (
-                    <TouchableOpacity
+                    <Pressable
                       key={option.id}
                       onPress={() => toggleSurgeryType(option.id)}
-                      activeOpacity={0.7}
-                      style={[
+                      style={({ pressed }) => [
                         styles.checkboxRow,
-                        isSelected && styles.checkboxRowSelected
+                        isSelected && styles.checkboxRowSelected,
+                        pressed && styles.buttonPressed
                       ]}
                     >
                       <View style={[
@@ -262,7 +341,7 @@ export default function Surgery({ navigation }: SurgeryProps) {
                         )}
                       </View>
                       <Text style={styles.checkboxLabel}>{option.label}</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   );
                 })}
               </View>
@@ -282,10 +361,9 @@ export default function Surgery({ navigation }: SurgeryProps) {
                   {/* Date Input */}
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Surgery Date</Text>
-                    <TouchableOpacity
+                    <Pressable
                       onPress={() => openDatePicker(type)}
-                      activeOpacity={0.7}
-                      style={styles.dateButton}
+                      style={({ pressed }) => [styles.dateButton, pressed && styles.buttonPressed]}
                     >
                       <Text style={[
                         styles.dateButtonText,
@@ -294,7 +372,7 @@ export default function Surgery({ navigation }: SurgeryProps) {
                         {date ? formatDate(date) : "Select date"}
                       </Text>
                       <Ionicons name="calendar-outline" size={20} color={colors.text.secondary} />
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
 
                   {/* Recovery Phase (shown if date is set) */}
@@ -329,6 +407,20 @@ export default function Surgery({ navigation }: SurgeryProps) {
                       style={styles.notesInput}
                     />
                   </View>
+
+                  {/* View Recovery Guide Link */}
+                  {date && (
+                    <Pressable
+                      onPress={() => openRecoveryGuide(type)}
+                      style={({ pressed }) => [styles.recoveryGuideLink, pressed && styles.buttonPressed]}
+                    >
+                      <Ionicons name="book-outline" size={18} color={colors.accent.primaryLight} />
+                      <Text style={styles.recoveryGuideLinkText}>
+                        View Recovery Guide
+                      </Text>
+                      <Ionicons name="chevron-forward" size={16} color={colors.accent.primaryLight} />
+                    </Pressable>
+                  )}
                 </View>
               );
             })}
@@ -336,10 +428,10 @@ export default function Surgery({ navigation }: SurgeryProps) {
             {/* Warning if Active Recovery */}
             {hasActiveSurgeries && (
               <View style={cardStyles.warning}>
-                <Ionicons 
-                  name="warning" 
-                  size={24} 
-                  color={colors.semantic.warning} 
+                <Ionicons
+                  name="warning"
+                  size={24}
+                  color={colors.semantic.warning}
                   style={styles.warningIcon}
                 />
                 <View style={styles.warningContent}>
@@ -350,6 +442,42 @@ export default function Surgery({ navigation }: SurgeryProps) {
                     Your workouts will be carefully modified to accommodate your recovery timeline. We'll avoid exercises that could stress surgical sites.
                   </Text>
                 </View>
+              </View>
+            )}
+
+            {/* Surgeon Clearance Section */}
+            {selectedTypes.size > 0 && (
+              <View style={styles.clearanceSection}>
+                <Pressable
+                  onPress={() => setSurgeonClearance(!surgeonClearance)}
+                  style={({ pressed }) => [styles.clearanceRow, pressed && styles.buttonPressed]}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    surgeonClearance && styles.checkboxChecked
+                  ]}>
+                    {surgeonClearance && (
+                      <Ionicons name="checkmark" size={18} color={colors.text.primary} />
+                    )}
+                  </View>
+                  <Text style={styles.clearanceLabel}>
+                    My surgeon has cleared me for exercise
+                  </Text>
+                </Pressable>
+
+                {/* Soft Warning if not cleared */}
+                {!surgeonClearance && (
+                  <View style={styles.clearanceWarning}>
+                    <Ionicons
+                      name="information-circle"
+                      size={20}
+                      color={colors.accent.primaryLight}
+                    />
+                    <Text style={styles.clearanceWarningText}>
+                      If you haven't received clearance yet, we recommend consulting your surgeon before starting any exercise program. You can still continue, but please prioritize your doctor's guidance.
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
           </>
@@ -370,12 +498,12 @@ export default function Surgery({ navigation }: SurgeryProps) {
                 <View style={styles.modalContent}>
                   <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>Select Surgery Date</Text>
-                    <TouchableOpacity
+                    <Pressable
                       onPress={() => setShowDatePicker(null)}
-                      activeOpacity={0.7}
+                      style={({ pressed }) => pressed && styles.buttonPressed}
                     >
                       <Ionicons name="close" size={24} color={colors.text.primary} />
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                   <DateTimePicker
                     value={datePickerDate}
@@ -391,21 +519,21 @@ export default function Surgery({ navigation }: SurgeryProps) {
                     style={styles.datePicker}
                   />
                   <View style={styles.modalActions}>
-                    <TouchableOpacity
+                    <Pressable
                       onPress={() => setShowDatePicker(null)}
-                      style={styles.modalCancelButton}
+                      style={({ pressed }) => [styles.modalCancelButton, pressed && styles.buttonPressed]}
                     >
                       <Text style={styles.modalCancelText}>Cancel</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </Pressable>
+                    <Pressable
                       onPress={() => {
                         handleDateChange(null, datePickerDate, showDatePicker);
                         setShowDatePicker(null);
                       }}
-                      style={styles.modalConfirmButton}
+                      style={({ pressed }) => [styles.modalConfirmButton, pressed && styles.buttonPressed]}
                     >
                       <Text style={styles.modalConfirmText}>Confirm</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                 </View>
               </View>
@@ -455,7 +583,7 @@ const styles = StyleSheet.create({
   },
   toggleButtonSelected: {
     backgroundColor: colors.glass.bgHero,
-    borderColor: colors.cyan[500],
+    borderColor: colors.accent.primary,
     borderWidth: 2,
   },
   toggleButtonText: {
@@ -464,7 +592,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   toggleButtonTextSelected: {
-    color: colors.cyan[500],
+    color: colors.accent.primary,
   },
   checkboxContainer: {
     gap: spacing.md,
@@ -481,7 +609,7 @@ const styles = StyleSheet.create({
   },
   checkboxRowSelected: {
     backgroundColor: colors.glass.bgHero,
-    borderColor: colors.cyan[500],
+    borderColor: colors.accent.primary,
   },
   checkbox: {
     width: 28,
@@ -494,8 +622,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: colors.cyan[500],
-    borderColor: colors.cyan[500],
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.primary,
   },
   checkboxLabel: {
     ...textStyles.body,
@@ -639,12 +767,64 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: borderRadius.base,
-    backgroundColor: colors.cyan[500],
+    backgroundColor: colors.accent.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalConfirmText: {
     ...textStyles.label,
     color: colors.text.primary,
+  },
+  clearanceSection: {
+    gap: spacing.base,
+    marginTop: spacing.base,
+  },
+  clearanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.base,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+    gap: spacing.base,
+  },
+  clearanceLabel: {
+    ...textStyles.body,
+    flex: 1,
+    fontSize: 15,
+    color: colors.text.primary,
+  },
+  clearanceWarning: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    padding: spacing.base,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.accent.primaryMuted,
+    borderWidth: 1,
+    borderColor: colors.accent.primaryGlow,
+  },
+  clearanceWarningText: {
+    ...textStyles.bodySmall,
+    flex: 1,
+    color: colors.accent.primaryLight,
+    lineHeight: 20,
+  },
+  recoveryGuideLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  recoveryGuideLinkText: {
+    ...textStyles.label,
+    flex: 1,
+    fontSize: 14,
+    color: colors.accent.primaryLight,
+  },
+  buttonPressed: {
+    opacity: 0.8,
   },
 });

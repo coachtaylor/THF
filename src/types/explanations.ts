@@ -69,3 +69,66 @@ export function getFallbackMessage(primaryGoal?: string): string {
   }
   return FALLBACK_MESSAGES.default;
 }
+
+// ============================================================================
+// PERSONALIZATION SUMMARY TYPES
+// Used for user-facing "Why this workout?" feature on WorkoutOverviewScreen
+// ============================================================================
+
+/**
+ * Extended category for personalization explanations
+ */
+export type PersonalizationCategory =
+  | 'goal'           // Primary/secondary goal influence
+  | 'body_focus'     // Body area preferences
+  | 'hrt'            // HRT-related adjustments
+  | 'safety'         // Post-op, binding, and other safety rules
+  | 'dysphoria'      // Dysphoria-aware filtering
+  | 'equipment'      // Equipment availability
+  | 'experience';    // Fitness level adjustments
+
+/**
+ * Impact level of a personalization factor
+ */
+export type ImpactLevel = 'high' | 'medium' | 'low';
+
+/**
+ * Individual personalization explanation for the summary
+ */
+export interface PersonalizationExplanation {
+  /** Category of the personalization factor */
+  category: PersonalizationCategory;
+
+  /** Short, user-friendly title (e.g., "Feminization Focus") */
+  title: string;
+
+  /** Longer description explaining what this means for the workout */
+  description: string;
+
+  /** How much this factor affects the workout */
+  impact_level: ImpactLevel;
+
+  /** Optional example exercises affected by this factor */
+  examples?: string[];
+
+  /** Icon name for UI rendering (optional) */
+  icon?: string;
+}
+
+/**
+ * Complete personalization summary for a workout
+ * Used by WorkoutOverviewScreen to show "Personalized for you" section
+ */
+export interface WorkoutPersonalizationSummary {
+  /** Primary influences (most important factors) */
+  primary_influences: PersonalizationExplanation[];
+
+  /** Secondary influences (supporting factors) */
+  secondary_influences: PersonalizationExplanation[];
+
+  /** Safety-related adjustments */
+  safety_adjustments: PersonalizationExplanation[];
+
+  /** Total number of factors applied */
+  total_factors: number;
+}

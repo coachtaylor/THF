@@ -32,7 +32,7 @@ const RED_FLAG_PATTERNS: Record<RedFlagCategory, RegExp[]> = {
     /can'?t\s*breathe/i,
     /difficulty\s*breathing/i,
     /chest\s*tightness/i,
-    /heart\s*(racing|pounding|palpitations)/i,
+    /heart\s+(?:is\s+)?(?:racing|pounding|palpitations)/i,
     /numbness\s*(in\s*(my\s*)?(arm|chest|hand))?/i,
     /severe\s*(pain|swelling|bruising)/i,
     /blood\s*(in|from)\s*(urine|stool)/i,
@@ -46,7 +46,7 @@ const RED_FLAG_PATTERNS: Record<RedFlagCategory, RegExp[]> = {
     /extreme\s*(fatigue|weakness)/i,
   ],
   medical_emergency: [
-    /call\s*(911|ambulance|emergency)/i,
+    /call\s+(?:an?\s+)?(?:911|ambulance|emergency)/i,
     /go\s*to\s*(the\s*)?(er|emergency|hospital)/i,
     /medical\s*emergency/i,
     /overdose/i,
@@ -67,7 +67,7 @@ const RED_FLAG_PATTERNS: Record<RedFlagCategory, RegExp[]> = {
     /injection\s*site\s*(pain|swelling|lump)/i,
   ],
   diagnosis_seeking: [
-    /do\s*i\s*have/i,
+    /\bdo\s+i\s+have\b/i,
     /is\s*this\s*(normal|okay)\s*after\s*surgery/i,
     /is\s*(this|it)\s*infected/i,
     /should\s*i\s*(be\s*)?(worried|concerned)/i,
@@ -77,7 +77,7 @@ const RED_FLAG_PATTERNS: Record<RedFlagCategory, RegExp[]> = {
     /am\s*i\s*(okay|dying|having)/i,
   ],
   surgical_clearance: [
-    /can\s*i\s*(exercise|lift|workout)\s*(yet|now)/i,
+    /can\s+i\s+(?:exercise|lift|workout)(?:\s+\w+)?\s+(?:yet|now)/i,
     /when\s*can\s*i\s*(start|begin|resume)/i,
     /cleared\s*(to|for)\s*(exercise|lift)/i,
     /override\s*(my\s*)?surgeon/i,

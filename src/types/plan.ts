@@ -1,92 +1,19 @@
-export interface Plan {
-  id: string;
-  blockLength: 1 | 4; // weeks
-  startDate: Date;
-  goals: string[]; // e.g., ["strength", "endurance"]
-  goalWeighting: { primary: number; secondary: number }; // e.g., { primary: 70, secondary: 30 }
-  days: Day[];
-  workoutDays?: number[]; // User's selected workout days (0=Sun, 1=Mon, ..., 6=Sat)
-}
+// TransFitness Plan Types
+// Re-exports core types from index.ts and adds additional specialized types
 
-export interface Day {
-  dayNumber: number; // 1-7 for 1-week, 1-28 for 4-week
-  date: Date;
-  dayOfWeek: number; // 0=Sunday, 1=Monday, ..., 6=Saturday
-  isRestDay: boolean; // true if this is an intentional rest day
-  wasRestDay?: boolean; // true if this was originally a rest day but user generated a workout
-  variants: {
-    30: Workout | null;
-    45: Workout | null;
-    60: Workout | null;
-    90: Workout | null;
-  };
-}
+// Re-export core types from index.ts for backward compatibility
+export type {
+  Plan,
+  Day,
+  Workout,
+  ExerciseInstance,
+  WarmupCooldownSection,
+  InjectedCheckpoint,
+  WorkoutMetadata,
+  Exercise,
+} from './index';
 
-export interface Workout {
-  name?: string;
-  duration: 30 | 45 | 60 | 90;
-  exercises: ExerciseInstance[];
-  totalMinutes: number;
-}
-
-export interface ExerciseInstance {
-  exerciseId: string;
-  sets: number;
-  reps: number;
-  format: 'EMOM' | 'AMRAP' | 'straight_sets';
-  restSeconds: number;
-}
-
-// Exercise type moved to src/types/index.ts to avoid duplication
-// Re-export for backward compatibility
-export { Exercise } from './index';
-
-// Commented out to avoid duplication - Exercise is now defined in src/types/index.ts
-/*
-export interface Exercise {
-  id: string;
-  name: string;
-  slug: string;
-  pattern: string;
-  goal: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  equipment: string[]; // Canonical equipment categories (bodyweight, dumbbells, bands, etc.)
-  tags: string[]; // e.g., ["lower_body", "strength"]
-  binder_aware: boolean;
-  heavy_binding_safe: boolean;
-  pelvic_floor_aware: boolean; //NEW
-  contraindications: string[]; // NEW
-  pressure_level: 'low' | 'medium' | 'high';
-  cue_primary?: string;
-  breathing?: string;
-  neutral_cues?: string[]; // Array of neutral cues
-  breathing_cues?: string[]; // Array of breathing cues
-  rep_range_beginner?: string;
-  rep_range_intermediate?: string;
-  rep_range_advanced?: string;
-  effectiveness_rating?: number;
-  source?: string;
-  notes?: string;
-  dysphoria_tags?: string;
-  post_op_safe_weeks?: number;
-  created_at: Date;
-  version: string;
-  flags_reviewed: boolean;
-  reviewer?: string;
-  swaps: Swap[];
-  trans_notes: {
-    binder: string;
-    pelvic_floor: string;
-  };
-  target_muscles?: string;
-  secondary_muscles?: string;
-  commonErrors: string[];
-  gender_goal_emphasis?: 'fem_very_high' | 'fem_high' | 'fem_medium' | 'fem_low' | 
-                         'masc_very_high' | 'masc_high' | 'masc_medium' | 'masc_low' | 
-                         'neutral';
-  videoUrl?: string; // Optional video URL for exercises
-}
-*/
+// Additional types specific to plan.ts
 
 export interface Swap {
   exercise_id: string;

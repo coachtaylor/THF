@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Platform,
   Animated,
+  KeyboardAvoidingView,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -77,6 +79,8 @@ export default function OnboardingLayout({
   continueButtonText = 'Continue',
 }: OnboardingLayoutProps) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isSmall = width < 375;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -110,49 +114,56 @@ export default function OnboardingLayout({
         style={StyleSheet.absoluteFill}
       />
 
-      <View style={[styles.content, { paddingTop: insets.top + spacing.m }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Pressable
-            onPress={onBack}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.buttonPressed,
-            ]}
-            hitSlop={8}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoid}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+      >
+        <View style={[styles.content, { paddingTop: insets.top + spacing.m }]}>
+          {/* Scrollable Content - header and title scroll with content */}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
-          </Pressable>
+          {/* Header */}
+          <View style={styles.header}>
+            <Pressable
+              onPress={onBack}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.buttonPressed,
+              ]}
+              hitSlop={8}
+            >
+              <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+            </Pressable>
 
-          {/* Progress */}
-          <View style={styles.progressContainer}>
-            <Text style={styles.stepText}>
-              STEP {currentStep} OF {totalSteps}
-            </Text>
-            <View style={styles.dotsContainer}>
-              {Array.from({ length: totalSteps }).map((_, index) => (
-                <ProgressDot
-                  key={index}
-                  isActive={index === currentStep - 1}
-                  isComplete={index < currentStep - 1}
-                />
-              ))}
+            {/* Progress */}
+            <View style={styles.progressContainer}>
+              <Text style={styles.stepText}>
+                STEP {currentStep} OF {totalSteps}
+              </Text>
+              <View style={styles.dotsContainer}>
+                {Array.from({ length: totalSteps }).map((_, index) => (
+                  <ProgressDot
+                    key={index}
+                    isActive={index === currentStep - 1}
+                    isComplete={index < currentStep - 1}
+                  />
+                ))}
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* Title & Subtitle */}
-        <View style={styles.titleSection}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
-        </View>
+          {/* Title & Subtitle */}
+          <View style={styles.titleSection}>
+            <Text style={[styles.title, isSmall && styles.titleSmall]}>{title}</Text>
+            <Text style={[styles.subtitle, isSmall && styles.subtitleSmall]}>{subtitle}</Text>
+          </View>
 
-        {/* Scrollable Content */}
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+          {/* Screen-specific content */}
           {children}
         </ScrollView>
 
@@ -206,7 +217,8 @@ export default function OnboardingLayout({
             )}
           </Pressable>
         </View>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -216,13 +228,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg.primary,
   },
+  keyboardAvoid: {
+    flex: 1,
+  },
   content: {
     flex: 1,
     paddingHorizontal: spacing.xl,
   },
   header: {
-    marginBottom: spacing.xl,
-    gap: spacing.m,
+    marginBottom: spacing.l,
+    gap: spacing.s,
   },
   backButton: {
     width: 44,
@@ -240,7 +255,7 @@ const styles = StyleSheet.create({
   },
   stepText: {
     fontFamily: 'Poppins',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: colors.text.tertiary,
     letterSpacing: 1,
@@ -268,21 +283,28 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   titleSection: {
-    marginBottom: spacing.xl,
-    gap: spacing.s,
+    marginBottom: spacing.l,
+    gap: spacing.xs,
   },
   title: {
     fontFamily: 'Poppins',
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
     color: colors.text.primary,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontFamily: 'Poppins',
-    fontSize: 15,
+    fontSize: 14,
     color: colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
+  },
+  titleSmall: {
+    fontSize: 18,
+  },
+  subtitleSmall: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   scrollView: {
     flex: 1,
@@ -335,7 +357,7 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     fontFamily: 'Poppins',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text.inverse,
   },

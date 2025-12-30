@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, borderRadius, spacing } from '../../theme/theme';
+import { useSensoryMode } from '../../contexts/SensoryModeContext';
 
 export type GlassCardVariant = 'default' | 'hero' | 'heroPink' | 'liquid';
 
@@ -75,9 +76,13 @@ export default function GlassCard({
   const config = variantConfig[variant];
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const { disableAnimations } = useSensoryMode();
+
+  // Effective shimmer - disabled in low sensory mode
+  const effectiveShimmer = shimmer && !disableAnimations;
 
   useEffect(() => {
-    if (shimmer) {
+    if (effectiveShimmer) {
       Animated.loop(
         Animated.sequence([
           Animated.timing(shimmerAnim, {
@@ -93,7 +98,7 @@ export default function GlassCard({
         ])
       ).start();
     }
-  }, [shimmer]);
+  }, [effectiveShimmer]);
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -162,8 +167,8 @@ export default function GlassCard({
         />
       )}
 
-      {/* Shimmer effect */}
-      {shimmer && (
+      {/* Shimmer effect - hidden in low sensory mode */}
+      {effectiveShimmer && (
         <Animated.View
           style={[
             styles.shimmerOverlay,

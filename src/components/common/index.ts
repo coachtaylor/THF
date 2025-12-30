@@ -22,3 +22,7 @@ export type { ToastConfig, ToastType } from './Toast';
 
 export { default as EmptyState } from './EmptyState';
 export type { EmptyStateVariant } from './EmptyState';
+
+export { SafetyRulesIndicator } from './SafetyRulesIndicator';
+
+export { default as SyncStatusIndicator } from './SyncStatusIndicator';

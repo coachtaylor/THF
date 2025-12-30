@@ -17,9 +17,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import {
   WorkoutExplanation,
-  ExplanationCategory,
-  sortExplanationsByPriority,
   getFallbackMessage,
+  WorkoutPersonalizationSummary,
+  PersonalizationExplanation,
+  PersonalizationCategory,
 } from '../../types/explanations';
 
 interface WhyThisWorkoutProps {
@@ -27,49 +28,60 @@ interface WhyThisWorkoutProps {
   onClose: () => void;
   explanations: WorkoutExplanation[];
   primaryGoal?: string;
+  personalizationSummary?: WorkoutPersonalizationSummary | null;
 }
 
-// Icon and color mapping for each category
-const CATEGORY_CONFIG: Record<
-  ExplanationCategory,
-  { icon: keyof typeof Ionicons.glyphMap; color: string; label: string }
+// Icon and color mapping for personalization categories
+const PERSONALIZATION_CONFIG: Record<
+  PersonalizationCategory,
+  { icon: keyof typeof Ionicons.glyphMap; color: string }
 > = {
-  binder_safety: {
-    icon: 'shield-checkmark',
-    color: colors.accent.primary,
-    label: 'Binding Safety',
-  },
-  post_op: {
-    icon: 'medical',
-    color: colors.accent.secondary,
-    label: 'Post-Op Care',
-  },
-  hrt: {
-    icon: 'pulse',
-    color: '#A78BFA', // Purple for HRT
-    label: 'HRT Considerations',
-  },
-  environment: {
-    icon: 'home',
-    color: colors.accent.primaryLight,
-    label: 'Environment',
-  },
-  general: {
-    icon: 'fitness',
-    color: colors.text.secondary,
-    label: 'General',
-  },
+  goal: { icon: 'star', color: colors.accent.primary },
+  body_focus: { icon: 'body', color: '#F59E0B' }, // Amber
+  hrt: { icon: 'pulse', color: '#A78BFA' }, // Purple
+  safety: { icon: 'shield-checkmark', color: colors.accent.secondary },
+  dysphoria: { icon: 'heart', color: '#EC4899' }, // Pink
+  equipment: { icon: 'barbell', color: colors.text.secondary },
+  experience: { icon: 'trending-up', color: '#10B981' }, // Green
 };
+
+// Personalization item component
+function PersonalizationItem({ item }: { item: PersonalizationExplanation }) {
+  const config = PERSONALIZATION_CONFIG[item.category] || PERSONALIZATION_CONFIG.goal;
+  const iconName = (item.icon as keyof typeof Ionicons.glyphMap) || config.icon;
+
+  return (
+    <View style={styles.personalizationItem}>
+      <View style={[styles.personalizationIcon, { backgroundColor: `${config.color}15` }]}>
+        <Ionicons name={iconName} size={16} color={config.color} />
+      </View>
+      <View style={styles.personalizationContent}>
+        <Text style={styles.personalizationTitle}>{item.title}</Text>
+        <Text style={styles.personalizationDescription}>{item.description}</Text>
+        {item.examples && item.examples.length > 0 && (
+          <Text style={styles.personalizationExamples}>
+            e.g., {item.examples.slice(0, 2).join(', ')}
+          </Text>
+        )}
+      </View>
+      {item.impact_level === 'high' && (
+        <View style={styles.impactBadge}>
+          <Ionicons name="flash" size={10} color={colors.accent.primary} />
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function WhyThisWorkout({
   visible,
   onClose,
   explanations,
   primaryGoal,
+  personalizationSummary,
 }: WhyThisWorkoutProps) {
   const insets = useSafeAreaInsets();
-  const sortedExplanations = sortExplanationsByPriority(explanations);
-  const hasExplanations = sortedExplanations.length > 0;
+  const hasPersonalization = personalizationSummary && personalizationSummary.total_factors > 0;
 
   return (
     <Modal
@@ -109,41 +121,25 @@ export default function WhyThisWorkout({
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
           >
-            {hasExplanations ? (
+            {/* Personalization Summary Section */}
+            {hasPersonalization && (
               <>
-                <Text style={styles.subtitle}>
-                  We customized today's workout based on your profile:
-                </Text>
+                <Text style={styles.sectionLabel}>Personalized for you</Text>
 
-                {sortedExplanations.map((explanation, index) => {
-                  const config = CATEGORY_CONFIG[explanation.category];
-                  return (
-                    <View key={explanation.ruleId || index} style={styles.explanationItem}>
-                      <View
-                        style={[
-                          styles.iconContainer,
-                          { backgroundColor: `${config.color}20` },
-                        ]}
-                      >
-                        <Ionicons
-                          name={config.icon}
-                          size={18}
-                          color={config.color}
-                        />
-                      </View>
-                      <View style={styles.explanationContent}>
-                        <Text style={[styles.categoryLabel, { color: config.color }]}>
-                          {config.label}
-                        </Text>
-                        <Text style={styles.explanationText}>
-                          {explanation.message}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })}
+                {/* Primary influences */}
+                {personalizationSummary.primary_influences.map((item, index) => (
+                  <PersonalizationItem key={`primary-${index}`} item={item} />
+                ))}
+
+                {/* Secondary influences (collapsed by default, show top 2) */}
+                {personalizationSummary.secondary_influences.slice(0, 2).map((item, index) => (
+                  <PersonalizationItem key={`secondary-${index}`} item={item} />
+                ))}
               </>
-            ) : (
+            )}
+
+            {/* Fallback if no personalization */}
+            {!hasPersonalization ? (
               <View style={styles.fallbackContainer}>
                 <View style={styles.fallbackIcon}>
                   <Ionicons
@@ -160,7 +156,7 @@ export default function WhyThisWorkout({
                   while respecting your body's needs.
                 </Text>
               </View>
-            )}
+            ) : null}
 
             {/* Footer note */}
             <View style={styles.footer}>
@@ -252,45 +248,6 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     paddingTop: spacing.l,
   },
-  subtitle: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    fontWeight: '400',
-    color: colors.text.secondary,
-    marginBottom: spacing.xl,
-    lineHeight: 20,
-  },
-  explanationItem: {
-    flexDirection: 'row',
-    marginBottom: spacing.l,
-    alignItems: 'flex-start',
-  },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.m,
-  },
-  explanationContent: {
-    flex: 1,
-  },
-  categoryLabel: {
-    fontFamily: 'Poppins',
-    fontSize: 11,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: spacing.xs,
-  },
-  explanationText: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    fontWeight: '400',
-    color: colors.text.primary,
-    lineHeight: 21,
-  },
   fallbackContainer: {
     alignItems: 'center',
     paddingVertical: spacing.xl,
@@ -339,5 +296,62 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     color: colors.text.tertiary,
     lineHeight: 18,
+  },
+  // Personalization summary styles
+  sectionLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.m,
+  },
+  personalizationItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.m,
+    paddingVertical: spacing.s,
+  },
+  personalizationIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.m,
+  },
+  personalizationContent: {
+    flex: 1,
+  },
+  personalizationTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 2,
+  },
+  personalizationDescription: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    lineHeight: 18,
+  },
+  personalizationExamples: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '400',
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  impactBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.accent.primaryMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

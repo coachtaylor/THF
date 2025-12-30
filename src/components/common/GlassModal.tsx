@@ -6,14 +6,12 @@ import {
   StyleSheet,
   Pressable,
   Animated,
-  Dimensions,
+  useWindowDimensions,
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme/theme';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export interface GlassModalAction {
   label: string;
@@ -43,6 +41,10 @@ export default function GlassModal({
   actions,
   showCloseButton = false,
 }: GlassModalProps) {
+  const { width: screenWidth } = useWindowDimensions();
+  const isSmall = screenWidth < 375;
+  const modalWidth = Math.min(340, screenWidth - spacing.xl * 2);
+
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -130,6 +132,7 @@ export default function GlassModal({
           style={[
             styles.modalContainer,
             {
+              width: modalWidth,
               transform: [{ scale: scaleAnim }],
               opacity: opacityAnim,
             },
@@ -159,13 +162,13 @@ export default function GlassModal({
 
           {/* Icon */}
           {icon && (
-            <View style={[styles.iconContainer, { backgroundColor: `${iconColor}20` }]}>
-              <Ionicons name={icon} size={32} color={iconColor} />
+            <View style={[styles.iconContainer, isSmall && styles.iconContainerSmall, { backgroundColor: `${iconColor}20` }]}>
+              <Ionicons name={icon} size={isSmall ? 28 : 32} color={iconColor} />
             </View>
           )}
 
           {/* Title */}
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, isSmall && styles.titleSmall]}>{title}</Text>
 
           {/* Message */}
           {message && <Text style={styles.message}>{message}</Text>}
@@ -222,8 +225,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   modalContainer: {
-    width: SCREEN_WIDTH - spacing.xl * 2,
-    maxWidth: 340,
+    // width set dynamically via inline style
     borderRadius: borderRadius['2xl'],
     overflow: 'hidden',
     borderWidth: 1,
@@ -273,6 +275,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     marginBottom: spacing.l,
   },
+  iconContainerSmall: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
   title: {
     fontFamily: 'Poppins',
     fontSize: 20,
@@ -281,6 +288,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.s,
+  },
+  titleSmall: {
+    fontSize: 18,
+    paddingHorizontal: spacing.lg,
   },
   message: {
     fontFamily: 'Poppins',

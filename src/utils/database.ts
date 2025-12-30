@@ -64,7 +64,33 @@ const tableStatements = [
     last_used_at TEXT,
     use_count INTEGER DEFAULT 0,
     synced_at TEXT
-  );`
+  );`,
+  `CREATE TABLE IF NOT EXISTS week_transitions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    last_plan_week_start TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
+  );`,
+  `CREATE TABLE IF NOT EXISTS feedback_reports (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    category TEXT NOT NULL,
+    severity TEXT,
+    context TEXT NOT NULL,
+    exercise_id TEXT,
+    exercise_name TEXT,
+    workout_id TEXT,
+    set_number INTEGER,
+    quick_feedback TEXT,
+    description TEXT,
+    device_info TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    synced_at TEXT
+  );`,
+  `CREATE INDEX IF NOT EXISTS idx_feedback_unsynced ON feedback_reports(synced_at) WHERE synced_at IS NULL;`,
+  `CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback_reports(user_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_feedback_category ON feedback_reports(category);`
 ];
 
 export async function initDatabase(): Promise<void> {

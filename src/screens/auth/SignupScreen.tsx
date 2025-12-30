@@ -18,7 +18,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { checkOnboardingStatus } from '../../services/storage/onboarding';
 import { checkTierSelection } from '../../services/storage/tierSelection';
 import { signalOnboardingComplete } from '../../services/events/onboardingEvents';
-import { colors, spacing, borderRadius } from '../../theme/theme';
+import { colors, spacing, borderRadius, timing, gradients, layout } from '../../theme/theme';
+import { headerStyles } from '../../theme/components';
 import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
 import OrDivider from '../../components/auth/OrDivider';
 
@@ -46,12 +47,12 @@ export default function SignupScreen({ navigation }: any) {
       Animated.sequence([
         Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 2000,
+          duration: timing.shimmer,
           useNativeDriver: true,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
-          duration: 2000,
+          duration: timing.shimmer,
           useNativeDriver: true,
         }),
       ])
@@ -165,26 +166,26 @@ export default function SignupScreen({ navigation }: any) {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + spacing.m }]}>
+        <View style={[headerStyles.container, { paddingTop: insets.top + spacing.m }]}>
           <Pressable
             onPress={() => navigation.goBack()}
             style={({ pressed }) => [
-              styles.backButton,
+              headerStyles.backButton,
               pressed && styles.buttonPressed,
             ]}
             hitSlop={8}
           >
             <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
           </Pressable>
-          <Text style={styles.headerTitle}>Create Account</Text>
-          <View style={{ width: 44 }} />
+          <Text style={headerStyles.title}>Create Account</Text>
+          <View style={headerStyles.spacer} />
         </View>
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[
             styles.scrollContent,
-            { paddingBottom: insets.bottom + spacing.xl }
+            { paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: layout.screenPadding }
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -213,7 +214,7 @@ export default function SignupScreen({ navigation }: any) {
                 firstNameFocused && styles.inputContainerFocused,
               ]}>
                 <LinearGradient
-                  colors={['#141418', '#0A0A0C']}
+                  colors={gradients.inputBg}
                   style={StyleSheet.absoluteFill}
                 />
                 <View style={styles.glassHighlight} />
@@ -240,7 +241,7 @@ export default function SignupScreen({ navigation }: any) {
                 lastNameFocused && styles.inputContainerFocused,
               ]}>
                 <LinearGradient
-                  colors={['#141418', '#0A0A0C']}
+                  colors={gradients.inputBg}
                   style={StyleSheet.absoluteFill}
                 />
                 <View style={styles.glassHighlight} />
@@ -268,7 +269,7 @@ export default function SignupScreen({ navigation }: any) {
               emailFocused && styles.inputContainerFocused,
             ]}>
               <LinearGradient
-                colors={['#141418', '#0A0A0C']}
+                colors={gradients.inputBg}
                 style={StyleSheet.absoluteFill}
               />
               <View style={styles.glassHighlight} />
@@ -302,7 +303,7 @@ export default function SignupScreen({ navigation }: any) {
               passwordFocused && styles.inputContainerFocused,
             ]}>
               <LinearGradient
-                colors={['#141418', '#0A0A0C']}
+                colors={gradients.inputBg}
                 style={StyleSheet.absoluteFill}
               />
               <View style={styles.glassHighlight} />
@@ -486,6 +487,7 @@ export default function SignupScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  // Note: header, headerTitle, backButton now use headerStyles from components.ts
   container: {
     flex: 1,
     backgroundColor: colors.bg.primary,
@@ -493,32 +495,10 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.m,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: colors.glass.bg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.xl,
     paddingTop: spacing.l,
   },
   welcome: {

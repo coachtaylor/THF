@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet, Platform, Animated } from 'react-nat
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, borderRadius } from '../../theme/theme';
+import { useSensoryMode } from '../../contexts/SensoryModeContext';
 
 interface SelectionCardProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -23,6 +24,7 @@ export default function SelectionCard({
 }: SelectionCardProps) {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const { disableAnimations } = useSensoryMode();
 
   const iconColor = accentColor === 'primary' ? colors.accent.primary : colors.accent.secondary;
   const borderColor = accentColor === 'primary' ? colors.glass.borderCyan : colors.glass.borderPink;
@@ -30,40 +32,43 @@ export default function SelectionCard({
 
   useEffect(() => {
     if (selected) {
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 0.98,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 300,
-          friction: 10,
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // Start shimmer for selected
-      Animated.loop(
+      // Skip scale animation in low sensory mode
+      if (!disableAnimations) {
         Animated.sequence([
-          Animated.timing(shimmerAnim, {
+          Animated.timing(scaleAnim, {
+            toValue: 0.98,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scaleAnim, {
             toValue: 1,
-            duration: 2500,
+            tension: 300,
+            friction: 10,
             useNativeDriver: true,
           }),
-          Animated.timing(shimmerAnim, {
-            toValue: 0,
-            duration: 2500,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+        ]).start();
+
+        // Start shimmer for selected
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(shimmerAnim, {
+              toValue: 1,
+              duration: 2500,
+              useNativeDriver: true,
+            }),
+            Animated.timing(shimmerAnim, {
+              toValue: 0,
+              duration: 2500,
+              useNativeDriver: true,
+            }),
+          ])
+        ).start();
+      }
     } else {
       shimmerAnim.stopAnimation();
       shimmerAnim.setValue(0);
     }
-  }, [selected]);
+  }, [selected, disableAnimations]);
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -93,19 +98,21 @@ export default function SelectionCard({
               end={{ x: 1, y: 1 }}
               style={styles.selectedGlow}
             />
-            <Animated.View
-              style={[
-                styles.shimmerOverlay,
-                { transform: [{ translateX: shimmerTranslate }] },
-              ]}
-            >
-              <LinearGradient
-                colors={['transparent', 'rgba(255, 255, 255, 0.05)', 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFill}
-              />
-            </Animated.View>
+            {!disableAnimations && (
+              <Animated.View
+                style={[
+                  styles.shimmerOverlay,
+                  { transform: [{ translateX: shimmerTranslate }] },
+                ]}
+              >
+                <LinearGradient
+                  colors={['transparent', 'rgba(255, 255, 255, 0.05)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
+            )}
           </>
         )}
 

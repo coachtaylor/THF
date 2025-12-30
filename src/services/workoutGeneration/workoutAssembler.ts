@@ -106,24 +106,8 @@ function estimatePrescriptionsDuration(prescriptions: ExerciseInstance[]): numbe
   let totalMinutes = 0;
 
   for (const p of prescriptions) {
-    // Get reps (handle both number and potential range string)
-    let reps = typeof p.reps === 'number' ? p.reps : 10;
-    
-    // If reps is a string (like "8-12"), parse to get average
-    if (typeof p.reps === 'string') {
-      const repMatch = p.reps.match(/(\d+)-(\d+)/);
-      if (repMatch) {
-        const min = parseInt(repMatch[1]);
-        const max = parseInt(repMatch[2]);
-        reps = (min + max) / 2; // Average rep count
-      } else {
-        // Try to parse single number
-        const singleRep = parseInt(p.reps);
-        if (!isNaN(singleRep)) {
-          reps = singleRep;
-        }
-      }
-    }
+    // Get reps (ExerciseInstance.reps is typed as number)
+    const reps = p.reps || 10;
 
     // Estimate: 3 seconds per rep (conservative estimate)
     const workSeconds = p.sets * reps * 3;
@@ -138,23 +122,13 @@ function estimatePrescriptionsDuration(prescriptions: ExerciseInstance[]): numbe
 }
 
 /**
- * Generate descriptive workout name based on template and goal
- * 
+ * Generate descriptive workout name based on template
+ *
  * @param dayTemplate - Day template with name and focus
- * @param profile - User profile with primary goal
+ * @param profile - User profile (unused, kept for API compatibility)
  * @returns Formatted workout name
  */
 function generateWorkoutName(dayTemplate: DayTemplate, profile: Profile): string {
-  const goalMap: Record<string, string> = {
-    feminization: 'Feminization',
-    masculinization: 'Masculinization',
-    general_fitness: 'Fitness',
-    strength: 'Strength',
-    endurance: 'Endurance'
-  };
-
-  const goal = goalMap[profile.primary_goal] || 'Training';
-
-  return `${dayTemplate.name} - ${goal} Focus`;
+  return dayTemplate.name;
 }
 

@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Shield, Dumbbell, Sparkles, MessageCircle, LineChart } from 'lucide-react-native';
-import { PurchasesPackage } from 'react-native-purchases';
+import { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
 
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -60,9 +60,23 @@ export default function TierSelectionScreen({ navigation }: TierSelectionScreenP
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [purchasing, setPurchasing] = useState(false);
 
-  // Find monthly and annual packages
-  const monthlyPackage = packages.find((p) => p.packageType === 'MONTHLY');
-  const annualPackage = packages.find((p) => p.packageType === 'ANNUAL');
+  // Find monthly and annual packages (with fallback for custom identifiers)
+  const monthlyPackage = packages.find((p) =>
+    p.packageType === PACKAGE_TYPE.MONTHLY ||
+    p.identifier.toLowerCase().includes('monthly')
+  );
+  const annualPackage = packages.find((p) =>
+    p.packageType === PACKAGE_TYPE.ANNUAL ||
+    p.identifier.toLowerCase().includes('annual')
+  );
+
+  // Debug logging
+  if (__DEV__) {
+    console.log('[TierSelection] packages:', packages.length);
+    console.log('[TierSelection] packageTypes:', packages.map(p => ({ id: p.identifier, type: p.packageType })));
+    console.log('[TierSelection] monthlyPackage:', monthlyPackage?.identifier);
+    console.log('[TierSelection] annualPackage:', annualPackage?.identifier);
+  }
 
   // Default to annual if available
   useEffect(() => {
@@ -192,12 +206,16 @@ export default function TierSelectionScreen({ navigation }: TierSelectionScreenP
               {/* Annual Option */}
               {annualPackage && (
                 <Pressable
-                  style={[
+                  style={({ pressed }) => [
                     styles.packageOption,
                     selectedPackage?.identifier === annualPackage.identifier &&
                       styles.packageOptionSelected,
+                    pressed && styles.packageOptionPressed,
                   ]}
-                  onPress={() => setSelectedPackage(annualPackage)}
+                  onPress={() => {
+                    if (__DEV__) console.log('[TierSelection] Annual tapped');
+                    setSelectedPackage(annualPackage);
+                  }}
                 >
                   <View
                     style={[
@@ -223,12 +241,16 @@ export default function TierSelectionScreen({ navigation }: TierSelectionScreenP
               {/* Monthly Option */}
               {monthlyPackage && (
                 <Pressable
-                  style={[
+                  style={({ pressed }) => [
                     styles.packageOption,
                     selectedPackage?.identifier === monthlyPackage.identifier &&
                       styles.packageOptionSelected,
+                    pressed && styles.packageOptionPressed,
                   ]}
-                  onPress={() => setSelectedPackage(monthlyPackage)}
+                  onPress={() => {
+                    if (__DEV__) console.log('[TierSelection] Monthly tapped');
+                    setSelectedPackage(monthlyPackage);
+                  }}
                 >
                   <View
                     style={[
@@ -414,6 +436,10 @@ const styles = StyleSheet.create({
   packageOptionSelected: {
     borderColor: colors.accent.primary,
     backgroundColor: 'rgba(91, 206, 250, 0.08)',
+  },
+  packageOptionPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
   },
   radioCircle: {
     width: 20,

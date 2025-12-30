@@ -1,9 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, borderRadius } from '../../theme/theme';
+import { useSensoryMode } from '../../contexts/SensoryModeContext';
 
 interface CoolDownExercise {
   name: string;
@@ -20,9 +21,16 @@ interface CoolDownPhaseProps {
 
 export default function CoolDownPhase({ coolDownExercises, totalDurationMinutes, onComplete }: CoolDownPhaseProps) {
   const insets = useSafeAreaInsets();
+  const { disableAnimations } = useSensoryMode();
+  const [completedExercises, setCompletedExercises] = useState<boolean[]>(
+    new Array(coolDownExercises.length).fill(false)
+  );
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Skip shimmer animation in low sensory mode
+    if (disableAnimations) return;
+
     Animated.loop(
       Animated.sequence([
         Animated.timing(shimmerAnim, {
@@ -37,7 +45,22 @@ export default function CoolDownPhase({ coolDownExercises, totalDurationMinutes,
         }),
       ])
     ).start();
-  }, [shimmerAnim]);
+  }, [shimmerAnim, disableAnimations]);
+
+  const toggleExercise = (index: number) => {
+    setCompletedExercises(prev => {
+      const updated = [...prev];
+      updated[index] = !updated[index];
+      return updated;
+    });
+  };
+
+  const allCompleted = completedExercises.every(completed => completed);
+
+  const handleCompletePress = () => {
+    console.log('🎯 Complete Workout button pressed', { allCompleted, completedExercises });
+    onComplete();
+  };
 
   const shimmerTranslate = shimmerAnim.interpolate({
     inputRange: [0, 1],
@@ -77,69 +100,112 @@ export default function CoolDownPhase({ coolDownExercises, totalDurationMinutes,
         </View>
 
         {coolDownExercises.map((exercise, index) => (
-          <View key={index} style={styles.exerciseItem}>
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.exerciseItem,
+              completedExercises[index] && styles.exerciseItemCompleted
+            ]}
+            onPress={() => toggleExercise(index)}
+            activeOpacity={0.7}
+          >
             <LinearGradient
               colors={['#141418', '#0A0A0C']}
               style={StyleSheet.absoluteFill}
             />
-            <LinearGradient
-              colors={['rgba(245, 169, 184, 0.08)', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
+            {completedExercises[index] && (
+              <LinearGradient
+                colors={['rgba(245, 169, 184, 0.1)', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+            )}
             <View style={styles.glassHighlight} />
 
-            <View style={styles.exerciseHeader}>
-              <View style={styles.numberBadge}>
-                <Text style={styles.exerciseNumber}>{index + 1}</Text>
-              </View>
-              <View style={styles.exerciseInfo}>
-                <Text style={styles.exerciseName}>{exercise.name}</Text>
-                <Text style={styles.exerciseDescription}>{exercise.description}</Text>
+            <View style={styles.exerciseCheckboxContainer}>
+              <View style={[
+                styles.checkbox,
+                completedExercises[index] && styles.checkboxChecked
+              ]}>
+                {completedExercises[index] && (
+                  <Ionicons name="checkmark" size={18} color={colors.text.inverse} />
+                )}
               </View>
             </View>
-            <View style={styles.exerciseDetails}>
-              {exercise.duration && (
-                <View style={styles.detailBadge}>
-                  <Ionicons name="time-outline" size={14} color={colors.accent.primary} />
-                  <Text style={styles.exerciseDetail}>{exercise.duration}</Text>
-                </View>
-              )}
-              {exercise.reps && (
-                <View style={styles.detailBadge}>
-                  <Ionicons name="repeat-outline" size={14} color={colors.accent.primary} />
-                  <Text style={styles.exerciseDetail}>{exercise.reps}</Text>
-                </View>
-              )}
+            <View style={styles.exerciseContent}>
+              <View style={styles.exerciseHeader}>
+                <Text style={[
+                  styles.exerciseName,
+                  completedExercises[index] && styles.exerciseNameCompleted
+                ]}>
+                  {exercise.name}
+                </Text>
+              </View>
+              <Text style={styles.exerciseDescription}>{exercise.description}</Text>
+              <View style={styles.exerciseDetails}>
+                {exercise.duration && (
+                  <View style={styles.detailBadge}>
+                    <Ionicons name="time-outline" size={14} color={colors.accent.primary} />
+                    <Text style={styles.exerciseDetail}>{exercise.duration}</Text>
+                  </View>
+                )}
+                {exercise.reps && (
+                  <View style={styles.detailBadge}>
+                    <Ionicons name="repeat-outline" size={14} color={colors.accent.primary} />
+                    <Text style={styles.exerciseDetail}>{exercise.reps}</Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
+
+        <View style={styles.hintContainer}>
+          <Ionicons name="checkmark-circle-outline" size={20} color={colors.accent.secondary} />
+          <Text style={styles.hintText}>
+            Check off each stretch as you complete it
+          </Text>
+        </View>
       </ScrollView>
 
       <View style={[styles.buttonContainer, { paddingBottom: insets.bottom + spacing.m }]}>
-        <TouchableOpacity style={styles.completeButton} onPress={onComplete} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[styles.completeButton, !allCompleted && styles.completeButtonDisabled]}
+          onPress={handleCompletePress}
+          activeOpacity={0.8}
+          disabled={!allCompleted}
+        >
           <LinearGradient
-            colors={[colors.accent.secondary, '#E88FA0']}
+            colors={allCompleted ? [colors.accent.secondary, '#E88FA0'] : [colors.glass.bg, colors.glass.bg]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.completeButtonGradient}
           >
-            <Animated.View
-              style={[
-                styles.shimmerOverlay,
-                { transform: [{ translateX: shimmerTranslate }] },
-              ]}
-            >
-              <LinearGradient
-                colors={['transparent', 'rgba(255, 255, 255, 0.2)', 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={StyleSheet.absoluteFill}
-              />
-            </Animated.View>
-            <Text style={styles.completeButtonText}>Complete Workout</Text>
-            <Ionicons name="checkmark-circle" size={22} color={colors.text.inverse} />
+            {allCompleted && !disableAnimations && (
+              <Animated.View
+                style={[
+                  styles.shimmerOverlay,
+                  { transform: [{ translateX: shimmerTranslate }] },
+                ]}
+              >
+                <LinearGradient
+                  colors={['transparent', 'rgba(255, 255, 255, 0.2)', 'transparent']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
+            )}
+            <Text style={[
+              styles.completeButtonText,
+              !allCompleted && styles.completeButtonTextDisabled
+            ]}>Complete Workout</Text>
+            <Ionicons
+              name="checkmark-circle"
+              size={22}
+              color={allCompleted ? colors.text.inverse : colors.text.tertiary}
+            />
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -227,6 +293,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     padding: spacing.m,
     marginBottom: spacing.m,
+    flexDirection: 'row',
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -242,6 +309,9 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  exerciseItemCompleted: {
+    borderColor: colors.glass.borderPink,
+  },
   glassHighlight: {
     position: 'absolute',
     top: 0,
@@ -250,36 +320,54 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
+  exerciseCheckboxContainer: {
+    marginRight: spacing.m,
+    justifyContent: 'flex-start',
+    paddingTop: spacing.xxs,
+  },
+  checkbox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.border.default,
+    backgroundColor: colors.bg.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.accent.secondary,
+    borderColor: colors.accent.secondary,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.accent.secondary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.4,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  exerciseContent: {
+    flex: 1,
+  },
   exerciseHeader: {
     flexDirection: 'row',
-    marginBottom: spacing.s,
-    gap: spacing.m,
-  },
-  numberBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: colors.accent.secondaryMuted,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.glass.borderPink,
-  },
-  exerciseNumber: {
-    fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.accent.secondary,
-  },
-  exerciseInfo: {
-    flex: 1,
+    marginBottom: spacing.xs,
   },
   exerciseName: {
     fontFamily: 'Poppins',
     fontSize: 16,
     fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: spacing.xxs,
+    flex: 1,
+  },
+  exerciseNameCompleted: {
+    color: colors.accent.secondary,
   },
   exerciseDescription: {
     fontFamily: 'Poppins',
@@ -291,7 +379,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.s,
     marginTop: spacing.s,
-    marginLeft: 44,
+  },
+  hintContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.m,
+    marginBottom: spacing.s,
+  },
+  hintText: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: colors.text.tertiary,
   },
   detailBadge: {
     flexDirection: 'row',
@@ -350,5 +450,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text.inverse,
     letterSpacing: 0.3,
+  },
+  completeButtonDisabled: {
+    opacity: 0.6,
+  },
+  completeButtonTextDisabled: {
+    color: colors.text.tertiary,
   },
 });

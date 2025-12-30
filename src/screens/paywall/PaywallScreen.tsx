@@ -15,11 +15,12 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { PurchasesPackage } from 'react-native-purchases';
+import { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
 import { Check, X, Sparkles, Shield, Dumbbell, LineChart, MessageCircle } from 'lucide-react-native';
 
 import { useSubscription } from '../../contexts/SubscriptionContext';
@@ -38,15 +39,31 @@ const PREMIUM_FEATURES: { id: FeatureId; icon: React.ReactNode }[] = [
 export default function PaywallScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isSmall = width < 375;
   const { packages, packagesLoading, purchase, restore, isLoading } = useSubscription();
 
   const [selectedPackage, setSelectedPackage] = useState<PurchasesPackage | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
-  // Find monthly and annual packages
-  const monthlyPackage = packages.find((p) => p.packageType === 'MONTHLY');
-  const annualPackage = packages.find((p) => p.packageType === 'ANNUAL');
+  // Find monthly and annual packages (with fallback for custom identifiers)
+  const monthlyPackage = packages.find((p) =>
+    p.packageType === PACKAGE_TYPE.MONTHLY ||
+    p.identifier.toLowerCase().includes('monthly')
+  );
+  const annualPackage = packages.find((p) =>
+    p.packageType === PACKAGE_TYPE.ANNUAL ||
+    p.identifier.toLowerCase().includes('annual')
+  );
+
+  // Debug logging
+  if (__DEV__) {
+    console.log('[Paywall] packages:', packages.length);
+    console.log('[Paywall] packageTypes:', packages.map(p => ({ id: p.identifier, type: p.packageType })));
+    console.log('[Paywall] monthlyPackage:', monthlyPackage?.identifier);
+    console.log('[Paywall] annualPackage:', annualPackage?.identifier);
+  }
 
   // Default to annual if available
   React.useEffect(() => {
@@ -147,8 +164,8 @@ export default function PaywallScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Unlock Premium</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, isSmall && styles.titleSmall]}>Unlock Premium</Text>
+          <Text style={[styles.subtitle, isSmall && styles.subtitleSmall]}>
             Get the full TransFitness experience
           </Text>
         </View>
@@ -180,12 +197,16 @@ export default function PaywallScreen() {
             {/* Annual Option */}
             {annualPackage && (
               <Pressable
-                style={[
+                style={({ pressed }) => [
                   styles.packageCard,
                   selectedPackage?.identifier === annualPackage.identifier &&
                     styles.packageCardSelected,
+                  pressed && styles.packageCardPressed,
                 ]}
-                onPress={() => setSelectedPackage(annualPackage)}
+                onPress={() => {
+                  if (__DEV__) console.log('[Paywall] Annual tapped');
+                  setSelectedPackage(annualPackage);
+                }}
               >
                 {/* Best Value Badge */}
                 <View style={styles.bestValueBadge}>
@@ -226,12 +247,16 @@ export default function PaywallScreen() {
             {/* Monthly Option */}
             {monthlyPackage && (
               <Pressable
-                style={[
+                style={({ pressed }) => [
                   styles.packageCard,
                   selectedPackage?.identifier === monthlyPackage.identifier &&
                     styles.packageCardSelected,
+                  pressed && styles.packageCardPressed,
                 ]}
-                onPress={() => setSelectedPackage(monthlyPackage)}
+                onPress={() => {
+                  if (__DEV__) console.log('[Paywall] Monthly tapped');
+                  setSelectedPackage(monthlyPackage);
+                }}
               >
                 <View style={styles.packageContent}>
                   <Text style={styles.packageName}>Monthly</Text>
@@ -343,23 +368,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.xl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: spacing['2xl'],
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
     color: colors.text.primary,
     marginBottom: 8,
     letterSpacing: -0.5,
   },
+  titleSmall: {
+    fontSize: 24,
+  },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  subtitleSmall: {
+    fontSize: 14,
   },
   featuresContainer: {
     backgroundColor: colors.bg.tertiary,
@@ -417,6 +448,10 @@ const styles = StyleSheet.create({
     borderColor: colors.accent.primary,
     backgroundColor: 'rgba(91, 206, 250, 0.08)',
   },
+  packageCardPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
   bestValueBadge: {
     position: 'absolute',
     top: -10,
@@ -456,7 +491,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   packagePrice: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: colors.text.primary,
   },

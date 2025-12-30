@@ -4,6 +4,8 @@ import { Card } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { palette, spacing, typography } from '../../theme';
 import { Exercise } from '../../types';
+import { FlaggedExercise } from '../../types/feedback';
+import ExerciseFlagButton from '../feedback/ExerciseFlagButton';
 
 interface SetCompletionFormProps {
   setNumber: number;
@@ -20,6 +22,8 @@ interface SetCompletionFormProps {
   onViewDetails?: () => void;
   onStopIfPain?: () => void;
   onSkipExercise?: () => void;
+  onFlagExercise?: (flag: FlaggedExercise) => void;
+  isExerciseFlagged?: boolean;
 }
 
 export default function SetCompletionForm({
@@ -33,6 +37,8 @@ export default function SetCompletionForm({
   onViewDetails,
   onStopIfPain,
   onSkipExercise,
+  onFlagExercise,
+  isExerciseFlagged,
 }: SetCompletionFormProps) {
   // Pre-fill with previous set values if available
   const [reps, setReps] = useState<number>(previousSet?.reps || prescribedReps);
@@ -61,10 +67,7 @@ export default function SetCompletionForm({
           <Text style={styles.exerciseName}>{exercise.name}</Text>
           <View style={styles.exerciseTags}>
             {exercise.target_muscles && (
-              <Text style={styles.tag}>🎯 {exercise.target_muscles}</Text>
-            )}
-            {exercise.gender_goal_emphasis && (
-              <Text style={styles.tag}>🏷️ {exercise.gender_goal_emphasis}</Text>
+              <Text style={styles.tag}>{exercise.target_muscles}</Text>
             )}
             {exercise.binder_aware && (
               <Text style={styles.safetyTag}>✓ binding-safe</Text>
@@ -201,13 +204,24 @@ export default function SetCompletionForm({
         )}
       </View>
 
-      {/* Stop if Pain */}
-      {onStopIfPain && (
-        <TouchableOpacity style={styles.painButton} onPress={onStopIfPain}>
-          <Ionicons name="warning-outline" size={20} color={palette.error} />
-          <Text style={styles.painButtonText}>🚨 Stop if pain</Text>
-        </TouchableOpacity>
-      )}
+      {/* Stop if Pain & Flag Exercise */}
+      <View style={styles.safetyActions}>
+        {onStopIfPain && (
+          <TouchableOpacity style={styles.painButton} onPress={onStopIfPain}>
+            <Ionicons name="warning-outline" size={20} color={palette.error} />
+            <Text style={styles.painButtonText}>🚨 Stop if pain</Text>
+          </TouchableOpacity>
+        )}
+        {onFlagExercise && (
+          <ExerciseFlagButton
+            exerciseId={exercise.id}
+            exerciseName={exercise.name}
+            setNumber={setNumber}
+            onFlag={onFlagExercise}
+            isFlagged={isExerciseFlagged}
+          />
+        )}
+      </View>
 
       {/* Previous Sets Display (if not first set) */}
       {setNumber > 1 && previousSet && (
@@ -462,13 +476,20 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: palette.midGray,
   },
+  safetyActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.l,
+    marginTop: spacing.m,
+    paddingVertical: spacing.s,
+  },
   painButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
     padding: spacing.m,
-    marginTop: spacing.m,
   },
   painButtonText: {
     ...typography.body,

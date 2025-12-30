@@ -14,7 +14,7 @@ import { SafetyContext, BlockCriteria } from './rulesEngine/rules/types';
 import { fetchAllExercises } from './exerciseService';
 import { selectExercisesForDay } from './workoutGeneration/exerciseSelection';
 import { calculateVolumeAdjustments, VolumeAdjustments } from './workoutGeneration/volumeAdjustment';
-import { filterByEquipment, filterByConstraints, calculateExerciseScore } from './workoutGeneration/utils';
+import { filterByEquipment, filterByConstraints, calculateExerciseScore, filterByTrainingEnvironment, filterByRecoveryPhase } from './workoutGeneration/utils';
 
 interface WorkoutGenerationOptions {
   duration: 30 | 45 | 60 | 90;
@@ -53,7 +53,9 @@ export function generateWorkout(
     selectedExercises = selectExercisesForDay(
       safeExercises,
       dayTemplate,
-      profile
+      profile,
+      [],
+      safetyContext
     );
   } else {
     // Fallback to old selection (for backwards compatibility)
@@ -124,15 +126,23 @@ export async function getFilteredExercisePool(profile: Profile): Promise<{
     !safetyContext.excluded_exercise_ids.includes(parseInt(ex.id))
   );
 
-  // 5. Apply existing equipment filter
+  // 5. Apply recovery phase filter (post-surgical safety)
+  // This ensures users in recovery only see exercises appropriate for their phase
+  filtered = filterByRecoveryPhase(filtered, profile);
+
+  // 6. Apply training environment filter (home vs gym vs outdoors)
+  filtered = filterByTrainingEnvironment(filtered, profile.training_environment);
+
+  // 7. Apply existing equipment filter
   filtered = filterByEquipment(filtered, profile.equipment || []);
 
-  // 6. Apply existing constraints filter
+  // 8. Apply existing constraints filter
   filtered = filterByConstraints(filtered, profile.constraints || []);
 
   console.log(`✅ Exercise filtering complete:`);
   console.log(`   Started with: ${allExercises.length} exercises`);
   console.log(`   After rules engine: ${filtered.length} exercises`);
+  console.log(`   Training environment: ${profile.training_environment || 'not specified'}`);
   console.log(`   Rules applied: ${safetyContext.rules_applied.length}`);
   console.log(`   Excluded: ${safetyContext.excluded_exercise_ids.length} unsafe exercises`);
 

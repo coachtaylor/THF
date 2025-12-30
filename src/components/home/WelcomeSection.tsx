@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../../theme/theme';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+import { colors, spacing } from '../../theme/theme';
 
 interface WelcomeSectionProps {
   userName?: string;
@@ -18,6 +18,9 @@ const MOTIVATIONAL_MESSAGES = [
 ];
 
 export default function WelcomeSection({ userName }: WelcomeSectionProps) {
+  const { width } = useWindowDimensions();
+  const isSmall = width < 375;
+
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) return 'Good morning';
@@ -25,7 +28,7 @@ export default function WelcomeSection({ userName }: WelcomeSectionProps) {
     return 'Good evening';
   }, []);
 
-  const displayName = userName || 'Dakotah';
+  const displayName = userName || 'friend';
 
   const motivationalMessage = useMemo(() => {
     const dayOfWeek = new Date().getDay();
@@ -34,25 +37,28 @@ export default function WelcomeSection({ userName }: WelcomeSectionProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.greeting}>
+      <Text style={[styles.greeting, isSmall && styles.greetingSmall]}>
         {greeting}, <Text style={styles.name}>{displayName}</Text>
       </Text>
-      <Text style={styles.motivation}>{motivationalMessage}</Text>
+      <Text style={[styles.motivation, isSmall && styles.motivationSmall]}>{motivationalMessage}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 8,
+    marginBottom: spacing.s,
   },
   greeting: {
     fontFamily: 'Poppins',
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '300',
     color: colors.text.primary,
     letterSpacing: -0.3,
     marginBottom: 4,
+  },
+  greetingSmall: {
+    fontSize: 20,
   },
   name: {
     fontWeight: '500',
@@ -60,9 +66,12 @@ const styles = StyleSheet.create({
   },
   motivation: {
     fontFamily: 'Poppins',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '400',
     color: colors.text.secondary,
     letterSpacing: -0.1,
+  },
+  motivationSmall: {
+    fontSize: 13,
   },
 });
