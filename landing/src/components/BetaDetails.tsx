@@ -101,7 +101,7 @@ export function BetaDetails() {
 
               <div className="relative">
                 <p className="text-base text-accent-blue font-semibold mb-4">
-                  Launching January 1st, 2026
+                  Launching January 5th, 2026
                 </p>
 
                 <div className="flex items-center gap-2 mb-4">

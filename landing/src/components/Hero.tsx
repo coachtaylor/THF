@@ -35,7 +35,7 @@ export function Hero() {
                 Coming Soon
               </p>
               <p className="text-3xl md:text-4xl font-bold text-text-primary">
-                Launching <span className="text-accent-blue">January 1st, 2026</span>
+                Launching <span className="text-accent-blue">January 5th, 2026</span>
               </p>
               <p className="text-base text-text-secondary mt-2">
                 Be one of the first to get access — limited founding athlete spots available
