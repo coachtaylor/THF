@@ -8,15 +8,18 @@ import { Profile } from '../../types';
 export async function checkOnboardingStatus(): Promise<boolean> {
   try {
     const profile = await getProfile();
-    
-    console.log('🔍 Checking onboarding status...');
-    console.log('  - Profile exists:', profile !== null);
-    
-    if (profile) {
-      console.log('  - gender_identity:', profile.gender_identity);
-      console.log('  - primary_goal:', profile.primary_goal);
-      console.log('  - fitness_experience:', profile.fitness_experience);
-      console.log('  - Profile ID:', profile.id || profile.user_id);
+
+    // SECURITY: Only log status, not sensitive profile field values
+    if (__DEV__) {
+      console.log('🔍 Checking onboarding status...');
+      console.log('  - Profile exists:', profile !== null);
+      if (profile) {
+        console.log('  - Has required fields:',
+          profile.gender_identity !== undefined &&
+          profile.primary_goal !== undefined &&
+          profile.fitness_experience !== undefined
+        );
+      }
     }
 
     // User has completed onboarding if they have a profile with required fields
@@ -26,11 +29,11 @@ export async function checkOnboardingStatus(): Promise<boolean> {
       profile.primary_goal !== undefined &&
       profile.fitness_experience !== undefined
     );
-    
-    console.log('🔍 Onboarding complete:', isComplete);
+
+    if (__DEV__) console.log('🔍 Onboarding complete:', isComplete);
     return isComplete;
   } catch (error) {
-    console.error('❌ Error checking onboarding status:', error);
+    if (__DEV__) console.error('❌ Error checking onboarding status:', error);
     return false;
   }
 }

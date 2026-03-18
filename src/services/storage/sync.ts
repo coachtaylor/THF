@@ -10,6 +10,7 @@ import { getProfile, syncProfileToCloud } from "./profile";
 import { logger } from "../../utils/logger";
 import { notifySyncError } from "../../utils/toast";
 import { syncAllUnsyncedFeedback } from "../feedback/feedbackReport";
+import { encryptValue, decryptValue } from "../../utils/encryption";
 
 // Lazy-initialized database connection
 // Prevents crash when module is imported before React Native runtime is ready
@@ -67,12 +68,15 @@ export interface SyncResult {
 
 /**
  * Load retry queue from AsyncStorage
+ * SECURITY: Decrypts queue data which may contain sensitive profile information
  */
 async function loadRetryQueue(): Promise<RetryQueueItem[]> {
   try {
-    const queueJson = await AsyncStorage.getItem(RETRY_QUEUE_KEY);
-    if (queueJson) {
-      return JSON.parse(queueJson);
+    const encryptedData = await AsyncStorage.getItem(RETRY_QUEUE_KEY);
+    if (encryptedData) {
+      // Decrypt the queue data
+      const decryptedJson = await decryptValue(encryptedData);
+      return JSON.parse(decryptedJson);
     }
   } catch (error) {
     console.error("Failed to load retry queue:", error);
@@ -82,10 +86,14 @@ async function loadRetryQueue(): Promise<RetryQueueItem[]> {
 
 /**
  * Save retry queue to AsyncStorage
+ * SECURITY: Encrypts queue data which may contain sensitive profile information
  */
 async function saveRetryQueue(queue: RetryQueueItem[]): Promise<void> {
   try {
-    await AsyncStorage.setItem(RETRY_QUEUE_KEY, JSON.stringify(queue));
+    const queueJson = JSON.stringify(queue);
+    // Encrypt before storing to protect sensitive health data
+    const encryptedData = await encryptValue(queueJson);
+    await AsyncStorage.setItem(RETRY_QUEUE_KEY, encryptedData);
     pendingSyncCount = queue.length;
   } catch (error) {
     console.error("Failed to save retry queue:", error);
@@ -94,6 +102,7 @@ async function saveRetryQueue(queue: RetryQueueItem[]): Promise<void> {
 
 /**
  * Add item to retry queue
+ * SECURITY: Data is encrypted before storage
  */
 async function addToRetryQueue(
   item: Omit<RetryQueueItem, "addedAt" | "retryCount">,

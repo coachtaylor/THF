@@ -118,6 +118,17 @@ const tableStatements = [
   `CREATE INDEX IF NOT EXISTS idx_feedback_unsynced ON feedback_reports(synced_at) WHERE synced_at IS NULL;`,
   `CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback_reports(user_id);`,
   `CREATE INDEX IF NOT EXISTS idx_feedback_category ON feedback_reports(category);`,
+  `CREATE TABLE IF NOT EXISTS push_tokens (
+    user_id TEXT PRIMARY KEY,
+    token TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );`,
+  `CREATE TABLE IF NOT EXISTS notification_settings (
+    user_id TEXT PRIMARY KEY,
+    settings TEXT NOT NULL,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );`,
 ];
 
 export async function initDatabase(): Promise<void> {

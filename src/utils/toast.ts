@@ -110,3 +110,10 @@ export function notifySyncError(): void {
 export function notifySaveSuccess(what: string = 'Changes'): void {
   showSuccessToast(`${what} saved`, 'Your data has been saved.');
 }
+
+/**
+ * Notify user of a success message
+ */
+export function notifySuccess(message: string): void {
+  showSuccessToast('Success', message);
+}
