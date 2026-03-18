@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  Linking,
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -329,6 +330,17 @@ export default function PaywallScreen() {
           Subscription automatically renews unless canceled at least 24 hours before the end of the current period.
         </Text>
 
+        {/* Privacy & Terms Links */}
+        <View style={styles.legalLinks}>
+          <Pressable onPress={() => Linking.openURL('https://transfitness.app/privacy')}>
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </Pressable>
+          <Text style={styles.legalLinkSeparator}>|</Text>
+          <Pressable onPress={() => Linking.openURL('https://transfitness.app/terms')}>
+            <Text style={styles.legalLink}>Terms of Service</Text>
+          </Pressable>
+        </View>
+
         {/* Safety Note */}
         <View style={styles.safetyNote}>
           <Shield size={16} color={colors.accent.secondary} />
@@ -564,7 +576,23 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     textAlign: 'center',
     lineHeight: 16,
+    marginBottom: 8,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 16,
+  },
+  legalLink: {
+    fontSize: 11,
+    color: colors.text.secondary,
+    textDecorationLine: 'underline',
+  },
+  legalLinkSeparator: {
+    fontSize: 11,
+    color: colors.text.tertiary,
   },
   safetyNote: {
     flexDirection: 'row',

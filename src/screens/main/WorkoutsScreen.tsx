@@ -267,7 +267,10 @@ export default function WorkoutsScreen() {
                 key={workout.id}
                 variant="default"
                 pressable
-                onPress={() => console.log('View workout:', workout.id)}
+                onPress={() => {
+                  // TODO: Navigate to workout detail screen when implemented
+                  if (__DEV__) console.log('View workout:', workout.id);
+                }}
                 style={styles.workoutCard}
               >
                 <View style={styles.workoutHeader}>
@@ -336,7 +339,10 @@ export default function WorkoutsScreen() {
             variant="secondary"
             size="medium"
             icon="list-outline"
-            onPress={() => console.log('View all workouts')}
+            onPress={() => {
+              // TODO: Navigate to full workout history screen when implemented
+              if (__DEV__) console.log('View all workouts');
+            }}
             fullWidth={false}
             style={styles.actionButton}
           />
@@ -345,7 +351,10 @@ export default function WorkoutsScreen() {
             variant="secondary"
             size="medium"
             icon="download-outline"
-            onPress={() => console.log('Export data')}
+            onPress={() => {
+              // TODO: Implement data export (CSV/JSON) when ready
+              if (__DEV__) console.log('Export data');
+            }}
             fullWidth={false}
             style={styles.actionButton}
           />
