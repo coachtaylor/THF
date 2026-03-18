@@ -71,3 +71,4 @@ scripts/seed_safety_config.sql
 # Sentry properties (contain auth tokens)
 ios/sentry.properties
 android/sentry.properties
+TASK_TRACKER.md
