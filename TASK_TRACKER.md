@@ -16,25 +16,28 @@
 
 ---
 
-## Phase 0: Stabilize Existing Work (Week 0 — NOW)
+## Phase 0: Stabilize Existing Work (Week 0) — COMPLETED 2026-03-18
 
-> **Why this phase exists:** 30+ modified/new files sit uncommitted on `develop`. Losing this work would set the project back weeks. Nothing else matters until the codebase is committed and stable.
+> **Why this phase exists:** 30+ modified/new files sat uncommitted on `develop`. Nothing else could start until the codebase was committed and stable.
 
-### 0.1 — Commit Uncommitted Changes
-| Status | Task | Files | Why |
-|--------|------|-------|-----|
-| TODO | Review and commit security & encryption system | `src/utils/encryption.ts` (new), `src/utils/rateLimiter.ts` (new), `src/utils/errorMessages.ts` (new) | Core security infrastructure — XOR encryption for 14 sensitive health fields, rate limiting on auth ops, error sanitization |
-| TODO | Review and commit auth service changes | `src/services/auth/auth.ts`, `src/services/auth/deepLinking.ts`, `src/services/auth/googleAuth.ts`, `src/services/auth/session.ts`, `src/services/auth/tokens.ts` | Token management, Google OAuth validation, deep link security, rate-limited auth |
-| TODO | Review and commit notification system | `src/contexts/NotificationContext.tsx` (new), `src/hooks/useNotifications.ts` (new), `src/services/notifications/` (new dir) | Full push notification infrastructure — local scheduling + cloud delivery via Expo |
-| TODO | Review and commit network context | `src/contexts/NetworkContext.tsx` (new) | Offline-aware connectivity state for the offline-first architecture |
-| TODO | Review and commit data layer changes | `src/utils/database.ts`, `src/utils/supabase.ts`, `src/services/storage/onboarding.ts`, `src/services/storage/profile.ts`, `src/services/storage/sync.ts` | Database schema, Supabase config, encrypted profile storage, sync service |
-| TODO | Review and commit context updates | `src/contexts/AuthContext.tsx`, `src/contexts/SubscriptionContext.tsx`, `src/contexts/WorkoutContext.tsx` | Auth state, RevenueCat subscription management, workout state |
-| TODO | Review and commit screen & service changes | `src/screens/main/SavedWorkoutsScreen.tsx`, `src/screens/main/SettingsScreen.tsx`, `src/screens/main/WorkoutsScreen.tsx`, `src/screens/paywall/PaywallScreen.tsx` | UI updates, paywall, settings |
-| TODO | Review and commit remaining services | `src/services/copilot/responseGenerator.ts`, `src/services/data/exerciseFilters.ts`, `src/services/feedback/feedbackReport.ts`, `src/services/feedback/survey.ts`, `src/services/init.ts`, `src/services/planGenerator.ts` | Copilot, exercise filtering, feedback, app init, plan generation |
-| TODO | Review and commit config & build files | `app.config.js`, `eas.json`, `package.json`, `package-lock.json`, `.env.example`, `App.tsx` | Build config, dependencies, env template, app entry point |
-| TODO | Review and commit Supabase infrastructure | `supabase/` (new dir), `scripts/migrations/001_create_missing_tables.sql`, `scripts/migrations/002_setup_notification_cron.sql` | Edge functions (send-notifications, delete-account), database migrations |
-| TODO | Review and commit iOS StoreKit config | `ios/TransFitness/Products.storekit` (new) | In-app purchase product definitions for App Store |
-| TODO | Handle deleted files | `CLAUDE.md`, `LAUNCH_TASKS.md`, `UNUSED_FILES_REPORT.md`, `exercisedb-not-found.csv`, `exercisedb-rejected.csv`, `exercises_rows (17).csv`, `replacement-review.csv` | Confirm these deletions are intentional — old task tracking files and CSV data that migrated to Supabase |
+### 0.1 — Commit Uncommitted Changes (13 commits)
+| Status | Task | Commit | Summary |
+|--------|------|--------|---------|
+| DONE | Security & encryption utilities | `2d21af1` | encryption.ts, rateLimiter.ts, errorMessages.ts — XOR cipher for 14 health fields, sliding-window rate limiter, error sanitizer |
+| DONE | Auth service hardening | `65bc958` | Rate limiting, token validation, deep link security, Google OAuth ID token validation |
+| DONE | Notification system | `739d177` | NotificationContext, useNotifications hook, notificationService — local + cloud push |
+| DONE | Network context | `2325b00` | NetworkContext.tsx — offline-aware connectivity state |
+| DONE | Data layer enhancements | `3f28ffe` | Encrypted profile storage, Supabase security, GDPR deletion, sync improvements |
+| DONE | Context updates | `53ebdb4` | AuthContext, SubscriptionContext (RevenueCat), WorkoutContext |
+| DONE | Screen & paywall changes | `bd72cd0` | Settings overhaul, paywall enhancements, workout UI fixes |
+| DONE | Service updates | `df1b488` | Copilot, exercise filters, feedback, plan generator improvements |
+| DONE | Config & build files | `e315cd9` | app.config.js, eas.json, package.json, .env.example, App.tsx |
+| DONE | Supabase infrastructure | `4ee83bb` | Edge functions (delete-account, send-notifications), database migrations |
+| DONE | iOS StoreKit config | `f8798ba` | Products.storekit — monthly/annual subscription product definitions |
+| DONE | Removed obsolete files | `730e2dd` | CLAUDE.md, LAUNCH_TASKS.md, UNUSED_FILES_REPORT.md, exercise CSVs (migrated to Supabase) |
+| DONE | Added task tracker | `6a22171` | This document — phased 90-day action plan mapped against codebase reality |
+
+> **Note:** `TransFitness_Business_Plan (1).md` intentionally NOT committed — confidential investor document.
 
 ---
 
