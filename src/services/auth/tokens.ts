@@ -53,14 +53,67 @@ export async function clearTokens(): Promise<void> {
 
 /**
  * Check if token is expired
+ *
+ * SECURITY NOTE: This only checks the expiration time for UI/UX purposes
+ * (e.g., determining whether to proactively refresh). Actual authentication
+ * decisions MUST use supabase.auth.getUser() which validates the token
+ * signature server-side.
+ *
+ * @param token - JWT access token
+ * @param bufferSeconds - Optional buffer to trigger refresh before actual expiration (default: 300 = 5 min)
+ * @returns true if token is expired or will expire within buffer period
  */
-export function isTokenExpired(token: string): boolean {
+export function isTokenExpired(token: string, bufferSeconds: number = 300): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    // Basic format validation
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return true;
+    }
+
+    // Decode payload (base64url -> base64 -> JSON)
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+
+    // Check for required exp claim
+    if (typeof payload.exp !== 'number') {
+      return true;
+    }
+
     const expirationTime = payload.exp * 1000; // Convert to milliseconds
-    return Date.now() >= expirationTime;
+    const bufferMs = bufferSeconds * 1000;
+
+    // Return true if expired OR will expire within buffer period
+    return Date.now() >= expirationTime - bufferMs;
   } catch (error) {
+    // If we can't decode, assume expired to trigger refresh
     return true;
+  }
+}
+
+/**
+ * Get token expiration time in milliseconds
+ * Returns null if token is invalid
+ */
+export function getTokenExpirationTime(token: string): number | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+
+    if (typeof payload.exp !== 'number') {
+      return null;
+    }
+
+    return payload.exp * 1000;
+  } catch {
+    return null;
   }
 }
 
