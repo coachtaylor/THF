@@ -5,6 +5,7 @@ import { initWorkoutLogStorage } from "./storage/workoutLog";
 import { initPRStorage } from "./storage/personalRecords";
 import { initAnalytics } from "./analytics";
 import { initSyncService } from "./storage/sync";
+import { initNotificationService } from "./notifications";
 
 // Cleanup function for sync service
 let cleanupSync: (() => void) | null = null;
@@ -20,6 +21,9 @@ export async function initializeApp(): Promise<void> {
     await initWorkoutLogStorage();
     await initPRStorage();
     await initAnalytics();
+
+    // Initialize notification service
+    await initNotificationService();
 
     // Initialize cloud sync service (starts background sync)
     cleanupSync = initSyncService();

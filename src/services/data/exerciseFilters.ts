@@ -307,11 +307,7 @@ export function filterExercisesByConstraints(
   const fitnessLevel = (profile.fitness_level as FitnessLevel | undefined) || undefined;
   const constraints = profile.constraints || [];
 
-  console.log(`🔍 Filtering ${exercises.length} exercises with profile:`, {
-    equipment: profile.equipment,
-    fitness_level: profile.fitness_level,
-    constraints: profile.constraints,
-  });
+  if (__DEV__) console.log(`🔍 Filtering ${exercises.length} exercises with profile constraints`);
 
   // 1. Filter by equipment availability - prefer raw equipment, fall back to canonical
   const beforeEquipment = filtered.length;
@@ -320,23 +316,18 @@ export function filterExercisesByConstraints(
     if (!matchesEquipment) return false;
     return true;
   });
-  console.log(`   Equipment filter: ${beforeEquipment} → ${filtered.length} exercises`);
-  console.log(`   User equipment (canonical): ${(profile.equipment || []).join(', ') || 'none'}`);
-  if (filtered.length > 0) {
-    const sample = filtered[0];
-    console.log(`   Sample filtered exercise: ${sample.name} (equipment: ${sample.equipment.join(', ') || 'none'})`);
-  }
-
+  if (__DEV__) console.log(`   Equipment filter: ${beforeEquipment} → ${filtered.length} exercises`);
+  
   // 2. Filter by fitness level / difficulty
   // Only include exercises whose difficulty <= user's fitness level
   if (fitnessLevel) {
     const beforeDifficulty = filtered.length;
     filtered = filtered.filter(ex => matchesDifficulty(ex, fitnessLevel));
-    console.log(`   Difficulty filter: ${beforeDifficulty} → ${filtered.length} exercises`);
-    
+    if (__DEV__) console.log(`   Difficulty filter: ${beforeDifficulty} → ${filtered.length} exercises`);
+
     // Graceful fallback: If filtering removes everything, keep all exercises
     if (filtered.length === 0) {
-      console.log(`   ⚠️ Difficulty filter removed all exercises, falling back to equipment-filtered only`);
+      if (__DEV__) console.log(`   ⚠️ Difficulty filter removed all exercises, falling back`);
       // Re-apply equipment filter if it was applied
       filtered = exercises.filter(ex => {
         const matchesEquipment = exerciseMatchesEquipment(ex, profile);
@@ -351,7 +342,7 @@ export function filterExercisesByConstraints(
   if (hasBinderConstraint) {
     const beforeBinder = filtered.length;
     const binderAwareExercises = filtered.filter(ex => ex.binder_aware === true);
-    console.log(`   Binder filter: ${beforeBinder} total, ${binderAwareExercises.length} binder-aware`);
+    if (__DEV__) console.log(`   Binder filter: ${beforeBinder} → ${binderAwareExercises.length} exercises`);
     // If we have binder-aware exercises, use them; otherwise fall back to all exercises
     if (binderAwareExercises.length > 0) {
       filtered = binderAwareExercises;

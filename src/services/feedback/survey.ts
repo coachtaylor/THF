@@ -1,10 +1,12 @@
 // Survey Service for TransFitness Beta Feedback
 // PRD 3.0 Section 7.3: User validation metrics
 // Stores survey responses locally and syncs to Supabase
+// SECURITY: Encrypts survey data in AsyncStorage as it may contain health-related feedback
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { trackEvent } from '../analytics';
 import { supabase } from '../../utils/supabase';
+import { encryptValue, decryptValue } from '../../utils/encryption';
 
 const SURVEY_STORAGE_KEY = '@transfitness:survey_responses';
 const SURVEY_STATE_KEY = '@transfitness:survey_state';
@@ -33,12 +35,14 @@ const DEFAULT_SURVEY_STATE: SurveyState = {
 
 /**
  * Initialize survey state
+ * SECURITY: Decrypts survey state from storage
  */
 export async function initSurveyState(): Promise<SurveyState> {
   try {
-    const stateJson = await AsyncStorage.getItem(SURVEY_STATE_KEY);
-    if (stateJson) {
-      return JSON.parse(stateJson);
+    const encryptedState = await AsyncStorage.getItem(SURVEY_STATE_KEY);
+    if (encryptedState) {
+      const decrypted = await decryptValue(encryptedState);
+      return JSON.parse(decrypted);
     }
     return DEFAULT_SURVEY_STATE;
   } catch (error) {
@@ -56,12 +60,14 @@ export async function getSurveyState(): Promise<SurveyState> {
 
 /**
  * Update survey state
+ * SECURITY: Encrypts survey state before storage
  */
 async function updateSurveyState(updates: Partial<SurveyState>): Promise<void> {
   try {
     const currentState = await getSurveyState();
     const newState = { ...currentState, ...updates };
-    await AsyncStorage.setItem(SURVEY_STATE_KEY, JSON.stringify(newState));
+    const encrypted = await encryptValue(JSON.stringify(newState));
+    await AsyncStorage.setItem(SURVEY_STATE_KEY, encrypted);
   } catch (error) {
     console.error('Error updating survey state:', error);
   }
@@ -97,18 +103,24 @@ async function syncSurveyToSupabase(response: SurveyResponse): Promise<void> {
 
 /**
  * Save a survey response
+ * SECURITY: Encrypts survey responses before storage
  */
 export async function saveSurveyResponse(response: SurveyResponse): Promise<void> {
   try {
-    // Get existing responses
-    const responsesJson = await AsyncStorage.getItem(SURVEY_STORAGE_KEY);
-    const responses: SurveyResponse[] = responsesJson ? JSON.parse(responsesJson) : [];
+    // Get existing responses (encrypted)
+    const encryptedResponses = await AsyncStorage.getItem(SURVEY_STORAGE_KEY);
+    let responses: SurveyResponse[] = [];
+    if (encryptedResponses) {
+      const decrypted = await decryptValue(encryptedResponses);
+      responses = JSON.parse(decrypted);
+    }
 
     // Add new response
     responses.push(response);
 
-    // Save updated responses locally
-    await AsyncStorage.setItem(SURVEY_STORAGE_KEY, JSON.stringify(responses));
+    // Save updated responses locally (encrypted)
+    const encrypted = await encryptValue(JSON.stringify(responses));
+    await AsyncStorage.setItem(SURVEY_STORAGE_KEY, encrypted);
 
     // Sync to Supabase (fire and forget)
     syncSurveyToSupabase(response);
@@ -155,11 +167,16 @@ export async function trackSurveySkipped(triggerPoint: 'onboarding' | 'workout' 
 
 /**
  * Get all survey responses
+ * SECURITY: Decrypts survey responses from storage
  */
 export async function getSurveyResponses(): Promise<SurveyResponse[]> {
   try {
-    const responsesJson = await AsyncStorage.getItem(SURVEY_STORAGE_KEY);
-    return responsesJson ? JSON.parse(responsesJson) : [];
+    const encryptedResponses = await AsyncStorage.getItem(SURVEY_STORAGE_KEY);
+    if (encryptedResponses) {
+      const decrypted = await decryptValue(encryptedResponses);
+      return JSON.parse(decrypted);
+    }
+    return [];
   } catch (error) {
     console.error('Error getting survey responses:', error);
     return [];

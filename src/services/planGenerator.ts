@@ -17,6 +17,18 @@ import { logger } from '../utils/logger';
 import { Exercise, ExerciseInstance } from '../types';
 
 /**
+ * Get the start of the week (Sunday) for a given date
+ * Used to align plan generation with UI calendar week display
+ */
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sunday
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
  * Profile Validation
  * Checks for contradictory or impossible profile data before generating workouts
  */
@@ -550,7 +562,8 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
 
   // Calculate number of days
   const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
-  const startDate = new Date();
+  // Start plan from beginning of current week (Sunday) so dates align with UI calendar
+  const startDate = getWeekStart(new Date());
 
   // Get user's preferred workout days (or generate smart defaults)
   const workoutDays = profile.preferred_workout_days && profile.preferred_workout_days.length > 0
@@ -735,7 +748,8 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
   const template = selectTemplate(profile);
 
   const daysCount = (profile.block_length || 1) === 1 ? 7 : 28;
-  const startDate = new Date();
+  // Start plan from beginning of current week (Sunday) so dates align with UI calendar
+  const startDate = getWeekStart(new Date());
   const days: Day[] = [];
 
   // Get user's preferred workout days (or generate smart defaults)
