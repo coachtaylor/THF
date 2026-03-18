@@ -48,6 +48,7 @@ interface SubscriptionContextValue {
   purchase: (pkg: PurchasesPackage) => Promise<boolean>;
   restore: () => Promise<boolean>;
   refreshStatus: () => Promise<void>;
+  retryLoadPackages: () => void;
 
   // Convenience helpers
   isPremium: boolean;
@@ -101,9 +102,9 @@ export function SubscriptionProvider({
         const currentStatus = await getSubscriptionStatus();
         setStatus(currentStatus);
 
-        console.log('[Subscription] Initialized, tier:', currentStatus.tier);
+        if (__DEV__) console.log('[Subscription] Initialized, tier:', currentStatus.tier);
       } catch (err) {
-        console.error('[Subscription] Init error:', err);
+        if (__DEV__) console.error('[Subscription] Init error:', err);
         setError(err instanceof Error ? err.message : 'Failed to initialize');
         // Default to free tier on error
         setStatus(DEFAULT_STATUS);
@@ -118,7 +119,7 @@ export function SubscriptionProvider({
   // Listen for subscription changes
   useEffect(() => {
     const handleCustomerInfoUpdate = (customerInfo: CustomerInfo) => {
-      console.log('[Subscription] Customer info updated');
+      if (__DEV__) console.log('[Subscription] Customer info updated');
       // Re-fetch status to get our parsed format
       getSubscriptionStatus().then(setStatus);
     };
@@ -135,23 +136,43 @@ export function SubscriptionProvider({
     }
   }, [isAuthenticated]);
 
-  // Load packages for paywall
-  const loadPackages = useCallback(async () => {
+  // Load packages for paywall with retry logic
+  const loadPackagesWithRetry = useCallback(async (retryCount = 0) => {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 1000;
+
     setPackagesLoading(true);
     try {
       const availablePackages = await getPackages();
       setPackages(availablePackages);
+      setPackagesLoading(false);
     } catch (err) {
-      console.error('[Subscription] Failed to load packages:', err);
-    } finally {
+      if (__DEV__) console.error('[Subscription] Failed to load packages:', err);
+
+      // Retry with exponential backoff
+      if (retryCount < MAX_RETRIES) {
+        const delay = RETRY_DELAY_MS * Math.pow(2, retryCount);
+        if (__DEV__) console.log(`[Subscription] Retrying package load in ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`);
+        setTimeout(() => loadPackagesWithRetry(retryCount + 1), delay);
+        return; // Don't set loading to false yet
+      }
+
+      // All retries exhausted
+      setError('Unable to load subscription options. Please try again.');
       setPackagesLoading(false);
     }
   }, []);
 
+  // Manual retry function for UI
+  const retryLoadPackages = useCallback(() => {
+    setError(null);
+    loadPackagesWithRetry(0);
+  }, [loadPackagesWithRetry]);
+
   // Load packages on mount
   useEffect(() => {
-    loadPackages();
-  }, [loadPackages]);
+    loadPackagesWithRetry(0);
+  }, [loadPackagesWithRetry]);
 
   // Purchase a package
   const purchase = useCallback(async (pkg: PurchasesPackage): Promise<boolean> => {
@@ -203,7 +224,7 @@ export function SubscriptionProvider({
       const currentStatus = await getSubscriptionStatus();
       setStatus(currentStatus);
     } catch (err) {
-      console.error('[Subscription] Refresh failed:', err);
+      if (__DEV__) console.error('[Subscription] Refresh failed:', err);
     }
   }, []);
 
@@ -229,6 +250,7 @@ export function SubscriptionProvider({
       purchase,
       restore,
       refreshStatus,
+      retryLoadPackages,
       isPremium,
       canAccess,
       freeTierLimits: FREE_TIER_LIMITS,
@@ -243,6 +265,7 @@ export function SubscriptionProvider({
       purchase,
       restore,
       refreshStatus,
+      retryLoadPackages,
       isPremium,
       canAccess,
     ]

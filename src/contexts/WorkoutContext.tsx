@@ -218,7 +218,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       completedCooldownExercises,
       workoutDuration,
     }).catch((error) => {
-      console.error('Failed to persist workout session:', error);
+      if (__DEV__) console.error('Failed to persist workout session:', error);
       notifyError('Session backup failed', 'Your workout progress may not be saved if app closes');
     });
   }, [
@@ -274,7 +274,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
       return true;
     } catch (error) {
-      console.error('Failed to resume session:', error);
+      if (__DEV__) console.error('Failed to resume session:', error);
       return false;
     }
   }, []);
@@ -374,7 +374,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       const logId = await startWorkoutLog(userId, newWorkout.id);
       setWorkoutLogId(logId);
     } catch (error) {
-      console.error('Failed to start workout log:', error);
+      if (__DEV__) console.error('Failed to start workout log:', error);
       setWorkoutLogId(null);
     }
 
@@ -385,7 +385,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         const history = await getLastPerformanceForExercises(options.userId, exerciseIds);
         setExerciseHistory(history);
       } catch (error) {
-        console.error('Failed to load exercise history:', error);
+        if (__DEV__) console.error('Failed to load exercise history:', error);
         setExerciseHistory(new Map());
       }
     } else {
@@ -449,7 +449,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         await logSet(workoutLogId, setLog);
         setHasSaveError(false); // Clear error state on successful save
       } catch (error) {
-        console.error('Failed to save set to database:', error);
+        if (__DEV__) console.error('Failed to save set to database:', error);
         notifyError('Set not saved', 'Your workout data may not be fully recorded');
         // Continue anyway - don't block UI for database errors
       }
@@ -648,7 +648,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
           exercises_completed: currentExerciseIndex + 1,
         });
       } catch (error) {
-        console.error('Failed to complete workout log:', error);
+        if (__DEV__) console.error('Failed to complete workout log:', error);
         notifyError('Workout not fully saved', 'Some data may be missing from your history');
         // Continue anyway - don't block UI for database errors
       }

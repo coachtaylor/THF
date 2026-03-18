@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User } from '../types/auth';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { User, AuthTokens } from '../types/auth';
 import * as authService from '../services/auth/auth';
 import { signInWithGoogle as googleSignIn, GoogleAuthResult } from '../services/auth/googleAuth';
+import { initializeSession, scheduleTokenRefresh } from '../services/auth/session';
 
 interface AuthContextValue {
   user: User | null;
@@ -20,15 +21,31 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const cleanupRefreshRef = useRef<(() => void) | null>(null);
 
-  // Initialize auth state
+  // Initialize auth state with proper session management
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const currentUser = await authService.getCurrentUser();
-        setUser(currentUser);
+        // Use initializeSession for proper token validation and refresh
+        const sessionState = await initializeSession();
+        setUser(sessionState.user);
+
+        // Schedule proactive token refresh if we have valid tokens
+        if (sessionState.tokens) {
+          cleanupRefreshRef.current = scheduleTokenRefresh(
+            sessionState.tokens,
+            (newTokens: AuthTokens) => {
+              if (__DEV__) console.log('Token refreshed successfully');
+            },
+            (error: Error) => {
+              if (__DEV__) console.error('Token refresh failed:', error);
+              setUser(null);
+            }
+          );
+        }
       } catch (error) {
-        console.error('Auth init error:', error);
+        if (__DEV__) console.error('Auth init error:', error);
       } finally {
         setIsLoading(false);
       }
@@ -44,6 +61,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       subscription.unsubscribe();
+      if (cleanupRefreshRef.current) {
+        cleanupRefreshRef.current();
+      }
     };
   }, []);
 
