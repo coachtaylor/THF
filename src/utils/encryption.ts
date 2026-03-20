@@ -1,13 +1,14 @@
 /**
  * Encryption utilities for protecting sensitive health data
  *
- * IMPLEMENTATION NOTES (v1.0):
+ * IMPLEMENTATION (v1.1 — AES-256-GCM):
  *
- * Current Implementation:
- * - XOR-based stream cipher with random IV per encryption
+ * - AES-256-GCM authenticated encryption via @noble/ciphers (audited, pure JS)
  * - 256-bit key stored in SecureStore (iOS Keychain / Android Keystore)
- * - Provides client-side obfuscation for sensitive health data
- * - Keys are device-specific and protected by OS secure storage
+ * - Random 96-bit nonce per encryption (GCM standard)
+ * - GCM authentication tag provides tamper detection (no separate HMAC needed)
+ * - Backward compatible: decrypts legacy XOR-encrypted data (ENC: prefix)
+ *   and re-encrypts with AES-GCM on next save
  *
  * Encrypted Fields:
  * - HRT status, type, and dates
@@ -16,22 +17,18 @@
  * - Dysphoria triggers and notes
  * - Gender identity and date of birth
  *
- * v1.1 Upgrade Plan:
- * - Migrate to AES-256-GCM via expo-crypto (authenticated encryption)
- * - Add HMAC for tamper detection
- * - Consider key rotation strategy
- *
- * SECURITY NOTE: XOR cipher provides reasonable protection for client-side
- * data at rest, but is not cryptographically equivalent to AES. The primary
- * security comes from the key being stored in OS secure storage.
+ * Format: "AES:" + hex(nonce_12bytes + ciphertext + tag_16bytes)
+ * Legacy: "ENC:" + hex(iv_16bytes + xor_ciphertext)
  */
 
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
+import { gcm } from '@noble/ciphers/aes.js';
 
 const ENCRYPTION_KEY_ALIAS = 'transfitness_encryption_key';
 const KEY_LENGTH = 32; // 256 bits for AES-256
-const IV_LENGTH = 16; // 128 bits for AES IV
+const NONCE_LENGTH = 12; // 96 bits — GCM standard nonce size
+const LEGACY_IV_LENGTH = 16; // Legacy XOR cipher IV size
 
 /**
  * Sensitive fields that should always be encrypted before storage
@@ -116,17 +113,108 @@ function hexToBytes(hex: string): Uint8Array {
   return bytes;
 }
 
+// =============================================================================
+// AES-256-GCM (current — v1.1)
+// =============================================================================
+
 /**
- * XOR two byte arrays (for simple encryption in absence of SubtleCrypto)
- * This uses key + IV mixing for better security
+ * Encrypt a string value using AES-256-GCM
+ * Returns hex-encoded: nonce (12 bytes) + ciphertext + GCM tag (16 bytes)
  */
-function xorEncrypt(data: Uint8Array, key: Uint8Array, iv: Uint8Array): Uint8Array {
+export async function encryptValue(plaintext: string): Promise<string> {
+  if (!plaintext) return plaintext;
+
+  try {
+    const key = await getOrCreateEncryptionKey();
+    const keyBytes = hexToBytes(key);
+
+    // Generate random nonce (96 bits — GCM standard)
+    const nonce = await Crypto.getRandomBytesAsync(NONCE_LENGTH);
+
+    // Convert plaintext to bytes
+    const encoder = new TextEncoder();
+    const plaintextBytes = encoder.encode(plaintext);
+
+    // Encrypt with AES-256-GCM (includes authentication tag)
+    const aes = gcm(keyBytes, nonce);
+    const ciphertext = aes.encrypt(plaintextBytes);
+
+    // Combine nonce + ciphertext (tag is appended by GCM)
+    const combined = new Uint8Array(NONCE_LENGTH + ciphertext.length);
+    combined.set(nonce, 0);
+    combined.set(ciphertext, NONCE_LENGTH);
+
+    return 'AES:' + bytesToHex(combined);
+  } catch (error) {
+    console.error('Encryption failed:', error);
+    // Return original value if encryption fails (fail-open for usability)
+    return plaintext;
+  }
+}
+
+/**
+ * Decrypt a string value
+ * Handles both AES-256-GCM (AES: prefix) and legacy XOR (ENC: prefix)
+ */
+export async function decryptValue(encrypted: string): Promise<string> {
+  if (!encrypted) return encrypted;
+
+  // AES-256-GCM (current)
+  if (encrypted.startsWith('AES:')) {
+    return decryptAES(encrypted);
+  }
+
+  // Legacy XOR cipher (v1.0 — backward compatibility)
+  if (encrypted.startsWith('ENC:')) {
+    return decryptLegacyXOR(encrypted);
+  }
+
+  // Value is not encrypted, return as-is (migration support)
+  return encrypted;
+}
+
+/**
+ * Decrypt AES-256-GCM encrypted value
+ */
+async function decryptAES(encrypted: string): Promise<string> {
+  try {
+    const key = await getOrCreateEncryptionKey();
+    const keyBytes = hexToBytes(key);
+
+    // Remove prefix and decode
+    const hexData = encrypted.slice(4); // Remove "AES:"
+    const combined = hexToBytes(hexData);
+
+    // Extract nonce and ciphertext (+ GCM tag)
+    const nonce = combined.slice(0, NONCE_LENGTH);
+    const ciphertext = combined.slice(NONCE_LENGTH);
+
+    // Decrypt with AES-256-GCM (also verifies authentication tag)
+    const aes = gcm(keyBytes, nonce);
+    const plaintextBytes = aes.decrypt(ciphertext);
+
+    const decoder = new TextDecoder();
+    return decoder.decode(plaintextBytes);
+  } catch (error) {
+    console.error('AES decryption failed:', error);
+    return encrypted;
+  }
+}
+
+// =============================================================================
+// Legacy XOR cipher (v1.0 — read-only for migration)
+// =============================================================================
+
+/**
+ * XOR decrypt (legacy v1.0 — kept for reading old encrypted data)
+ * Data will be re-encrypted with AES-GCM on next save.
+ */
+function xorDecrypt(data: Uint8Array, key: Uint8Array, iv: Uint8Array): Uint8Array {
   const result = new Uint8Array(data.length);
   const keyLen = key.length;
   const ivLen = iv.length;
 
   for (let i = 0; i < data.length; i++) {
-    // Mix key and IV for each position to create pseudo-random stream
     const keyByte = key[i % keyLen];
     const ivByte = iv[i % ivLen];
     const mixedByte = (keyByte ^ ivByte ^ (i & 0xff)) & 0xff;
@@ -136,80 +224,32 @@ function xorEncrypt(data: Uint8Array, key: Uint8Array, iv: Uint8Array): Uint8Arr
 }
 
 /**
- * Encrypt a string value
- * Returns base64-encoded encrypted data with IV prepended
- *
- * Format: IV (16 bytes) + encrypted data
+ * Decrypt legacy XOR-encrypted value (ENC: prefix)
  */
-export async function encryptValue(plaintext: string): Promise<string> {
-  if (!plaintext) return plaintext;
-
+async function decryptLegacyXOR(encrypted: string): Promise<string> {
   try {
     const key = await getOrCreateEncryptionKey();
     const keyBytes = hexToBytes(key);
 
-    // Generate random IV
-    const iv = await Crypto.getRandomBytesAsync(IV_LENGTH);
-
-    // Convert plaintext to bytes
-    const encoder = new TextEncoder();
-    const plaintextBytes = encoder.encode(plaintext);
-
-    // Encrypt using XOR with key+IV mixing
-    const encryptedBytes = xorEncrypt(plaintextBytes, keyBytes, iv);
-
-    // Combine IV + encrypted data
-    const combined = new Uint8Array(IV_LENGTH + encryptedBytes.length);
-    combined.set(iv, 0);
-    combined.set(encryptedBytes, IV_LENGTH);
-
-    // Return as base64-like hex encoding (more reliable in React Native)
-    return 'ENC:' + bytesToHex(combined);
-  } catch (error) {
-    console.error('Encryption failed:', error);
-    // Return original value if encryption fails (fail-open for usability)
-    // In production, consider fail-closed behavior
-    return plaintext;
-  }
-}
-
-/**
- * Decrypt a string value
- * Expects base64-encoded encrypted data with IV prepended
- */
-export async function decryptValue(encrypted: string): Promise<string> {
-  if (!encrypted) return encrypted;
-
-  // Check if value is encrypted (has our prefix)
-  if (!encrypted.startsWith('ENC:')) {
-    // Value is not encrypted, return as-is (migration support)
-    return encrypted;
-  }
-
-  try {
-    const key = await getOrCreateEncryptionKey();
-    const keyBytes = hexToBytes(key);
-
-    // Remove prefix and decode
-    const hexData = encrypted.slice(4);
+    const hexData = encrypted.slice(4); // Remove "ENC:"
     const combined = hexToBytes(hexData);
 
-    // Extract IV and encrypted data
-    const iv = combined.slice(0, IV_LENGTH);
-    const encryptedBytes = combined.slice(IV_LENGTH);
+    const iv = combined.slice(0, LEGACY_IV_LENGTH);
+    const encryptedBytes = combined.slice(LEGACY_IV_LENGTH);
 
-    // Decrypt using XOR (symmetric - same operation as encrypt)
-    const decryptedBytes = xorEncrypt(encryptedBytes, keyBytes, iv);
+    const decryptedBytes = xorDecrypt(encryptedBytes, keyBytes, iv);
 
-    // Convert back to string
     const decoder = new TextDecoder();
     return decoder.decode(decryptedBytes);
   } catch (error) {
-    console.error('Decryption failed:', error);
-    // Return original value if decryption fails
+    console.error('Legacy XOR decryption failed:', error);
     return encrypted;
   }
 }
+
+// =============================================================================
+// Batch encrypt/decrypt for profile objects
+// =============================================================================
 
 /**
  * Encrypt an object, encrypting only sensitive fields
@@ -236,10 +276,8 @@ export async function encryptSensitiveFields<T extends Record<string, any>>(
       } else if (typeof value === 'number') {
         (result as any)[field] = await encryptValue(String(value));
       } else if (Array.isArray(value)) {
-        // For arrays (like surgeries), encrypt the JSON representation
         (result as any)[field] = await encryptValue(JSON.stringify(value));
       } else if (typeof value === 'object') {
-        // For objects, encrypt the JSON representation
         (result as any)[field] = await encryptValue(JSON.stringify(value));
       }
     }
@@ -250,6 +288,7 @@ export async function encryptSensitiveFields<T extends Record<string, any>>(
 
 /**
  * Decrypt an object, decrypting sensitive fields
+ * Handles both AES-GCM and legacy XOR transparently
  */
 export async function decryptSensitiveFields<T extends Record<string, any>>(
   obj: T,
@@ -293,10 +332,10 @@ export async function decryptSensitiveFields<T extends Record<string, any>>(
 }
 
 /**
- * Check if a value is encrypted
+ * Check if a value is encrypted (either AES or legacy XOR)
  */
 export function isEncrypted(value: string): boolean {
-  return typeof value === 'string' && value.startsWith('ENC:');
+  return typeof value === 'string' && (value.startsWith('AES:') || value.startsWith('ENC:'));
 }
 
 /**

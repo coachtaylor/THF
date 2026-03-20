@@ -1,5 +1,13 @@
 // Note: jest-expo handles React Native mocking automatically
 
+// Mock @noble/ciphers (ESM-only, not compatible with Jest CJS transform)
+jest.mock('@noble/ciphers/aes.js', () => ({
+  gcm: jest.fn((key, nonce) => ({
+    encrypt: jest.fn((data) => data),
+    decrypt: jest.fn((data) => data),
+  })),
+}));
+
 // Mock expo modules
 jest.mock('expo-linear-gradient', () => {
   const { View } = require('react-native');
