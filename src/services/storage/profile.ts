@@ -257,10 +257,14 @@ export async function syncProfileToCloud(profile: Profile): Promise<void> {
   }
 
   try {
+    // SECURITY: Re-encrypt sensitive fields before cloud transmission
+    // The profile object in memory is decrypted — must encrypt before Supabase upsert
+    const encryptedProfile = await encryptSensitiveFields(profile);
+
     const { error } = await supabase.from("profiles").upsert({
       id: profile.id,
       email: profile.email || null,
-      profile: profile,
+      profile: encryptedProfile,
     });
 
     if (error) {
@@ -274,7 +278,7 @@ export async function syncProfileToCloud(profile: Profile): Promise<void> {
       synced_at: new Date().toISOString(),
     });
 
-    logger.log("✅ Profile synced to Supabase");
+    logger.log("✅ Profile synced to Supabase (encrypted)");
   } catch (error) {
     console.error("❌ Error syncing profile to cloud:", error);
     throw error;
