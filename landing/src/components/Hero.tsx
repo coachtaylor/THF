@@ -32,10 +32,10 @@ export function Hero() {
               className="mb-10"
             >
               <p className="text-sm font-semibold uppercase tracking-widest text-accent-pink mb-2">
-                Coming Soon
+                Launching Soon
               </p>
               <p className="text-3xl md:text-4xl font-bold text-text-primary">
-                Launching <span className="text-accent-blue">January 5th, 2026</span>
+                The first fitness app <span className="text-accent-blue">built for trans bodies</span>
               </p>
               <p className="text-base text-text-secondary mt-2">
                 Be one of the first to get access — limited founding athlete spots available

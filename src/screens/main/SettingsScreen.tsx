@@ -894,7 +894,7 @@ export default function SettingsScreen() {
             />
             <GlassListItem
               title="Theme"
-              subtitle="Coming soon"
+              subtitle="On our roadmap"
               rightValue="Dark"
             />
           </GlassList>
