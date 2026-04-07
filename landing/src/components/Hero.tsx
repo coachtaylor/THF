@@ -8,7 +8,7 @@ import Image from "next/image";
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
+    <section className="relative h-screen flex items-center overflow-hidden">
       {/* Gradient Overlays */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
       <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
@@ -17,8 +17,8 @@ export function Hero() {
       <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-accent-blue/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-accent-pink/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-16 w-full">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-20 pt-20 pb-8 w-full">
+        <div className="grid lg:grid-cols-[1fr_auto] gap-8 lg:gap-8 items-center">
           {/* Left Column - Text Content */}
           <motion.div
             variants={heroStagger}
@@ -26,28 +26,13 @@ export function Hero() {
             animate="animate"
             className="text-left"
           >
-            {/* Launch Announcement */}
-            <motion.div
-              variants={heroItem}
-              className="mb-10"
-            >
-              <p className="text-sm font-semibold uppercase tracking-widest text-accent-pink mb-2">
-                Launching Soon
-              </p>
-              <p className="text-3xl md:text-4xl font-bold text-text-primary">
-                The first fitness app <span className="text-accent-blue">built for trans bodies</span>
-              </p>
-              <p className="text-base text-text-secondary mt-2">
-                Be one of the first to get access — limited founding athlete spots available
-              </p>
-            </motion.div>
-
             {/* Headline */}
             <motion.h1
               variants={heroItem}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold text-text-primary leading-[1.1] tracking-tight mb-6"
+              className="text-4xl md:text-5xl lg:text-6xl font-bold text-text-primary leading-[1.1] tracking-tight mb-4"
             >
-              Fitness that finally{" "}
+              Fitness that finally
+              <br />
               <span className="text-gradient">understands</span>{" "}
               your body
             </motion.h1>
@@ -57,14 +42,22 @@ export function Hero() {
               variants={heroItem}
               className="text-lg md:text-xl text-text-secondary max-w-xl leading-relaxed mb-8"
             >
-              Workouts that respect chest binding, HRT, and gender-affirming
-              surgeries. Train hard without fighting your body or your gender.
+              The first fitness app built for trans bodies. Workouts that respect
+              chest binding, HRT, and gender-affirming surgeries.
             </motion.p>
 
             {/* CTA */}
             <motion.div
               variants={heroItem}
-              className="flex flex-col sm:flex-row items-start gap-4 mb-10"
+              className="flex flex-col sm:flex-row items-start gap-4 mb-4"
+            >
+              <span className="text-xs font-semibold uppercase tracking-widest text-accent-pink">
+                Launching Soon
+              </span>
+            </motion.div>
+            <motion.div
+              variants={heroItem}
+              className="flex flex-col sm:flex-row items-start gap-4 mb-8"
             >
               <GlassButton href="#apply" variant="primary" size="large">
                 Join the Founding Athletes
@@ -110,7 +103,7 @@ export function Hero() {
               <div className="absolute inset-0 bg-accent-pink/15 blur-[60px] rounded-[60px] scale-95 translate-y-4" />
 
               {/* Phone container with shadow stack */}
-              <div className="relative w-[220px] md:w-[250px] lg:w-[280px] phone-mockup phone-tilted phone-shadow-stack">
+              <div className="relative w-[200px] md:w-[220px] lg:w-[250px] phone-mockup phone-tilted phone-shadow-stack">
                 {/* Edge glow highlight */}
                 <div className="phone-edge-glow" />
 
