@@ -5,9 +5,9 @@ import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
 const navLinks = [
-  { href: "#features", label: "Who We Are" },
-  { href: "#how-it-works", label: "How It Works" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/#features", label: "Who We Are" },
+  { href: "/#how-it-works", label: "How It Works" },
+  { href: "/#faq", label: "FAQ" },
   { href: "/resources", label: "Resources" },
 ];
 
@@ -38,7 +38,7 @@ export function Navigation() {
       <div className="max-w-6xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2">
+          <a href="/" className="flex items-center gap-2">
             <span className="text-xl font-bold text-text-primary">
               Trans Health & <span className="text-accent-blue">Fitness</span>
             </span>
@@ -56,7 +56,7 @@ export function Navigation() {
               </a>
             ))}
             <a
-              href="#apply"
+              href="/#apply"
               className="text-sm font-semibold text-accent-blue hover:text-accent-blue-light transition-colors"
             >
               Apply for Founding Athlete
@@ -92,7 +92,7 @@ export function Navigation() {
                 </a>
               ))}
               <a
-                href="#apply"
+                href="/#apply"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="font-semibold text-accent-blue hover:text-accent-blue-light transition-colors"
               >

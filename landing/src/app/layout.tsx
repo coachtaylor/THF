@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
+import { ScrollToTop } from "@/components/ScrollToTop";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -140,6 +141,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         {children}
+        <ScrollToTop />
         <Analytics />
       </body>
     </html>
