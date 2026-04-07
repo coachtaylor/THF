@@ -112,7 +112,7 @@ export function WhatIs() {
   const orbPinkY = useTransform(scrollYProgress, [0, 1], [0, 100]);
 
   return (
-    <section id="features" ref={sectionRef} className="py-16 md:py-24 lg:py-32 relative overflow-hidden">
+    <section id="features" ref={sectionRef} className="py-16 md:py-24 relative overflow-hidden">
       {/* Background elements with scroll parallax */}
       <div className="absolute inset-0 pointer-events-none">
         {/* Floating orbs with scroll-based movement */}
@@ -136,9 +136,9 @@ export function WhatIs() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.6 }}
-          className="text-center mb-10 md:mb-16 lg:mb-20"
+          className="text-center mb-10"
         >
-          <h2 className="text-[1.625rem] md:text-4xl lg:text-5xl font-bold text-text-primary mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-6">
             What is{" "}
             <span className="relative inline-block">
               <span className="text-gradient">Trans Health & Fitness?</span>
@@ -152,7 +152,7 @@ export function WhatIs() {
             </span>
           </h2>
 
-          <p className="text-lg md:text-xl text-text-secondary leading-relaxed max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-text-secondary leading-[1.6] md:leading-[1.7] max-w-[720px] mx-auto">
             A training app built for{" "}
             <span className="text-text-primary font-medium">
               transgender and non-binary athletes
@@ -219,7 +219,7 @@ export function WhatIs() {
           </motion.div>
 
           {/* Feature Cards Grid - Right side */}
-          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-3 md:gap-4 lg:gap-5 content-start">
+          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-6 content-start">
             {/* First row - 2 cards */}
             <FeatureCard feature={features[0]} index={0} />
             <FeatureCard feature={features[1]} index={1} />
@@ -239,7 +239,7 @@ export function WhatIs() {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="relative p-4 md:p-6 rounded-xl md:rounded-2xl bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 flex flex-col justify-center"
             >
-              <p className="text-xl md:text-2xl font-semibold text-gradient mb-2">
+              <p className="text-lg md:text-2xl font-semibold text-gradient mb-2">
                 Structure. Safety. Support.
               </p>
               <p className="text-sm text-text-secondary leading-relaxed">

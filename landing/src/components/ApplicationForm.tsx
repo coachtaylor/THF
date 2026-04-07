@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Send, CheckCircle, AlertCircle } from "lucide-react";
+import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Send, CheckCircle, AlertCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { GlassCard } from "./ui/GlassCard";
 import { GlassButton } from "./ui/GlassButton";
 import { GlassInput, GlassTextarea } from "./ui/GlassInput";
@@ -19,7 +19,73 @@ const selfDescriptionOptions = [
   { value: "prefer_not_to_say", label: "Prefer not to say" },
 ];
 
+const steps = [
+  { number: 1, label: "About You" },
+  { number: 2, label: "Your Journey" },
+  { number: 3, label: "Almost There" },
+];
+
 type FormStatus = "idle" | "loading" | "success" | "error";
+
+const slideVariants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 200 : -200,
+    opacity: 0,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -200 : 200,
+    opacity: 0,
+  }),
+};
+
+const slideTransition = {
+  duration: 0.3,
+  ease: [0.25, 0.1, 0.25, 1] as const,
+};
+
+function ProgressBar({ currentStep }: { currentStep: number }) {
+  return (
+    <div className="flex items-center gap-2 mb-8">
+      {steps.map((step, i) => (
+        <div key={step.number} className="flex items-center flex-1">
+          <div className="flex items-center gap-2 flex-1">
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 transition-colors duration-300 ${
+                currentStep >= step.number
+                  ? "bg-accent-blue text-black"
+                  : "bg-white/10 text-text-tertiary"
+              }`}
+            >
+              {step.number}
+            </div>
+            <span
+              className={`text-sm hidden sm:block transition-colors duration-300 ${
+                currentStep >= step.number
+                  ? "text-text-primary font-medium"
+                  : "text-text-tertiary"
+              }`}
+            >
+              {step.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div className="flex-1 h-[2px] mx-2">
+              <div
+                className={`h-full rounded-full transition-colors duration-300 ${
+                  currentStep > step.number ? "bg-accent-blue" : "bg-white/10"
+                }`}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function ApplicationForm() {
   const [formData, setFormData] = useState({
@@ -39,6 +105,8 @@ export function ApplicationForm() {
   });
   const [status, setStatus] = useState<FormStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [currentStep, setCurrentStep] = useState(1);
+  const [direction, setDirection] = useState(1);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -52,6 +120,22 @@ export function ApplicationForm() {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
+
+  const canAdvanceStep1 = formData.name.trim() !== "" && formData.email.trim() !== "";
+
+  const goNext = useCallback(() => {
+    if (currentStep < 3) {
+      setDirection(1);
+      setCurrentStep((s) => s + 1);
+    }
+  }, [currentStep]);
+
+  const goBack = useCallback(() => {
+    if (currentStep > 1) {
+      setDirection(-1);
+      setCurrentStep((s) => s - 1);
+    }
+  }, [currentStep]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +162,6 @@ export function ApplicationForm() {
 
     if (result.success) {
       setStatus("success");
-      // Scroll to the success message
       setTimeout(() => {
         document.getElementById("apply")?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
@@ -90,7 +173,7 @@ export function ApplicationForm() {
 
   if (status === "success") {
     return (
-      <section id="apply" className="py-24 md:py-32 bg-background-secondary/50">
+      <section id="apply" className="py-16 md:py-24 bg-background-secondary/50">
         <div className="max-w-2xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -118,19 +201,19 @@ export function ApplicationForm() {
   }
 
   return (
-    <section id="apply" className="py-24 md:py-32 bg-background-secondary/50">
+    <section id="apply" className="py-16 md:py-24 bg-background-secondary/50">
       <div className="max-w-2xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-10"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-4">
             Apply to join the Founding Athlete Beta
           </h2>
-          <p className="text-lg text-text-secondary">
+          <p className="text-base md:text-lg text-text-secondary leading-[1.6] md:leading-[1.7]">
             Fill out the form below and we&apos;ll review your application.
           </p>
         </motion.div>
@@ -142,154 +225,223 @@ export function ApplicationForm() {
           transition={{ duration: 0.6, delay: 0.1 }}
         >
           <GlassCard animate={false}>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid sm:grid-cols-2 gap-6">
-                <GlassInput
-                  label="Name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="Your name"
-                  required
-                />
-                <GlassInput
-                  label="Pronouns"
-                  name="pronouns"
-                  value={formData.pronouns}
-                  onChange={handleInputChange}
-                  placeholder="e.g., he/him, she/her, they/them"
-                  optional
-                />
+            <ProgressBar currentStep={currentStep} />
+
+            <form onSubmit={handleSubmit}>
+              <div className="relative min-h-[320px] overflow-hidden">
+                <AnimatePresence initial={false} custom={direction} mode="wait">
+                  {/* Step 1: About You */}
+                  {currentStep === 1 && (
+                    <motion.div
+                      key="step1"
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
+                      className="space-y-6"
+                    >
+                      <div className="grid sm:grid-cols-2 gap-6">
+                        <GlassInput
+                          label="Name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="Your name"
+                          required
+                        />
+                        <GlassInput
+                          label="Pronouns"
+                          name="pronouns"
+                          value={formData.pronouns}
+                          onChange={handleInputChange}
+                          placeholder="e.g., he/him, she/her, they/them"
+                          optional
+                        />
+                      </div>
+
+                      <GlassInput
+                        label="Email"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="you@example.com"
+                        required
+                      />
+                    </motion.div>
+                  )}
+
+                  {/* Step 2: Your Journey */}
+                  {currentStep === 2 && (
+                    <motion.div
+                      key="step2"
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
+                      className="space-y-6"
+                    >
+                      <Select
+                        label="How do you currently describe yourself?"
+                        name="selfDescription"
+                        value={formData.selfDescription}
+                        onChange={handleInputChange}
+                        options={selfDescriptionOptions}
+                        optional
+                      />
+
+                      <div className="space-y-3">
+                        <label className="block text-sm font-medium text-text-secondary">
+                          Are you currently:
+                          <span className="ml-1 text-text-tertiary text-xs">
+                            (select all that apply)
+                          </span>
+                        </label>
+                        <div className="space-y-3">
+                          <Checkbox
+                            label="On HRT"
+                            name="statusHrt"
+                            checked={formData.statusHrt}
+                            onChange={handleInputChange}
+                          />
+                          <Checkbox
+                            label="Binding"
+                            name="statusBinding"
+                            checked={formData.statusBinding}
+                            onChange={handleInputChange}
+                          />
+                          <Checkbox
+                            label="Pre gender-affirming surgery"
+                            name="statusPreSurgery"
+                            checked={formData.statusPreSurgery}
+                            onChange={handleInputChange}
+                          />
+                          <Checkbox
+                            label="Post gender-affirming surgery"
+                            name="statusPostSurgery"
+                            checked={formData.statusPostSurgery}
+                            onChange={handleInputChange}
+                          />
+                          <Checkbox
+                            label="None of the above"
+                            name="statusNone"
+                            checked={formData.statusNone}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Step 3: Almost There */}
+                  {currentStep === 3 && (
+                    <motion.div
+                      key="step3"
+                      custom={direction}
+                      variants={slideVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      transition={slideTransition}
+                      className="space-y-6"
+                    >
+                      <GlassTextarea
+                        label="What do you most want this app to help you with?"
+                        name="helpWith"
+                        value={formData.helpWith}
+                        onChange={handleInputChange}
+                        placeholder="Tell us about your fitness goals and what you're hoping Trans Health & Fitness can help with..."
+                        optional
+                      />
+
+                      <div className="pt-4 border-t border-white/[0.08] space-y-4">
+                        <Checkbox
+                          label="I am interested in early beta access"
+                          name="interestedInBeta"
+                          checked={formData.interestedInBeta}
+                          onChange={handleInputChange}
+                        />
+                        <Checkbox
+                          label={
+                            <>
+                              I agree to respect other testers and follow the{" "}
+                              <a
+                                href="/community-guidelines"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-accent-blue hover:underline"
+                              >
+                                community guidelines
+                              </a>
+                            </>
+                          }
+                          name="agreesToGuidelines"
+                          checked={formData.agreesToGuidelines}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      {status === "error" && (
+                        <div className="flex items-center gap-3 p-4 rounded-xl bg-error/10 border border-error/20">
+                          <AlertCircle size={20} className="text-error flex-shrink-0" />
+                          <p className="text-sm text-error">{errorMessage}</p>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-              <GlassInput
-                label="Email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="you@example.com"
-                required
-              />
+              {/* Navigation buttons */}
+              <div className="flex gap-3 mt-8">
+                {currentStep > 1 && (
+                  <GlassButton
+                    type="button"
+                    variant="secondary"
+                    onClick={goBack}
+                    className="flex-1 sm:flex-none min-h-[48px]"
+                    icon={<ChevronLeft size={18} />}
+                  >
+                    Back
+                  </GlassButton>
+                )}
 
-              <GlassInput
-                label="Social Media Handle"
-                name="socialHandle"
-                value={formData.socialHandle}
-                onChange={handleInputChange}
-                placeholder="@yourhandle"
-                optional
-              />
+                {currentStep < 3 && (
+                  <GlassButton
+                    type="button"
+                    variant="primary"
+                    onClick={goNext}
+                    disabled={currentStep === 1 && !canAdvanceStep1}
+                    className="flex-1 sm:flex-none ml-auto min-h-[48px]"
+                  >
+                    Next
+                    <ChevronRight size={18} />
+                  </GlassButton>
+                )}
 
-              <Select
-                label="How do you currently describe yourself?"
-                name="selfDescription"
-                value={formData.selfDescription}
-                onChange={handleInputChange}
-                options={selfDescriptionOptions}
-                optional
-              />
-
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-text-secondary">
-                  Are you currently:
-                  <span className="ml-1 text-text-tertiary text-xs">
-                    (select all that apply)
-                  </span>
-                </label>
-                <div className="space-y-3">
-                  <Checkbox
-                    label="On HRT"
-                    name="statusHrt"
-                    checked={formData.statusHrt}
-                    onChange={handleInputChange}
-                  />
-                  <Checkbox
-                    label="Binding"
-                    name="statusBinding"
-                    checked={formData.statusBinding}
-                    onChange={handleInputChange}
-                  />
-                  <Checkbox
-                    label="Pre gender-affirming surgery"
-                    name="statusPreSurgery"
-                    checked={formData.statusPreSurgery}
-                    onChange={handleInputChange}
-                  />
-                  <Checkbox
-                    label="Post gender-affirming surgery"
-                    name="statusPostSurgery"
-                    checked={formData.statusPostSurgery}
-                    onChange={handleInputChange}
-                  />
-                  <Checkbox
-                    label="None of the above"
-                    name="statusNone"
-                    checked={formData.statusNone}
-                    onChange={handleInputChange}
-                  />
-                </div>
+                {currentStep === 3 && (
+                  <GlassButton
+                    type="submit"
+                    variant="primary"
+                    disabled={
+                      status === "loading" ||
+                      !formData.name ||
+                      !formData.email ||
+                      !formData.agreesToGuidelines
+                    }
+                    className="flex-1 sm:flex-none ml-auto min-h-[48px]"
+                    icon={<Send size={18} />}
+                  >
+                    {status === "loading" ? "Submitting..." : "Submit Application"}
+                  </GlassButton>
+                )}
               </div>
 
-              <GlassTextarea
-                label="What do you most want this app to help you with?"
-                name="helpWith"
-                value={formData.helpWith}
-                onChange={handleInputChange}
-                placeholder="Tell us about your fitness goals and what you're hoping Trans Health & Fitness can help with..."
-                optional
-              />
-
-              <div className="pt-4 border-t border-white/[0.08] space-y-4">
-                <Checkbox
-                  label="I am interested in early beta access"
-                  name="interestedInBeta"
-                  checked={formData.interestedInBeta}
-                  onChange={handleInputChange}
-                />
-                <Checkbox
-                  label={
-                    <>
-                      I agree to respect other testers and follow the{" "}
-                      <a
-                        href="/community-guidelines"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-accent-blue hover:underline"
-                      >
-                        community guidelines
-                      </a>
-                    </>
-                  }
-                  name="agreesToGuidelines"
-                  checked={formData.agreesToGuidelines}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              {status === "error" && (
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-error/10 border border-error/20">
-                  <AlertCircle size={20} className="text-error flex-shrink-0" />
-                  <p className="text-sm text-error">{errorMessage}</p>
-                </div>
-              )}
-
-              <GlassButton
-                type="submit"
-                variant="primary"
-                disabled={
-                  status === "loading" ||
-                  !formData.name ||
-                  !formData.email ||
-                  !formData.agreesToGuidelines
-                }
-                className="w-full"
-                icon={<Send size={18} />}
-              >
-                {status === "loading" ? "Submitting..." : "Submit Application"}
-              </GlassButton>
-
-              <p className="text-sm text-text-tertiary text-center">
+              <p className="text-sm text-text-tertiary text-center mt-6">
                 We read every application by hand. This is about building
                 something safe and sustainable for our community, not chasing
                 download numbers.

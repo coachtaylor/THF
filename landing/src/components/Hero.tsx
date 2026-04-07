@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+
 import { GlassButton } from "./ui/GlassButton";
 import { heroStagger, heroItem } from "@/lib/animations";
 import Image from "next/image";
@@ -17,7 +17,7 @@ export function Hero() {
       <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-accent-blue/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-accent-pink/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-20 pt-20 pb-8 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-20 py-28 w-full">
         <div className="grid lg:grid-cols-[1fr_auto] gap-8 lg:gap-8 items-center">
           {/* Left Column - Text Content */}
           <motion.div
@@ -29,7 +29,7 @@ export function Hero() {
             {/* Headline */}
             <motion.h1
               variants={heroItem}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold text-text-primary leading-[1.1] tracking-tight mb-4"
+              className="text-4xl md:text-5xl font-bold text-text-primary leading-[1.1] tracking-tight mb-8"
             >
               Fitness that finally
               <br />
@@ -40,7 +40,7 @@ export function Hero() {
             {/* Subheadline */}
             <motion.p
               variants={heroItem}
-              className="text-lg md:text-xl text-text-secondary max-w-xl leading-relaxed mb-8"
+              className="text-base md:text-lg text-text-secondary max-w-xl leading-[1.6] md:leading-[1.7] mb-12"
             >
               The first fitness app built for trans bodies. Workouts that respect
               chest binding, HRT, and gender-affirming surgeries.
@@ -49,43 +49,14 @@ export function Hero() {
             {/* CTA */}
             <motion.div
               variants={heroItem}
-              className="flex flex-col sm:flex-row items-start gap-4 mb-4"
+              className="flex flex-col items-start gap-4"
             >
-              <span className="text-xs font-semibold uppercase tracking-widest text-accent-pink">
-                Launching Soon
-              </span>
-            </motion.div>
-            <motion.div
-              variants={heroItem}
-              className="flex flex-col sm:flex-row items-start gap-4 mb-8"
-            >
-              <GlassButton href="#apply" variant="primary" size="large">
+              <p className="text-sm text-text-tertiary">
+                Now accepting founding athletes
+              </p>
+              <GlassButton href="#apply" variant="primary" size="large" className="min-h-[48px] font-bold">
                 Join the Founding Athletes
               </GlassButton>
-            </motion.div>
-
-            {/* Social Proof */}
-            <motion.div
-              variants={heroItem}
-              className="flex items-center gap-4"
-            >
-              {/* Avatar stack */}
-              <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-blue/30 to-accent-pink/30 border-2 border-background flex items-center justify-center"
-                  >
-                    <span className="text-xs font-medium text-text-secondary">
-                      {["J", "A", "K", "M"][i - 1]}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="text-sm">
-                <span className="text-text-primary font-semibold">Spots filling fast</span>
-                <span className="text-text-tertiary"> — apply now to secure your spot</span>
-              </div>
             </motion.div>
           </motion.div>
 
