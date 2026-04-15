@@ -129,7 +129,7 @@ export function WhatIs() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-accent-blue/[0.03] via-transparent to-transparent rounded-full" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 relative">
+      <div className="max-w-7xl mx-auto px-5 md:px-6 relative">
         {/* Section Header - Centered */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -186,7 +186,7 @@ export function WhatIs() {
               <div className="absolute inset-0 bg-accent-blue/10 blur-[60px] rounded-[60px] scale-95 translate-y-4" />
 
               {/* Phone container */}
-              <div className="relative w-[180px] md:w-[260px] lg:w-[300px] phone-mockup phone-tilted-right phone-shadow-stack">
+              <div className="relative w-[240px] md:w-[300px] lg:w-[300px] mx-auto md:mx-0 phone-mockup phone-tilted-right phone-shadow-stack">
                 {/* Edge glow */}
                 <div className="phone-edge-glow" />
 
@@ -219,7 +219,7 @@ export function WhatIs() {
           </motion.div>
 
           {/* Feature Cards Grid - Right side */}
-          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-6 content-start">
+          <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 content-start">
             {/* First row - 2 cards */}
             <FeatureCard feature={features[0]} index={0} />
             <FeatureCard feature={features[1]} index={1} />

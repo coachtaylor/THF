@@ -43,7 +43,7 @@ const features = [
 export function Differentiators() {
   return (
     <section id="features" className="py-16 md:py-24 bg-background-secondary/50">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-5 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -64,7 +64,7 @@ export function Differentiators() {
           initial="initial"
           whileInView="animate"
           viewport={viewportSettings}
-          className="grid md:grid-cols-2 gap-6"
+          className="grid md:grid-cols-2 gap-4 md:gap-6"
         >
           {features.map((feature) => (
             <motion.div key={feature.title} variants={staggerItem}>

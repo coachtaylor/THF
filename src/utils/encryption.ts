@@ -147,8 +147,7 @@ export async function encryptValue(plaintext: string): Promise<string> {
     return 'AES:' + bytesToHex(combined);
   } catch (error) {
     console.error('Encryption failed:', error);
-    // Return original value if encryption fails (fail-open for usability)
-    return plaintext;
+    throw new Error('Encryption failed: sensitive data must not be stored as plaintext');
   }
 }
 

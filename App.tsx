@@ -146,7 +146,7 @@ function scrubSensitiveData(obj: any): any {
 // Privacy-safe: Enhanced PII filtering for trans health data
 Sentry.init({
   dsn: process.env.SENTRY_DSN || "", // Add your Sentry DSN to .env
-  enabled: !__DEV__, // Only enable in production
+  enabled: !__DEV__,
   debug: __DEV__, // Enable debug mode in development
   tracesSampleRate: 0.2, // Sample 20% of transactions for performance monitoring
 

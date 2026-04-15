@@ -8,6 +8,7 @@ interface AuthContextValue {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  initError: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (data: { first_name: string; last_name: string; email: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
   const cleanupRefreshRef = useRef<(() => void) | null>(null);
 
   // Initialize auth state with proper session management
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         if (__DEV__) console.error('Auth init error:', error);
+        setInitError(error instanceof Error ? error.message : 'Auth initialization failed');
       } finally {
         setIsLoading(false);
       }
@@ -116,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isAuthenticated: !!user,
         isLoading,
+        initError,
         login,
         signup,
         logout,

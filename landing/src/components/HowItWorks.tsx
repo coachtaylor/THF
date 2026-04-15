@@ -44,7 +44,7 @@ export function HowItWorks() {
       <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-accent-blue/5 rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent-pink/5 rounded-full blur-3xl" />
 
-      <div className="max-w-6xl mx-auto px-6 relative">
+      <div className="max-w-6xl mx-auto px-5 md:px-6 relative">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -65,7 +65,7 @@ export function HowItWorks() {
           initial="initial"
           whileInView="animate"
           viewport={viewportSettings}
-          className="grid md:grid-cols-3 gap-6"
+          className="grid md:grid-cols-3 gap-4 md:gap-6"
         >
           {steps.map((step, index) => (
             <motion.div key={step.number} variants={staggerItem} className="group">

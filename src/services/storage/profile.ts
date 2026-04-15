@@ -495,21 +495,17 @@ export async function deleteAllUserData(): Promise<DataDeletionResult> {
     try {
       getDb().withTransactionSync(() => {
         // Delete from all local tables
-        const localTables = [
-          'profiles_storage',
-          'sessions',
-          'plans',
-          'saved_workouts',
-          'analytics_events',
-          'feedback_reports',
-          'streaks',
-        ];
+        const stmt = getDb().prepareSync(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+        );
+        const tables = stmt.executeSync().getAllSync() as Array<{ name: string }>;
+        stmt.finalizeSync();
 
-        for (const table of localTables) {
+        for (const { name } of tables) {
           try {
-            getDb().execSync(`DELETE FROM ${table};`);
+            getDb().execSync(`DELETE FROM ${name};`);
           } catch {
-            // Table might not exist, which is fine
+            // Table might not exist or be locked, which is fine
           }
         }
       });

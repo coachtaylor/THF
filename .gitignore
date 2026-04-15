@@ -72,3 +72,11 @@ scripts/seed_safety_config.sql
 ios/sentry.properties
 android/sentry.properties
 TASK_TRACKER.md
+
+# Internal strategy & planning docs
+CLAUDE.md
+CODEBASE_AUDIT.md
+QUALITY_ASSESSMENT.md
+PRD.md
+GTM_FOUNDATION.md
+PRODUCT_STATUS.md

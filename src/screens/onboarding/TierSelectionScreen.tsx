@@ -19,7 +19,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Shield, Dumbbell, Sparkles, MessageCircle, LineChart } from 'lucide-react-native';
+import { Shield, Dumbbell, Sparkles, LineChart } from 'lucide-react-native';
 import { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
 
 import { useSubscription } from '../../contexts/SubscriptionContext';
@@ -47,7 +47,6 @@ const FREE_FEATURES = [
 const PREMIUM_FEATURES = [
   { text: 'Unlimited workouts', icon: Dumbbell },
   { text: '200+ exercises with guidance', icon: Sparkles },
-  { text: 'AI Copilot unlimited', icon: MessageCircle },
   { text: 'Progress charts', icon: LineChart },
   { text: 'Smart weight suggestions', icon: Shield },
 ];

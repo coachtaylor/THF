@@ -35,7 +35,7 @@ const socials = [
 export function Footer() {
   return (
     <footer className="bg-[#0a0a0a] pt-16 pb-8">
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-5 md:px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8">
           {/* Column 1: Brand */}
           <div>

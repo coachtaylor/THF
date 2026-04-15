@@ -19,7 +19,6 @@ import ActiveWorkoutScreen from '../screens/workout/ActiveWorkoutScreen';
 import WorkoutSummaryScreen from '../screens/workout/WorkoutSummaryScreen';
 import WorkoutSwapScreen from '../screens/workout/WorkoutSwapScreen';
 import { BinderSafetyGuide, PostOpMovementGuide } from '../screens/guides';
-import { CopilotScreen } from '../screens/copilot';
 import { ExerciseLibraryScreen } from '../screens/exercise';
 import RestDayOverviewScreen from '../screens/workout/RestDayOverviewScreen';
 import PaywallScreen from '../screens/paywall/PaywallScreen';
@@ -161,10 +160,6 @@ export default function MainNavigator() {
         <Stack.Screen
           name="PostOpMovementGuide"
           component={PostOpMovementGuide}
-        />
-        <Stack.Screen
-          name="Copilot"
-          component={CopilotScreen}
         />
         <Stack.Screen
           name="ExerciseLibrary"

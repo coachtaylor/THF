@@ -8,7 +8,7 @@ import Image from "next/image";
 
 export function Hero() {
   return (
-    <section className="relative h-screen flex items-center overflow-hidden">
+    <section className="relative h-screen flex items-center overflow-hidden pt-[80px] md:pt-[100px]">
       {/* Gradient Overlays */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
       <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
@@ -17,7 +17,7 @@ export function Hero() {
       <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-accent-blue/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-accent-pink/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-20 py-28 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-6 lg:px-20 pt-8 pb-12 md:py-28 w-full">
         <div className="grid lg:grid-cols-[1fr_auto] gap-8 lg:gap-8 items-center">
           {/* Left Column - Text Content */}
           <motion.div
@@ -29,7 +29,7 @@ export function Hero() {
             {/* Headline */}
             <motion.h1
               variants={heroItem}
-              className="text-4xl md:text-5xl font-bold text-text-primary leading-[1.1] tracking-tight mb-8"
+              className="text-[32px] md:text-5xl font-bold text-text-primary leading-[1.1] tracking-tight mb-8"
             >
               Fitness that finally
               <br />
@@ -54,7 +54,7 @@ export function Hero() {
               <p className="text-sm text-text-tertiary">
                 Now accepting founding athletes
               </p>
-              <GlassButton href="#apply" variant="primary" size="large" className="min-h-[48px] font-bold">
+              <GlassButton href="#apply" variant="primary" size="large" className="min-h-[48px] font-bold w-full md:w-auto">
                 Join the Founding Athletes
               </GlassButton>
             </motion.div>
@@ -68,13 +68,13 @@ export function Hero() {
             className="relative flex justify-center lg:justify-end"
           >
             {/* Phone Frame - tilted left with perspective */}
-            <div className="relative phone-mockup-enhanced" style={{ perspective: "1000px" }}>
+            <div className="relative phone-mockup-enhanced w-[60%] max-w-[260px] mx-auto mt-6 md:w-full md:max-w-[320px] md:mx-0 md:mt-0 lg:max-w-[380px]" style={{ perspective: "1000px" }}>
               {/* Multi-layer glow effect behind phone */}
               <div className="absolute inset-0 bg-accent-blue/25 blur-[80px] rounded-[60px] scale-110" />
               <div className="absolute inset-0 bg-accent-pink/15 blur-[60px] rounded-[60px] scale-95 translate-y-4" />
 
               {/* Phone container with shadow stack */}
-              <div className="relative w-[200px] md:w-[220px] lg:w-[250px] phone-mockup phone-tilted phone-shadow-stack">
+              <div className="relative w-full phone-mockup phone-tilted phone-shadow-stack">
                 {/* Edge glow highlight */}
                 <div className="phone-edge-glow" />
 

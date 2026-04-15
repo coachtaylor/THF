@@ -174,7 +174,7 @@ export function ApplicationForm() {
   if (status === "success") {
     return (
       <section id="apply" className="py-16 md:py-24 bg-background-secondary/50">
-        <div className="max-w-2xl mx-auto px-6">
+        <div className="max-w-2xl mx-auto px-5 md:px-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -202,7 +202,7 @@ export function ApplicationForm() {
 
   return (
     <section id="apply" className="py-16 md:py-24 bg-background-secondary/50">
-      <div className="max-w-2xl mx-auto px-6">
+      <div className="max-w-2xl mx-auto px-5 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -242,7 +242,7 @@ export function ApplicationForm() {
                       transition={slideTransition}
                       className="space-y-6"
                     >
-                      <div className="grid sm:grid-cols-2 gap-6">
+                      <div className="grid md:grid-cols-2 gap-6">
                         <GlassInput
                           label="Name"
                           name="name"
@@ -403,7 +403,7 @@ export function ApplicationForm() {
                     type="button"
                     variant="secondary"
                     onClick={goBack}
-                    className="flex-1 sm:flex-none min-h-[48px]"
+                    className="flex-1 md:flex-none min-h-[48px]"
                     icon={<ChevronLeft size={18} />}
                   >
                     Back
@@ -416,7 +416,7 @@ export function ApplicationForm() {
                     variant="primary"
                     onClick={goNext}
                     disabled={currentStep === 1 && !canAdvanceStep1}
-                    className="flex-1 sm:flex-none ml-auto min-h-[48px]"
+                    className="flex-1 md:flex-none ml-auto min-h-[48px]"
                   >
                     Next
                     <ChevronRight size={18} />
@@ -433,7 +433,7 @@ export function ApplicationForm() {
                       !formData.email ||
                       !formData.agreesToGuidelines
                     }
-                    className="flex-1 sm:flex-none ml-auto min-h-[48px]"
+                    className="flex-1 md:flex-none ml-auto min-h-[48px]"
                     icon={<Send size={18} />}
                   >
                     {status === "loading" ? "Submitting..." : "Submit Application"}

@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { PurchasesPackage, PACKAGE_TYPE } from 'react-native-purchases';
-import { Check, X, Sparkles, Shield, Dumbbell, LineChart, MessageCircle } from 'lucide-react-native';
+import { Check, X, Sparkles, Shield, Dumbbell, LineChart } from 'lucide-react-native';
 
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { FEATURE_INFO, FeatureId } from '../../services/payments/entitlements';
@@ -32,7 +32,6 @@ import { colors, spacing, borderRadius, typography } from '../../theme/theme';
 const PREMIUM_FEATURES: { id: FeatureId; icon: React.ReactNode }[] = [
   { id: 'unlimited_workouts', icon: <Dumbbell size={20} color={colors.accent.primary} /> },
   { id: 'full_exercise_library', icon: <Sparkles size={20} color={colors.accent.secondary} /> },
-  { id: 'copilot_unlimited', icon: <MessageCircle size={20} color={colors.accent.primary} /> },
   { id: 'progress_charts', icon: <LineChart size={20} color={colors.accent.secondary} /> },
   { id: 'weight_suggestions', icon: <Shield size={20} color={colors.accent.primary} /> },
 ];

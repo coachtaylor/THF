@@ -7,6 +7,7 @@ export const mockNavigation = {
   reset: jest.fn(),
   setParams: jest.fn(),
   dispatch: jest.fn(),
+  replace: jest.fn(),
   addListener: jest.fn(() => jest.fn()),
   removeListener: jest.fn(),
   canGoBack: jest.fn(() => true),

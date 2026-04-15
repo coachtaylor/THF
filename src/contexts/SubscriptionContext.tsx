@@ -39,6 +39,7 @@ interface SubscriptionContextValue {
   tier: SubscriptionTier;
   isLoading: boolean;
   error: string | null;
+  initError: string | null;
 
   // Package info for paywall
   packages: PurchasesPackage[];
@@ -80,6 +81,7 @@ export function SubscriptionProvider({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [initError, setInitError] = useState<string | null>(null);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(false);
 
@@ -88,6 +90,7 @@ export function SubscriptionProvider({
     const initialize = async () => {
       setIsLoading(true);
       setError(null);
+      setInitError(null);
 
       try {
         // Initialize SDK
@@ -105,7 +108,9 @@ export function SubscriptionProvider({
         if (__DEV__) console.log('[Subscription] Initialized, tier:', currentStatus.tier);
       } catch (err) {
         if (__DEV__) console.error('[Subscription] Init error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to initialize');
+        const message = err instanceof Error ? err.message : 'Failed to initialize';
+        setError(message);
+        setInitError(message);
         // Default to free tier on error
         setStatus(DEFAULT_STATUS);
       } finally {
@@ -245,6 +250,7 @@ export function SubscriptionProvider({
       tier,
       isLoading,
       error,
+      initError,
       packages,
       packagesLoading,
       purchase,
@@ -260,6 +266,7 @@ export function SubscriptionProvider({
       tier,
       isLoading,
       error,
+      initError,
       packages,
       packagesLoading,
       purchase,

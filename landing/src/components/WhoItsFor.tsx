@@ -15,7 +15,7 @@ const criteria = [
 export function WhoItsFor() {
   return (
     <section className="py-16 md:py-24">
-      <div className="max-w-3xl mx-auto px-6">
+      <div className="max-w-3xl mx-auto px-5 md:px-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}

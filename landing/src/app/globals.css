@@ -337,3 +337,14 @@ body {
   transform: rotateY(15deg) rotateX(5deg) rotateZ(-2deg);
   animation: float-tilted-right 6s ease-in-out infinite;
 }
+
+/* === Mobile Responsiveness (<768px) === */
+@media (max-width: 767px) {
+  html, body {
+    overflow-x: hidden;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}

@@ -48,7 +48,6 @@ type SettingsScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'S
 type RootStackParamList = {
   BinderSafetyGuide: undefined;
   PostOpMovementGuide: undefined;
-  Copilot: undefined;
 };
 
 export default function SettingsScreen() {
@@ -328,10 +327,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleOpenCopilot = () => {
-    navigation.navigate('Copilot');
-  };
-
   const handleGiveFeedback = () => {
     setShowSurveyModal(true);
   };
@@ -404,10 +399,10 @@ export default function SettingsScreen() {
       const userId = profile.user_id || profile.id || 'default';
 
       // Clear the week_transitions table for this user
-      db.execSync(`DELETE FROM week_transitions WHERE user_id = '${userId}'`);
+      db.execSync('DELETE FROM week_transitions WHERE user_id = ?', [userId]);
 
       // Also clear the plans table so they can generate a fresh plan
-      db.execSync(`DELETE FROM plans WHERE user_id = '${userId}'`);
+      db.execSync('DELETE FROM plans WHERE user_id = ?', [userId]);
 
       setIsResettingWeeklyTransition(false);
       Alert.alert(
@@ -771,27 +766,6 @@ export default function SettingsScreen() {
               </Text>
             </View>
           </GlassCard>
-        </View>
-
-        {/* Ask Copilot */}
-        <View style={sectionStyles.container}>
-          <View style={sectionStyles.headerWithAction}>
-            <View style={sectionStyles.titleRow}>
-              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.secondaryMuted }]}>
-                <Ionicons name="chatbubbles" size={16} color={colors.accent.secondary} />
-              </View>
-              <Text style={sectionStyles.title}>Ask Copilot</Text>
-            </View>
-          </View>
-          <GlassList>
-            <GlassListItem
-              title="Chat with Copilot"
-              subtitle="Questions about binding, HRT, workouts, and more"
-              leftIcon="chatbubble-ellipses-outline"
-              onPress={handleOpenCopilot}
-              showChevron
-            />
-          </GlassList>
         </View>
 
         {/* Education & Guides */}

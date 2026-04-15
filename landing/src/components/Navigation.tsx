@@ -35,11 +35,11 @@ export function Navigation() {
           : "bg-transparent"
       }`}
     >
-      <div className="max-w-6xl mx-auto px-6 py-4">
+      <div className="max-w-6xl mx-auto px-5 md:px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-text-primary">
+            <span className="text-lg md:text-xl font-bold text-text-primary whitespace-nowrap">
               Trans Health & <span className="text-accent-blue">Fitness</span>
             </span>
           </a>
@@ -78,7 +78,7 @@ export function Navigation() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="md:hidden absolute left-0 right-0 top-full bg-background/95 backdrop-blur-xl border-b border-white/[0.08] px-6 py-4"
+            className="md:hidden absolute left-0 right-0 top-full bg-background/95 backdrop-blur-xl border-b border-white/[0.08] px-5 md:px-6 py-4"
           >
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
