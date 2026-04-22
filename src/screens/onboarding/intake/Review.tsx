@@ -115,16 +115,6 @@ export default function Review({ navigation }: ReviewProps) {
     return `${profile.equipment.length} ${profile.equipment.length === 1 ? "type" : "types"} available`;
   };
 
-  const getDysphoriaTriggersCount = (): string => {
-    if (
-      !profile.dysphoria_triggers ||
-      profile.dysphoria_triggers.length === 0
-    ) {
-      return "0 preferences";
-    }
-    const count = profile.dysphoria_triggers.length;
-    return `${count} ${count === 1 ? "preference" : "preferences"}`;
-  };
 
   const sections = [
     {
@@ -176,11 +166,15 @@ export default function Review({ navigation }: ReviewProps) {
       id: "dysphoria",
       title: "Dysphoria Considerations",
       icon: "heart-outline" as keyof typeof Ionicons.glyphMap,
+      editable: false,
       items: [
-        { label: "Triggers Selected", value: getDysphoriaTriggersCount() },
         {
-          label: "Additional Notes",
-          value: profile.dysphoria_notes ? "Provided" : "None",
+          label: "Preferences",
+          value: "Not configured yet",
+        },
+        {
+          label: "Configure in",
+          value: "Settings after onboarding",
         },
       ],
     },
@@ -197,9 +191,6 @@ export default function Review({ navigation }: ReviewProps) {
         break;
       case "preferences":
         navigation.navigate("Experience");
-        break;
-      case "dysphoria":
-        navigation.navigate("DysphoriaTriggers");
         break;
     }
   };
@@ -322,19 +313,21 @@ export default function Review({ navigation }: ReviewProps) {
                   </View>
                   <Text style={styles.sectionTitle}>{section.title}</Text>
                 </View>
-                <Pressable
-                  onPress={() => handleEdit(section.id)}
-                  style={({ pressed }) => [
-                    styles.editButton,
-                    pressed && styles.buttonPressed,
-                  ]}
-                >
-                  <Ionicons
-                    name="create-outline"
-                    size={18}
-                    color={colors.text.secondary}
-                  />
-                </Pressable>
+                {section.editable !== false && (
+                  <Pressable
+                    onPress={() => handleEdit(section.id)}
+                    style={({ pressed }) => [
+                      styles.editButton,
+                      pressed && styles.buttonPressed,
+                    ]}
+                  >
+                    <Ionicons
+                      name="create-outline"
+                      size={18}
+                      color={colors.text.secondary}
+                    />
+                  </Pressable>
+                )}
               </View>
 
               {/* Section Items */}

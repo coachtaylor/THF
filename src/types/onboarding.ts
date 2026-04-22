@@ -269,18 +269,14 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 export type OnboardingStackParamList = {
   Splash: undefined;
-  TierSelection: undefined;
-  WhyTransFitness: undefined;
   Disclaimer: undefined;
   GenderIdentity: undefined;
   HRTStatus: { genderIdentity: string };
   BindingInfo: { genderIdentity?: string };
   Surgery: { genderIdentity?: string };
   Goals: undefined;
-  TrainingEnvironment: undefined;
   Experience: undefined;
-  WorkoutDays: undefined;
-  DysphoriaTriggers: undefined;
+  EnvironmentAndDays: undefined;
   Review: undefined;
   ProgramSetup: undefined;
   QuickStart: undefined;
@@ -322,9 +318,3 @@ export type OnboardingScreenProps<T extends keyof OnboardingStackParamList> = {
   route?: any;
 };
 
-export interface WhyTransFitnessContent {
-  headline: string;
-  bullets: string[];
-  ctaText: string;
-  skipText: string;
-}

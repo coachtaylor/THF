@@ -179,7 +179,7 @@ export default function Goals({ navigation }: GoalsProps) {
         primary_goal: primaryGoal!,
         secondary_goals: secondaryGoals,
       });
-      navigation.navigate("TrainingEnvironment");
+      navigation.navigate("Experience");
     } catch (error) {
       console.error("Error saving goals:", error);
     }
