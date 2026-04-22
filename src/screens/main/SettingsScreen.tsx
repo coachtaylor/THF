@@ -28,6 +28,7 @@ import {
   EditGoalsModal,
   EditTrainingModal,
   EditEnvironmentModal,
+  EditDysphoriaModal,
 } from '../../components/settings';
 import { getWorkoutHistory } from '../../services/storage/workoutLog';
 import { useNotificationContext } from '../../contexts/NotificationContext';
@@ -81,6 +82,7 @@ export default function SettingsScreen() {
   const [showEditGoals, setShowEditGoals] = useState(false);
   const [showEditTraining, setShowEditTraining] = useState(false);
   const [showEditEnvironment, setShowEditEnvironment] = useState(false);
+  const [showEditDysphoria, setShowEditDysphoria] = useState(false);
 
   // App settings state
   const [restTimerSound, setRestTimerSound] = useState(true);
@@ -146,6 +148,9 @@ export default function SettingsScreen() {
         break;
       case 'environment':
         setShowEditEnvironment(true);
+        break;
+      case 'dysphoria':
+        setShowEditDysphoria(true);
         break;
       default:
         console.log('Edit section:', section);
@@ -768,6 +773,36 @@ export default function SettingsScreen() {
           </GlassCard>
         </View>
 
+        {/* Dysphoria Preferences */}
+        <View style={sectionStyles.container}>
+          <View style={sectionStyles.headerWithAction}>
+            <View style={sectionStyles.titleRow}>
+              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.primaryMuted }]}>
+                <Ionicons name="heart" size={16} color={colors.accent.primary} />
+              </View>
+              <Text style={sectionStyles.title}>Dysphoria Preferences</Text>
+            </View>
+            <Pressable onPress={() => handleEdit('dysphoria')} hitSlop={8}>
+              <Text style={sectionStyles.editLink}>Edit</Text>
+            </Pressable>
+          </View>
+          <GlassCard variant="default">
+            {profile?.dysphoria_triggers && profile.dysphoria_triggers.length > 0 ? (
+              <View style={infoCardStyles.content}>
+                <Text style={infoCardStyles.text}>
+                  {profile.dysphoria_triggers.length}{' '}
+                  {profile.dysphoria_triggers.length === 1 ? 'preference' : 'preferences'} set
+                </Text>
+                {profile.dysphoria_notes && (
+                  <Text style={infoCardStyles.subtext}>Additional notes provided</Text>
+                )}
+              </View>
+            ) : (
+              <Text style={infoCardStyles.text}>Not configured yet</Text>
+            )}
+          </GlassCard>
+        </View>
+
         {/* Education & Guides */}
         <View style={sectionStyles.container}>
           <View style={sectionStyles.headerWithAction}>
@@ -1131,6 +1166,14 @@ export default function SettingsScreen() {
       <EditEnvironmentModal
         visible={showEditEnvironment}
         onClose={() => setShowEditEnvironment(false)}
+        profile={profile}
+        onSave={() => handleProfileSaved(true)}
+      />
+
+      {/* Edit Dysphoria Modal - affects workouts */}
+      <EditDysphoriaModal
+        visible={showEditDysphoria}
+        onClose={() => setShowEditDysphoria(false)}
         profile={profile}
         onSave={() => handleProfileSaved(true)}
       />

@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { checkOnboardingStatus } from '../../services/storage/onboarding';
-import { checkTierSelection } from '../../services/storage/tierSelection';
 import { signalOnboardingComplete } from '../../services/events/onboardingEvents';
 import { colors, spacing, borderRadius, timing, gradients, layout } from '../../theme/theme';
 import { headerStyles, screenStyles } from '../../theme/components';
@@ -83,15 +82,7 @@ export default function LoginScreen({ navigation }: any) {
         // Returning user - go to main app
         signalOnboardingComplete();
       } else {
-        // Check if user has selected a tier yet
-        const hasTierSelected = await checkTierSelection();
-        if (hasTierSelected) {
-          // Continue onboarding from where they left off
-          navigation.replace('WhyTransFitness');
-        } else {
-          // New user - show tier selection first
-          navigation.replace('TierSelection');
-        }
+        navigation.replace('Disclaimer');
       }
     } catch (err: any) {
       console.error('Login failed:', err);
@@ -154,12 +145,7 @@ export default function LoginScreen({ navigation }: any) {
         if (hasCompletedOnboarding) {
           signalOnboardingComplete();
         } else {
-          const hasTierSelected = await checkTierSelection();
-          if (hasTierSelected) {
-            navigation.replace('WhyTransFitness');
-          } else {
-            navigation.replace('TierSelection');
-          }
+          navigation.replace('Disclaimer');
         }
       } else if (result.error && result.error !== 'Sign-in was cancelled' && result.error !== 'Sign-in was dismissed') {
         setError(result.error);

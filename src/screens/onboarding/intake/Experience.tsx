@@ -180,7 +180,7 @@ export default function Experience({ navigation }: ExperienceProps) {
           );
         }
 
-        navigation.navigate("WorkoutDays");
+        navigation.navigate("EnvironmentAndDays");
       }
     } catch (error) {
       console.error("Error saving experience:", error);

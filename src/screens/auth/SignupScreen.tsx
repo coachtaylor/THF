@@ -16,7 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { checkOnboardingStatus } from '../../services/storage/onboarding';
-import { checkTierSelection } from '../../services/storage/tierSelection';
 import { signalOnboardingComplete } from '../../services/events/onboardingEvents';
 import { colors, spacing, borderRadius, timing, gradients, layout } from '../../theme/theme';
 import { headerStyles } from '../../theme/components';
@@ -137,12 +136,7 @@ export default function SignupScreen({ navigation }: any) {
         if (hasCompletedOnboarding) {
           signalOnboardingComplete();
         } else {
-          const hasTierSelected = await checkTierSelection();
-          if (hasTierSelected) {
-            navigation.replace('WhyTransFitness');
-          } else {
-            navigation.replace('TierSelection');
-          }
+          navigation.replace('Disclaimer');
         }
       } else if (result.error && result.error !== 'Sign-in was cancelled' && result.error !== 'Sign-in was dismissed') {
         setError(result.error);
