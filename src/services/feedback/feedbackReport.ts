@@ -1,6 +1,7 @@
 // Feedback Report Service for TransFitness
 // Handles user feedback and issue reports at multiple touchpoints
 // Stores locally and syncs to Supabase
+// SECURITY: Encrypts feedback data in AsyncStorage as it may contain health-related context
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -16,6 +17,7 @@ import {
   FlaggedExercise,
   SessionFeedbackState,
 } from '../../types/feedback';
+import { encryptValue, decryptValue } from '../../utils/encryption';
 
 const FEEDBACK_STORAGE_KEY = '@transfitness:feedback_reports';
 const SESSION_FLAGS_KEY = '@transfitness:session_flags';
@@ -116,10 +118,16 @@ export async function saveFeedbackReport(
     );
 
     // Also save to AsyncStorage for redundancy
-    const existingJson = await AsyncStorage.getItem(FEEDBACK_STORAGE_KEY);
-    const existingReports: FeedbackReport[] = existingJson ? JSON.parse(existingJson) : [];
+    // SECURITY: Encrypt feedback data as it may contain health-related context
+    const existingEncrypted = await AsyncStorage.getItem(FEEDBACK_STORAGE_KEY);
+    let existingReports: FeedbackReport[] = [];
+    if (existingEncrypted) {
+      const decrypted = await decryptValue(existingEncrypted);
+      existingReports = JSON.parse(decrypted);
+    }
     existingReports.push(fullReport);
-    await AsyncStorage.setItem(FEEDBACK_STORAGE_KEY, JSON.stringify(existingReports));
+    const encryptedReports = await encryptValue(JSON.stringify(existingReports));
+    await AsyncStorage.setItem(FEEDBACK_STORAGE_KEY, encryptedReports);
 
     // Sync to Supabase (fire and forget)
     const synced = await syncFeedbackToSupabase(fullReport, userId);
@@ -242,16 +250,21 @@ export function getAllFeedbackReports(): FeedbackReport[] {
 
 /**
  * Flag an exercise during an active session
+ * SECURITY: Encrypts session flag data as it may contain dysphoria triggers
  */
 export async function flagExerciseInSession(
   sessionId: string,
   flag: FlaggedExercise
 ): Promise<void> {
   try {
-    const stateJson = await AsyncStorage.getItem(SESSION_FLAGS_KEY);
-    const state: SessionFeedbackState = stateJson
-      ? JSON.parse(stateJson)
-      : { session_id: sessionId, flagged_exercises: [] };
+    const encryptedState = await AsyncStorage.getItem(SESSION_FLAGS_KEY);
+    let state: SessionFeedbackState;
+    if (encryptedState) {
+      const decrypted = await decryptValue(encryptedState);
+      state = JSON.parse(decrypted);
+    } else {
+      state = { session_id: sessionId, flagged_exercises: [] };
+    }
 
     // Update session ID if different
     if (state.session_id !== sessionId) {
@@ -272,7 +285,8 @@ export async function flagExerciseInSession(
       state.flagged_exercises.push(flag);
     }
 
-    await AsyncStorage.setItem(SESSION_FLAGS_KEY, JSON.stringify(state));
+    const encrypted = await encryptValue(JSON.stringify(state));
+    await AsyncStorage.setItem(SESSION_FLAGS_KEY, encrypted);
 
     // Track analytics
     await trackEvent('exercise_flagged', {
@@ -290,6 +304,7 @@ export async function flagExerciseInSession(
 
 /**
  * Remove a flag from an exercise in the current session
+ * SECURITY: Uses encrypted storage
  */
 export async function unflagExerciseInSession(
   sessionId: string,
@@ -297,10 +312,11 @@ export async function unflagExerciseInSession(
   setNumber?: number
 ): Promise<void> {
   try {
-    const stateJson = await AsyncStorage.getItem(SESSION_FLAGS_KEY);
-    if (!stateJson) return;
+    const encryptedState = await AsyncStorage.getItem(SESSION_FLAGS_KEY);
+    if (!encryptedState) return;
 
-    const state: SessionFeedbackState = JSON.parse(stateJson);
+    const decrypted = await decryptValue(encryptedState);
+    const state: SessionFeedbackState = JSON.parse(decrypted);
 
     if (state.session_id !== sessionId) return;
 
@@ -308,7 +324,8 @@ export async function unflagExerciseInSession(
       f => !(f.exercise_id === exerciseId && (setNumber === undefined || f.set_number === setNumber))
     );
 
-    await AsyncStorage.setItem(SESSION_FLAGS_KEY, JSON.stringify(state));
+    const encrypted = await encryptValue(JSON.stringify(state));
+    await AsyncStorage.setItem(SESSION_FLAGS_KEY, encrypted);
     console.log('✅ Exercise unflagged');
   } catch (error) {
     console.error('Error unflagging exercise:', error);
@@ -317,13 +334,15 @@ export async function unflagExerciseInSession(
 
 /**
  * Get all flagged exercises for a session
+ * SECURITY: Decrypts session flags from storage
  */
 export async function getSessionFlags(sessionId: string): Promise<FlaggedExercise[]> {
   try {
-    const stateJson = await AsyncStorage.getItem(SESSION_FLAGS_KEY);
-    if (!stateJson) return [];
+    const encryptedState = await AsyncStorage.getItem(SESSION_FLAGS_KEY);
+    if (!encryptedState) return [];
 
-    const state: SessionFeedbackState = JSON.parse(stateJson);
+    const decrypted = await decryptValue(encryptedState);
+    const state: SessionFeedbackState = JSON.parse(decrypted);
 
     if (state.session_id !== sessionId) return [];
 
@@ -336,13 +355,15 @@ export async function getSessionFlags(sessionId: string): Promise<FlaggedExercis
 
 /**
  * Clear all flags for a session (after workout completion or abandonment)
+ * SECURITY: Properly clears encrypted session data
  */
 export async function clearSessionFlags(sessionId: string): Promise<void> {
   try {
-    const stateJson = await AsyncStorage.getItem(SESSION_FLAGS_KEY);
-    if (!stateJson) return;
+    const encryptedState = await AsyncStorage.getItem(SESSION_FLAGS_KEY);
+    if (!encryptedState) return;
 
-    const state: SessionFeedbackState = JSON.parse(stateJson);
+    const decrypted = await decryptValue(encryptedState);
+    const state: SessionFeedbackState = JSON.parse(decrypted);
 
     if (state.session_id === sessionId) {
       await AsyncStorage.removeItem(SESSION_FLAGS_KEY);

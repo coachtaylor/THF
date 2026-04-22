@@ -14,8 +14,8 @@ const criteria = [
 
 export function WhoItsFor() {
   return (
-    <section className="py-24 md:py-32">
-      <div className="max-w-3xl mx-auto px-6">
+    <section className="py-16 md:py-24">
+      <div className="max-w-3xl mx-auto px-5 md:px-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -23,7 +23,7 @@ export function WhoItsFor() {
           transition={{ duration: 0.6 }}
         >
           <GlassCard variant="hero" animate={false}>
-            <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-10">
               The Founding Athlete program is for you if you are:
             </h2>
 

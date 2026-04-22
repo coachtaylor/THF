@@ -1,9 +1,18 @@
 // Note: jest-expo handles React Native mocking automatically
 
-// Mock expo modules
-jest.mock('expo-linear-gradient', () => ({
-  LinearGradient: 'LinearGradient',
+// Mock @noble/ciphers (ESM-only, not compatible with Jest CJS transform)
+jest.mock('@noble/ciphers/aes.js', () => ({
+  gcm: jest.fn((key, nonce) => ({
+    encrypt: jest.fn((data) => data),
+    decrypt: jest.fn((data) => data),
+  })),
 }));
+
+// Mock expo modules
+jest.mock('expo-linear-gradient', () => {
+  const { View } = require('react-native');
+  return { LinearGradient: View };
+});
 
 jest.mock('expo-sqlite', () => ({
   openDatabaseSync: jest.fn(() => ({
@@ -181,6 +190,39 @@ jest.mock('./src/services/rulesEngine/configLoader', () => {
   };
 });
 
+// Mock SensoryModeContext (used by most screens and GlassCard)
+jest.mock('./src/contexts/SensoryModeContext', () => ({
+  useSensoryMode: jest.fn(() => ({
+    lowSensoryMode: false,
+    disableAnimations: false,
+    disableSounds: false,
+    disableHaptics: false,
+    hideMedia: false,
+    reduceVisualComplexity: false,
+  })),
+  SensoryModeProvider: ({ children }) => children,
+}));
+
+// Mock @expo/vector-icons
+jest.mock('@expo/vector-icons', () => {
+  const { Text } = require('react-native');
+  const MockIcon = ({ name, ...props }) => <Text {...props}>{name}</Text>;
+  return {
+    Ionicons: MockIcon,
+    MaterialIcons: MockIcon,
+    FontAwesome: MockIcon,
+    Feather: MockIcon,
+  };
+});
+
+// Mock lucide-react-native
+jest.mock('lucide-react-native', () => {
+  const { Text } = require('react-native');
+  return new Proxy({}, {
+    get: () => (props) => <Text>{props.name || 'icon'}</Text>,
+  });
+});
+
 // Mock Supabase for exercise filtering tests
 jest.mock('./src/utils/supabase', () => ({
   supabase: {
@@ -198,10 +240,42 @@ jest.mock('./src/utils/supabase', () => ({
   },
 }));
 
-// Mock react-native-reanimated
+// Mock react-native-reanimated (manual mock — reanimated/mock fails on Expo SDK 54+ due to ESM)
 jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
-  Reanimated.default.call = () => {};
-  return Reanimated;
+  const View = require('react-native').View;
+  return {
+    __esModule: true,
+    default: {
+      call: () => {},
+      View,
+      Text: require('react-native').Text,
+      ScrollView: require('react-native').ScrollView,
+      Image: require('react-native').Image,
+      createAnimatedComponent: (component) => component,
+    },
+    useSharedValue: jest.fn((init) => ({ value: init })),
+    useAnimatedStyle: jest.fn(() => ({})),
+    withTiming: jest.fn((val) => val),
+    withSpring: jest.fn((val) => val),
+    withDelay: jest.fn((_, val) => val),
+    withSequence: jest.fn((...vals) => vals[vals.length - 1]),
+    withRepeat: jest.fn((val) => val),
+    FadeIn: { duration: () => ({ delay: () => ({}) }) },
+    FadeOut: { duration: () => ({ delay: () => ({}) }) },
+    FadeInDown: { duration: () => ({ delay: () => ({}) }) },
+    FadeInUp: { duration: () => ({ delay: () => ({}) }) },
+    SlideInRight: { duration: () => ({ delay: () => ({}) }) },
+    SlideOutLeft: { duration: () => ({ delay: () => ({}) }) },
+    Layout: { duration: () => ({}) },
+    Easing: { bezier: () => {}, linear: 0, ease: 0 },
+    createAnimatedComponent: (component) => component,
+    Animated: { View, Text: require('react-native').Text },
+    useAnimatedRef: jest.fn(() => ({ current: null })),
+    useDerivedValue: jest.fn((fn) => ({ value: fn() })),
+    runOnJS: jest.fn((fn) => fn),
+    runOnUI: jest.fn((fn) => fn),
+    interpolate: jest.fn(),
+    Extrapolation: { CLAMP: 'clamp' },
+  };
 });
 

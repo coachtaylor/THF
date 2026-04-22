@@ -42,19 +42,19 @@ const features = [
 
 export function Differentiators() {
   return (
-    <section id="features" className="py-24 md:py-32 bg-background-secondary/50">
-      <div className="max-w-6xl mx-auto px-6">
+    <section id="features" className="py-16 md:py-24 bg-background-secondary/50">
+      <div className="max-w-6xl mx-auto px-5 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center mb-10"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-4">
             What makes Trans Health & Fitness different
           </h2>
-          <p className="text-lg text-text-secondary max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-text-secondary max-w-[720px] mx-auto leading-[1.6] md:leading-[1.7]">
             Built from the ground up for trans and non-binary bodies.
           </p>
         </motion.div>
@@ -64,7 +64,7 @@ export function Differentiators() {
           initial="initial"
           whileInView="animate"
           viewport={viewportSettings}
-          className="grid md:grid-cols-2 gap-6"
+          className="grid md:grid-cols-2 gap-4 md:gap-6"
         >
           {features.map((feature) => (
             <motion.div key={feature.title} variants={staggerItem}>
@@ -77,7 +77,7 @@ export function Differentiators() {
                 <h3 className="text-xl font-semibold text-text-primary mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-text-secondary leading-relaxed">
+                <p className="text-sm text-text-secondary leading-relaxed">
                   {feature.description}
                 </p>
               </GlassCard>

@@ -34,34 +34,213 @@ import { SubscriptionProvider } from "./src/contexts/SubscriptionContext";
 import { ToastProvider } from "./src/contexts/ToastContext";
 import { SensoryModeProvider } from "./src/contexts/SensoryModeContext";
 import { SyncProvider } from "./src/contexts/SyncContext";
+import { NotificationProvider } from "./src/contexts/NotificationContext";
+import { NetworkProvider } from "./src/contexts/NetworkContext";
 import { theme } from "./src/theme";
 import ErrorBoundary from "./src/components/common/ErrorBoundary";
 
+/**
+ * Sensitive field patterns that should be scrubbed from error reports
+ * These patterns match field names that contain sensitive health data
+ */
+const SENSITIVE_PATTERNS = [
+  // HRT-related
+  /hrt/i,
+  /hormone/i,
+  /estrogen/i,
+  /testosterone/i,
+  /injection/i,
+  // Surgery-related
+  /surgery/i,
+  /surgical/i,
+  /operative/i,
+  /recovery/i,
+  /top.?surgery/i,
+  /bottom.?surgery/i,
+  /vaginoplasty/i,
+  /phalloplasty/i,
+  /mastectomy/i,
+  /orchiectomy/i,
+  // Binding-related
+  /bind/i,
+  /binder/i,
+  /chest/i,
+  // Dysphoria-related
+  /dysphoria/i,
+  /trigger/i,
+  // Personal identifiers
+  /email/i,
+  /password/i,
+  /token/i,
+  /user_?id/i,
+  /birth/i,
+  /gender/i,
+  /identity/i,
+];
+
+/**
+ * Scrub sensitive data from a string
+ */
+function scrubSensitiveString(str: string): string {
+  if (!str || typeof str !== 'string') return str;
+
+  let result = str;
+
+  // Scrub email addresses
+  result = result.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL_REDACTED]');
+
+  // Scrub UUIDs (user IDs, etc.)
+  result = result.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '[UUID_REDACTED]');
+
+  // Scrub JWT tokens
+  result = result.replace(/eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/g, '[TOKEN_REDACTED]');
+
+  // Scrub dates that might be medical dates
+  result = result.replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/g, '[DATE_REDACTED]');
+
+  // Scrub sensitive field names and their values in JSON-like patterns
+  for (const pattern of SENSITIVE_PATTERNS) {
+    // Match "field_name": "value" or "field_name":value patterns
+    const fieldPattern = new RegExp(
+      `"?([^"]*${pattern.source}[^"]*)"?\\s*[:=]\\s*("[^"]*"|[^,}\\]\\s]+)`,
+      'gi'
+    );
+    result = result.replace(fieldPattern, '"$1": "[REDACTED]"');
+  }
+
+  return result;
+}
+
+/**
+ * Deep scrub an object for sensitive data
+ */
+function scrubSensitiveData(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+
+  if (typeof obj === 'string') {
+    return scrubSensitiveString(obj);
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(scrubSensitiveData);
+  }
+
+  if (typeof obj === 'object') {
+    const result: any = {};
+    for (const key of Object.keys(obj)) {
+      // Check if key matches sensitive patterns
+      const isSensitiveKey = SENSITIVE_PATTERNS.some(pattern => pattern.test(key));
+      if (isSensitiveKey) {
+        result[key] = '[REDACTED]';
+      } else {
+        result[key] = scrubSensitiveData(obj[key]);
+      }
+    }
+    return result;
+  }
+
+  return obj;
+}
+
 // Initialize Sentry for error tracking
-// Privacy-safe: Only sends anonymized error data, no personal info
+// Privacy-safe: Enhanced PII filtering for trans health data
 Sentry.init({
   dsn: process.env.SENTRY_DSN || "", // Add your Sentry DSN to .env
-  enabled: !__DEV__, // Only enable in production
+  enabled: !__DEV__,
   debug: __DEV__, // Enable debug mode in development
   tracesSampleRate: 0.2, // Sample 20% of transactions for performance monitoring
-  // Privacy: Don't send any PII
+
+  // SECURITY: Comprehensive PII and health data scrubbing
   beforeSend(event) {
-    // Remove any potential PII from the event
+    // Remove any potential PII from the user object
     if (event.user) {
+      delete event.user.id;
       delete event.user.email;
       delete event.user.username;
       delete event.user.ip_address;
     }
+
+    // Scrub error messages for sensitive health data
+    if (event.message) {
+      event.message = scrubSensitiveString(event.message);
+    }
+
+    // Scrub exception values
+    if (event.exception?.values) {
+      for (const exception of event.exception.values) {
+        if (exception.value) {
+          exception.value = scrubSensitiveString(exception.value);
+        }
+        // Scrub stack trace local variables if present
+        if (exception.stacktrace?.frames) {
+          for (const frame of exception.stacktrace.frames) {
+            if (frame.vars) {
+              frame.vars = scrubSensitiveData(frame.vars);
+            }
+          }
+        }
+      }
+    }
+
+    // Scrub extra data
+    if (event.extra) {
+      event.extra = scrubSensitiveData(event.extra);
+    }
+
+    // Scrub contexts
+    if (event.contexts) {
+      event.contexts = scrubSensitiveData(event.contexts);
+    }
+
+    // Scrub tags
+    if (event.tags) {
+      event.tags = scrubSensitiveData(event.tags);
+    }
+
     return event;
   },
-  // Don't capture breadcrumbs that might contain sensitive data
+
+  // SECURITY: Enhanced breadcrumb filtering
   beforeBreadcrumb(breadcrumb) {
     // Filter out console breadcrumbs that might contain sensitive info
     if (breadcrumb.category === "console") {
       return null;
     }
+
+    // Filter out navigation breadcrumbs with sensitive route params
+    if (breadcrumb.category === "navigation") {
+      if (breadcrumb.data) {
+        breadcrumb.data = scrubSensitiveData(breadcrumb.data);
+      }
+    }
+
+    // Filter out fetch/xhr breadcrumbs with sensitive URLs or data
+    if (breadcrumb.category === "fetch" || breadcrumb.category === "xhr") {
+      if (breadcrumb.data?.url) {
+        // Scrub query parameters that might contain tokens
+        breadcrumb.data.url = breadcrumb.data.url
+          .replace(/token[^&]*/gi, 'token=[REDACTED]')
+          .replace(/email=[^&]*/gi, 'email=[REDACTED]');
+      }
+      if (breadcrumb.data?.body) {
+        breadcrumb.data.body = '[BODY_REDACTED]';
+      }
+    }
+
+    // Scrub any message content
+    if (breadcrumb.message) {
+      breadcrumb.message = scrubSensitiveString(breadcrumb.message);
+    }
+
     return breadcrumb;
   },
+
+  // SECURITY: Don't attach user identity
+  autoSessionTracking: true,
+  enableAutoSessionTracking: true,
+
+  // Additional privacy settings
+  sendDefaultPii: false,
 });
 
 // Deep linking configuration for React Navigation
@@ -151,26 +330,16 @@ export default Sentry.wrap(function App() {
       // Check if user has completed onboarding
       const completed = await checkOnboardingStatus();
 
-      // Debug logging (development only)
+      // Debug logging (development only) - SECURITY: Do not log sensitive profile fields
       if (__DEV__) {
         console.log("🔍 App initialization - Onboarding status:", completed);
-        const { getProfile, debugProfileStorage } =
+        const { getProfile } =
           await import("./src/services/storage/profile");
         const profile = await getProfile();
         console.log(
           "🔍 Current profile on app start:",
           profile ? "EXISTS" : "NULL",
         );
-        if (profile) {
-          console.log("🔍 Profile fields check:");
-          console.log("  - gender_identity:", profile.gender_identity);
-          console.log("  - primary_goal:", profile.primary_goal);
-          console.log("  - fitness_experience:", profile.fitness_experience);
-          console.log("  - id:", profile.id || profile.user_id);
-        } else {
-          console.log("🔍 No profile found in database");
-        }
-        await debugProfileStorage();
       }
 
       setHasCompletedOnboarding(completed);
@@ -200,25 +369,29 @@ export default Sentry.wrap(function App() {
   return (
     <SafeAreaProvider style={{ backgroundColor: theme.colors.background }}>
       <PaperProvider theme={theme}>
-        <ToastProvider>
-          <AuthProvider>
-            <SensoryModeProvider>
-              <SyncProvider>
-                <SubscriptionProvider>
-                  <NavigationContainer ref={navigationRef} linking={linking}>
-                    <ErrorBoundary>
-                      {hasCompletedOnboarding ? (
-                        <MainNavigator />
-                      ) : (
-                        <OnboardingNavigator />
-                      )}
-                    </ErrorBoundary>
-                  </NavigationContainer>
-                </SubscriptionProvider>
-              </SyncProvider>
-            </SensoryModeProvider>
-          </AuthProvider>
-        </ToastProvider>
+        <NetworkProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <NotificationProvider>
+                <SensoryModeProvider>
+                  <SyncProvider>
+                    <SubscriptionProvider>
+                      <NavigationContainer ref={navigationRef} linking={linking}>
+                        <ErrorBoundary>
+                          {hasCompletedOnboarding ? (
+                            <MainNavigator />
+                          ) : (
+                            <OnboardingNavigator />
+                          )}
+                        </ErrorBoundary>
+                      </NavigationContainer>
+                    </SubscriptionProvider>
+                  </SyncProvider>
+                </SensoryModeProvider>
+              </NotificationProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </NetworkProvider>
       </PaperProvider>
     </SafeAreaProvider>
   );

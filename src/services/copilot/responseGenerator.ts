@@ -50,10 +50,9 @@ export async function generateResponse(
   const redFlagResult = checkForRedFlags(query);
 
   if (redFlagResult.isRedFlag) {
-    // Track red flag trigger
+    // Track red flag trigger (SECURITY: Do not log specific keywords to protect user privacy)
     await trackEvent("copilot_red_flag_triggered", {
       category: redFlagResult.category,
-      keywords: redFlagResult.matchedKeywords.join(", "),
     });
 
     let response = redFlagResult.deflectionMessage;
@@ -118,8 +117,9 @@ export async function generateResponse(
   }
 
   // Step 3: No matches - provide a helpful fallback
+  // SECURITY: Do not log query content to protect user privacy
   await trackEvent("copilot_query_no_match", {
-    query_preview: query.substring(0, 50),
+    query_length: query.length,
   });
 
   const fallbackResponse = generateFallbackResponse(query, context);

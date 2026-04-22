@@ -30,6 +30,8 @@ import {
   EditEnvironmentModal,
 } from '../../components/settings';
 import { getWorkoutHistory } from '../../services/storage/workoutLog';
+import { useNotificationContext } from '../../contexts/NotificationContext';
+import { db } from '../../utils/database';
 
 // Settings storage keys
 const SETTINGS_STORAGE_KEY = '@transfitness:app_settings';
@@ -46,7 +48,6 @@ type SettingsScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'S
 type RootStackParamList = {
   BinderSafetyGuide: undefined;
   PostOpMovementGuide: undefined;
-  Copilot: undefined;
 };
 
 export default function SettingsScreen() {
@@ -56,8 +57,10 @@ export default function SettingsScreen() {
   const { logout } = useAuth();
   const { refreshPlan } = usePlan(profile?.user_id || profile?.id || 'default');
   const { isPremium, status, restore, isLoading: subscriptionLoading } = useSubscription();
+  const { hasPermission, settings: notificationSettings, requestPermission, updateSettings: updateNotificationSettings } = useNotificationContext();
 
   // Modal states
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
@@ -69,6 +72,7 @@ export default function SettingsScreen() {
   const [isRestoring, setIsRestoring] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isResettingWeeklyTransition, setIsResettingWeeklyTransition] = useState(false);
 
   // Edit modal states
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -323,10 +327,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleOpenCopilot = () => {
-    navigation.navigate('Copilot');
-  };
-
   const handleGiveFeedback = () => {
     setShowSurveyModal(true);
   };
@@ -387,6 +387,33 @@ export default function SettingsScreen() {
       console.error('Error regenerating plan:', error);
       setIsRegenerating(false);
       Alert.alert('Error', 'Failed to regenerate plan. Please try again.');
+    }
+  };
+
+  // Debug: Reset weekly transition to trigger weekly summary modal
+  const handleResetWeeklyTransition = async () => {
+    if (!profile) return;
+
+    try {
+      setIsResettingWeeklyTransition(true);
+      const userId = profile.user_id || profile.id || 'default';
+
+      // Clear the week_transitions table for this user
+      db.execSync('DELETE FROM week_transitions WHERE user_id = ?', [userId]);
+
+      // Also clear the plans table so they can generate a fresh plan
+      db.execSync('DELETE FROM plans WHERE user_id = ?', [userId]);
+
+      setIsResettingWeeklyTransition(false);
+      Alert.alert(
+        'Reset Complete',
+        'Weekly transition data cleared. Close and reopen the app to see the weekly summary modal.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error resetting weekly transition:', error);
+      setIsResettingWeeklyTransition(false);
+      Alert.alert('Error', 'Failed to reset weekly transition. Please try again.');
     }
   };
 
@@ -741,27 +768,6 @@ export default function SettingsScreen() {
           </GlassCard>
         </View>
 
-        {/* Ask Copilot */}
-        <View style={sectionStyles.container}>
-          <View style={sectionStyles.headerWithAction}>
-            <View style={sectionStyles.titleRow}>
-              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.secondaryMuted }]}>
-                <Ionicons name="chatbubbles" size={16} color={colors.accent.secondary} />
-              </View>
-              <Text style={sectionStyles.title}>Ask Copilot</Text>
-            </View>
-          </View>
-          <GlassList>
-            <GlassListItem
-              title="Chat with Copilot"
-              subtitle="Questions about binding, HRT, workouts, and more"
-              leftIcon="chatbubble-ellipses-outline"
-              onPress={handleOpenCopilot}
-              showChevron
-            />
-          </GlassList>
-        </View>
-
         {/* Education & Guides */}
         <View style={sectionStyles.container}>
           <View style={sectionStyles.headerWithAction}>
@@ -802,10 +808,25 @@ export default function SettingsScreen() {
           </View>
           <GlassList>
             <GlassListItem
-              title="Notifications"
+              title="Workout reminders"
+              subtitle={hasPermission ? (notificationSettings.workoutReminders ? 'Enabled' : 'Disabled') : 'Tap to enable'}
+              rightValue={hasPermission && notificationSettings.workoutReminders ? notificationSettings.reminderTime : undefined}
+              onPress={async () => {
+                if (!hasPermission) {
+                  const granted = await requestPermission();
+                  if (granted) {
+                    updateNotificationSettings({ workoutReminders: true });
+                  }
+                } else {
+                  updateNotificationSettings({ workoutReminders: !notificationSettings.workoutReminders });
+                }
+              }}
+            />
+            <GlassListItem
+              title="System notifications"
+              subtitle="Manage all notification settings"
               rightIcon="chevron-forward"
               onPress={() => {
-                // Open system settings for notifications
                 if (Platform.OS === 'ios') {
                   Linking.openURL('app-settings:');
                 } else {
@@ -847,7 +868,7 @@ export default function SettingsScreen() {
             />
             <GlassListItem
               title="Theme"
-              subtitle="Coming soon"
+              subtitle="On our roadmap"
               rightValue="Dark"
             />
           </GlassList>
@@ -884,37 +905,52 @@ export default function SettingsScreen() {
               onPress={() => Linking.openURL('https://transfitness.app/privacy')}
               showChevron
             />
+            <GlassListItem
+              title="Terms of service"
+              leftIcon="document-outline"
+              onPress={() => Linking.openURL('https://transfitness.app/terms')}
+              showChevron
+            />
           </GlassList>
         </View>
 
-        {/* Debug Section */}
-        <View style={sectionStyles.container}>
-          <View style={sectionStyles.headerWithAction}>
-            <View style={sectionStyles.titleRow}>
-              <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.warningMuted }]}>
-                <Ionicons name="bug" size={16} color={colors.warning} />
+        {/* Debug Section - only visible in development */}
+        {__DEV__ && (
+          <View style={sectionStyles.container}>
+            <View style={sectionStyles.headerWithAction}>
+              <View style={sectionStyles.titleRow}>
+                <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.warningMuted }]}>
+                  <Ionicons name="bug" size={16} color={colors.warning} />
+                </View>
+                <Text style={[sectionStyles.title, { color: colors.warning }]}>Debug</Text>
               </View>
-              <Text style={[sectionStyles.title, { color: colors.warning }]}>Debug</Text>
             </View>
+            <GlassList>
+              <GlassListItem
+                title="Regenerate Plan"
+                subtitle={isRegenerating ? "Regenerating..." : "Create new plan with current settings"}
+                leftIcon="sync-outline"
+                onPress={handleRegeneratePlan}
+                showChevron
+              />
+              <GlassListItem
+                title="Reset Weekly Transition"
+                subtitle={isResettingWeeklyTransition ? "Resetting..." : "Clear plan & trigger weekly summary"}
+                leftIcon="calendar-outline"
+                onPress={handleResetWeeklyTransition}
+                showChevron
+              />
+              <GlassListItem
+                title="Reset Onboarding"
+                subtitle="Delete profile and restart"
+                leftIcon="refresh-outline"
+                variant="danger"
+                onPress={handleResetOnboarding}
+                showChevron
+              />
+            </GlassList>
           </View>
-          <GlassList>
-            <GlassListItem
-              title="Regenerate Plan"
-              subtitle={isRegenerating ? "Regenerating..." : "Create new plan with current settings"}
-              leftIcon="sync-outline"
-              onPress={handleRegeneratePlan}
-              showChevron
-            />
-            <GlassListItem
-              title="Reset Onboarding"
-              subtitle="Delete profile and restart"
-              leftIcon="refresh-outline"
-              variant="danger"
-              onPress={handleResetOnboarding}
-              showChevron
-            />
-          </GlassList>
-        </View>
+        )}
 
         {/* Support */}
         <View style={sectionStyles.container}>

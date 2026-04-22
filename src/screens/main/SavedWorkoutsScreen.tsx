@@ -30,7 +30,7 @@ export default function SavedWorkoutsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      console.log('SavedWorkoutsScreen focused, refreshing...');
+      if (__DEV__) console.log('SavedWorkoutsScreen focused, refreshing...');
       refresh();
     }, [refresh])
   );

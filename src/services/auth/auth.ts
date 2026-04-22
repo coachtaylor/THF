@@ -9,12 +9,13 @@ import {
 } from '../../types/auth';
 import { clearTokens } from './tokens';
 import { clearTierSelection } from '../storage/tierSelection';
+import { sanitizeErrorMessage, logError } from '../../utils/errorMessages';
 
 /**
  * Sign up with email and password
  */
 export async function signup(data: SignupRequest): Promise<SignupResponse> {
-  console.log('📝 Creating account:', data.email);
+  if (__DEV__) console.log('📝 Creating account...');
 
   const { data: authData, error } = await supabase.auth.signUp({
     email: data.email,
@@ -29,15 +30,16 @@ export async function signup(data: SignupRequest): Promise<SignupResponse> {
   });
 
   if (error) {
-    console.error('❌ Signup error:', error.message);
-    throw new Error(error.message);
+    // SECURITY: Sanitize error message before exposing to caller
+    logError('Signup', error);
+    throw new Error(sanitizeErrorMessage(error));
   }
 
   if (!authData.user) {
     throw new Error('Signup failed - no user returned');
   }
 
-  console.log('✅ Account created:', authData.user.email);
+  if (__DEV__) console.log('✅ Account created');
 
   return {
     success: true,
@@ -50,7 +52,7 @@ export async function signup(data: SignupRequest): Promise<SignupResponse> {
  * Login with email and password
  */
 export async function login(credentials: LoginRequest): Promise<LoginResponse> {
-  console.log('🔐 Attempting login:', credentials.email);
+  if (__DEV__) console.log('🔐 Attempting login...');
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email: credentials.email,
@@ -58,15 +60,16 @@ export async function login(credentials: LoginRequest): Promise<LoginResponse> {
   });
 
   if (error) {
-    console.error('❌ Login error:', error.message);
-    throw new Error(error.message);
+    // SECURITY: Sanitize error message before exposing to caller
+    logError('Login', error);
+    throw new Error(sanitizeErrorMessage(error));
   }
 
   if (!data.user || !data.session) {
     throw new Error('Login failed - no session returned');
   }
 
-  console.log('✅ Login successful:', data.user.email);
+  if (__DEV__) console.log('✅ Login successful');
 
   return {
     success: true,
@@ -83,53 +86,55 @@ export async function login(credentials: LoginRequest): Promise<LoginResponse> {
  * Logout
  */
 export async function logout(): Promise<void> {
-  console.log('👋 Logging out...');
+  if (__DEV__) console.log('👋 Logging out...');
 
   const { error } = await supabase.auth.signOut();
 
-  if (error) {
+  if (error && __DEV__) {
     console.error('❌ Logout error:', error.message);
   }
 
   await clearTokens();
   await clearTierSelection();
-  console.log('✅ Logged out');
+  if (__DEV__) console.log('✅ Logged out');
 }
 
 /**
  * Request password reset
  */
 export async function requestPasswordReset(email: string): Promise<void> {
-  console.log('🔑 Requesting password reset:', email);
+  if (__DEV__) console.log('🔑 Requesting password reset...');
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: 'transfitness://reset-password',
   });
 
   if (error) {
-    console.error('❌ Password reset error:', error.message);
-    throw new Error(error.message);
+    // SECURITY: Sanitize error message before exposing to caller
+    logError('Password reset', error);
+    throw new Error(sanitizeErrorMessage(error));
   }
 
-  console.log('✅ Password reset email sent');
+  if (__DEV__) console.log('✅ Password reset email sent');
 }
 
 /**
  * Update password (after reset link clicked)
  */
 export async function updatePassword(newPassword: string): Promise<void> {
-  console.log('🔑 Updating password...');
+  if (__DEV__) console.log('🔑 Updating password...');
 
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
   });
 
   if (error) {
-    console.error('❌ Password update error:', error.message);
-    throw new Error(error.message);
+    // SECURITY: Sanitize error message before exposing to caller
+    logError('Password update', error);
+    throw new Error(sanitizeErrorMessage(error));
   }
 
-  console.log('✅ Password updated');
+  if (__DEV__) console.log('✅ Password updated');
 }
 
 /**
@@ -162,20 +167,21 @@ export async function verifyEmail(_token: string): Promise<{ success: boolean; m
  * Refresh access token - Supabase handles this automatically
  */
 export async function refreshAccessToken(_refreshToken: string): Promise<AuthTokens> {
-  console.log('🔄 Refreshing access token...');
+  if (__DEV__) console.log('🔄 Refreshing access token...');
 
   const { data, error } = await supabase.auth.refreshSession();
 
   if (error) {
-    console.error('❌ Token refresh error:', error.message);
-    throw new Error(error.message);
+    // SECURITY: Sanitize error message before exposing to caller
+    logError('Token refresh', error);
+    throw new Error(sanitizeErrorMessage(error));
   }
 
   if (!data.session) {
     throw new Error('No session returned from refresh');
   }
 
-  console.log('✅ Token refreshed');
+  if (__DEV__) console.log('✅ Token refreshed');
 
   return {
     access_token: data.session.access_token,
@@ -188,7 +194,7 @@ export async function refreshAccessToken(_refreshToken: string): Promise<AuthTok
  * Resend verification email
  */
 export async function resendVerificationEmail(email: string): Promise<void> {
-  console.log('📧 Resending verification email...');
+  if (__DEV__) console.log('📧 Resending verification email...');
 
   const { error } = await supabase.auth.resend({
     type: 'signup',
@@ -199,11 +205,12 @@ export async function resendVerificationEmail(email: string): Promise<void> {
   });
 
   if (error) {
-    console.error('❌ Resend error:', error.message);
-    throw new Error(error.message);
+    // SECURITY: Sanitize error message before exposing to caller
+    logError('Resend verification', error);
+    throw new Error(sanitizeErrorMessage(error));
   }
 
-  console.log('✅ Verification email sent');
+  if (__DEV__) console.log('✅ Verification email sent');
 }
 
 /**
@@ -245,7 +252,7 @@ export async function isAuthenticated(): Promise<boolean> {
  */
 export function onAuthStateChange(callback: (user: User | null) => void) {
   return supabase.auth.onAuthStateChange((event, session) => {
-    console.log('🔔 Auth state changed:', event);
+    if (__DEV__) console.log('🔔 Auth state changed:', event);
     callback(session?.user ? mapSupabaseUser(session.user) : null);
   });
 }

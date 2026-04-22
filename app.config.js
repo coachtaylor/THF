@@ -15,11 +15,14 @@ export default {
       backgroundColor: '#0A0A0C',
     },
     extra: {
-      supabaseUrl: process.env.SUPABASE_URL || 'https://xqcwywoqumblogoyzkhf.supabase.co',
-      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxY3d5d29xdW1ibG9nb3l6a2hmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxMjU1MDUsImV4cCI6MjA3ODcwMTUwNX0.RNXzHLU_uiWle3bE7ueWgkoW5F6zFLHc-NoS656s03I',
-      googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID || '590532149610-4o8ummmenngdprtbm71pr13bsakev3ps.apps.googleusercontent.com',
-      googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID || '590532149610-c7k0i9bp5b2uom336v5ishq7to834nbe.apps.googleusercontent.com',
-      googleAndroidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID || '590532149610-sa5o2oitntrl40rsk8q986c9nkc7jbnf.apps.googleusercontent.com',
+      // SECURITY: API keys must be provided via environment variables
+      // For production builds, use EAS Secrets: eas secret:create
+      // Empty strings will trigger runtime validation warnings
+      supabaseUrl: process.env.SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL || '',
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+      googleWebClientId: process.env.GOOGLE_WEB_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+      googleIosClientId: process.env.GOOGLE_IOS_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '',
+      googleAndroidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
       eas: {
         projectId: 'e0993d53-6954-4acc-80e6-abfb3c5b8e4e',
       },
@@ -30,8 +33,10 @@ export default {
       bundleIdentifier: 'com.transfitness.app',
       buildNumber: '1',
       infoPlist: {
-        NSUserTrackingUsageDescription:
-          'We use analytics to improve the app. Your data is anonymized and never shared.',
+        UIBackgroundModes: ['remote-notification'],
+      },
+      entitlements: {
+        'aps-environment': 'production',
       },
       associatedDomains: [
         'applinks:transfitness.app',
@@ -71,16 +76,27 @@ export default {
     },
     plugins: [
       'expo-av',
-      'expo-notifications',
+      [
+        'expo-notifications',
+        {
+          icon: './assets/icon.png',
+          color: '#00D9C0',
+          sounds: [],
+          android: {
+            useNextNotificationsApi: true,
+          },
+        },
+      ],
       'expo-web-browser',
       [
         '@react-native-google-signin/google-signin',
         {
           // Extract client ID suffix for URL scheme (format: com.googleusercontent.apps.CLIENT_ID_PREFIX)
-          iosUrlScheme: process.env.GOOGLE_IOS_CLIENT_ID
-            ? `com.googleusercontent.apps.${process.env.GOOGLE_IOS_CLIENT_ID.split('.')[0]}`
-            : 'com.googleusercontent.apps.590532149610-c7k0i9bp5b2uom336v5ishq7to834nbe',
-          iosClientId: process.env.GOOGLE_IOS_CLIENT_ID || '590532149610-c7k0i9bp5b2uom336v5ishq7to834nbe.apps.googleusercontent.com',
+          // SECURITY: Must be provided via environment variables
+          iosUrlScheme: (process.env.GOOGLE_IOS_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID)
+            ? `com.googleusercontent.apps.${(process.env.GOOGLE_IOS_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID).split('.')[0]}`
+            : '',
+          iosClientId: process.env.GOOGLE_IOS_CLIENT_ID || process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '',
         },
       ],
       [

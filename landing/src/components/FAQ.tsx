@@ -53,19 +53,19 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="py-24 md:py-32">
-      <div className="max-w-3xl mx-auto px-6">
+    <section id="faq" className="py-16 md:py-24">
+      <div className="max-w-3xl mx-auto px-5 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.6 }}
-          className="text-center mb-12"
+          className="text-center mb-10"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-4">
             Frequently asked questions
           </h2>
-          <p className="text-lg text-text-secondary">
+          <p className="text-base md:text-lg text-text-secondary leading-[1.6] md:leading-[1.7]">
             Everything you need to know about Trans Health & Fitness.
           </p>
         </motion.div>

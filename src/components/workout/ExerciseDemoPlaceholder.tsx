@@ -52,7 +52,7 @@ export function ExerciseDemoPlaceholder({
             <Ionicons name="videocam-outline" size={28} color={colors.accent.primary} />
           </View>
           <View style={styles.comingSoonBadge}>
-            <Text style={styles.comingSoonText}>Demo Coming Soon</Text>
+            <Text style={styles.comingSoonText}>Demo in Development</Text>
           </View>
         </View>
 

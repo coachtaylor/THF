@@ -20,19 +20,19 @@ const programSteps = [
 
 export function BetaDetails() {
   return (
-    <section id="beta" className="py-16 md:py-24 lg:py-32">
-      <div className="max-w-6xl mx-auto px-6">
+    <section id="beta" className="py-16 md:py-24">
+      <div className="max-w-6xl mx-auto px-5 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.6 }}
-          className="text-center mb-10 md:mb-16"
+          className="text-center mb-10"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-4">
+          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-4">
             Founding Athlete Details
           </h2>
-          <p className="text-lg text-text-secondary max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-text-secondary max-w-[720px] mx-auto leading-[1.6] md:leading-[1.7]">
             Early access, founding price, and a direct line to shape the app.
           </p>
         </motion.div>
@@ -101,7 +101,7 @@ export function BetaDetails() {
 
               <div className="relative">
                 <p className="text-base text-accent-blue font-semibold mb-4">
-                  Launching January 1st, 2026
+                  Now Accepting Founding Athletes
                 </p>
 
                 <div className="flex items-center gap-2 mb-4">
@@ -120,7 +120,7 @@ export function BetaDetails() {
                 </p>
 
                 <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-5xl md:text-6xl font-bold text-accent-blue">
+                  <span className="text-4xl md:text-5xl font-bold text-accent-blue">
                     $5
                   </span>
                   <span className="text-xl text-text-secondary">/month</span>

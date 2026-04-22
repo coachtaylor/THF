@@ -1,14 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+
 import { GlassButton } from "./ui/GlassButton";
 import { heroStagger, heroItem } from "@/lib/animations";
 import Image from "next/image";
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
+    <section className="relative h-screen flex items-center overflow-hidden pt-[80px] md:pt-[100px]">
       {/* Gradient Overlays */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
       <div className="absolute inset-0 bg-gradient-to-r from-background/50 via-transparent to-background/50" />
@@ -17,8 +17,8 @@ export function Hero() {
       <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-accent-blue/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-accent-pink/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-16 w-full">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-6 lg:px-20 pt-8 pb-12 md:py-28 w-full">
+        <div className="grid lg:grid-cols-[1fr_auto] gap-8 lg:gap-8 items-center">
           {/* Left Column - Text Content */}
           <motion.div
             variants={heroStagger}
@@ -26,28 +26,13 @@ export function Hero() {
             animate="animate"
             className="text-left"
           >
-            {/* Launch Announcement */}
-            <motion.div
-              variants={heroItem}
-              className="mb-10"
-            >
-              <p className="text-sm font-semibold uppercase tracking-widest text-accent-pink mb-2">
-                Coming Soon
-              </p>
-              <p className="text-3xl md:text-4xl font-bold text-text-primary">
-                Launching <span className="text-accent-blue">January 1st, 2026</span>
-              </p>
-              <p className="text-base text-text-secondary mt-2">
-                Be one of the first to get access — limited founding athlete spots available
-              </p>
-            </motion.div>
-
             {/* Headline */}
             <motion.h1
               variants={heroItem}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold text-text-primary leading-[1.1] tracking-tight mb-6"
+              className="text-[32px] md:text-5xl font-bold text-text-primary leading-[1.1] tracking-tight mb-8"
             >
-              Fitness that finally{" "}
+              Fitness that finally
+              <br />
               <span className="text-gradient">understands</span>{" "}
               your body
             </motion.h1>
@@ -55,44 +40,23 @@ export function Hero() {
             {/* Subheadline */}
             <motion.p
               variants={heroItem}
-              className="text-lg md:text-xl text-text-secondary max-w-xl leading-relaxed mb-8"
+              className="text-base md:text-lg text-text-secondary max-w-xl leading-[1.6] md:leading-[1.7] mb-12"
             >
-              Workouts that respect chest binding, HRT, and gender-affirming
-              surgeries. Train hard without fighting your body or your gender.
+              The first fitness app built for trans bodies. Workouts that respect
+              chest binding, HRT, and gender-affirming surgeries.
             </motion.p>
 
             {/* CTA */}
             <motion.div
               variants={heroItem}
-              className="flex flex-col sm:flex-row items-start gap-4 mb-10"
+              className="flex flex-col items-start gap-4"
             >
-              <GlassButton href="#apply" variant="primary" size="large">
+              <p className="text-sm text-text-tertiary">
+                Now accepting founding athletes
+              </p>
+              <GlassButton href="#apply" variant="primary" size="large" className="min-h-[48px] font-bold w-full md:w-auto">
                 Join the Founding Athletes
               </GlassButton>
-            </motion.div>
-
-            {/* Social Proof */}
-            <motion.div
-              variants={heroItem}
-              className="flex items-center gap-4"
-            >
-              {/* Avatar stack */}
-              <div className="flex -space-x-3">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-blue/30 to-accent-pink/30 border-2 border-background flex items-center justify-center"
-                  >
-                    <span className="text-xs font-medium text-text-secondary">
-                      {["J", "A", "K", "M"][i - 1]}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="text-sm">
-                <span className="text-text-primary font-semibold">Spots filling fast</span>
-                <span className="text-text-tertiary"> — apply now to secure your spot</span>
-              </div>
             </motion.div>
           </motion.div>
 
@@ -104,13 +68,13 @@ export function Hero() {
             className="relative flex justify-center lg:justify-end"
           >
             {/* Phone Frame - tilted left with perspective */}
-            <div className="relative phone-mockup-enhanced" style={{ perspective: "1000px" }}>
+            <div className="relative phone-mockup-enhanced w-[60%] max-w-[260px] mx-auto mt-6 md:w-full md:max-w-[320px] md:mx-0 md:mt-0 lg:max-w-[380px]" style={{ perspective: "1000px" }}>
               {/* Multi-layer glow effect behind phone */}
               <div className="absolute inset-0 bg-accent-blue/25 blur-[80px] rounded-[60px] scale-110" />
               <div className="absolute inset-0 bg-accent-pink/15 blur-[60px] rounded-[60px] scale-95 translate-y-4" />
 
               {/* Phone container with shadow stack */}
-              <div className="relative w-[220px] md:w-[250px] lg:w-[280px] phone-mockup phone-tilted phone-shadow-stack">
+              <div className="relative w-full phone-mockup phone-tilted phone-shadow-stack">
                 {/* Edge glow highlight */}
                 <div className="phone-edge-glow" />
 

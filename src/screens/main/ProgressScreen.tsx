@@ -476,8 +476,8 @@ export default function ProgressScreen() {
           </GlassCard>
         </PremiumGate>
 
-        {/* Coming Soon Features */}
-        <Text style={styles.sectionTitle}>Coming Soon</Text>
+        {/* Roadmap Features */}
+        <Text style={styles.sectionTitle}>On Our Roadmap</Text>
 
         <GlassCard variant="default" style={styles.featuresCard}>
           <FeatureCard

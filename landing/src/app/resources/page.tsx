@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Navigation } from '@/components/Navigation';
 
 export const metadata: Metadata = {
   title: 'Resources - Trans Health & Fitness',
@@ -8,7 +9,8 @@ export const metadata: Metadata = {
 export default function Resources() {
   return (
     <main className="min-h-screen bg-background text-white">
-      <div className="max-w-4xl mx-auto px-6 py-16">
+      <Navigation />
+      <div className="max-w-4xl mx-auto px-6 pt-28 pb-16">
         <h1 className="text-4xl font-bold mb-2">Resources</h1>
         <p className="text-accent-blue mb-12">Trans Health &amp; Fitness</p>
 

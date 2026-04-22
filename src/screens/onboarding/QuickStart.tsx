@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { generateQuickStartPlan } from '../../services/planGenerator';
-import { Plan } from '../../types';
 import { palette, spacing, typography } from '../../theme';
 import type { OnboardingScreenProps } from '../../types/onboarding';
 
@@ -24,16 +23,14 @@ export default function QuickStart({ navigation }: OnboardingScreenProps<'QuickS
       const quickPlan = await generateQuickStartPlan();
       console.log('✅ Quick Start plan generated:', quickPlan);
 
-      // TODO: Navigate to SessionPlayer when it's implemented (Week 4)
-      // For now, show success message and navigate back
-      // navigation.navigate('SessionPlayer', { plan: quickPlan });
-      
-      // Temporary: Navigate back to onboarding or show success
-      setTimeout(() => {
-        // For now, just show that plan was created
-        // In Week 4, this will navigate to SessionPlayer
+      const workout = quickPlan.days[0]?.variants[30];
+      if (!workout) {
+        setError('Generated plan has no workout. Please try again.');
         setLoading(false);
-      }, 1500);
+        return;
+      }
+
+      navigation.replace('SessionPlayer', { workout, planId: quickPlan.id });
     } catch (err) {
       console.error('❌ Failed to generate Quick Start plan:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate workout plan');
@@ -60,15 +57,7 @@ export default function QuickStart({ navigation }: OnboardingScreenProps<'QuickS
     );
   }
 
-  // Success state (temporary until SessionPlayer is implemented)
-  return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, spacing.l) }]}>
-      <Text style={styles.successTitle}>Workout Created! 🎉</Text>
-      <Text style={styles.successText}>
-        Your 5-minute Quick Start workout has been generated. Session Player coming in Week 4!
-      </Text>
-    </View>
-  );
+  return null;
 }
 
 const styles = StyleSheet.create({
@@ -101,17 +90,6 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     textAlign: 'center',
     color: palette.midGray,
-  },
-  successTitle: {
-    ...typography.h1,
-    textAlign: 'center',
-    marginBottom: spacing.m,
-    color: palette.tealPrimary,
-  },
-  successText: {
-    ...typography.body,
-    textAlign: 'center',
-    color: palette.lightGray,
   },
 });
 
