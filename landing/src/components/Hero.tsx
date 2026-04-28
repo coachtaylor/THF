@@ -18,7 +18,7 @@ export function Hero() {
       <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-accent-pink/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-6 lg:px-20 pt-8 pb-12 md:py-28 w-full">
-        <div className="grid lg:grid-cols-[1fr_auto] gap-8 lg:gap-8 items-center">
+        <div className="grid lg:grid-cols-[1fr_300px] gap-8 lg:gap-16 items-center">
           {/* Left Column - Text Content */}
           <motion.div
             variants={heroStagger}
@@ -68,7 +68,7 @@ export function Hero() {
             className="relative flex justify-center lg:justify-end"
           >
             {/* Phone Frame - tilted left with perspective */}
-            <div className="relative phone-mockup-enhanced w-[60%] max-w-[260px] mx-auto mt-6 md:w-full md:max-w-[320px] md:mx-0 md:mt-0 lg:max-w-[380px]" style={{ perspective: "1000px" }}>
+            <div className="relative phone-mockup-enhanced w-[55%] max-w-[220px] mx-auto mt-6 md:w-full md:max-w-[260px] md:mx-0 md:mt-0 lg:max-w-[280px]" style={{ perspective: "1000px" }}>
               {/* Multi-layer glow effect behind phone */}
               <div className="absolute inset-0 bg-accent-blue/25 blur-[80px] rounded-[60px] scale-110" />
               <div className="absolute inset-0 bg-accent-pink/15 blur-[60px] rounded-[60px] scale-95 translate-y-4" />

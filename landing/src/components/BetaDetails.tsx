@@ -1,21 +1,15 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Check, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 import { GlassCard } from "./ui/GlassCard";
 import { staggerContainer, staggerItem, viewportSettings } from "@/lib/animations";
 
 const benefits = [
-  "Personalized daily workouts",
-  "Safety tags for exercises and sessions",
-  "Simple session feedback and check ins",
-  "Direct channel to share ideas, bug reports, and safety concerns",
-];
-
-const programSteps = [
-  "Limited spots, we review each application",
-  "You agree to a short code of conduct and terms",
-  "You get early access, and we ask for your feedback a few times per month",
+  "Early access before public launch",
+  "Lifetime founding price when we exit beta",
+  "A direct line to founders for feedback and bug reports",
+  "Hand-reviewed application — limited spots",
 ];
 
 export function BetaDetails() {
@@ -37,17 +31,18 @@ export function BetaDetails() {
           </p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-5 md:gap-8">
-          {/* What You Get */}
+        <div className="grid lg:grid-cols-2 gap-5 md:gap-8 items-stretch">
+          {/* Benefits */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={viewportSettings}
             transition={{ duration: 0.6 }}
+            className="h-full"
           >
-            <GlassCard animate={false}>
+            <GlassCard animate={false} className="h-full">
               <h3 className="text-xl font-semibold text-text-primary mb-6">
-                What you get right now
+                What founding athletes get
               </h3>
               <motion.ul
                 variants={staggerContainer}
@@ -62,85 +57,52 @@ export function BetaDetails() {
                     variants={staggerItem}
                     className="flex items-start gap-3"
                   >
-                    <div className="w-5 h-5 rounded-full bg-accent-blue/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Check size={12} className="text-accent-blue" />
+                    <div className="w-5 h-5 rounded-full bg-accent-primary-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Check size={12} className="text-accent-primary" />
                     </div>
                     <span className="text-text-secondary">{benefit}</span>
                   </motion.li>
                 ))}
               </motion.ul>
-
-              <div className="mt-8 pt-6 border-t border-white/[0.08]">
-                <h4 className="text-sm font-semibold text-text-tertiary uppercase tracking-wider mb-4">
-                  How it works
-                </h4>
-                <ol className="space-y-3">
-                  {programSteps.map((step, index) => (
-                    <li key={step} className="flex items-start gap-3">
-                      <span className="w-5 h-5 rounded-full bg-white/[0.08] flex items-center justify-center flex-shrink-0 text-xs text-text-tertiary mt-0.5">
-                        {index + 1}
-                      </span>
-                      <span className="text-sm text-text-tertiary">{step}</span>
-                    </li>
-                  ))}
-                </ol>
-              </div>
             </GlassCard>
           </motion.div>
 
-          {/* Pricing Card */}
+          {/* Pricing */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={viewportSettings}
             transition={{ duration: 0.6 }}
+            className="h-full"
           >
-            <GlassCard variant="hero" animate={false} className="relative overflow-hidden">
-              {/* Glow Effect */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-accent-blue/20 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
+            <GlassCard variant="hero" animate={false} className="relative overflow-hidden h-full flex flex-col">
+              <div className="absolute -top-24 -right-24 w-72 h-72 bg-accent-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
-              <div className="relative">
-                <p className="text-base text-accent-blue font-semibold mb-4">
-                  Now Accepting Founding Athletes
-                </p>
-
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles size={20} className="text-accent-blue" />
-                  <span className="text-sm font-semibold text-accent-blue uppercase tracking-wider">
-                    Founding Price
-                  </span>
-                </div>
-
-                <h3 className="text-2xl font-semibold text-text-primary mb-2">
-                  Founding Athlete Plan
+              <div className="relative flex flex-col flex-1">
+                <h3 className="text-xl font-semibold text-text-primary mb-6">
+                  Pricing
                 </h3>
 
-                <p className="text-sm text-text-secondary mb-6">
-                  No credit card required to apply
-                </p>
-
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-4xl md:text-5xl font-bold text-accent-blue">
-                    $5
+                <div className="flex items-baseline gap-3 mb-2">
+                  <span className="text-4xl font-bold text-accent-primary leading-none">
+                    Free
                   </span>
-                  <span className="text-xl text-text-secondary">/month</span>
+                  <span className="text-base text-text-secondary">while in beta</span>
                 </div>
 
-                <p className="text-text-secondary text-sm mb-4">
-                  or $50/year (save $10)
+                <p className="text-text-secondary leading-[1.6]">
+                  <span className="text-text-primary font-medium">$5/month</span> or <span className="text-text-primary font-medium">$50/year</span> — locked in for life when we exit beta.
                 </p>
 
-                <p className="text-accent-blue font-medium mb-6">
-                  Locked in for life while you stay subscribed
-                </p>
+                <div className="my-6 border-t border-white/5" />
 
-                <p className="text-text-secondary mb-8">
-                  Payment only required if accepted. Future public pricing will be higher.
+                <p className="text-text-tertiary text-sm mb-6">
+                  No credit card required to apply.
                 </p>
 
                 <a
                   href="#apply"
-                  className="btn-primary w-full text-center block"
+                  className="btn-primary w-full text-center block mt-auto"
                 >
                   Apply to Join
                 </a>

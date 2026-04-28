@@ -21,7 +21,7 @@ export function ScrollToTop() {
     <button
       onClick={scrollToTop}
       aria-label="Scroll to top"
-      className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-accent-blue/20 border border-accent-blue/30 text-accent-blue backdrop-blur-sm transition-all duration-300 hover:bg-accent-blue/30 hover:scale-110"
+      className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-accent-primary-muted border border-accent-primary/30 text-accent-primary backdrop-blur-sm transition-all duration-300 hover:bg-accent-primary/30 hover:scale-110 focus-visible:outline-2 focus-visible:outline-accent-primary focus-visible:outline-offset-2"
     >
       <ArrowUp size={20} />
     </button>

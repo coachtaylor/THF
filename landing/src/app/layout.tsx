@@ -136,6 +136,9 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={`${poppins.variable} font-sans antialiased`}>
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}

@@ -11,31 +11,26 @@ const features = [
     icon: Shield,
     title: "Chest binding safety",
     description: "Workouts that adapt when you're binding, reducing risky movements",
-    color: "blue" as const,
   },
   {
     icon: Sparkles,
     title: "HRT-aware training",
     description: "Programs that respect your body's changes on hormones",
-    color: "pink" as const,
   },
   {
     icon: Heart,
     title: "Surgical recovery",
     description: "Gentle progressions designed around healing timelines",
-    color: "blue" as const,
   },
   {
     icon: Dumbbell,
     title: "Affirming goals",
     description: "Build the body you want, on your own terms",
-    color: "pink" as const,
   },
   {
     icon: Brain,
     title: "Dysphoria-aware",
     description: "Exercise selection that respects your comfort",
-    color: "blue" as const,
   },
 ];
 
@@ -47,11 +42,10 @@ function FeatureCard({
   index: number;
 }) {
   const Icon = feature.icon;
-  const isBlue = feature.color === "blue";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={viewportSettings}
       transition={{
@@ -59,28 +53,11 @@ function FeatureCard({
         delay: index * 0.1,
         ease: [0.25, 0.1, 0.25, 1],
       }}
-      className={`group relative p-4 md:p-6 rounded-xl md:rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
-        isBlue
-          ? "bg-gradient-to-br from-accent-blue/[0.08] to-transparent border border-accent-blue/10 hover:border-accent-blue/25"
-          : "bg-gradient-to-br from-accent-pink/[0.08] to-transparent border border-accent-pink/10 hover:border-accent-pink/25"
-      }`}
+      className="group relative p-5 md:p-6 rounded-2xl bg-background-elevated border border-border-subtle transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-primary/30"
     >
-      {/* Hover glow */}
-      <div
-        className={`absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-          isBlue ? "bg-accent-blue/5" : "bg-accent-pink/5"
-        }`}
-      />
-
       <div className="relative">
         {/* Icon */}
-        <div
-          className={`inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl mb-3 md:mb-4 transition-all duration-300 group-hover:scale-110 ${
-            isBlue
-              ? "bg-accent-blue/15 text-accent-blue"
-              : "bg-accent-pink/15 text-accent-pink"
-          }`}
-        >
+        <div className="inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl mb-4 bg-accent-primary-muted text-accent-primary transition-transform duration-300 group-hover:scale-110">
           <Icon className="w-5 h-5 md:w-6 md:h-6" />
         </div>
 
@@ -113,20 +90,16 @@ export function WhatIs() {
 
   return (
     <section id="features" ref={sectionRef} className="py-16 md:py-24 relative overflow-hidden">
-      {/* Background elements with scroll parallax */}
+      {/* Background elements with scroll parallax (subtle, single accent) */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Floating orbs with scroll-based movement */}
         <motion.div
-          className="absolute top-20 left-[10%] w-72 h-72 rounded-full bg-accent-blue/5 blur-[100px]"
+          className="absolute top-20 left-[10%] w-72 h-72 rounded-full bg-accent-primary/5 blur-[100px]"
           style={{ x: orbBlueX, y: orbBlueY }}
         />
         <motion.div
-          className="absolute bottom-20 right-[10%] w-96 h-96 rounded-full bg-accent-pink/5 blur-[120px]"
+          className="absolute bottom-20 right-[10%] w-96 h-96 rounded-full bg-accent-primary/5 blur-[120px]"
           style={{ x: orbPinkX, y: orbPinkY }}
         />
-
-        {/* Subtle radial gradient */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-radial from-accent-blue/[0.03] via-transparent to-transparent rounded-full" />
       </div>
 
       <div className="max-w-7xl mx-auto px-5 md:px-6 relative">
@@ -141,9 +114,9 @@ export function WhatIs() {
           <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-6">
             What is{" "}
             <span className="relative inline-block">
-              <span className="text-gradient">Trans Health & Fitness?</span>
+              <span className="text-accent-primary">Trans Health & Fitness?</span>
               <motion.span
-                className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-accent-blue via-accent-pink to-accent-blue rounded-full"
+                className="absolute -bottom-2 left-0 right-0 h-[2px] bg-accent-primary/60 rounded-full origin-left"
                 initial={{ scaleX: 0 }}
                 whileInView={{ scaleX: 1 }}
                 viewport={viewportSettings}
@@ -181,9 +154,8 @@ export function WhatIs() {
                 rotateZ: phoneRotate,
               }}
             >
-              {/* Multi-layer glow effect */}
-              <div className="absolute inset-0 bg-accent-pink/20 blur-[80px] rounded-[60px] scale-110" />
-              <div className="absolute inset-0 bg-accent-blue/10 blur-[60px] rounded-[60px] scale-95 translate-y-4" />
+              {/* Single soft glow */}
+              <div className="absolute inset-0 bg-accent-primary/15 blur-[80px] rounded-[60px] scale-110" />
 
               {/* Phone container */}
               <div className="relative w-[240px] md:w-[300px] lg:w-[300px] mx-auto md:mx-0 phone-mockup phone-tilted-right phone-shadow-stack">
@@ -239,7 +211,7 @@ export function WhatIs() {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="relative p-4 md:p-6 rounded-xl md:rounded-2xl bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 flex flex-col justify-center"
             >
-              <p className="text-lg md:text-2xl font-semibold text-gradient mb-2">
+              <p className="text-lg md:text-2xl font-semibold text-accent-primary mb-2">
                 Structure. Safety. Support.
               </p>
               <p className="text-sm text-text-secondary leading-relaxed">
