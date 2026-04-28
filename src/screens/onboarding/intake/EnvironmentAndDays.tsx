@@ -1,15 +1,30 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Modal } from "react-native";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Modal,
+  TextInput,
+} from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import SelectionCard from "../../../components/onboarding/SelectionCard";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
-import { textStyles } from "../../../theme/components";
+import { textStyles, inputStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
-import { updateProfile } from "../../../services/storage/profile";
+import {
+  updateProfile,
+  logEquipmentRequest,
+} from "../../../services/storage/profile";
 import { TrainingEnvironment as TrainingEnvironmentType } from "../../../types";
+import {
+  ALL_EQUIPMENT_OPTIONS,
+  getEquipmentForEnvironment,
+  getDefaultEquipmentForEnvironment,
+} from "../../../utils/equipmentOptions";
 
 type EnvironmentAndDaysNavigationProp = StackNavigationProp<
   OnboardingStackParamList,
@@ -64,6 +79,19 @@ const DAYS_OF_WEEK = [
   { id: 6, short: "S", full: "Saturday" },
 ];
 
+const getEnvironmentLabelLower = (env: TrainingEnvironmentType): string => {
+  switch (env) {
+    case "home":
+      return "home";
+    case "gym":
+      return "gym";
+    case "studio":
+      return "studio";
+    case "outdoors":
+      return "outdoors";
+  }
+};
+
 const getDefaultDays = (frequency: number): number[] => {
   switch (frequency) {
     case 1:
@@ -92,7 +120,14 @@ export default function EnvironmentAndDays({
   const [environment, setEnvironment] =
     useState<TrainingEnvironmentType | null>(null);
   const [selectedDays, setSelectedDays] = useState<Set<number>>(new Set());
+  const [equipment, setEquipment] = useState<Set<string>>(new Set());
+  const [otherEquipmentText, setOtherEquipmentText] = useState<string>("");
+  const [isOtherInputFocused, setIsOtherInputFocused] = useState(false);
   const [initialized, setInitialized] = useState(false);
+
+  // Tracks the env value last reconciled by the env-change effect.
+  // Used to distinguish "first time env is set after init" from "env changed by user".
+  const prevEnvRef = useRef<TrainingEnvironmentType | null>(null);
 
   // Passed-days modal state
   const [showPassedDaysModal, setShowPassedDaysModal] = useState(false);
@@ -108,10 +143,19 @@ export default function EnvironmentAndDays({
 
   const workoutFrequency = profile?.workout_frequency || 3;
 
+  // Filter equipment options based on the currently-selected environment.
+  // Returns all options when env is null so the empty-state JSX can hide gracefully.
+  const availableEquipment = useMemo(
+    () => getEquipmentForEnvironment(environment),
+    [environment],
+  );
+
+  // Hydration: load env, days, and equipment from profile on first mount.
   useEffect(() => {
     if (profile && !initialized) {
       if (profile.training_environment) {
         setEnvironment(profile.training_environment);
+        prevEnvRef.current = profile.training_environment;
       }
       if (
         profile.preferred_workout_days &&
@@ -121,9 +165,75 @@ export default function EnvironmentAndDays({
       } else {
         setSelectedDays(new Set(getDefaultDays(workoutFrequency)));
       }
+      // Equipment hydration: prefer saved equipment; otherwise default for env
+      // (only if env was loaded — fresh profiles get nothing until they pick an env).
+      if (profile.equipment && profile.equipment.length > 0) {
+        setEquipment(new Set(profile.equipment));
+      } else if (profile.training_environment) {
+        setEquipment(
+          getDefaultEquipmentForEnvironment(profile.training_environment),
+        );
+      }
+      if (profile.other_equipment_text) {
+        setOtherEquipmentText(profile.other_equipment_text);
+      }
       setInitialized(true);
     }
   }, [profile, workoutFrequency, initialized]);
+
+  // React to environment changes after the user has interacted with the screen.
+  // Three cases:
+  //   1. First env set after init (fresh user picks env) → populate defaults if equipment is empty
+  //   2. Env changed by user → drop equipment items not valid for new env, re-default if all dropped
+  //   3. Env unchanged or null → no-op
+  useEffect(() => {
+    if (!initialized || environment === null) return;
+
+    const prev = prevEnvRef.current;
+
+    if (prev === null) {
+      // Fresh path: env just became non-null. Only fill defaults if user hasn't
+      // already picked equipment from a stale state.
+      setEquipment((current) => {
+        if (current.size === 0) {
+          return getDefaultEquipmentForEnvironment(environment);
+        }
+        return current;
+      });
+      prevEnvRef.current = environment;
+      return;
+    }
+
+    if (prev !== environment) {
+      const validForEnv = new Set(
+        ALL_EQUIPMENT_OPTIONS.filter((opt) =>
+          opt.environments.includes(environment),
+        ).map((opt) => opt.id),
+      );
+      setEquipment((current) => {
+        const filtered = new Set(
+          Array.from(current).filter((id) => validForEnv.has(id)),
+        );
+        if (filtered.size === 0) {
+          return getDefaultEquipmentForEnvironment(environment);
+        }
+        return filtered;
+      });
+      prevEnvRef.current = environment;
+    }
+  }, [environment, initialized]);
+
+  const toggleEquipment = (id: string) => {
+    setEquipment((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const toggleDay = (dayId: number) => {
     const next = new Set(selectedDays);
@@ -146,16 +256,41 @@ export default function EnvironmentAndDays({
     setSelectedDays(next);
   };
 
+  // Bundles every field this screen owns into a single profile write so we
+  // never half-save (e.g. days saved but equipment lost).
+  const buildProfileUpdate = (
+    days: number[],
+    substituteDays: number[] | null,
+  ) => {
+    if (!environment) return null;
+    const hasOther = equipment.has("other");
+    const trimmedOtherText = otherEquipmentText.trim();
+    const update: Parameters<typeof updateProfile>[0] = {
+      training_environment: environment,
+      preferred_workout_days: days,
+      equipment: Array.from(equipment),
+      // Only persist other_equipment_text when "other" is selected and text is non-empty
+      other_equipment_text:
+        hasOther && trimmedOtherText ? trimmedOtherText : undefined,
+    };
+    if (substituteDays !== null) {
+      update.first_week_substitute_days = substituteDays;
+    }
+    return { update, hasOther, trimmedOtherText };
+  };
+
   const saveAndGoToReview = async (
     days: number[],
     substituteDays: number[],
   ) => {
-    if (!environment) return;
-    await updateProfile({
-      training_environment: environment,
-      preferred_workout_days: days,
-      first_week_substitute_days: substituteDays,
-    });
+    const built = buildProfileUpdate(days, substituteDays);
+    if (!built) return;
+    await updateProfile(built.update);
+    if (built.hasOther && built.trimmedOtherText) {
+      logEquipmentRequest(built.trimmedOtherText).catch((err) =>
+        console.warn("Failed to log equipment request:", err),
+      );
+    }
     navigation.navigate("Review");
   };
 
@@ -182,11 +317,14 @@ export default function EnvironmentAndDays({
         return;
       }
 
-      if (!environment) return;
-      await updateProfile({
-        training_environment: environment,
-        preferred_workout_days: daysArray,
-      });
+      const built = buildProfileUpdate(daysArray, null);
+      if (!built) return;
+      await updateProfile(built.update);
+      if (built.hasOther && built.trimmedOtherText) {
+        logEquipmentRequest(built.trimmedOtherText).catch((err) =>
+          console.warn("Failed to log equipment request:", err),
+        );
+      }
       navigation.navigate("Review");
     } catch (error) {
       console.error("Error saving environment/workout days:", error);
@@ -239,14 +377,16 @@ export default function EnvironmentAndDays({
   };
 
   const canContinue =
-    environment !== null && selectedDays.size === workoutFrequency;
+    environment !== null &&
+    equipment.size > 0 &&
+    selectedDays.size === workoutFrequency;
 
   return (
     <OnboardingLayout
-      currentStep={8}
-      totalSteps={10}
-      title="Where & When You Train"
-      subtitle="Tell us where you train and which days you want to work out."
+      currentStep={7}
+      totalSteps={8}
+      title="Your Training Setup"
+      subtitle="Pick where you train, what equipment you have, and which days work for your weekly schedule."
       onBack={handleBack}
       onContinue={handleContinue}
       canContinue={canContinue}
@@ -292,6 +432,93 @@ export default function EnvironmentAndDays({
             </View>
           )}
         </View>
+
+        {/* Equipment Section — only shown after environment is picked so the list
+            is filtered (avoids showing barbells/cables to an outdoor user). */}
+        {environment && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Available Equipment</Text>
+            <View style={styles.environmentNote}>
+              <Ionicons
+                name="location-outline"
+                size={16}
+                color={colors.accent.primary}
+              />
+              <Text style={styles.environmentNoteText}>
+                Showing equipment for {getEnvironmentLabelLower(environment)}{" "}
+                workouts
+              </Text>
+            </View>
+            <Text style={styles.equipmentSubtitle}>
+              Select all that apply (at least 1 required)
+            </Text>
+            <View style={styles.equipmentGrid}>
+              {availableEquipment.map((option) => {
+                const isSelected = equipment.has(option.id);
+                return (
+                  <Pressable
+                    key={option.id}
+                    onPress={() => toggleEquipment(option.id)}
+                    style={({ pressed }) => [
+                      styles.equipmentButton,
+                      isSelected && styles.equipmentButtonSelected,
+                      pressed && styles.buttonPressed,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.equipmentCheckbox,
+                        isSelected && styles.equipmentCheckboxSelected,
+                      ]}
+                    >
+                      {isSelected && (
+                        <Ionicons
+                          name="checkmark"
+                          size={18}
+                          color={colors.text.primary}
+                        />
+                      )}
+                    </View>
+                    <Text style={styles.equipmentLabel} numberOfLines={1}>
+                      {option.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Other Equipment Text Input */}
+            {equipment.has("other") && (
+              <View style={styles.otherEquipmentContainer}>
+                <Text style={styles.inputLabel}>
+                  What equipment do you have?{" "}
+                  <Text style={styles.optionalText}>(Optional)</Text>
+                </Text>
+                <TextInput
+                  value={otherEquipmentText}
+                  onChangeText={setOtherEquipmentText}
+                  placeholder="e.g., suspension trainer, medicine ball, foam roller..."
+                  placeholderTextColor={colors.text.tertiary}
+                  multiline
+                  numberOfLines={2}
+                  maxLength={200}
+                  onFocus={() => setIsOtherInputFocused(true)}
+                  onBlur={() => setIsOtherInputFocused(false)}
+                  style={[
+                    styles.otherEquipmentInput,
+                    isOtherInputFocused && inputStyles.textInputFocused,
+                  ]}
+                />
+              </View>
+            )}
+
+            {equipment.size === 0 && (
+              <Text style={styles.equipmentError}>
+                Please select at least one equipment option
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Days Section */}
         <View style={styles.section}>
@@ -793,5 +1020,90 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.8,
+  },
+  // Equipment styles
+  environmentNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  environmentNoteText: {
+    ...textStyles.bodySmall,
+    fontSize: 13,
+    color: colors.accent.primary,
+  },
+  equipmentSubtitle: {
+    ...textStyles.bodySmall,
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginBottom: spacing.base,
+  },
+  equipmentGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md,
+  },
+  equipmentButton: {
+    flex: 1,
+    minWidth: "45%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.base,
+    borderRadius: borderRadius.base,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.glass.border,
+  },
+  equipmentButtonSelected: {
+    backgroundColor: colors.glass.bgHero,
+    borderWidth: 2,
+    borderColor: colors.accent.primary,
+  },
+  equipmentCheckbox: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
+    borderWidth: 2,
+    borderColor: colors.glass.border,
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  equipmentCheckboxSelected: {
+    backgroundColor: colors.accent.primary,
+    borderColor: colors.accent.primary,
+  },
+  equipmentLabel: {
+    ...textStyles.body,
+    fontSize: 14,
+    fontWeight: "500",
+    flex: 1,
+    color: colors.text.primary,
+  },
+  equipmentError: {
+    ...textStyles.bodySmall,
+    fontSize: 13,
+    color: colors.semantic.warning,
+    marginTop: spacing.md,
+  },
+  otherEquipmentContainer: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  inputLabel: {
+    ...textStyles.label,
+    fontSize: 14,
+    color: colors.text.primary,
+  },
+  optionalText: {
+    color: colors.text.tertiary,
+  },
+  otherEquipmentInput: {
+    ...inputStyles.textInput,
+    height: 80,
+    paddingTop: spacing.base,
+    textAlignVertical: "top",
   },
 });

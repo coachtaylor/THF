@@ -70,6 +70,33 @@ const HRT_TYPE_LABELS: Record<string, string> = {
   none: "None",
 };
 
+const ENVIRONMENT_LABELS: Record<string, string> = {
+  home: "Home",
+  gym: "Gym",
+  studio: "Studio",
+  outdoors: "Outdoors",
+};
+
+// 0=Sunday, 1=Monday, ..., 6=Saturday
+const DAY_OF_WEEK_LABELS: Record<number, string> = {
+  0: "Sun",
+  1: "Mon",
+  2: "Tue",
+  3: "Wed",
+  4: "Thu",
+  5: "Fri",
+  6: "Sat",
+};
+
+const formatPreferredWorkoutDays = (days?: number[]): string => {
+  if (!days || days.length === 0) return "Not selected";
+  // Preserve numerical day order so the display reads Sun→Sat regardless of pick order
+  return [...days]
+    .sort((a, b) => a - b)
+    .map((d) => DAY_OF_WEEK_LABELS[d] ?? "?")
+    .join(", ");
+};
+
 export default function Review({ navigation }: ReviewProps) {
   const { profile } = useProfile();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -153,12 +180,30 @@ export default function Review({ navigation }: ReviewProps) {
       ],
     },
     {
-      id: "preferences",
-      title: "Workout Preferences",
-      icon: "barbell-outline" as keyof typeof Ionicons.glyphMap,
+      id: "schedule",
+      title: "Schedule",
+      icon: "time-outline" as keyof typeof Ionicons.glyphMap,
       items: [
         { label: "Frequency", value: `${profile.workout_frequency} days/week` },
         { label: "Duration", value: `${profile.session_duration} minutes` },
+      ],
+    },
+    {
+      id: "training_setup",
+      title: "Training Setup",
+      icon: "barbell-outline" as keyof typeof Ionicons.glyphMap,
+      items: [
+        {
+          label: "Training Environment",
+          value: profile.training_environment
+            ? ENVIRONMENT_LABELS[profile.training_environment] ||
+              profile.training_environment
+            : "Not selected",
+        },
+        {
+          label: "Workout Days",
+          value: formatPreferredWorkoutDays(profile.preferred_workout_days),
+        },
         { label: "Equipment", value: getEquipmentCount() },
       ],
     },
@@ -189,8 +234,11 @@ export default function Review({ navigation }: ReviewProps) {
       case "goals":
         navigation.navigate("Goals");
         break;
-      case "preferences":
+      case "schedule":
         navigation.navigate("Experience");
+        break;
+      case "training_setup":
+        navigation.navigate("EnvironmentAndDays");
         break;
     }
   };
@@ -288,8 +336,8 @@ export default function Review({ navigation }: ReviewProps) {
   return (
     <>
       <OnboardingLayout
-        currentStep={10}
-        totalSteps={10}
+        currentStep={8}
+        totalSteps={8}
         title="Review & Generate"
         subtitle="Review your profile and generate your personalized program."
         onBack={handleBack}
