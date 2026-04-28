@@ -50,7 +50,7 @@ export function Navigation() {
           {/* Logo - keeps pride blue as intentional accent */}
           <a href="/" className="flex items-center gap-2">
             <span className="text-lg md:text-xl font-bold text-text-primary whitespace-nowrap">
-              Trans Health & <span className="text-accent-blue">Fitness</span>
+              Trans Health & <span className="text-gradient">Fitness</span>
             </span>
           </a>
 

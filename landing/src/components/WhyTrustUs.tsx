@@ -81,8 +81,8 @@ export function WhyTrustUs() {
   const [openTitle, setOpenTitle] = useState<string>(pillars[0].title);
 
   return (
-    <section id="research" className="py-16 md:py-24 bg-background">
-      <div className="max-w-3xl mx-auto px-5 md:px-6">
+    <section id="research" className="min-h-[calc(100vh-5rem)] flex items-center py-16 md:py-20 bg-background">
+      <div className="max-w-3xl mx-auto px-5 md:px-6 w-full">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

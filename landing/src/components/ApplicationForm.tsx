@@ -78,7 +78,9 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
           <div key={step.number} className="flex items-center flex-1 last:flex-none">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 transition-colors duration-300 ${
-                currentStep >= step.number
+                currentStep === step.number
+                  ? "bg-pride-pink text-[#111111] shadow-[0_0_0_4px_var(--color-accent-pink-muted)]"
+                  : currentStep > step.number
                   ? "bg-accent-primary text-[#111111]"
                   : "bg-white/10 text-text-tertiary"
               }`}
@@ -203,8 +205,8 @@ export function ApplicationForm() {
 
   if (status === "success") {
     return (
-      <section id="apply" className="py-16 md:py-24 bg-background-secondary/50">
-        <div className="max-w-2xl mx-auto px-5 md:px-6">
+      <section id="apply" className="min-h-[calc(100vh-5rem)] flex items-center py-16 md:py-20 bg-background-secondary/50">
+        <div className="max-w-2xl mx-auto px-5 md:px-6 w-full">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}

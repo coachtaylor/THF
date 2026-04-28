@@ -17,7 +17,7 @@ export function Hero() {
       <div className="absolute top-1/4 right-1/4 w-[600px] h-[600px] bg-accent-blue/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-accent-pink/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-6 lg:px-20 pt-8 pb-12 md:py-28 w-full">
+      <div className="relative z-10 max-w-7xl mx-auto px-5 md:px-6 lg:px-20 py-8 md:py-12 w-full">
         <div className="grid lg:grid-cols-[1fr_300px] gap-8 lg:gap-16 items-center">
           {/* Left Column - Text Content */}
           <motion.div
@@ -67,8 +67,8 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             className="relative flex justify-center lg:justify-end"
           >
-            {/* Phone Frame - tilted left with perspective */}
-            <div className="relative phone-mockup-enhanced w-[55%] max-w-[220px] mx-auto mt-6 md:w-full md:max-w-[260px] md:mx-0 md:mt-0 lg:max-w-[280px]" style={{ perspective: "1000px" }}>
+            {/* Phone Frame - tilted left with perspective. Width clamped vs viewport height so total never overflows the hero. */}
+            <div className="relative phone-mockup-enhanced w-[min(200px,24vh)] md:w-[min(240px,30vh)] lg:w-[min(260px,32vh)] mx-auto md:mx-0" style={{ perspective: "1000px" }}>
               {/* Multi-layer glow effect behind phone */}
               <div className="absolute inset-0 bg-accent-blue/25 blur-[80px] rounded-[60px] scale-110" />
               <div className="absolute inset-0 bg-accent-pink/15 blur-[60px] rounded-[60px] scale-95 translate-y-4" />

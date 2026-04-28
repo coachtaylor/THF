@@ -30,11 +30,11 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-16 md:py-24 bg-background-secondary/50 relative overflow-hidden">
+    <section id="how-it-works" className="min-h-[calc(100vh-5rem)] flex items-center py-16 md:py-20 bg-background-secondary/50 relative overflow-hidden">
       {/* Background decorative element */}
       <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-accent-primary/[0.04] rounded-full blur-3xl" />
 
-      <div className="max-w-6xl mx-auto px-5 md:px-6 relative">
+      <div className="max-w-6xl mx-auto px-5 md:px-6 relative w-full">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

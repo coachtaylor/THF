@@ -40,7 +40,7 @@ export function Footer() {
           {/* Column 1: Brand */}
           <div>
             <span className="text-lg font-bold text-text-primary block mb-3">
-              Trans Health & <span className="text-accent-blue">Fitness</span>
+              Trans Health & <span className="text-gradient">Fitness</span>
             </span>
             <p className="text-sm text-text-tertiary leading-relaxed max-w-xs">
               Fitness programming built for trans and non-binary bodies. Train
@@ -88,7 +88,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-white/[0.08]">
+        <div className="mt-12 pt-6">
+          <div className="gradient-divider mb-6" aria-hidden="true" />
           <p className="text-sm text-text-tertiary text-center">
             &copy; 2026 Trans Health & Fitness. All rights reserved.
           </p>

@@ -25,6 +25,8 @@
   /* === Pride colors (intentional accents only - logo, pride moments) === */
   --color-pride-blue: #5BCEFA;
   --color-pride-pink: #F5A9B8;
+  --color-accent-pink-muted: rgba(245, 169, 184, 0.12);
+  --color-accent-pink-glow: rgba(245, 169, 184, 0.30);
 
   /* === Legacy pride aliases (kept so existing references resolve) === */
   --color-accent-blue: #5BCEFA;
@@ -93,6 +95,21 @@
 /* === Base Styles === */
 html {
   scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+}
+
+/* Sections snap to their top edge. Proximity (not mandatory) keeps long /
+   accordion-expanded sections scrollable without trap. Account for the fixed
+   nav height (~80px) via scroll-margin so anchors don't sit under the nav. */
+main > section {
+  scroll-snap-align: start;
+  scroll-margin-top: 80px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-snap-type: none;
+  }
 }
 
 body {
@@ -180,6 +197,20 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Thin horizontal divider in the pride gradient. Used in footer. */
+.gradient-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-pride-blue) 35%,
+    var(--color-pride-pink) 65%,
+    transparent 100%
+  );
+  border: 0;
+  opacity: 0.55;
 }
 
 /* === Buttons === */

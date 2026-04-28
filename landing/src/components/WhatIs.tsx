@@ -4,7 +4,6 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Heart, Shield, Dumbbell, Sparkles, Brain } from "lucide-react";
 import { viewportSettings } from "@/lib/animations";
-import Image from "next/image";
 
 const features = [
   {
@@ -56,12 +55,9 @@ function FeatureCard({
       className="group relative p-5 md:p-6 rounded-2xl bg-background-elevated border border-border-subtle transition-all duration-300 hover:-translate-y-0.5 hover:border-accent-primary/30"
     >
       <div className="relative">
-        {/* Icon */}
         <div className="inline-flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl mb-4 bg-accent-primary-muted text-accent-primary transition-transform duration-300 group-hover:scale-110">
           <Icon className="w-5 h-5 md:w-6 md:h-6" />
         </div>
-
-        {/* Text */}
         <h3 className="text-lg font-semibold text-text-primary mb-2">
           {feature.title}
         </h3>
@@ -80,17 +76,17 @@ export function WhatIs() {
     offset: ["start end", "end start"],
   });
 
-  // Parallax transforms for different elements
-  const phoneY = useTransform(scrollYProgress, [0, 1], [100, -100]);
-  const phoneRotate = useTransform(scrollYProgress, [0, 0.5, 1], [5, 0, -5]);
   const orbBlueX = useTransform(scrollYProgress, [0, 1], [-50, 50]);
   const orbPinkX = useTransform(scrollYProgress, [0, 1], [50, -50]);
   const orbBlueY = useTransform(scrollYProgress, [0, 1], [0, -100]);
   const orbPinkY = useTransform(scrollYProgress, [0, 1], [0, 100]);
 
   return (
-    <section id="features" ref={sectionRef} className="py-16 md:py-24 relative overflow-hidden">
-      {/* Background elements with scroll parallax (subtle, single accent) */}
+    <section
+      id="features"
+      ref={sectionRef}
+      className="min-h-[calc(100vh-5rem)] flex items-center py-16 md:py-20 relative overflow-hidden"
+    >
       <div className="absolute inset-0 pointer-events-none">
         <motion.div
           className="absolute top-20 left-[10%] w-72 h-72 rounded-full bg-accent-primary/5 blur-[100px]"
@@ -102,8 +98,7 @@ export function WhatIs() {
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-5 md:px-6 relative">
-        {/* Section Header - Centered */}
+      <div className="max-w-6xl mx-auto px-5 md:px-6 relative w-full">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -111,7 +106,7 @@ export function WhatIs() {
           transition={{ duration: 0.6 }}
           className="text-center mb-10"
         >
-          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-text-primary mb-4">
             What is{" "}
             <span className="relative inline-block">
               <span className="text-accent-primary">Trans Health & Fitness?</span>
@@ -135,91 +130,25 @@ export function WhatIs() {
           </p>
         </motion.div>
 
-        {/* Main Content - Bento-style grid */}
-        <div className="grid lg:grid-cols-12 gap-4 md:gap-6 lg:gap-8">
-          {/* Phone Mockup with scroll parallax */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          {features.map((feature, i) => (
+            <FeatureCard key={feature.title} feature={feature} index={i} />
+          ))}
+
           <motion.div
-            initial={{ opacity: 0, x: -50, scale: 0.95 }}
-            whileInView={{ opacity: 1, x: 0, scale: 1 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={viewportSettings}
-            transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-            className="lg:col-span-5 flex items-center justify-center lg:sticky lg:top-32 lg:self-start pb-16 lg:pb-0"
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="relative p-5 md:p-6 rounded-2xl bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 flex flex-col justify-center"
           >
-            {/* Phone Frame with scroll-driven motion */}
-            <motion.div
-              className="relative phone-mockup-enhanced"
-              style={{
-                perspective: "1000px",
-                y: phoneY,
-                rotateZ: phoneRotate,
-              }}
-            >
-              {/* Single soft glow */}
-              <div className="absolute inset-0 bg-accent-primary/15 blur-[80px] rounded-[60px] scale-110" />
-
-              {/* Phone container */}
-              <div className="relative w-[240px] md:w-[300px] lg:w-[300px] mx-auto md:mx-0 phone-mockup phone-tilted-right phone-shadow-stack">
-                {/* Edge glow */}
-                <div className="phone-edge-glow" />
-
-                {/* Phone bezel */}
-                <div className="relative bg-[#1a1a1a] rounded-[50px] p-3 shadow-2xl border border-white/10">
-                  {/* Notch */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-[#1a1a1a] rounded-b-2xl z-20" />
-
-                  {/* Screen container */}
-                  <div className="relative rounded-[40px] overflow-hidden bg-background aspect-[9/19.5]">
-                    {/* App Screenshot */}
-                    <Image
-                      src="/hrt.png"
-                      alt="TransFitness app showing HRT tracking"
-                      fill
-                      className="object-cover object-top"
-                    />
-                    {/* Glass reflection */}
-                    <div className="phone-reflection" />
-                  </div>
-                </div>
-
-                {/* Side buttons */}
-                <div className="absolute right-[-3px] top-32 w-[3px] h-12 bg-[#2a2a2a] rounded-l-sm" />
-                <div className="absolute right-[-3px] top-48 w-[3px] h-8 bg-[#2a2a2a] rounded-l-sm" />
-                <div className="absolute left-[-3px] top-28 w-[3px] h-8 bg-[#2a2a2a] rounded-r-sm" />
-                <div className="absolute left-[-3px] top-40 w-[3px] h-16 bg-[#2a2a2a] rounded-r-sm" />
-              </div>
-            </motion.div>
+            <p className="text-lg md:text-xl font-semibold text-accent-primary mb-2">
+              Structure. Safety. Support.
+            </p>
+            <p className="text-sm text-text-secondary leading-relaxed">
+              Without having to explain your identity every time you work out.
+            </p>
           </motion.div>
-
-          {/* Feature Cards Grid - Right side */}
-          <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 content-start">
-            {/* First row - 2 cards */}
-            <FeatureCard feature={features[0]} index={0} />
-            <FeatureCard feature={features[1]} index={1} />
-
-            {/* Second row - 2 cards */}
-            <FeatureCard feature={features[2]} index={2} />
-            <FeatureCard feature={features[3]} index={3} />
-
-            {/* Third row - 1 card spans, tagline card */}
-            <FeatureCard feature={features[4]} index={4} />
-
-            {/* Tagline card */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={viewportSettings}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="relative p-4 md:p-6 rounded-xl md:rounded-2xl bg-gradient-to-br from-white/[0.04] to-transparent border border-white/10 flex flex-col justify-center"
-            >
-              <p className="text-lg md:text-2xl font-semibold text-accent-primary mb-2">
-                Structure. Safety. Support.
-              </p>
-              <p className="text-sm text-text-secondary leading-relaxed">
-                Without having to explain your identity every time you want to
-                work out.
-              </p>
-            </motion.div>
-          </div>
         </div>
       </div>
     </section>

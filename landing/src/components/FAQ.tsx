@@ -53,8 +53,8 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <section id="faq" className="py-16 md:py-24">
-      <div className="max-w-3xl mx-auto px-5 md:px-6">
+    <section id="faq" className="min-h-[calc(100vh-5rem)] flex items-center py-16 md:py-20">
+      <div className="max-w-3xl mx-auto px-5 md:px-6 w-full">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
