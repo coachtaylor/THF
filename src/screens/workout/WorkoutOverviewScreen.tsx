@@ -388,9 +388,7 @@ export default function WorkoutOverviewScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text.primary} />
         </Pressable>
         <Text style={headerStyles.title}>{headerTitle}</Text>
-        <Pressable onPress={handleSwapWorkout} hitSlop={8}>
-          <Ionicons name="swap-horizontal" size={24} color={colors.accent.primary} />
-        </Pressable>
+        <View style={headerStyles.spacer} />
       </View>
 
       <ScrollView
@@ -502,6 +500,14 @@ export default function WorkoutOverviewScreen() {
             <View style={styles.durationBadge}>
               <Text style={styles.durationText}>{workout.main_workout.length} exercises</Text>
             </View>
+            <Pressable
+              onPress={handleSwapWorkout}
+              hitSlop={8}
+              style={styles.addExerciseButton}
+              accessibilityLabel="Add exercise from library"
+            >
+              <Ionicons name="add" size={22} color={colors.accent.primary} />
+            </Pressable>
           </View>
 
           {workout.main_workout.map((ex, index) => (
@@ -803,6 +809,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.s,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.xs,
+  },
+  addExerciseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.accent.primaryMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   durationText: {
     fontFamily: 'Poppins',

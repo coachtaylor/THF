@@ -238,20 +238,9 @@ export default function EnvironmentAndDays({
   const toggleDay = (dayId: number) => {
     const next = new Set(selectedDays);
     if (next.has(dayId)) {
-      if (next.size > workoutFrequency) {
-        next.delete(dayId);
-      }
-    } else {
-      if (next.size < workoutFrequency) {
-        next.add(dayId);
-      } else {
-        const daysArray = Array.from(next).sort((a, b) => a - b);
-        const dayToRemove = daysArray.find((d) => d !== dayId);
-        if (dayToRemove !== undefined) {
-          next.delete(dayToRemove);
-          next.add(dayId);
-        }
-      }
+      next.delete(dayId);
+    } else if (next.size < workoutFrequency) {
+      next.add(dayId);
     }
     setSelectedDays(next);
   };
