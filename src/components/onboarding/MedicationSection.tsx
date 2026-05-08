@@ -12,7 +12,7 @@ type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
 interface MedicationSectionProps {
   title: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon?: keyof typeof Ionicons.glyphMap;
   method: HRTMethod;
   frequency: HRTFrequency;
   selectedDays: Set<DayOfWeek>;
@@ -107,7 +107,7 @@ export default function MedicationSection({
     <View style={[glassStyles.card, styles.container]}>
       {/* Header */}
       <View style={styles.header}>
-        <Ionicons name={icon} size={20} color={colors.cyan[500]} />
+        {icon && <Ionicons name={icon} size={20} color={colors.cyan[500]} />}
         <Text style={[textStyles.h3, styles.title]}>{title}</Text>
       </View>
 

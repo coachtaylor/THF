@@ -324,7 +324,6 @@ export default function HRTStatus({ navigation, route }: HRTStatusProps) {
             {showTestosterone && (
               <MedicationSection
                 title="Testosterone"
-                icon="barbell"
                 method={testosteroneMethod}
                 frequency={testosteroneFrequency}
                 selectedDays={testosteroneDays}
