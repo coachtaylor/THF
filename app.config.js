@@ -75,7 +75,6 @@ export default {
       favicon: './assets/favicon.png',
     },
     plugins: [
-      'expo-av',
       [
         'expo-notifications',
         {

@@ -9,19 +9,22 @@
       "distribution": "internal",
       "ios": {
         "simulator": true,
-        "image": "macos-sequoia-15.3-xcode-16.2"
+        "image": "macos-sonoma-14.6-xcode-15.4"
       },
       "env": {
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {
+        "image": "macos-sonoma-14.6-xcode-15.4"
+      }
     },
     "production": {
       "autoIncrement": true,
       "ios": {
-        "image": "macos-sequoia-15.3-xcode-16.2"
+        "image": "macos-sonoma-14.6-xcode-15.4"
       }
     }
   },

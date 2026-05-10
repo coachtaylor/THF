@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -246,18 +246,39 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
   };
 
   const handleGetStarted = () => {
-    if (!plan || !profile) return;
-    
-    // Get the first workout from the first day
-    const firstDay = plan.days[0];
-    if (!firstDay) return;
-    
-    const workout = getWorkoutForDay(firstDay);
-    if (!workout) return;
-    
-    // Navigate to SessionPlayer with the first workout
-    navigation.navigate("SessionPlayer", {
-      workout: workout as any,
+    if (!plan || !profile) {
+      Alert.alert('Cannot start workout', 'Your plan or profile is not loaded yet. Try again in a moment.');
+      return;
+    }
+
+    // Find the first non-rest day with a valid workout for this user's session duration.
+    // plan.days[0] may be a rest day (variants are all null), so we have to scan.
+    let firstWorkout: Workout | null = null;
+    let firstWorkoutDayNumber: number | null = null;
+    for (const day of plan.days) {
+      if (day.isRestDay) continue;
+      const w = getWorkoutForDay(day);
+      if (w) {
+        firstWorkout = w;
+        firstWorkoutDayNumber = day.dayNumber;
+        break;
+      }
+    }
+
+    if (!firstWorkout) {
+      Alert.alert(
+        'No workouts found',
+        'Your plan does not have any workout days configured. Please regenerate your program.',
+      );
+      return;
+    }
+
+    if (__DEV__) {
+      console.log(`🏋️ Starting first workout from Day ${firstWorkoutDayNumber}`);
+    }
+
+    navigation.navigate('SessionPlayer', {
+      workout: firstWorkout as any,
       planId: plan.id,
     });
   };

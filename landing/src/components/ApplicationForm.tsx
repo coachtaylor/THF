@@ -20,9 +20,24 @@ const selfDescriptionOptions = [
 ];
 
 const steps = [
-  { number: 1, label: "About You" },
-  { number: 2, label: "Your Journey" },
-  { number: 3, label: "Almost There" },
+  {
+    number: 1,
+    label: "About You",
+    title: "Let's start with the basics",
+    description: "Just a few details so we know how to reach you.",
+  },
+  {
+    number: 2,
+    label: "Your Journey",
+    title: "Where you are right now",
+    description: "This helps us tailor the experience. Skip anything you'd rather not share.",
+  },
+  {
+    number: 3,
+    label: "Almost There",
+    title: "One last thing",
+    description: "Tell us what you're hoping for, then submit.",
+  },
 ];
 
 type FormStatus = "idle" | "loading" | "success" | "error";
@@ -49,40 +64,57 @@ const slideTransition = {
 
 function ProgressBar({ currentStep }: { currentStep: number }) {
   return (
-    <div className="flex items-center gap-2 mb-8">
-      {steps.map((step, i) => (
-        <div key={step.number} className="flex items-center flex-1">
-          <div className="flex items-center gap-2 flex-1">
+    <div
+      className="mb-8"
+      role="progressbar"
+      aria-valuenow={currentStep}
+      aria-valuemin={1}
+      aria-valuemax={steps.length}
+      aria-label={`Application step ${currentStep} of ${steps.length}`}
+    >
+      {/* Step indicators */}
+      <div className="flex items-center">
+        {steps.map((step, i) => (
+          <div key={step.number} className="flex items-center flex-1 last:flex-none">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 transition-colors duration-300 ${
-                currentStep >= step.number
-                  ? "bg-accent-blue text-black"
+                currentStep === step.number
+                  ? "bg-pride-pink text-[#111111] shadow-[0_0_0_4px_var(--color-accent-pink-muted)]"
+                  : currentStep > step.number
+                  ? "bg-accent-primary text-[#111111]"
                   : "bg-white/10 text-text-tertiary"
               }`}
             >
               {step.number}
             </div>
-            <span
-              className={`text-sm hidden sm:block transition-colors duration-300 ${
-                currentStep >= step.number
-                  ? "text-text-primary font-medium"
-                  : "text-text-tertiary"
-              }`}
-            >
-              {step.label}
-            </span>
+            {i < steps.length - 1 && (
+              <div className="flex-1 h-[2px] mx-3 rounded-full bg-white/10 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    currentStep > step.number ? "bg-accent-primary w-full" : "bg-accent-primary w-0"
+                  }`}
+                />
+              </div>
+            )}
           </div>
-          {i < steps.length - 1 && (
-            <div className="flex-1 h-[2px] mx-2">
-              <div
-                className={`h-full rounded-full transition-colors duration-300 ${
-                  currentStep > step.number ? "bg-accent-blue" : "bg-white/10"
-                }`}
-              />
-            </div>
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
+
+      {/* Step labels */}
+      <div className="hidden sm:flex items-center justify-between mt-3 px-1">
+        {steps.map((step) => (
+          <span
+            key={step.number}
+            className={`text-xs transition-colors duration-300 ${
+              currentStep >= step.number
+                ? "text-text-primary font-medium"
+                : "text-text-tertiary"
+            }`}
+          >
+            {step.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -173,14 +205,14 @@ export function ApplicationForm() {
 
   if (status === "success") {
     return (
-      <section id="apply" className="py-16 md:py-24 bg-background-secondary/50">
-        <div className="max-w-2xl mx-auto px-5 md:px-6">
+      <section id="apply" className="min-h-[calc(100vh-5rem)] flex items-center py-16 md:py-20 bg-background-secondary/50">
+        <div className="max-w-2xl mx-auto px-5 md:px-6 w-full">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <GlassCard variant="hero" className="text-center">
+            <GlassCard variant="hero" className="text-center" role="status" aria-live="polite">
               <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle size={32} className="text-success" />
               </div>
@@ -228,7 +260,7 @@ export function ApplicationForm() {
             <ProgressBar currentStep={currentStep} />
 
             <form onSubmit={handleSubmit}>
-              <div className="relative min-h-[320px] overflow-hidden">
+              <div className="relative">
                 <AnimatePresence initial={false} custom={direction} mode="wait">
                   {/* Step 1: About You */}
                   {currentStep === 1 && (
@@ -240,36 +272,44 @@ export function ApplicationForm() {
                       animate="center"
                       exit="exit"
                       transition={slideTransition}
-                      className="space-y-6"
                     >
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <GlassInput
-                          label="Name"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleInputChange}
-                          placeholder="Your name"
-                          required
-                        />
-                        <GlassInput
-                          label="Pronouns"
-                          name="pronouns"
-                          value={formData.pronouns}
-                          onChange={handleInputChange}
-                          placeholder="e.g., he/him, she/her, they/them"
-                          optional
-                        />
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-text-primary mb-1">
+                          {steps[0].title}
+                        </h3>
+                        <p className="text-sm text-text-tertiary">{steps[0].description}</p>
                       </div>
 
-                      <GlassInput
-                        label="Email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="you@example.com"
-                        required
-                      />
+                      <div className="space-y-5">
+                        <div className="grid md:grid-cols-2 gap-5">
+                          <GlassInput
+                            label="Name"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            placeholder="Your name"
+                            required
+                          />
+                          <GlassInput
+                            label="Pronouns"
+                            name="pronouns"
+                            value={formData.pronouns}
+                            onChange={handleInputChange}
+                            placeholder="e.g., he/him, they/them"
+                            optional
+                          />
+                        </div>
+
+                        <GlassInput
+                          label="Email"
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="you@example.com"
+                          required
+                        />
+                      </div>
                     </motion.div>
                   )}
 
@@ -283,55 +323,65 @@ export function ApplicationForm() {
                       animate="center"
                       exit="exit"
                       transition={slideTransition}
-                      className="space-y-6"
                     >
-                      <Select
-                        label="How do you currently describe yourself?"
-                        name="selfDescription"
-                        value={formData.selfDescription}
-                        onChange={handleInputChange}
-                        options={selfDescriptionOptions}
-                        optional
-                      />
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-text-primary mb-1">
+                          {steps[1].title}
+                        </h3>
+                        <p className="text-sm text-text-tertiary">{steps[1].description}</p>
+                      </div>
 
-                      <div className="space-y-3">
-                        <label className="block text-sm font-medium text-text-secondary">
-                          Are you currently:
-                          <span className="ml-1 text-text-tertiary text-xs">
-                            (select all that apply)
-                          </span>
-                        </label>
-                        <div className="space-y-3">
-                          <Checkbox
-                            label="On HRT"
-                            name="statusHrt"
-                            checked={formData.statusHrt}
-                            onChange={handleInputChange}
-                          />
-                          <Checkbox
-                            label="Binding"
-                            name="statusBinding"
-                            checked={formData.statusBinding}
-                            onChange={handleInputChange}
-                          />
-                          <Checkbox
-                            label="Pre gender-affirming surgery"
-                            name="statusPreSurgery"
-                            checked={formData.statusPreSurgery}
-                            onChange={handleInputChange}
-                          />
-                          <Checkbox
-                            label="Post gender-affirming surgery"
-                            name="statusPostSurgery"
-                            checked={formData.statusPostSurgery}
-                            onChange={handleInputChange}
-                          />
-                          <Checkbox
-                            label="None of the above"
-                            name="statusNone"
-                            checked={formData.statusNone}
-                            onChange={handleInputChange}
-                          />
+                      <div className="space-y-6">
+                        <Select
+                          label="How do you currently describe yourself?"
+                          name="selfDescription"
+                          value={formData.selfDescription}
+                          onChange={handleInputChange}
+                          options={selfDescriptionOptions}
+                          optional
+                        />
+
+                        <div>
+                          <div className="flex items-baseline justify-between mb-3">
+                            <label className="text-sm font-medium text-text-secondary">
+                              Are you currently:
+                            </label>
+                            <span className="text-text-tertiary text-xs">
+                              Select all that apply
+                            </span>
+                          </div>
+                          <div className="grid sm:grid-cols-2 gap-3">
+                            <Checkbox
+                              label="On HRT"
+                              name="statusHrt"
+                              checked={formData.statusHrt}
+                              onChange={handleInputChange}
+                            />
+                            <Checkbox
+                              label="Binding"
+                              name="statusBinding"
+                              checked={formData.statusBinding}
+                              onChange={handleInputChange}
+                            />
+                            <Checkbox
+                              label="Pre gender-affirming surgery"
+                              name="statusPreSurgery"
+                              checked={formData.statusPreSurgery}
+                              onChange={handleInputChange}
+                            />
+                            <Checkbox
+                              label="Post gender-affirming surgery"
+                              name="statusPostSurgery"
+                              checked={formData.statusPostSurgery}
+                              onChange={handleInputChange}
+                            />
+                            <Checkbox
+                              label="None of the above"
+                              name="statusNone"
+                              checked={formData.statusNone}
+                              onChange={handleInputChange}
+                            />
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -347,78 +397,76 @@ export function ApplicationForm() {
                       animate="center"
                       exit="exit"
                       transition={slideTransition}
-                      className="space-y-6"
                     >
-                      <GlassTextarea
-                        label="What do you most want this app to help you with?"
-                        name="helpWith"
-                        value={formData.helpWith}
-                        onChange={handleInputChange}
-                        placeholder="Tell us about your fitness goals and what you're hoping Trans Health & Fitness can help with..."
-                        optional
-                      />
-
-                      <div className="pt-4 border-t border-white/[0.08] space-y-4">
-                        <Checkbox
-                          label="I am interested in early beta access"
-                          name="interestedInBeta"
-                          checked={formData.interestedInBeta}
-                          onChange={handleInputChange}
-                        />
-                        <Checkbox
-                          label={
-                            <>
-                              I agree to respect other testers and follow the{" "}
-                              <a
-                                href="/community-guidelines"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-accent-blue hover:underline"
-                              >
-                                community guidelines
-                              </a>
-                            </>
-                          }
-                          name="agreesToGuidelines"
-                          checked={formData.agreesToGuidelines}
-                          onChange={handleInputChange}
-                        />
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-text-primary mb-1">
+                          {steps[2].title}
+                        </h3>
+                        <p className="text-sm text-text-tertiary">{steps[2].description}</p>
                       </div>
 
-                      {status === "error" && (
-                        <div className="flex items-center gap-3 p-4 rounded-xl bg-error/10 border border-error/20">
-                          <AlertCircle size={20} className="text-error flex-shrink-0" />
-                          <p className="text-sm text-error">{errorMessage}</p>
+                      <div className="space-y-6">
+                        <GlassTextarea
+                          label="What do you most want this app to help you with?"
+                          name="helpWith"
+                          value={formData.helpWith}
+                          onChange={handleInputChange}
+                          placeholder="Tell us about your fitness goals and what you're hoping Trans Health & Fitness can help with..."
+                          optional
+                        />
+
+                        <div className="space-y-3">
+                          <Checkbox
+                            label="I am interested in early beta access"
+                            name="interestedInBeta"
+                            checked={formData.interestedInBeta}
+                            onChange={handleInputChange}
+                          />
+                          <Checkbox
+                            label={
+                              <>
+                                I agree to respect other testers and follow the{" "}
+                                <a
+                                  href="/community-guidelines"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-accent-primary hover:underline focus-visible:outline-2 focus-visible:outline-accent-primary focus-visible:outline-offset-2 rounded-sm"
+                                >
+                                  community guidelines
+                                </a>
+                              </>
+                            }
+                            name="agreesToGuidelines"
+                            checked={formData.agreesToGuidelines}
+                            onChange={handleInputChange}
+                          />
                         </div>
-                      )}
+
+                        <div role="alert" aria-live="polite">
+                          {status === "error" && (
+                            <div className="flex items-start gap-3 p-4 rounded-xl bg-error/10 border border-error/20">
+                              <AlertCircle size={20} className="text-error flex-shrink-0 mt-0.5" />
+                              <p className="text-sm text-error">{errorMessage}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
               {/* Navigation buttons */}
-              <div className="flex gap-3 mt-8">
-                {currentStep > 1 && (
-                  <GlassButton
-                    type="button"
-                    variant="secondary"
-                    onClick={goBack}
-                    className="flex-1 md:flex-none min-h-[48px]"
-                    icon={<ChevronLeft size={18} />}
-                  >
-                    Back
-                  </GlassButton>
-                )}
-
+              <div className="mt-8 pt-6 border-t border-white/[0.06] space-y-3">
                 {currentStep < 3 && (
                   <GlassButton
                     type="button"
                     variant="primary"
                     onClick={goNext}
                     disabled={currentStep === 1 && !canAdvanceStep1}
-                    className="flex-1 md:flex-none ml-auto min-h-[48px]"
+                    className="w-full min-h-[52px] justify-center"
                   >
-                    Next
+                    Continue
                     <ChevronRight size={18} />
                   </GlassButton>
                 )}
@@ -433,18 +481,27 @@ export function ApplicationForm() {
                       !formData.email ||
                       !formData.agreesToGuidelines
                     }
-                    className="flex-1 md:flex-none ml-auto min-h-[48px]"
+                    className="w-full min-h-[52px] justify-center"
                     icon={<Send size={18} />}
                   >
                     {status === "loading" ? "Submitting..." : "Submit Application"}
                   </GlassButton>
                 )}
+
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={goBack}
+                    className="w-full flex items-center justify-center gap-1.5 text-sm text-text-tertiary hover:text-text-secondary transition-colors py-2 focus-visible:outline-2 focus-visible:outline-accent-primary focus-visible:outline-offset-2 rounded-md"
+                  >
+                    <ChevronLeft size={16} />
+                    Back
+                  </button>
+                )}
               </div>
 
-              <p className="text-sm text-text-tertiary text-center mt-6">
-                We read every application by hand. This is about building
-                something safe and sustainable for our community, not chasing
-                download numbers.
+              <p className="text-xs text-text-tertiary text-center mt-6 max-w-md mx-auto leading-[1.6]">
+                We read every application by hand. This is about building something safe and sustainable for our community, not chasing download numbers.
               </p>
             </form>
           </GlassCard>

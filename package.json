@@ -15,7 +15,8 @@
     "debug:constraints": "npx tsx scripts/debug_constraints_filter.ts",
     "check:exercises": "npx tsx scripts/check_exercises.ts",
     "check:equipment": "npx tsx scripts/check_equipment_with_exercises.ts",
-    "validate:safety": "npx tsx scripts/validate_exercise_safety.ts"
+    "validate:safety": "npx tsx scripts/validate_exercise_safety.ts",
+    "eas-build-pre-install": "node scripts/eas-prebuild-secrets.js"
   },
   "dependencies": {
     "@expo-google-fonts/anton": "^0.4.2",

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import { ease } from "@/lib/motion";
 
 const navLinks = [
   { href: "/#features", label: "Who We Are" },
@@ -24,11 +25,20 @@ export function Navigation() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isMobileMenuOpen]);
+
   return (
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+      transition={{ duration: 0.5, ease: ease.default }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
           ? "bg-background/80 backdrop-blur-xl border-b border-white/[0.08]"
@@ -37,10 +47,10 @@ export function Navigation() {
     >
       <div className="max-w-6xl mx-auto px-5 md:px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo */}
+          {/* Logo - keeps pride blue as intentional accent */}
           <a href="/" className="flex items-center gap-2">
             <span className="text-lg md:text-xl font-bold text-text-primary whitespace-nowrap">
-              Trans Health & <span className="text-accent-blue">Fitness</span>
+              Trans Health & <span className="text-gradient">Fitness</span>
             </span>
           </a>
 
@@ -57,7 +67,7 @@ export function Navigation() {
             ))}
             <a
               href="/#apply"
-              className="text-sm font-semibold text-accent-blue hover:text-accent-blue-light transition-colors"
+              className="text-sm font-semibold text-accent-primary hover:text-accent-primary-hover transition-colors"
             >
               Apply for Founding Athlete
             </a>
@@ -65,8 +75,12 @@ export function Navigation() {
 
           {/* Mobile Menu Button */}
           <button
+            type="button"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-menu"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 text-text-secondary hover:text-text-primary"
+            className="md:hidden p-2 text-text-secondary hover:text-text-primary focus-visible:outline-2 focus-visible:outline-accent-primary focus-visible:outline-offset-2 rounded-md"
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -75,6 +89,7 @@ export function Navigation() {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <motion.div
+            id="mobile-menu"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -94,7 +109,7 @@ export function Navigation() {
               <a
                 href="/#apply"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="font-semibold text-accent-blue hover:text-accent-blue-light transition-colors"
+                className="font-semibold text-accent-primary hover:text-accent-primary-hover transition-colors"
               >
                 Apply for Founding Athlete
               </a>

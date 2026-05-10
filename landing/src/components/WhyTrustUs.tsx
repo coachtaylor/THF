@@ -8,21 +8,18 @@ import { viewportSettings } from "@/lib/animations";
 const pillars = [
   {
     icon: BookOpen,
-    iconColor: "text-accent-blue",
     title: "Evidence-informed programming",
     description:
       "We study sports medicine, endocrinology, and physical therapy research to understand how HRT, surgery, and binding affect training — then shape intensity, rest, and exercise selection accordingly.",
   },
   {
     icon: ShieldCheck,
-    iconColor: "text-accent-pink",
     title: "Safety filters built into the system",
     description:
       "A safety engine checks every workout for red flags: heavy overhead work while binding, aggressive loading in post-op recovery, or volumes that don't match your experience level.",
   },
   {
     icon: Users,
-    iconColor: "text-accent-blue",
     title: "Lived experience as a requirement, not an afterthought",
     description:
       "We collect feedback from trans and non-binary athletes and coaches. When something feels off or dysphoria-spiking, we adjust. The app learns with you, not just about you.",
@@ -43,10 +40,12 @@ function AccordionItem({
   return (
     <div className="glass-card overflow-hidden">
       <button
+        type="button"
         onClick={onToggle}
-        className="w-full px-6 py-5 flex items-center gap-4 text-left"
+        aria-expanded={isOpen}
+        className="w-full px-6 py-5 flex items-center gap-4 text-left rounded-2xl focus-visible:outline-2 focus-visible:outline-accent-primary focus-visible:outline-offset-2"
       >
-        <Icon className={`w-5 h-5 flex-shrink-0 ${pillar.iconColor}`} />
+        <Icon className="w-5 h-5 flex-shrink-0 text-accent-primary" />
         <span className="text-lg font-medium text-text-primary flex-1">
           {pillar.title}
         </span>
@@ -82,8 +81,8 @@ export function WhyTrustUs() {
   const [openTitle, setOpenTitle] = useState<string>(pillars[0].title);
 
   return (
-    <section id="research" className="py-16 md:py-24 bg-background">
-      <div className="max-w-3xl mx-auto px-5 md:px-6">
+    <section id="research" className="min-h-[calc(100vh-5rem)] flex items-center py-16 md:py-20 bg-background">
+      <div className="max-w-3xl mx-auto px-5 md:px-6 w-full">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -123,7 +122,7 @@ export function WhyTrustUs() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={viewportSettings}
           transition={{ duration: 0.5 }}
-          className="text-xs text-text-muted text-center max-w-2xl mx-auto italic"
+          className="text-xs text-text-tertiary text-center max-w-2xl mx-auto italic"
         >
           Trans Health & Fitness uses research to guide safer training decisions, but it does not
           replace medical advice. Always follow the recommendations of your doctor or
