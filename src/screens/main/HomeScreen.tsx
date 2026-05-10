@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, StatusBar, Platform, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -51,9 +51,21 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const { profile, loading: profileLoading } = useProfile();
+  const { profile, loading: profileLoading, refreshProfile } = useProfile();
   const userId = profile?.user_id || profile?.id || 'default';
   const { plan, loading: planLoading, refreshPlan } = usePlan(userId);
+
+  // Reload profile + plan whenever HomeScreen regains focus. usePlan/useProfile
+  // are per-component hooks with private state, so changes made in Settings
+  // (e.g., regenerating the plan after editing schedule) don't propagate here
+  // automatically. Tab navigators keep this screen mounted, so the initial
+  // mount-time load never re-runs without this.
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfile();
+      refreshPlan();
+    }, [refreshProfile, refreshPlan])
+  );
 
   // Debug: Log plan loading status
   useEffect(() => {

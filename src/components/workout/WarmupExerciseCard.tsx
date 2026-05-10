@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.glass.liquidBg,
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
     borderWidth: 1.5,
     borderColor: colors.glass.borderCyan,
     justifyContent: 'center',

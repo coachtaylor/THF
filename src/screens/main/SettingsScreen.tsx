@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import { deleteProfile, updateProfile } from '../../services/storage/profile';
+import { deleteProfile, getProfile, updateProfile } from '../../services/storage/profile';
 import { signalLogout } from '../../services/events/onboardingEvents';
 import { generatePlan } from '../../services/planGenerator';
 import { savePlan } from '../../services/storage/plan';
@@ -54,7 +54,7 @@ type RootStackParamList = {
 export default function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp & { navigate: (screen: keyof RootStackParamList | 'Paywall') => void }>();
   const insets = useSafeAreaInsets();
-  const { profile } = useProfile();
+  const { profile, refreshProfile } = useProfile();
   const { logout } = useAuth();
   const { refreshPlan } = usePlan(profile?.user_id || profile?.id || 'default');
   const { isPremium, status, restore, isLoading: subscriptionLoading } = useSubscription();
@@ -157,9 +157,13 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleProfileSaved = useCallback((affectsWorkout: boolean = false) => {
-    // Profile will be refreshed automatically via useProfile hook
-    if (affectsWorkout && profile) {
+  const handleProfileSaved = useCallback(async (affectsWorkout: boolean = false) => {
+    // Pull the freshly persisted profile back into hook state so the Settings UI
+    // reflects what was just saved. Without this, useProfile keeps the stale
+    // in-memory copy from initial mount and the screen looks unchanged.
+    await refreshProfile();
+
+    if (affectsWorkout) {
       Alert.alert(
         'Profile Updated',
         'Your profile has been updated. Changes to HRT, binding, or fitness settings may affect your workout plan. Would you like to regenerate your plan now?',
@@ -170,8 +174,47 @@ export default function SettingsScreen() {
             onPress: async () => {
               try {
                 setIsRegenerating(true);
-                const userId = profile.user_id || profile.id || 'default';
-                const newPlan = await generatePlan(profile);
+                // Read the latest profile straight from storage instead of a
+                // closure variable — the hook's setState is async and may not
+                // have flushed yet, so reading it via the closure here can
+                // produce a plan based on the *old* preferences.
+                const latestProfile = await getProfile();
+                if (!latestProfile) {
+                  throw new Error('Profile not found in storage');
+                }
+                if (__DEV__) {
+                  console.log('🔁 Regenerating plan with profile:', {
+                    equipment: latestProfile.equipment,
+                    workout_frequency: latestProfile.workout_frequency,
+                    session_duration: latestProfile.session_duration,
+                    fitness_experience: latestProfile.fitness_experience,
+                    preferred_workout_days: latestProfile.preferred_workout_days,
+                    training_environment: latestProfile.training_environment,
+                    on_hrt: latestProfile.on_hrt,
+                    binds_chest: latestProfile.binds_chest,
+                    surgeries: latestProfile.surgeries?.map(s => ({ type: s.type, weeks_post_op: s.weeks_post_op })),
+                  });
+                }
+                const userId = latestProfile.user_id || latestProfile.id || 'default';
+                const newPlan = await generatePlan(latestProfile);
+
+                // Detect the rules-engine fallback: if every day in the plan is
+                // a rest day, the safety/equipment filters wiped out all
+                // exercises. Don't silently save a useless plan.
+                const allRest = newPlan.days.every(d => d.isRestDay);
+                if (allRest) {
+                  setIsRegenerating(false);
+                  Alert.alert(
+                    'No workouts could be generated',
+                    'With your current equipment and safety settings, no exercises matched. This usually means:\n\n' +
+                    '• Your equipment selection is too narrow for your environment\n' +
+                    '• Recent post-op recovery rules are restricting movement\n' +
+                    '• Binding safety rules combined with limited equipment\n\n' +
+                    'Your previous plan was kept. Try adding more equipment or reviewing your training environment.',
+                  );
+                  return;
+                }
+
                 await savePlan(newPlan, userId);
                 await refreshPlan?.();
                 setIsRegenerating(false);
@@ -188,7 +231,7 @@ export default function SettingsScreen() {
     } else {
       Alert.alert('Success', 'Your profile has been updated.');
     }
-  }, [profile, refreshPlan]);
+  }, [refreshProfile, refreshPlan]);
 
   const handleExportData = async () => {
     try {
@@ -371,14 +414,34 @@ export default function SettingsScreen() {
   };
 
   const handleRegeneratePlan = async () => {
-    if (!profile) return;
-
     try {
       setIsRegenerating(true);
-      const userId = profile.user_id || profile.id || 'default';
+
+      // Always read from storage so we use the latest persisted preferences,
+      // not a possibly-stale closure copy from the useProfile hook.
+      const latestProfile = await getProfile();
+      if (!latestProfile) {
+        setIsRegenerating(false);
+        Alert.alert('Error', 'Profile not found. Please complete onboarding first.');
+        return;
+      }
+      const userId = latestProfile.user_id || latestProfile.id || 'default';
 
       // Generate new plan with current profile (uses new workout day scheduling)
-      const newPlan = await generatePlan(profile);
+      const newPlan = await generatePlan(latestProfile);
+
+      // Detect the rules-engine fallback: if every day is a rest day, the
+      // safety/equipment filters wiped out all exercises. Don't silently
+      // overwrite the user's existing plan with an empty one.
+      const allRest = newPlan.days.every(d => d.isRestDay);
+      if (allRest) {
+        setIsRegenerating(false);
+        Alert.alert(
+          'No workouts could be generated',
+          'With your current equipment and safety settings, no exercises matched. Your previous plan was kept. Try adding more equipment or reviewing your training environment.',
+        );
+        return;
+      }
 
       // Save the new plan
       await savePlan(newPlan, userId);
@@ -751,7 +814,7 @@ export default function SettingsScreen() {
               <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.primaryMuted }]}>
                 <Ionicons name="location" size={16} color={colors.accent.primary} />
               </View>
-              <Text style={sectionStyles.title}>Training Environment</Text>
+              <Text style={sectionStyles.title}>Environment & Schedule</Text>
             </View>
             <Pressable onPress={() => handleEdit('environment')} hitSlop={8}>
               <Text style={sectionStyles.editLink}>Edit</Text>
@@ -768,6 +831,15 @@ export default function SettingsScreen() {
                 {profile?.training_environment === 'studio' && 'Workouts for studio environments with basic equipment'}
                 {profile?.training_environment === 'outdoors' && 'Portable and bodyweight exercises for any location'}
                 {!profile?.training_environment && 'Set your training environment to get customized workouts'}
+              </Text>
+              <Text style={[infoCardStyles.subtext, { marginTop: spacing.xs }]}>
+                {profile?.preferred_workout_days && profile.preferred_workout_days.length > 0
+                  ? `Days: ${profile.preferred_workout_days
+                      .slice()
+                      .sort((a, b) => a - b)
+                      .map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d])
+                      .join(', ')}`
+                  : 'No workout days set'}
               </Text>
             </View>
           </GlassCard>

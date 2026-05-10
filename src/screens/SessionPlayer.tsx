@@ -154,6 +154,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   const elapsedTimeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const pausedTimeRef = useRef(0); // Stores elapsed time when paused
   const timerStartRef = useRef<Date | null>(null); // Tracks when timer started/resumed
+  // Tracks whether the user had manually paused the timer before opening the swap
+  // drawer, so we can restore that state instead of always force-resuming on close.
+  const pausedBySwapRef = useRef(false);
   
   // New state for main phase UI
   const [reps, setReps] = useState(10);
@@ -244,6 +247,26 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       }
     };
   }, [phase, mainWorkoutStartedAt, isTimerPaused, shownCheckpointIds, safetyCheckpoints]);
+
+  // Auto-pause the elapsed timer while the swap drawer is open, then restore the
+  // user's prior pause state on close so we don't accidentally resume a manually
+  // paused workout.
+  useEffect(() => {
+    if (showSwapDrawer) {
+      if (!isTimerPaused) {
+        pausedBySwapRef.current = true;
+        setIsTimerPaused(true);
+      } else {
+        pausedBySwapRef.current = false;
+      }
+    } else if (pausedBySwapRef.current) {
+      pausedBySwapRef.current = false;
+      setIsTimerPaused(false);
+    }
+    // We intentionally only react to showSwapDrawer transitions; isTimerPaused is
+    // read but not depended on, to avoid a feedback loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSwapDrawer]);
 
   // Ref to store rest timer completion callback (avoids hook order issues)
   const restTimerCompleteCallbackRef = useRef<(() => void) | null>(null);
@@ -598,9 +621,24 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   );
 
   // Determine timer format - use exercise instance format or default to straight_sets
-  const timerFormat: TimerFormat = 
+  const timerFormat: TimerFormat =
     (currentExerciseInstance.format as TimerFormat) || 'straight_sets';
   const totalSets = currentExerciseInstance.sets;
+
+  // True when the rest timer is bridging from the LAST set of the current
+  // exercise to set 1 of the next exercise. During this rest, currentExerciseIndex
+  // hasn't advanced yet (it advances on rest complete), so we need to look ahead
+  // to render the upcoming exercise's context instead of stale "Set N+1 of N".
+  const isInterExerciseRest =
+    currentExerciseSets.length >= totalSets &&
+    currentExerciseIndex < exercises.length - 1;
+  const nextExerciseInstance = isInterExerciseRest
+    ? exercises[currentExerciseIndex + 1]
+    : null;
+  const upcomingSetNumber = isInterExerciseRest ? 1 : currentExerciseSets.length + 1;
+  const upcomingTotalSets = isInterExerciseRest && nextExerciseInstance
+    ? nextExerciseInstance.sets
+    : totalSets;
 
   const handleSetComplete = (reps: number, weight: number, rpe: number) => {
     if (!currentExercise) return;
@@ -1091,7 +1129,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                 end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
               />
-              <Text style={styles.setBadgeText}>SET {currentExerciseSets.length + 1}/{totalSets}</Text>
+              <Text style={styles.setBadgeText}>SET {upcomingSetNumber}/{upcomingTotalSets}</Text>
             </View>
 
             <GlassCard variant="hero" style={styles.premiumExerciseCard}>
@@ -1315,7 +1353,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
               </ProgressRing>
 
               <Text style={styles.restNextUp}>
-                Next: Set {currentExerciseSets.length + 2} of {totalSets}
+                {isInterExerciseRest && nextExerciseInstance?.exercise?.name
+                  ? `Next: ${nextExerciseInstance.exercise.name} — Set 1 of ${upcomingTotalSets}`
+                  : `Next: Set ${upcomingSetNumber} of ${upcomingTotalSets}`}
               </Text>
 
               <Pressable style={styles.skipRestButtonPremium} onPress={handleRestTimerComplete}>

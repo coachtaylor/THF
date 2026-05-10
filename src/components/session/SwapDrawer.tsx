@@ -37,13 +37,25 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
   const [swaps, setSwaps] = useState<SwapOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [showFAQInfo, setShowFAQInfo] = useState(false);
+  const [selectedSwapId, setSelectedSwapId] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible && exercise?.swaps) {
       loadSwapDetails();
     }
+    if (!visible) {
+      // Reset selection each time the drawer reopens.
+      setSelectedSwapId(null);
+    }
   }, [visible, exercise]);
+
+  const selectedSwap = swaps.find((s) => s.exercise_id === selectedSwapId) || null;
+  const handleConfirmSwap = () => {
+    if (!selectedSwapId) return;
+    onSwapSelect(selectedSwapId);
+    onDismiss();
+  };
 
   const loadSwapDetails = async () => {
     if (!exercise?.swaps || exercise.swaps.length === 0) {
@@ -235,71 +247,114 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
                     No swap options available for this exercise.
                   </Text>
                 </View>
-              ) : swaps.length === 0 ? null : (
-                swaps.map((swap, index) => (
-                  <Pressable
-                    key={swap.exercise_id || index}
-                    style={({ pressed }) => [
-                      styles.swapCard,
-                      pressed && styles.swapCardPressed,
-                    ]}
-                    onPress={() => handleSwapSelect(swap.exercise_id)}
-                  >
-                    {/* Card glass background */}
-                    <LinearGradient
-                      colors={['rgba(25, 25, 30, 0.8)', 'rgba(18, 18, 22, 0.9)']}
-                      style={StyleSheet.absoluteFill}
-                    />
+              ) : swaps.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>
+                    No automatic suggestions for this exercise.{'\n'}
+                    Tap "Browse All Exercises" above to pick a substitute.
+                  </Text>
+                </View>
+              ) : (
+                swaps.map((swap, index) => {
+                  const isSelected = selectedSwapId === swap.exercise_id;
+                  return (
+                    <Pressable
+                      key={swap.exercise_id || index}
+                      style={({ pressed }) => [
+                        styles.swapCard,
+                        isSelected && styles.swapCardSelected,
+                        pressed && styles.swapCardPressed,
+                      ]}
+                      onPress={() => setSelectedSwapId(swap.exercise_id)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: isSelected }}
+                      accessibilityLabel={`Select ${swap.exerciseName || 'alternative exercise'}`}
+                    >
+                      {/* Card glass background */}
+                      <LinearGradient
+                        colors={['rgba(25, 25, 30, 0.8)', 'rgba(18, 18, 22, 0.9)']}
+                        style={StyleSheet.absoluteFill}
+                      />
 
-                    {/* Card glass highlight */}
-                    <View style={styles.cardGlassHighlight} />
+                      {/* Card glass highlight */}
+                      <View style={styles.cardGlassHighlight} />
 
-                    <View style={styles.swapCardContent}>
-                      <View style={styles.swapHeader}>
-                        <Text style={styles.swapExerciseName}>
-                          {swap.exerciseName || 'Unknown Exercise'}
-                        </Text>
-                        {swap.exerciseDetails && (
-                          <View style={styles.exerciseBadges}>
-                            {swap.exerciseDetails.difficulty && (
-                              <View style={[styles.badge, styles.difficultyBadge]}>
-                                <Text style={styles.badgeText}>
-                                  {swap.exerciseDetails.difficulty}
-                                </Text>
-                              </View>
-                            )}
-                            {swap.exerciseDetails?.equipment &&
-                              swap.exerciseDetails.equipment.length > 0 && (
-                                <View style={[styles.badge, styles.equipmentBadge]}>
+                      <View style={styles.swapCardContent}>
+                        <View style={styles.swapHeader}>
+                          <Text style={styles.swapExerciseName}>
+                            {swap.exerciseName || 'Unknown Exercise'}
+                          </Text>
+                          {swap.exerciseDetails && (
+                            <View style={styles.exerciseBadges}>
+                              {swap.exerciseDetails.difficulty && (
+                                <View style={[styles.badge, styles.difficultyBadge]}>
                                   <Text style={styles.badgeText}>
-                                    {swap.exerciseDetails.equipment[0]}
+                                    {swap.exerciseDetails.difficulty}
                                   </Text>
                                 </View>
                               )}
-                          </View>
-                        )}
+                              {swap.exerciseDetails?.equipment &&
+                                swap.exerciseDetails.equipment.length > 0 && (
+                                  <View style={[styles.badge, styles.equipmentBadge]}>
+                                    <Text style={styles.badgeText}>
+                                      {swap.exerciseDetails.equipment[0]}
+                                    </Text>
+                                  </View>
+                                )}
+                            </View>
+                          )}
+                        </View>
+
+                        <Text style={styles.swapRationale}>{swap.rationale}</Text>
                       </View>
 
-                      <Text style={styles.swapRationale}>{swap.rationale}</Text>
-
-                      {/* Glass button */}
-                      <View style={styles.selectButton}>
-                        <LinearGradient
-                          colors={[colors.accent.primary, colors.accent.primaryDark]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={StyleSheet.absoluteFill}
-                        />
-                        <Text style={styles.selectButtonText}>Select This Swap</Text>
-                      </View>
-                    </View>
-                  </Pressable>
-                ))
+                      {isSelected && (
+                        <View style={styles.selectedCheckmark}>
+                          <Ionicons name="checkmark-circle" size={22} color={colors.accent.primary} />
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })
               )}
             </ScrollView>
 
-            {/* Footer with FAQ link */}
+            {/* Footer with sticky confirm CTA + FAQ link */}
             <View style={styles.footer}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.confirmButton,
+                  !selectedSwapId && styles.confirmButtonDisabled,
+                  pressed && selectedSwapId && styles.confirmButtonPressed,
+                ]}
+                onPress={handleConfirmSwap}
+                disabled={!selectedSwapId}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !selectedSwapId }}
+              >
+                {selectedSwapId && (
+                  <LinearGradient
+                    colors={[colors.accent.primary, colors.accent.primaryDark]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.confirmButtonText,
+                    !selectedSwapId && styles.confirmButtonTextDisabled,
+                  ]}
+                >
+                  {selectedSwap?.exerciseName
+                    ? `Swap to ${selectedSwap.exerciseName}`
+                    : 'Select an exercise to swap'}
+                </Text>
+                {selectedSwapId && (
+                  <Ionicons name="arrow-forward" size={18} color={colors.text.inverse} />
+                )}
+              </Pressable>
+
               <Pressable
                 style={({ pressed }) => [
                   styles.faqButton,
@@ -336,7 +391,8 @@ const styles = StyleSheet.create({
   drawer: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '80%',
+    minHeight: '75%',
+    maxHeight: '92%',
     paddingTop: spacing.m,
     overflow: 'hidden',
     borderWidth: 1,
@@ -494,6 +550,15 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
   },
+  swapCardSelected: {
+    borderColor: colors.accent.primary,
+    borderWidth: 2,
+  },
+  selectedCheckmark: {
+    position: 'absolute',
+    top: spacing.m,
+    right: spacing.m,
+  },
   cardGlassHighlight: {
     position: 'absolute',
     top: 0,
@@ -567,6 +632,35 @@ const styles = StyleSheet.create({
     paddingTop: spacing.m,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.06)',
+    gap: spacing.s,
+  },
+  confirmButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.s,
+    paddingVertical: 14,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  confirmButtonDisabled: {
+    opacity: 0.6,
+  },
+  confirmButtonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.99 }],
+  },
+  confirmButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.inverse,
+  },
+  confirmButtonTextDisabled: {
+    color: colors.text.tertiary,
   },
   faqButton: {
     flexDirection: 'row',

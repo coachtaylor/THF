@@ -573,10 +573,35 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
   // Get first-week substitute days (one-time workout days for users who join mid-week)
   const firstWeekSubstituteDays = profile.first_week_substitute_days || [];
 
+  // Compute the EFFECTIVE workout days for week 1.
+  //
+  // Why this exists: a user's `workout_frequency` is the cap on workouts per
+  // week (2 for free plan, higher for paid). When a user joins mid-week and
+  // some of their preferred days have already passed, the substitute should
+  // *replace* those passed days, not stack on top — otherwise a 2/week user
+  // could end up with 3 workouts in week 1.
+  //
+  // The cap reads directly from `profile.workout_frequency`, which is already
+  // the right place for tier-aware enforcement: when subscription enforcement
+  // turns on, free users will be capped at 2 in onboarding/settings, and
+  // `workout_frequency` will reflect that automatically. Do not duplicate
+  // tier logic here.
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+  const todayDayOfWeek = todayDate.getDay();
+  const cap = profile.workout_frequency || workoutDays.length;
+  const futurePreferred = workoutDays.filter(d => d >= todayDayOfWeek);
+  // Substitute days replace passed preferred days, then we cap at frequency.
+  const week1Set = new Set<number>([...futurePreferred, ...firstWeekSubstituteDays]);
+  const week1WorkoutDays = Array.from(week1Set)
+    .sort((a, b) => a - b)
+    .slice(0, cap);
+
   logger.log(`📆 Workout days: ${workoutDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`);
   if (firstWeekSubstituteDays.length > 0) {
     logger.log(`📆 First-week substitutes: ${firstWeekSubstituteDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`);
   }
+  logger.log(`📆 Effective week 1 days (cap=${cap}): ${week1WorkoutDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ') || 'none'}`);
   logger.log(`😴 Rest days: ${[0,1,2,3,4,5,6].filter(d => !workoutDays.includes(d)).map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}\n`);
 
   // Generate workouts for each day with variety tracking
@@ -591,11 +616,16 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     dayDate.setDate(startDate.getDate() + i);
     const dayOfWeek = dayDate.getDay(); // 0=Sunday, 1=Monday, etc.
 
-    // Check if this is a workout day or rest day
-    // For the first week (days 1-7), also check substitute days
+    // Check if this is a workout day or rest day.
+    // Week 1 uses the effective list (preferred minus passed days, plus
+    // substitutes, capped at workout_frequency) so substitutes replace
+    // passed days rather than stacking on top of them.
+    // Weeks 2+ use the regular preferred schedule.
     const isFirstWeek = dayNumber <= 7;
-    const isSubstituteDay = isFirstWeek && firstWeekSubstituteDays.includes(dayOfWeek);
-    const isWorkoutDay = workoutDays.includes(dayOfWeek) || isSubstituteDay;
+    const isSubstituteDay = isFirstWeek && firstWeekSubstituteDays.includes(dayOfWeek) && !workoutDays.includes(dayOfWeek);
+    const isWorkoutDay = isFirstWeek
+      ? week1WorkoutDays.includes(dayOfWeek)
+      : workoutDays.includes(dayOfWeek);
     const isRestDay = !isWorkoutDay;
 
     logger.log(`\n📅 Day ${dayNumber} (${dayDate.toLocaleDateString()}) - ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek]}${isSubstituteDay ? ' (substitute)' : ''}`);
@@ -887,13 +917,33 @@ export function getWorkoutFromPlan(
     return null;
   }
 
-  const workout = day.variants[duration];
-  if (!workout) {
-    console.error(`${duration}-minute workout not available for day ${dayNumber}`);
-    return null;
+  // Prefer the requested duration, but fall back to the closest available
+  // variant if generation failed for that duration. Without this fallback,
+  // a single failed variant nukes the whole day even though other lengths
+  // generated successfully.
+  const requested = day.variants[duration];
+  if (requested) return requested;
+
+  const FALLBACK_ORDER: Record<30 | 45 | 60 | 90, Array<30 | 45 | 60 | 90>> = {
+    30: [45, 60, 90],
+    45: [60, 30, 90],
+    60: [45, 90, 30],
+    90: [60, 45, 30],
+  };
+  for (const alt of FALLBACK_ORDER[duration]) {
+    const candidate = day.variants[alt];
+    if (candidate) {
+      if (__DEV__) {
+        console.warn(
+          `${duration}-min variant missing for day ${dayNumber}; falling back to ${alt}-min variant.`
+        );
+      }
+      return candidate;
+    }
   }
 
-  return workout;
+  console.error(`No workout variants available for day ${dayNumber}`);
+  return null;
 }
 
 /**

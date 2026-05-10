@@ -27,6 +27,19 @@ export const db = {
   prepareSync(sql: string) {
     return getDb().prepareSync(sql);
   },
+  // expo-sqlite convenience methods. These are passthroughs to the
+  // underlying SQLiteDatabase so callers can use the parameterized
+  // shorthand (e.g. db.getFirstSync(sql, [params])) without manually
+  // preparing/finalizing statements. Already used by storage/weeklyTransition.ts.
+  getFirstSync<T = unknown>(sql: string, params: any[] = []): T | null {
+    return getDb().getFirstSync(sql, params) as T | null;
+  },
+  getAllSync<T = unknown>(sql: string, params: any[] = []): T[] {
+    return getDb().getAllSync(sql, params) as T[];
+  },
+  runSync(sql: string, params: any[] = []) {
+    return getDb().runSync(sql, params);
+  },
 };
 
 const tableStatements = [

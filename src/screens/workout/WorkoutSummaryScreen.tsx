@@ -539,6 +539,7 @@ export default function WorkoutSummaryScreen() {
           { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + 100 }
         ]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Celebration Header */}
         <CelebrationHeader duration={formatDuration(workoutDuration)} disableAnimations={disableAnimations} />
@@ -620,7 +621,13 @@ export default function WorkoutSummaryScreen() {
                   rating === option.value && styles.ratingOptionSelected,
                   pressed && styles.buttonPressed,
                 ]}
-                onPress={() => setRating(option.value)}
+                onPress={() => {
+                  if (__DEV__) console.log('⭐ Rating selected:', option.value);
+                  setRating(option.value);
+                }}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`Rate workout as ${option.label}`}
               >
                 {rating === option.value && (
                   <LinearGradient
