@@ -768,6 +768,71 @@ export async function clearRetryQueue(): Promise<void> {
 }
 
 /**
+ * One-time repair for sessions whose plan_id doesn't reference any known
+ * local plan row. Earlier builds of WorkoutOverviewScreen passed `workout.id`
+ * (e.g. `plan-XYZ_3`) as the planId, which never matches a workout_plans row
+ * in Supabase and gets stuck on FK 23503.
+ *
+ * Strategy: rewrite the orphan plan_id to the user's most recent local plan,
+ * reset synced_at so the next sync pushes the fixed row, and prune stale
+ * session items from the retry queue so they get re-queued with corrected data.
+ */
+export async function repairOrphanSessionPlans(): Promise<number> {
+  try {
+    const planStmt = getDb().prepareSync(
+      "SELECT id FROM plans ORDER BY created_at DESC, start_date DESC",
+    );
+    const planRows = planStmt.executeSync().getAllSync() as Array<{ id: string }>;
+    planStmt.finalizeSync();
+
+    if (planRows.length === 0) return 0;
+    const knownPlanIds = new Set(planRows.map((r) => r.id));
+    const targetPlanId = planRows[0].id;
+
+    const sessStmt = getDb().prepareSync(
+      "SELECT id, plan_id FROM sessions",
+    );
+    const sessRows = sessStmt.executeSync().getAllSync() as Array<{
+      id: string;
+      plan_id: string;
+    }>;
+    sessStmt.finalizeSync();
+
+    const orphanedIds = sessRows
+      .filter((s) => !knownPlanIds.has(s.plan_id))
+      .map((s) => s.id);
+    if (orphanedIds.length === 0) return 0;
+
+    const updateStmt = getDb().prepareSync(
+      "UPDATE sessions SET plan_id = ?, synced_at = NULL WHERE id = ?",
+    );
+    for (const sessId of orphanedIds) {
+      updateStmt.executeSync([targetPlanId, sessId]);
+    }
+    updateStmt.finalizeSync();
+
+    // Prune stale retry queue entries — they carry the bad plan_id in their
+    // data payload. The next sync pass will re-add them with the corrected
+    // plan_id from the sessions table.
+    const queue = await loadRetryQueue();
+    const pruned = queue.filter(
+      (q) => !(q.type === "session" && orphanedIds.includes(q.id)),
+    );
+    if (pruned.length !== queue.length) {
+      await saveRetryQueue(pruned);
+    }
+
+    console.log(
+      `🔧 Repaired ${orphanedIds.length} session(s) with orphan plan_id → '${targetPlanId}'`,
+    );
+    return orphanedIds.length;
+  } catch (error) {
+    console.error("Failed to repair orphan session plans:", error);
+    return 0;
+  }
+}
+
+/**
  * Force immediate sync with user notification
  */
 export async function forceSyncNow(): Promise<SyncResult> {
