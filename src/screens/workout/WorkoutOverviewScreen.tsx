@@ -593,7 +593,6 @@ export default function WorkoutOverviewScreen() {
               </View>
               {workout.safety_checkpoints.map((checkpoint, index) => (
                 <View key={index} style={styles.checkpointItem}>
-                  <View style={[styles.listDot, { backgroundColor: colors.warning }]} />
                   <Text style={styles.checkpointText}>{checkpoint.message}</Text>
                 </View>
               ))}
