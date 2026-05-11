@@ -28,7 +28,6 @@ import {
 } from '../../services/feedback';
 import { PostWorkoutCheckin, BodyCheckinData } from '../../components/session/PostWorkoutCheckin';
 import { getCurrentStreak } from '../../services/storage/stats';
-import { usePlan } from '../../hooks/usePlan';
 import { useProfile } from '../../hooks/useProfile';
 import { useSensoryMode } from '../../contexts/SensoryModeContext';
 import { FlaggedExercisesReview } from '../../components/feedback';
@@ -222,7 +221,6 @@ export default function WorkoutSummaryScreen() {
   const workoutContext = useWorkoutSafe();
   const { profile } = useProfile();
   const userId = profile?.user_id || profile?.id || 'default';
-  const { plan } = usePlan(userId);
 
   const workout = routeData ? null : (workoutContext?.workout || null);
   const completedSets = routeData?.completedSets || workoutContext?.completedSets || [];
@@ -425,48 +423,6 @@ export default function WorkoutSummaryScreen() {
     return achievementsList;
   }, [stats, currentStreak, exercisesCompleted, totalExercises]);
 
-  const nextWorkout = useMemo(() => {
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Find next workout from plan
-    if (plan?.days) {
-      // Find the next non-rest day that's after today
-      const upcomingWorkoutDay = plan.days.find(day => {
-        const dayDate = new Date(day.date);
-        dayDate.setHours(0, 0, 0, 0);
-        return dayDate > today && !day.isRestDay;
-      });
-
-      if (upcomingWorkoutDay) {
-        const workoutDate = new Date(upcomingWorkoutDay.date);
-        // Get workout name from variants (try 45 min variant first, then others)
-        const workoutVariant = upcomingWorkoutDay.variants[45] ||
-          upcomingWorkoutDay.variants[30] ||
-          upcomingWorkoutDay.variants[60] ||
-          upcomingWorkoutDay.variants[90];
-        const workoutName = workoutVariant?.name || 'Workout';
-
-        return {
-          name: workoutName,
-          day: dayNames[workoutDate.getDay()],
-          date: `${monthNames[workoutDate.getMonth()]} ${workoutDate.getDate()}`,
-        };
-      }
-    }
-
-    // Fallback: next day
-    const nextDate = new Date();
-    nextDate.setDate(nextDate.getDate() + 1);
-    return {
-      name: 'Next Workout',
-      day: dayNames[nextDate.getDay()],
-      date: `${monthNames[nextDate.getMonth()]} ${nextDate.getDate()}`,
-    };
-  }, [plan]);
-
   const handleDone = async () => {
     try {
       if (rating) {
@@ -563,7 +519,7 @@ export default function WorkoutSummaryScreen() {
           styles.scrollContent,
           { paddingTop: spacing.l, paddingBottom: insets.bottom + 100 }
         ]}
-        showsVerticalScrollIndicator={false}
+        showsVerticalScrollIndicator
         keyboardShouldPersistTaps="handled"
       >
         {/* Celebration Header */}
@@ -710,24 +666,6 @@ export default function WorkoutSummaryScreen() {
             numberOfLines={4}
             textAlignVertical="top"
           />
-        </View>
-
-        {/* Next Workout Preview */}
-        <View style={styles.nextWorkoutCard}>
-          <LinearGradient
-            colors={[colors.accent.primaryMuted, 'transparent']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <Ionicons name="calendar" size={20} color={colors.accent.primary} />
-          <View style={styles.nextWorkoutContent}>
-            <Text style={styles.nextWorkoutLabel}>Next Workout</Text>
-            <Text style={styles.nextWorkoutName}>
-              {nextWorkout.name} • {nextWorkout.day}, {nextWorkout.date}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.accent.primary} />
         </View>
 
         {/* Done Button */}
@@ -1031,35 +969,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     padding: spacing.m,
     minHeight: 100,
-  },
-  // Next workout
-  nextWorkoutCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.m,
-    borderRadius: borderRadius.xl,
-    borderWidth: 1,
-    borderColor: colors.glass.borderCyan,
-    padding: spacing.m,
-    marginBottom: spacing.xl,
-    overflow: 'hidden',
-  },
-  nextWorkoutContent: {
-    flex: 1,
-  },
-  nextWorkoutLabel: {
-    fontFamily: 'Poppins',
-    fontSize: 11,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  nextWorkoutName: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.accent.primary,
   },
   // Done button
   doneButton: {
