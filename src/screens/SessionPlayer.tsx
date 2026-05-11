@@ -437,12 +437,12 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   // not abandonments.
   const handleWarmUpExit = () => {
     Alert.alert(
-      'Stop workout?',
+      'End Workout?',
       'You can resume from the dashboard. Your warm-up progress won’t be saved.',
       [
-        { text: 'Keep going', style: 'cancel' },
+        { text: 'Keep Going', style: 'cancel' },
         {
-          text: 'Stop workout',
+          text: 'End Workout',
           style: 'destructive',
           onPress: () => navigation.goBack(),
         },
