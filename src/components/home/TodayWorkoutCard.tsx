@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, borderRadius } from '../../theme/theme';
+import { colors, spacing, borderRadius, gradients } from '../../theme/theme';
 import { useProfile } from '../../hooks/useProfile';
 import { useSensoryMode } from '../../contexts/SensoryModeContext';
 
@@ -221,21 +221,21 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
           )}
         </View>
 
-        {/* Start button - Liquid Glass Effect */}
+        {/* Start button - Primary CTA, accent gradient */}
         <Pressable
           style={({ pressed }) => [styles.startButton, pressed && styles.startButtonPressed]}
           onPress={onStartWorkout}
         >
-          {/* Frosted glass background */}
+          {/* Accent gradient fill */}
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.12)', 'rgba(255, 255, 255, 0.05)']}
+            colors={gradients.buttonPrimary as unknown as readonly [string, string, ...string[]]}
             start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
+            end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          {/* Glass overlay - top highlight */}
+          {/* Top highlight for slight glass depth */}
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.2)', 'transparent']}
+            colors={['rgba(255, 255, 255, 0.18)', 'transparent']}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 0.5 }}
             style={styles.buttonGlassOverlay}
@@ -258,7 +258,7 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
           )}
           {/* Content */}
           <View style={styles.startButtonContent}>
-            <Ionicons name="play" size={15} color={colors.text.primary} style={styles.playIcon} />
+            <Ionicons name="play" size={18} color={colors.text.primary} style={styles.playIcon} />
             <Text style={styles.startButtonText}>Start Workout</Text>
           </View>
         </Pressable>
@@ -462,16 +462,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: colors.accent.primary,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowColor: colors.accent.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
       },
-      android: { elevation: 6 },
+      android: { elevation: 8 },
     }),
   },
   startButtonPressed: {
@@ -496,16 +496,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
+    paddingVertical: 14,
+    gap: 8,
   },
   playIcon: {
     marginLeft: 2,
   },
   startButtonText: {
     fontFamily: 'Poppins',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: colors.text.primary,
     letterSpacing: 0.5,
   },
