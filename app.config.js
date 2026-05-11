@@ -34,6 +34,7 @@ export default {
       buildNumber: '1',
       infoPlist: {
         UIBackgroundModes: ['remote-notification'],
+        ITSAppUsesNonExemptEncryption: false,
       },
       entitlements: {
         'aps-environment': 'production',

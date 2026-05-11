@@ -16,7 +16,7 @@
     "check:exercises": "npx tsx scripts/check_exercises.ts",
     "check:equipment": "npx tsx scripts/check_equipment_with_exercises.ts",
     "validate:safety": "npx tsx scripts/validate_exercise_safety.ts",
-    "eas-build-pre-install": "node scripts/eas-prebuild-secrets.js"
+    "eas-build-pre-install": "if [ \"$EAS_BUILD_PLATFORM\" = \"ios\" ]; then sudo xcodebuild -downloadComponent MetalToolchain -quiet; fi && node scripts/eas-prebuild-secrets.js"
   },
   "dependencies": {
     "@expo-google-fonts/anton": "^0.4.2",
