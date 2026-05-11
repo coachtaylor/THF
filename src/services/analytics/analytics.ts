@@ -8,6 +8,8 @@ import * as SQLite from "expo-sqlite";
  * Event types tracked in TransFitness
  */
 export type AnalyticsEventType =
+  // Auth events
+  | "signup_completed"
   // Onboarding events
   | "onboarding_started"
   | "onboarding_step_completed"
@@ -15,10 +17,13 @@ export type AnalyticsEventType =
   | "onboarding_abandoned"
   // Workout events
   | "workout_generated"
+  | "plan_generation_failed"
   | "workout_started"
   | "workout_completed"
   | "workout_abandoned"
   | "workout_saved"
+  | "exercise_swap_used"
+  | "exercise_flagged"
   // Education events
   | "why_this_workout_opened"
   | "education_snippet_viewed"
@@ -29,7 +34,9 @@ export type AnalyticsEventType =
   // User engagement
   | "app_opened"
   | "session_ended"
-  // Survey/feedback events
+  // Feedback events
+  | "feedback_submitted"
+  // Survey events
   | "survey_completed"
   | "survey_skipped";
 
@@ -189,6 +196,59 @@ export async function trackWorkoutGenerated(
     workout_name: workoutName,
     workout_duration: duration,
     exercises_count: exercisesCount,
+  });
+}
+
+/**
+ * Track plan generation failure. Use the `reason` slot for a short, non-PII
+ * category (e.g. "validation_failed", "no_exercises", "save_error"). Never
+ * pass raw error messages — they can leak profile/health context.
+ */
+export async function trackPlanGenerationFailed(
+  reason: string,
+): Promise<void> {
+  await trackEvent("plan_generation_failed", { reason });
+}
+
+/**
+ * Track signup completion. Method is "email" or "google".
+ */
+export async function trackSignupCompleted(method: "email" | "google"): Promise<void> {
+  await trackEvent("signup_completed", { method });
+}
+
+/**
+ * Track that onboarding started — fire once when the user lands on the
+ * first onboarding screen post-auth.
+ */
+export async function trackOnboardingStarted(): Promise<void> {
+  await trackEvent("onboarding_started");
+}
+
+/**
+ * Track workout abandoned (user exits SessionPlayer before completion).
+ */
+export async function trackWorkoutAbandoned(
+  workoutId: string,
+  completionPercentage: number,
+): Promise<void> {
+  await trackEvent("workout_abandoned", {
+    workout_id: workoutId,
+    completion_percentage: completionPercentage,
+  });
+}
+
+/**
+ * Track exercise swap used. Fired when a user commits a swap (not on swap
+ * drawer open).
+ */
+export async function trackExerciseSwapUsed(
+  fromExerciseId: string,
+  toExerciseId: string,
+): Promise<void> {
+  await trackEvent("exercise_swap_used", {
+    from_exercise_id: fromExerciseId,
+    to_exercise_id: toExerciseId,
   });
 }
 

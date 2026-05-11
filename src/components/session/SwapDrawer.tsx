@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Exercise } from '../../types';
 import { palette, spacing, colors } from '../../theme';
 import { fetchAllExercises } from '../../services/exerciseService';
+import { trackExerciseSwapUsed } from '../../services/analytics';
 
 interface SwapDrawerProps {
   visible: boolean;
@@ -53,6 +54,9 @@ const SwapDrawer: React.FC<SwapDrawerProps> = ({
   const selectedSwap = swaps.find((s) => s.exercise_id === selectedSwapId) || null;
   const handleConfirmSwap = () => {
     if (!selectedSwapId) return;
+    if (exercise?.id) {
+      trackExerciseSwapUsed(String(exercise.id), selectedSwapId).catch(() => {});
+    }
     onSwapSelect(selectedSwapId);
     onDismiss();
   };

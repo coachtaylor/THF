@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { AppState, AppStateStatus } from "react-native";
 import {
   NavigationContainer,
   useNavigationContainerRef,
@@ -22,6 +23,7 @@ import OnboardingNavigator from "./src/navigation/OnboardingNavigator";
 import MainNavigator from "./src/navigation/MainNavigator";
 import { checkOnboardingStatus } from "./src/services/storage/onboarding";
 import { initializeApp } from "./src/services/init";
+import { syncAnalyticsEventsInBackground } from "./src/services/analytics";
 import { setupDeepLinking } from "./src/services/auth/deepLinking";
 import {
   onOnboardingComplete,
@@ -321,6 +323,24 @@ export default Sentry.wrap(function App() {
       return cleanup;
     }
   }, [isReady, navigationRef]);
+
+  // Analytics sync: flush queued local events to Supabase whenever the app
+  // becomes active. Also kicks off once on mount so any events from a
+  // previous offline session get sent on the first foreground after boot.
+  // Sync is fire-and-forget and silent on failure.
+  useEffect(() => {
+    if (!isReady) return;
+
+    syncAnalyticsEventsInBackground();
+
+    const onAppStateChange = (state: AppStateStatus) => {
+      if (state === "active") {
+        syncAnalyticsEventsInBackground();
+      }
+    };
+    const sub = AppState.addEventListener("change", onAppStateChange);
+    return () => sub.remove();
+  }, [isReady]);
 
   const initialize = async () => {
     try {

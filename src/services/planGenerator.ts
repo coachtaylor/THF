@@ -666,13 +666,43 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
       logger.log(`🔄 Variety filter: ${exercises.length - availableExercises.length} exercises excluded from recent days`);
     }
 
-    // Generate all 4 workout variants for this day using Phase 2 (with safety checkpoints, warm-up/cool-down)
-    const variants: Day['variants'] = {
+    // Generate all 4 workout variants for this day using Phase 2 (with safety checkpoints, warm-up/cool-down).
+    // Try the assigned template first; if every duration fails (typically a
+    // pool/template mismatch for restrictive safety profiles), rotate
+    // through the rest of the template's days before giving up. Falling
+    // back keeps the day a real workout instead of leaving an inconsistent
+    // "isRestDay=false + all variants null" record that crashes the home
+    // screen.
+    let variants: Day['variants'] = {
       30: generatePhase2Workout(profile, 30, exercisesToUse, dayTemplate, template, safetyContext),
       45: generatePhase2Workout(profile, 45, exercisesToUse, dayTemplate, template, safetyContext),
       60: generatePhase2Workout(profile, 60, exercisesToUse, dayTemplate, template, safetyContext),
       90: generatePhase2Workout(profile, 90, exercisesToUse, dayTemplate, template, safetyContext),
     };
+
+    const allVariantsNull = (v: Day['variants']) =>
+      !v[30] && !v[45] && !v[60] && !v[90];
+
+    if (allVariantsNull(variants) && template.days.length > 1) {
+      const startIdx = (templateIndex - 1) % template.days.length;
+      for (let offset = 1; offset < template.days.length; offset++) {
+        const altIdx = (startIdx + offset) % template.days.length;
+        const altTemplate = template.days[altIdx];
+        logger.log(
+          `  ↪️ Day ${dayNumber}: assigned template "${dayTemplate.name}" produced no variants. Trying fallback "${altTemplate.name}".`,
+        );
+        const altVariants: Day['variants'] = {
+          30: generatePhase2Workout(profile, 30, exercisesToUse, altTemplate, template, safetyContext),
+          45: generatePhase2Workout(profile, 45, exercisesToUse, altTemplate, template, safetyContext),
+          60: generatePhase2Workout(profile, 60, exercisesToUse, altTemplate, template, safetyContext),
+          90: generatePhase2Workout(profile, 90, exercisesToUse, altTemplate, template, safetyContext),
+        };
+        if (!allVariantsNull(altVariants)) {
+          variants = altVariants;
+          break;
+        }
+      }
+    }
 
     // Track exercises used today
     const exercisesUsedToday = new Set<string>();
@@ -705,12 +735,24 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     ];
     logger.log(`Variants: ${variantResults.join(', ')}`);
 
+    // If still nothing after template fallback, downgrade the day to rest
+    // so the data is internally consistent. The UI will show a rest day
+    // instead of a "workout day" with nothing to load.
+    const stillEmpty = allVariantsNull(variants);
+    if (stillEmpty) {
+      logger.log(
+        `  ⚠️ Day ${dayNumber}: no template could produce any variant — marking as rest day. Likely too few safe exercises for this profile/equipment combo.`,
+      );
+    }
+
     days.push({
       dayNumber,
       date: dayDate,
       dayOfWeek,
-      isRestDay: false,
-      variants,
+      isRestDay: stillEmpty,
+      variants: stillEmpty
+        ? { 30: null, 45: null, 60: null, 90: null }
+        : variants,
     });
   }
 
@@ -913,7 +955,7 @@ export function getWorkoutFromPlan(
 ): Workout | null {
   const day = plan.days.find(d => d.dayNumber === dayNumber);
   if (!day) {
-    console.error(`Day ${dayNumber} not found in plan`);
+    if (__DEV__) console.warn(`Day ${dayNumber} not found in plan`);
     return null;
   }
 
@@ -942,7 +984,15 @@ export function getWorkoutFromPlan(
     }
   }
 
-  console.error(`No workout variants available for day ${dayNumber}`);
+  // No variants at all — usually because the day is genuinely empty
+  // (post-op restriction etc., handled by planGenerator's rest-day
+  // downgrade) or stale data from a plan generated before that fix
+  // shipped. Either way, this is a data signal, not an exception —
+  // callers (HomeScreen, WorkoutSwapScreen) handle the null and show
+  // the rest-day UI. Keep it dev-only to stop spamming production logs.
+  if (__DEV__) {
+    console.warn(`No workout variants available for day ${dayNumber}`);
+  }
   return null;
 }
 

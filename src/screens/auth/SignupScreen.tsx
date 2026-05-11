@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { checkOnboardingStatus } from '../../services/storage/onboarding';
 import { signalOnboardingComplete } from '../../services/events/onboardingEvents';
+import { trackSignupCompleted } from '../../services/analytics';
 import { colors, spacing, borderRadius, timing, gradients, layout } from '../../theme/theme';
 import { headerStyles } from '../../theme/components';
 import GoogleSignInButton from '../../components/auth/GoogleSignInButton';
@@ -110,6 +111,8 @@ export default function SignupScreen({ navigation }: any) {
         password,
       });
 
+      trackSignupCompleted('email').catch(() => {});
+
       // Navigate to email verification screen
       navigation.replace('EmailVerification', {
         email,
@@ -130,6 +133,8 @@ export default function SignupScreen({ navigation }: any) {
       const result = await signInWithGoogle();
 
       if (result.success) {
+        trackSignupCompleted('google').catch(() => {});
+
         // Check onboarding status
         const hasCompletedOnboarding = await checkOnboardingStatus();
 

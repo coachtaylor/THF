@@ -28,6 +28,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import GlassCard from '../../components/common/GlassCard';
 import ModernCheckbox from '../../components/onboarding/ModernCheckbox';
 import { useSensoryMode } from '../../contexts/SensoryModeContext';
+import { trackOnboardingStarted } from '../../services/analytics';
 
 type DisclaimerNavigationProp = StackNavigationProp<OnboardingStackParamList, 'Disclaimer'>;
 
@@ -158,6 +159,12 @@ export default function Disclaimer({ navigation }: DisclaimerProps) {
   // Footer (checkbox + CTA) animation
   const footerOpacity = useSharedValue(disableAnimations ? 1 : 0);
   const footerTranslateY = useSharedValue(disableAnimations ? 0 : 20);
+
+  // Fire onboarding_started once per mount. Disclaimer is the first
+  // onboarding screen post-auth, so mounting it = beginning of the funnel.
+  useEffect(() => {
+    trackOnboardingStarted().catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!disableAnimations) {

@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, borderRadius } from '../../theme/theme';
+import { trackOnboardingStep } from '../../services/analytics';
 
 interface OnboardingLayoutProps {
   currentStep: number;
@@ -170,7 +171,14 @@ export default function OnboardingLayout({
         {/* Continue Button */}
         <View style={[styles.buttonContainer, { paddingBottom: insets.bottom + spacing.m }]}>
           <Pressable
-            onPress={onContinue}
+            onPress={() => {
+              // Fire onboarding_step_completed before delegating, so funnel
+              // analytics get a uniform event from every intake screen
+              // without each screen having to wire it up individually. Uses
+              // the screen's title as a stable identifier.
+              trackOnboardingStep(title, currentStep, totalSteps).catch(() => {});
+              onContinue();
+            }}
             disabled={!canContinue}
             style={({ pressed }) => [
               styles.continueButton,
