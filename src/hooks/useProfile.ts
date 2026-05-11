@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getProfile, updateProfile as updateProfileService, Profile, Surgery } from '../services/storage/profile';
 import { migrateOldProfileToNew, needsMigration } from '../utils/profileMigration';
+import { reassignDefaultSessions } from '../services/sessionLogger';
 
 /**
  * Compute hrt_months_duration from hrt_start_date
@@ -91,6 +92,15 @@ export function useProfile() {
       }
 
       setProfile(loadedProfile);
+
+      // One-time backfill: claim any sessions saved under the legacy
+      // 'default' user_id for this profile so weekly stats include them.
+      if (loadedProfile) {
+        const resolvedId = loadedProfile.user_id || loadedProfile.id;
+        if (resolvedId && resolvedId !== 'default') {
+          reassignDefaultSessions(resolvedId).catch(() => {});
+        }
+      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       setError(error);

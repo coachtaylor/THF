@@ -24,6 +24,37 @@ export interface SessionData {
 }
 
 /**
+ * One-time migration: reassign sessions saved under the legacy
+ * 'default' user_id to the resolved profile user_id.
+ *
+ * Earlier builds called saveSession() without a userId, so workouts
+ * landed under user_id='default' while HomeScreen reads stats from the
+ * profile-derived id (e.g. 'default-user'). Without this, weekly
+ * counts stay at 0 even though sessions exist.
+ */
+export async function reassignDefaultSessions(targetUserId: string): Promise<number> {
+  if (!targetUserId || targetUserId === 'default') return 0;
+  try {
+    let updated = 0;
+    db.withTransactionSync(() => {
+      const stmt = db.prepareSync(
+        `UPDATE sessions SET user_id = ? WHERE user_id = 'default'`
+      );
+      const result = stmt.executeSync([targetUserId]);
+      updated = result.changes ?? 0;
+      stmt.finalizeSync();
+    });
+    if (updated > 0) {
+      console.log(`🔁 Reassigned ${updated} legacy session(s) from 'default' to '${targetUserId}'`);
+    }
+    return updated;
+  } catch (error) {
+    console.error('Failed to reassign legacy sessions:', error);
+    return 0;
+  }
+}
+
+/**
  * Save a completed workout session to SQLite
  */
 export async function saveSession(
