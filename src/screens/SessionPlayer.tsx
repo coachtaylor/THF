@@ -455,17 +455,26 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   // Confirm before exiting the cool-down. The main workout is already done at
   // this point so we don't fire workout_abandoned — the user has just chosen
-  // to skip the cool-down stretches.
+  // to skip the cool-down stretches. We route through handleWorkoutComplete
+  // so the user lands on the summary screen and the workout is guaranteed
+  // saved (persistCompletedWorkout is idempotent).
   const handleCoolDownExit = () => {
     Alert.alert(
       'End Workout?',
-      'Your workout progress is already saved. Cool-down stretches will be skipped.',
+      'Cool-down stretches will be skipped. Your workout will be marked complete.',
       [
         { text: 'Keep Going', style: 'cancel' },
         {
           text: 'End Workout',
           style: 'destructive',
-          onPress: () => navigation.goBack(),
+          onPress: async () => {
+            try {
+              await handleWorkoutComplete();
+            } catch (error) {
+              console.error('❌ Failed to complete workout on cool-down exit:', error);
+              Alert.alert('Error', 'Failed to complete workout. Please try again.');
+            }
+          },
         },
       ],
     );
