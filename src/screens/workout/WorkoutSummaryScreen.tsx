@@ -236,10 +236,9 @@ export default function WorkoutSummaryScreen() {
   const [notes, setNotes] = useState('');
   const [notesFocused, setNotesFocused] = useState(false);
   const [showSurvey, setShowSurvey] = useState(false);
-  const [surveyChecked, setSurveyChecked] = useState(false);
   const [showBodyCheckin, setShowBodyCheckin] = useState(false);
   const [bodyCheckinData, setBodyCheckinData] = useState<BodyCheckinData | null>(null);
-  const [bodyCheckinShown, setBodyCheckinShown] = useState(false);
+  const [shouldShowSurveyAfterDone, setShouldShowSurveyAfterDone] = useState(false);
   const [currentStreak, setCurrentStreak] = useState<number>(0);
   const [flaggedExercises, setFlaggedExercises] = useState<FlaggedExercise[]>(routeFlaggedExercises);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
@@ -249,61 +248,65 @@ export default function WorkoutSummaryScreen() {
     getCurrentStreak(userId).then(setCurrentStreak).catch(() => setCurrentStreak(0));
   }, [userId]);
 
-  // Show body check-in after celebration animation
+  // Check whether a beta survey should be shown — but defer presenting it
+  // until the user finishes the summary screen so modals never block interaction.
   useEffect(() => {
-    if (!bodyCheckinShown) {
-      setBodyCheckinShown(true);
-      // Show body check-in after a short delay for the celebration
-      setTimeout(() => {
-        setShowBodyCheckin(true);
-      }, 1500);
-    }
-  }, [bodyCheckinShown]);
-
-  // Check if we should show the survey after workout
-  useEffect(() => {
-    const checkSurvey = async () => {
-      if (surveyChecked) return;
-      setSurveyChecked(true);
-
+    let cancelled = false;
+    (async () => {
       try {
-        // Increment workout count
         await incrementWorkoutCount();
-
-        // Check if we should show survey
         const result = await shouldShowWorkoutSurvey();
-        if (result.shouldShow) {
-          // Small delay to let the celebration animation play first
-          setTimeout(() => {
-            setShowSurvey(true);
-          }, 2000);
+        if (!cancelled && result.shouldShow) {
+          setShouldShowSurveyAfterDone(true);
         }
       } catch (error) {
         console.error('Error checking survey trigger:', error);
       }
+    })();
+    return () => {
+      cancelled = true;
     };
+  }, []);
 
-    checkSurvey();
-  }, [surveyChecked]);
+  const navigateHome = () => {
+    const routeNames = navigation.getState().routeNames;
+    const targetRoute = routeNames.includes('MainTabs') ? 'MainTabs' : 'Home';
+    navigation.reset({
+      index: 0,
+      routes: [{ name: targetRoute }],
+    });
+  };
 
   const handleBodyCheckinSubmit = (data: BodyCheckinData) => {
     setBodyCheckinData(data);
     setShowBodyCheckin(false);
     console.log('Body check-in response:', data.response);
+    if (shouldShowSurveyAfterDone) {
+      setShowSurvey(true);
+    } else {
+      navigateHome();
+    }
   };
 
   const handleBodyCheckinSkip = () => {
     setShowBodyCheckin(false);
+    if (shouldShowSurveyAfterDone) {
+      setShowSurvey(true);
+    } else {
+      navigateHome();
+    }
   };
 
   const handleSurveySubmit = async (response: SurveyResponse) => {
     await saveSurveyResponse(response);
     setShowSurvey(false);
+    navigateHome();
   };
 
   const handleSurveyClose = async () => {
     await trackSurveySkipped('workout');
     setShowSurvey(false);
+    navigateHome();
   };
 
   // Flagged exercises handlers
@@ -484,19 +487,27 @@ export default function WorkoutSummaryScreen() {
       await completeWorkout();
       clearWorkout();
 
-      // Detect which navigator we're in and navigate accordingly
-      // MainNavigator has 'MainTabs' (which contains Home), OnboardingNavigator has 'Home' directly
-      const routeNames = navigation.getState().routeNames;
-      const targetRoute = routeNames.includes('MainTabs') ? 'MainTabs' : 'Home';
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: targetRoute }],
-      });
+      // Chain optional post-workout prompts after the user explicitly taps Done.
+      // Body check-in first (if not yet collected), then survey (if eligible),
+      // then navigate home. Each step can be skipped.
+      if (!bodyCheckinData) {
+        setShowBodyCheckin(true);
+        return;
+      }
+      if (shouldShowSurveyAfterDone) {
+        setShowSurvey(true);
+        return;
+      }
+      navigateHome();
     } catch (error) {
       console.error('Error completing workout:', error);
       Alert.alert('Error', 'Failed to save workout. Please try again.');
     }
+  };
+
+  const handleSkipToHome = () => {
+    clearWorkout();
+    navigateHome();
   };
 
   const workoutName = routeData?.workoutName || workout?.workout_name || 'Workout Complete';
@@ -532,11 +543,25 @@ export default function WorkoutSummaryScreen() {
         style={StyleSheet.absoluteFill}
       />
 
+      {/* Persistent header — always offers an escape to Home */}
+      <View style={[styles.header, { paddingTop: insets.top + spacing.s }]}>
+        <View style={styles.headerSpacer} />
+        <Pressable
+          onPress={handleSkipToHome}
+          hitSlop={12}
+          style={({ pressed }) => [styles.headerDone, pressed && styles.buttonPressed]}
+          accessibilityRole="button"
+          accessibilityLabel="Done, go to home"
+        >
+          <Text style={styles.headerDoneText}>Done</Text>
+        </Pressable>
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + 100 }
+          { paddingTop: spacing.l, paddingBottom: insets.bottom + 100 }
         ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -752,6 +777,30 @@ const styles = StyleSheet.create({
   },
   scroll: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.s,
+  },
+  headerSpacer: {
+    flex: 1,
+  },
+  headerDone: {
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
+  headerDoneText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.accent.primary,
   },
   scrollContent: {
     paddingHorizontal: layout.screenPadding,
