@@ -128,7 +128,7 @@ export async function getTodaysWorkout(userId: string = 'default'): Promise<Toda
     // Add binder break reminder if workout is 45+ minutes
     if (workout.duration >= 45) {
       safetyCheckpoints.push({
-        message: '⚠️ Binder break reminder at 45min'
+        message: 'Binder break reminder at 45min'
       });
     }
 
@@ -270,7 +270,7 @@ export async function getWorkout(
     const safetyCheckpoints: Array<{ message: string }> = [];
     if (duration >= 45) {
       safetyCheckpoints.push({
-        message: '⚠️ Binder break reminder at 45min'
+        message: 'Binder break reminder at 45min'
       });
     }
 
