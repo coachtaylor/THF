@@ -70,21 +70,36 @@ push-enabled build.
 
 ## Phase 2 — Configure local environment
 
-### 2.1 Set EAS submit env vars
+### 2.1 Submit credentials in `eas.json`
 
-Create or edit `.env.local` (gitignored) at the repo root:
+The submit profile in `eas.json` carries three Apple identifiers:
 
-```sh
-EAS_SUBMIT_IOS_APPLE_ID=your-apple-id@example.com
-EAS_SUBMIT_IOS_ASC_APP_ID=1234567890       # the 10-digit Apple App ID from 1.2
-EAS_SUBMIT_IOS_APPLE_TEAM_ID=ABCDE12345    # 10-character team ID from 1.3
+```json
+"submit": {
+  "preview": {
+    "ios": {
+      "appleId": "taylorpa04@gmail.com",
+      "ascAppId": "6756504481",
+      "appleTeamId": "SDNX536873"
+    }
+  }
+}
 ```
 
-EAS reads these when resolving `eas.json` placeholders at submit time.
+**These are hardcoded, not env vars — intentionally.**
 
-> **Why env vars, not hard-coded?** The values are personal/team
-> identifiers that don't belong in the public repo. EAS supports
-> `$VAR` substitution in `eas.json` exactly for this.
+> **Why?** Two reasons:
+>
+> 1. **EAS CLI 18.11.0 doesn't substitute `$VAR` in submit fields.** Earlier
+>    versions of this runbook documented `$EAS_SUBMIT_IOS_APPLE_ID` style
+>    placeholders. Don't use that — they pass through to App Store Connect
+>    literally and the submit fails authentication. This may change in a
+>    future CLI release; for now, hardcode.
+> 2. **None of these are secrets.** The Apple ID email is on the App Store
+>    listing once you ship. The ASC App ID is in the appstoreconnect.com
+>    URL. The Team ID is visible in any signed binary anyone can download.
+>    The actual auth secret (the App Store Connect API key) is managed by
+>    EAS on its servers — see 4.2 below.
 
 ### 2.2 Confirm bundle metadata
 
@@ -97,6 +112,75 @@ Open `app.config.js` and verify:
 - `ios.buildNumber` is `"1"` for the first build. EAS auto-increments
   from here on subsequent builds (because `eas.json` has
   `autoIncrement: true` on the `preview` profile).
+
+### 2.3 The `eas-build-pre-install` hook
+
+`package.json` defines an `eas-build-pre-install` script that runs on
+the EAS build VM **before** `pod install` and Xcode compilation. It
+does two jobs in order:
+
+1. **iOS-only: download the Metal Toolchain.** Xcode 26+ unbundled the
+   Metal compiler into a separately-downloadable component. EAS's
+   `macos-sequoia-15.6-xcode-26.0` image ships Xcode itself but not
+   the toolchain. Without this step, the build fails compiling
+   `react-native-svg`'s `.metal` shader files (Core Image SVG filters)
+   with `cannot execute tool 'metal' due to missing Metal Toolchain`.
+2. **All platforms: copy EAS file secrets into place.** Some files
+   referenced by the bundler are gitignored because they're proprietary
+   IP. `scripts/eas-prebuild-secrets.js` copies them from the EAS file
+   secret location to the path the bundler expects.
+
+The full hook line in `package.json`:
+
+```json
+"eas-build-pre-install": "if [ \"$EAS_BUILD_PLATFORM\" = \"ios\" ]; then sudo xcodebuild -downloadComponent MetalToolchain -quiet; fi && node scripts/eas-prebuild-secrets.js"
+```
+
+**Don't remove the Metal Toolchain step** unless you've moved to an
+EAS image that includes it (verify before removing — Apple keeps
+shrinking the default Xcode bundle, so this need will persist for the
+foreseeable future). Downloading the toolchain adds ~2-5 min to build
+time, one-time per build VM.
+
+### 2.4 Register EAS file secrets
+
+Some files referenced by the bundler are gitignored because they're
+proprietary IP. `scripts/eas-prebuild-secrets.js` (wired into
+`eas-build-pre-install`) copies them into place at build time, but
+only if EAS knows where the secret content lives.
+
+Register the secrets ONCE per project. The script self-documents the
+list to keep in sync; today it's:
+
+```sh
+eas secret:create --scope project --type file \
+  --name RECOVERY_PHASES_TS \
+  --value ./src/data/recoveryPhases.ts
+```
+
+If you skip this, builds fail at bundle time with `Unable to resolve
+"./recoveryPhases"` (or similar) because the file the import points
+to doesn't exist on EAS's filesystem.
+
+To audit what's registered:
+
+```sh
+eas secret:list
+```
+
+To rotate the value (e.g. after editing the local file):
+
+```sh
+eas secret:delete --name RECOVERY_PHASES_TS
+eas secret:create --scope project --type file \
+  --name RECOVERY_PHASES_TS \
+  --value ./src/data/recoveryPhases.ts
+```
+
+> **When to add new secrets here:** any time `scripts/eas-prebuild-secrets.js`'s
+> `secrets` array grows. The script no-ops cleanly when the env var
+> isn't set, so local dev is unaffected even before you register —
+> only EAS builds break.
 
 ---
 
@@ -119,9 +203,14 @@ What happens:
      `com.transfitness.app` linked to your team
    - When prompted for APNs key, upload the `.p8` from 1.4 with the
      Key ID and Team ID
-3. EAS runs `eas-build-pre-install` (copies file secrets — see
-   `scripts/eas-prebuild-secrets.js`)
-4. Build runs on macOS Sonoma + Xcode 15.4 (per `eas.json`)
+3. EAS runs `eas-build-pre-install` (downloads Metal Toolchain on iOS,
+   copies file secrets — see 2.3)
+4. Build runs on macOS Sequoia + Xcode 26.0 (per `eas.json`). Apple's
+   minimum SDK floor moves every few months; if a future submit gets
+   rejected with ITMS-90725 ("must be built with iOS X SDK or later"),
+   bump the image string in all three `eas.json` profiles to the
+   current `sdk-*` image from
+   https://docs.expo.dev/build-reference/infrastructure/
 5. Output: a `.ipa` artifact downloadable from
    https://expo.dev/accounts/{account}/projects/transfitness/builds
 
@@ -148,16 +237,34 @@ npx eas-cli submit --profile preview --platform ios --latest
 `--latest` picks the most recent finished build for the profile.
 Alternative: pass `--id <build-id>` to submit a specific build.
 
-EAS uses the env vars from 2.1 to:
+EAS uses the hardcoded credentials from 2.1 plus an App Store Connect
+API key it manages to:
 
-1. Authenticate to App Store Connect with `appleId`
+1. Authenticate to App Store Connect (via the cached API key, see 4.2)
 2. Upload the `.ipa` to App Store Connect via `ascAppId`
 3. Associate with your team via `appleTeamId`
 
-If 2FA is enabled (it must be), EAS will prompt for a one-time code or
-trigger an Apple device approval.
+### 4.2 EAS-managed App Store Connect API key
 
-### 4.2 Process in App Store Connect
+On your **first** `eas submit`, EAS auto-creates an App Store Connect
+API key (visible at App Store Connect → Users and Access → Integrations
+→ Keys, named like `[Expo] EAS Submit <random>`). EAS stores the key
+on its servers.
+
+Implications:
+
+- **Future submits skip the 2FA prompt.** No Apple ID password, no
+  one-time code, no device approval. Just runs.
+- **Don't delete that key in App Store Connect** unless you also remove
+  the matching credential on EAS, otherwise future submits fail with
+  401 / "Invalid credentials." If that happens, run `eas credentials`
+  → iOS → Manage submission credentials → Remove, then re-submit (EAS
+  will create a new key on the next run).
+- The key has admin-tier access to your App Store Connect account.
+  This is normal for submission tooling. It's stored on EAS, not in
+  your repo.
+
+### 4.3 Process in App Store Connect
 
 After submit succeeds:
 
@@ -167,22 +274,36 @@ After submit succeeds:
 3. Once processed, status becomes "Ready to Submit" — you can now
    distribute to testers
 
-### 4.3 Compliance questions
+### 4.4 Compliance questions
 
-First time only, App Store Connect asks:
+`app.config.js` sets `ITSAppUsesNonExemptEncryption: false` in
+`ios.infoPlist`, which **bypasses the export compliance dialog** for
+all future builds. The first build before this flag was added did go
+through the dialog manually; here's what was answered, for reference:
 
-- **Export Compliance**: Does your app use encryption?
-  - Your app uses HTTPS for Supabase and Sentry — this counts. Answer
-    "Yes" then "Does your app use any encryption beyond what's exempt?"
-    → "No" (standard HTTPS is exempt under Annotation 1 to Category 5,
-    Part 2).
+- **App Encryption Documentation: type of encryption?**
+  → "Standard encryption algorithms instead of, or in addition to,
+     using or accessing the encryption within Apple's operating system"
+  → Rationale: TransFitness uses HTTPS (TLS), SQLCipher (AES-256),
+    `@noble/ciphers` (AES-GCM), and iOS Keychain via `expo-secure-store`.
+    All are standard, internationally-recognized algorithms — no custom
+    or proprietary crypto.
+
+- **App available for distribution in France?** → **No** for beta.
+  France requires an annual self-classification report filed with the
+  French government (ANSSI), even for standard algorithms. Not worth
+  the paperwork for a US-focused beta. Re-evaluate before public launch.
+
 - **Content Rights**: Do you have rights to all content? → Yes
 - **Advertising Identifier (IDFA)**: Does your app use it? → No (you
   don't use IDFA)
 
-These answers persist for future builds on the same major version.
+If you ever need to revisit the encryption answer — e.g., adding a
+crypto library that's not on the standard-algorithms list — delete the
+`ITSAppUsesNonExemptEncryption` line from `app.config.js` and Apple
+will resume asking on every upload.
 
-### 4.4 Add testers
+### 4.5 Add testers
 
 1. App Store Connect → TransFitness → TestFlight tab
 2. **Internal Testers** (up to 100; no Beta App Review needed)
@@ -197,7 +318,7 @@ These answers persist for future builds on the same major version.
    - Once approved, testers get an invite email and install via the
      TestFlight app
 
-### 4.5 What testers see
+### 4.6 What testers see
 
 Testers get an email:
 
@@ -213,6 +334,58 @@ They:
 ---
 
 ## Common gotchas
+
+### Build fails with `Unable to resolve "./recoveryPhases"` or similar gitignored module
+
+You haven't registered the EAS file secret. See 2.3 — run
+`eas secret:create --scope project --type file --name RECOVERY_PHASES_TS --value ./src/data/recoveryPhases.ts`
+(or whichever secret `scripts/eas-prebuild-secrets.js` is waiting on).
+
+### Build fails with `pod ... not found` or pod install errors
+
+`ios/Podfile.lock` in `git HEAD` doesn't match `package.json`. Someone
+changed JS deps without re-running `pod install` + committing the
+resulting iOS files. Recovery:
+
+```sh
+cd ios && pod install && cd ..
+git add ios/Podfile.lock ios/TransFitness.xcodeproj/project.pbxproj \
+        ios/TransFitness/PrivacyInfo.xcprivacy
+git commit -m "Sync iOS pods with current JS deps"
+git push origin develop
+```
+
+Then retry the build.
+
+### Build fails with `Unsupported macOS image` or Xcode version mismatch
+
+EAS deprecates older macOS/Xcode images on a rolling schedule. Update
+all three profiles in `eas.json`'s `build` section. As of this writing
+the working image is `macos-sequoia-15.6-xcode-26.0` (required by
+Apple's iOS 26 SDK floor as of late 2026). Check
+https://docs.expo.dev/build-reference/infrastructure/ for the current
+supported list. Always pick the image labeled with your current Expo
+SDK version (e.g. `sdk-54`).
+
+### Build fails with `cannot execute tool 'metal' due to missing Metal Toolchain`
+
+Xcode 26+ unbundled the Metal compiler from the default Xcode install.
+The fix is wired into `eas-build-pre-install` (see 2.3) — verify
+`package.json`'s script still contains the
+`sudo xcodebuild -downloadComponent MetalToolchain -quiet` step. If
+someone removed it thinking it was dead config, restore it. Without
+this, any package that ships `.metal` shaders (today:
+`react-native-svg`) fails the Xcode compile step.
+
+### Apple rejects submitted build with ITMS-90725
+
+Apple message: "App was built with iOS X.X SDK. Must be built with
+iOS Y SDK or later (Xcode Z+)." Apple bumps the minimum SDK every few
+months. Fix: update all three `eas.json` image strings to the current
+`sdk-*` image from
+https://docs.expo.dev/build-reference/infrastructure/, then rebuild and
+resubmit. The previous build is dead — no way to make it accepted; you
+must produce a new IPA on the newer toolchain.
 
 ### "Bundle ID not found" during EAS build
 
@@ -241,11 +414,20 @@ permission is only here because Apple requires the disclosure string."
 (But try without first — most non-IDFA analytics setups don't trigger
 this.)
 
-### "Build succeeded but submit fails with 401 / Two-factor required"
+### "Build succeeded but submit fails with 401 / Invalid credentials"
 
-Your `EAS_SUBMIT_IOS_APPLE_ID` account either doesn't have 2FA on, or
-the 2FA flow timed out. Run `npx eas-cli submit` interactively and
-approve the prompt on your Apple device.
+EAS's cached ASC API key (see 4.2) was revoked or deleted in App Store
+Connect → Users and Access → Integrations → Keys. Run
+`eas credentials` → iOS → Manage submission credentials → Remove, then
+re-run `eas submit`. EAS will auto-create a new key on the next run.
+
+### Submit field placeholders pass through literally (`$EAS_SUBMIT_IOS_APPLE_ID`)
+
+EAS CLI 18.11.0 does NOT substitute `$VAR` placeholders in `eas.json`
+submit fields (only in `build.env` fields). If your submit fails with
+"Invalid Apple ID format" or auth errors and the dashboard shows the
+literal `$VAR` string, your `eas.json` is using env vars where it
+should be using hardcoded values. See 2.1.
 
 ### "App rejected — missing privacy policy URL"
 
