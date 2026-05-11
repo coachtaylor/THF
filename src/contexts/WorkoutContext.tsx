@@ -10,6 +10,7 @@ import {
   startWorkoutLog,
   logSet,
   completeWorkoutLog,
+  updateWorkoutLogFeedback,
 } from '../services/storage/workoutLog';
 import {
   saveSession,
@@ -124,6 +125,11 @@ interface WorkoutContextType {
   resumeWorkout: () => void;
   completeWorkout: () => Promise<void>;
   clearWorkout: () => Promise<void>;
+  saveWorkoutFeedback: (data: {
+    workout_rating?: number;
+    performance_notes?: string;
+    body_checkin?: "connected" | "neutral" | "disconnected" | "skip";
+  }) => Promise<void>;
 
   // Phase actions
   completeWarmupExercise: () => void;
@@ -661,6 +667,19 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     setIsWorkoutComplete(true);
   };
 
+  const saveWorkoutFeedback = async (data: {
+    workout_rating?: number;
+    performance_notes?: string;
+    body_checkin?: "connected" | "neutral" | "disconnected" | "skip";
+  }) => {
+    if (!workoutLogId) return;
+    try {
+      await updateWorkoutLogFeedback(workoutLogId, data);
+    } catch (error) {
+      if (__DEV__) console.error('Failed to save workout feedback:', error);
+    }
+  };
+
   const clearWorkout = async () => {
     // Clear saved session
     await clearSession(currentUserId);
@@ -786,6 +805,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     resumeWorkout,
     completeWorkout,
     clearWorkout,
+    saveWorkoutFeedback,
     // Phase actions
     completeWarmupExercise,
     skipWarmupPhase,
