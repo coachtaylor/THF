@@ -454,6 +454,20 @@ export async function syncToCloud(): Promise<SyncResult> {
       }
     }
 
+    // Sync plans BEFORE sessions — workout_sessions.plan_id has a FK to
+    // workout_plans, so uploading a session before its plan exists in
+    // Supabase produces error 23503 (foreign key violation) and forces the
+    // session into the retry queue on every app boot.
+    try {
+      const plansSynced = await syncUnsyncedPlans(session.user.id);
+      result.plansSynced = plansSynced;
+    } catch (error) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Plans sync failed";
+      result.errors.push(errorMsg);
+      console.error("☁️ Plans sync error:", error);
+    }
+
     // Sync unsynced sessions
     try {
       const sessionsSynced = await syncUnsyncedSessions(session.user.id);
@@ -463,17 +477,6 @@ export async function syncToCloud(): Promise<SyncResult> {
         error instanceof Error ? error.message : "Sessions sync failed";
       result.errors.push(errorMsg);
       console.error("☁️ Sessions sync error:", error);
-    }
-
-    // Sync unsynced plans
-    try {
-      const plansSynced = await syncUnsyncedPlans(session.user.id);
-      result.plansSynced = plansSynced;
-    } catch (error) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Plans sync failed";
-      result.errors.push(errorMsg);
-      console.error("☁️ Plans sync error:", error);
     }
 
     // Sync unsynced feedback reports
