@@ -158,6 +158,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   // Tracks whether the user had manually paused the timer before opening the swap
   // drawer, so we can restore that state instead of always force-resuming on close.
   const pausedBySwapRef = useRef(false);
+  // Guards against double-saving the workout when the user enters cool-down
+  // (we mark complete on entry) and then completes the cool-down stretches.
+  const workoutPersistedRef = useRef(false);
   
   // New state for main phase UI
   const [reps, setReps] = useState(10);
@@ -450,6 +453,33 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     );
   };
 
+  // Confirm before exiting the cool-down. The main workout is already done at
+  // this point so we don't fire workout_abandoned — the user has just chosen
+  // to skip the cool-down stretches. We route through handleWorkoutComplete
+  // so the user lands on the summary screen and the workout is guaranteed
+  // saved (persistCompletedWorkout is idempotent).
+  const handleCoolDownExit = () => {
+    Alert.alert(
+      'End Workout?',
+      'Cool-down stretches will be skipped. Your workout will be marked complete.',
+      [
+        { text: 'Keep Going', style: 'cancel' },
+        {
+          text: 'End Workout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await handleWorkoutComplete();
+            } catch (error) {
+              console.error('❌ Failed to complete workout on cool-down exit:', error);
+              Alert.alert('Error', 'Failed to complete workout. Please try again.');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const handleWarmUpComplete = () => {
     console.log('🔥🔥🔥 Warm-up complete button clicked 🔥🔥🔥');
     console.log('Current state BEFORE update:', { 
@@ -482,6 +512,163 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         currentPhase: phase // This will still be 'warm-up' due to closure, but state should be 'main'
       });
     }, 100);
+  };
+
+  // NOTE: handleMainWorkoutComplete / handleCoolDownComplete /
+  // persistCompletedWorkout / handleWorkoutComplete are declared here (above
+  // the warm-up + cool-down early returns) because handleCoolDownExit
+  // captures handleWorkoutComplete in its closure. On cool-down render the
+  // component returns before reaching declarations placed below — Hermes
+  // leaves the binding `undefined` in that path, which would crash the X-out.
+  const handleMainWorkoutComplete = async () => {
+    if (coolDown) {
+      // Reaching cool-down counts as completing the workout — persist to DB
+      // now so X-ing out of cool-down doesn't lose the session.
+      try {
+        await persistCompletedWorkout();
+      } catch (error) {
+        console.error('❌ Failed to persist workout on cool-down entry:', error);
+      }
+      setPhase('cool-down');
+    } else {
+      handleWorkoutComplete();
+    }
+  };
+
+  const handleCoolDownComplete = async () => {
+    console.log('🏁 handleCoolDownComplete called');
+    try {
+      await handleWorkoutComplete();
+    } catch (error) {
+      console.error('❌ Error in handleCoolDownComplete:', error);
+      Alert.alert('Error', 'Failed to complete workout. Please try again.');
+    }
+  };
+
+  // Save the completed workout to the database. Idempotent — safe to call
+  // when entering cool-down and again when cool-down finishes.
+  const persistCompletedWorkout = async () => {
+    if (workoutPersistedRef.current) return;
+    workoutPersistedRef.current = true;
+
+    const endTime = completedAt || new Date().toISOString();
+    if (!completedAt) setCompletedAt(endTime);
+
+    if (elapsedTimeIntervalRef.current) {
+      clearInterval(elapsedTimeIntervalRef.current);
+      elapsedTimeIntervalRef.current = null;
+    }
+
+    try {
+      const sessionData = buildSessionData(
+        completedSets,
+        planId,
+        workout.duration || 15,
+        startedAt,
+        endTime,
+      );
+      await saveSession(sessionData);
+      console.log('✅ Workout saved to database');
+    } catch (error) {
+      console.error('Failed to save session:', error);
+      workoutPersistedRef.current = false;
+      throw error;
+    }
+  };
+
+  const handleWorkoutComplete = async () => {
+    console.log('🏋️ Workout completion started');
+    const endTime = completedAt || new Date().toISOString();
+    if (!completedAt) setCompletedAt(endTime);
+
+    // Clear interval
+    if (elapsedTimeIntervalRef.current) {
+      clearInterval(elapsedTimeIntervalRef.current);
+      elapsedTimeIntervalRef.current = null;
+    }
+
+    // Calculate workout duration
+    const startTime = new Date(startedAt);
+    const endTimeDate = new Date(endTime);
+    const durationSeconds = Math.floor((endTimeDate.getTime() - startTime.getTime()) / 1000);
+    const durationMinutes = Math.floor(durationSeconds / 60);
+
+    // Convert completed sets to WorkoutContext format
+    // Group by exercise to get correct set numbers
+    const exerciseSetCounts = new Map<string, number>();
+    const contextSets = completedSets.map((set) => {
+      const count = exerciseSetCounts.get(set.exerciseId) || 0;
+      exerciseSetCounts.set(set.exerciseId, count + 1);
+      return {
+        exercise_id: set.exerciseId,
+        set_number: count + 1,
+        reps: set.reps,
+        weight: set.weight || 0,
+        rpe: set.rpe,
+        timestamp: new Date(set.completedAt),
+      };
+    });
+
+    // Create ActiveWorkout for context
+    const activeWorkout = {
+      id: planId,
+      workout_name: `Workout - ${new Date().toLocaleDateString()}`,
+      estimated_duration_minutes: durationMinutes,
+      warm_up: warmUp || { total_duration_minutes: 0, exercises: [] },
+      main_workout: exercises.map((ex, idx) => ({
+        exerciseId: ex.id,
+        sets: ex.sets || 3,
+        reps: ex.reps || 10,
+        format: 'straight_sets' as const,
+        restSeconds: ex.restSeconds || 60,
+        exercise_name: ex.name,
+      })),
+      cool_down: coolDown || { total_duration_minutes: 0, exercises: [] },
+      safety_checkpoints: safetyCheckpoints,
+      metadata: {
+        template_name: 'Session',
+        day_focus: 'Full Body',
+        user_goal: profile?.primary_goal || 'general_fitness',
+        hrt_adjusted: false,
+        rules_applied: [],
+        exercises_excluded_count: 0,
+        total_exercises: exercises.length,
+        generation_timestamp: new Date(),
+      },
+    };
+
+    // Note: We'll pass data via navigation params instead of context
+    // since startWorkout resets everything. WorkoutSummaryScreen will
+    // need to be updated to accept navigation params as fallback.
+    console.log('✅ Workout data prepared:', {
+      exercises: exercises.length,
+      sets: completedSets.length,
+      duration: durationMinutes,
+    });
+
+    // POST /workouts/{id}/complete — idempotent if already persisted at
+    // cool-down entry.
+    try {
+      await persistCompletedWorkout();
+    } catch (error) {
+      console.error('Failed to save session:', error);
+    }
+
+    // Navigate to summary screen with data
+    console.log('🧭 Navigating to WorkoutSummaryScreen');
+    // WorkoutSummary is now in both OnboardingNavigator and MainNavigator
+    navigation.navigate('WorkoutSummary', {
+      workoutData: {
+        completedSets: contextSets,
+        workoutDuration: durationSeconds,
+        totalExercises: exercises.length,
+        exercisesCompleted: exercises.length,
+        workoutName: `Workout - ${new Date().toLocaleDateString()}`,
+      },
+      // Pass flagged exercises for post-workout review
+      flaggedExercises,
+      sessionId,
+    });
   };
 
   if (loading) {
@@ -542,6 +729,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         coolDownExercises={coolDownExercises}
         totalDurationMinutes={coolDown.total_duration_minutes}
         onComplete={handleCoolDownComplete}
+        onExit={handleCoolDownExit}
       />
     );
   }
@@ -742,126 +930,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
   // Update ref with completion callback (safe to do in render since it's not a hook)
   restTimerCompleteCallbackRef.current = handleRestTimerComplete;
 
-  const handleMainWorkoutComplete = () => {
-    if (coolDown) {
-      setPhase('cool-down');
-    } else {
-      handleWorkoutComplete();
-    }
-  };
-
-  const handleCoolDownComplete = async () => {
-    console.log('🏁 handleCoolDownComplete called');
-    try {
-      await handleWorkoutComplete();
-    } catch (error) {
-      console.error('❌ Error in handleCoolDownComplete:', error);
-      Alert.alert('Error', 'Failed to complete workout. Please try again.');
-    }
-  };
-
-  const handleWorkoutComplete = async () => {
-    console.log('🏋️ Workout completion started');
-    const endTime = new Date().toISOString();
-    setCompletedAt(endTime);
-    
-    // Clear interval
-    if (elapsedTimeIntervalRef.current) {
-      clearInterval(elapsedTimeIntervalRef.current);
-      elapsedTimeIntervalRef.current = null;
-    }
-
-    // Calculate workout duration
-    const startTime = new Date(startedAt);
-    const endTimeDate = new Date(endTime);
-    const durationSeconds = Math.floor((endTimeDate.getTime() - startTime.getTime()) / 1000);
-    const durationMinutes = Math.floor(durationSeconds / 60);
-
-    // Convert completed sets to WorkoutContext format
-    // Group by exercise to get correct set numbers
-    const exerciseSetCounts = new Map<string, number>();
-    const contextSets = completedSets.map((set) => {
-      const count = exerciseSetCounts.get(set.exerciseId) || 0;
-      exerciseSetCounts.set(set.exerciseId, count + 1);
-      return {
-        exercise_id: set.exerciseId,
-        set_number: count + 1,
-        reps: set.reps,
-        weight: set.weight || 0,
-        rpe: set.rpe,
-        timestamp: new Date(set.completedAt),
-      };
-    });
-
-    // Create ActiveWorkout for context
-    const activeWorkout = {
-      id: planId,
-      workout_name: `Workout - ${new Date().toLocaleDateString()}`,
-      estimated_duration_minutes: durationMinutes,
-      warm_up: warmUp || { total_duration_minutes: 0, exercises: [] },
-      main_workout: exercises.map((ex, idx) => ({
-        exerciseId: ex.id,
-        sets: ex.sets || 3,
-        reps: ex.reps || 10,
-        format: 'straight_sets' as const,
-        restSeconds: ex.restSeconds || 60,
-        exercise_name: ex.name,
-      })),
-      cool_down: coolDown || { total_duration_minutes: 0, exercises: [] },
-      safety_checkpoints: safetyCheckpoints,
-      metadata: {
-        template_name: 'Session',
-        day_focus: 'Full Body',
-        user_goal: profile?.primary_goal || 'general_fitness',
-        hrt_adjusted: false,
-        rules_applied: [],
-        exercises_excluded_count: 0,
-        total_exercises: exercises.length,
-        generation_timestamp: new Date(),
-      },
-    };
-
-    // Note: We'll pass data via navigation params instead of context
-    // since startWorkout resets everything. WorkoutSummaryScreen will
-    // need to be updated to accept navigation params as fallback.
-    console.log('✅ Workout data prepared:', {
-      exercises: exercises.length,
-      sets: completedSets.length,
-      duration: durationMinutes,
-    });
-
-    // POST /workouts/{id}/complete
-    try {
-      const sessionData = buildSessionData(
-        completedSets,
-        planId,
-        workout.duration || 15,
-        startedAt,
-        endTime
-      );
-      await saveSession(sessionData);
-      console.log('✅ Workout saved to database');
-    } catch (error) {
-      console.error('Failed to save session:', error);
-    }
-
-    // Navigate to summary screen with data
-    console.log('🧭 Navigating to WorkoutSummaryScreen');
-    // WorkoutSummary is now in both OnboardingNavigator and MainNavigator
-    navigation.navigate('WorkoutSummary', {
-      workoutData: {
-        completedSets: contextSets,
-        workoutDuration: durationSeconds,
-        totalExercises: exercises.length,
-        exercisesCompleted: exercises.length,
-        workoutName: `Workout - ${new Date().toLocaleDateString()}`,
-      },
-      // Pass flagged exercises for post-workout review
-      flaggedExercises,
-      sessionId,
-    });
-  };
-
   const handleRPESubmit = (rpe: number) => {
     setCurrentRPE(rpe);
   };
@@ -959,11 +1027,11 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   // Handle back button with confirmation
   const handleBack = () => {
-    // Fire workout_abandoned when the user exits a workout that was started
-    // (any set logged, or main phase entered). Skip when they exit before
-    // any work happened — that's not an abandonment, that's a glance.
+    // Fire workout_abandoned only when at least one set was logged — quick
+    // glances with no work done are not abandonments and shouldn't pollute
+    // the metric.
     const fireAbandoned = () => {
-      if (!workout?.id || phase !== 'main') return;
+      if (!workout?.id || phase !== 'main' || completedSets.length === 0) return;
       const totalPlannedSets = exercises.reduce(
         (sum, ex) => sum + (ex.sets || 0),
         0,
@@ -974,21 +1042,21 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       trackWorkoutAbandoned(workout.id, percent).catch(() => {});
     };
 
-    if (completedSets.length > 0) {
-      Alert.alert('End Workout?', 'Progress will be saved but workout incomplete.', [
-        { text: 'Keep Going', style: 'cancel' },
-        {
-          text: 'End Workout',
-          style: 'destructive',
-          onPress: () => {
-            fireAbandoned();
-            navigation.goBack();
-          },
+    const message = completedSets.length > 0
+      ? 'Progress will be saved but workout incomplete.'
+      : 'You can resume from the dashboard.';
+
+    Alert.alert('End Workout?', message, [
+      { text: 'Keep Going', style: 'cancel' },
+      {
+        text: 'End Workout',
+        style: 'destructive',
+        onPress: () => {
+          fireAbandoned();
+          navigation.goBack();
         },
-      ]);
-    } else {
-      navigation.goBack();
-    }
+      },
+    ]);
   };
 
   // Handle skip set
@@ -1074,7 +1142,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         {/* Premium Header */}
         <View style={styles.premiumHeader}>
           <Pressable style={styles.headerGlassButton} onPress={handleBack}>
-            <Ionicons name="close" size={22} color={colors.text.primary} />
+            <Ionicons name="close" size={18} color={colors.text.primary} />
           </Pressable>
 
           <Pressable
@@ -1084,8 +1152,8 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           >
             <ProgressRing
               progress={Math.min(totalElapsedSeconds / ((workout?.duration || 45) * 60), 1)}
-              size={72}
-              strokeWidth={4}
+              size={52}
+              strokeWidth={3}
               color={isTimerPaused ? 'warning' : 'primary'}
             >
               <Text style={[styles.timerDigits, isTimerPaused && styles.timerDigitsPaused]}>
@@ -1101,7 +1169,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             style={styles.headerGlassButton}
             onPress={() => setShowSessionMenu(true)}
           >
-            <Ionicons name="ellipsis-vertical" size={20} color={colors.text.primary} />
+            <Ionicons name="ellipsis-vertical" size={16} color={colors.text.primary} />
           </Pressable>
         </View>
 
@@ -1229,7 +1297,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                     colors={[colors.glass.bgLight, colors.glass.bg]}
                     style={StyleSheet.absoluteFill}
                   />
-                  <Ionicons name="remove" size={28} color={colors.text.primary} />
+                  <Ionicons name="remove" size={22} color={colors.text.primary} />
                 </Pressable>
 
                 <View style={styles.stepperValueContainer}>
@@ -1246,7 +1314,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                     colors={[colors.glass.bgLight, colors.glass.bg]}
                     style={StyleSheet.absoluteFill}
                   />
-                  <Ionicons name="add" size={28} color={colors.text.primary} />
+                  <Ionicons name="add" size={22} color={colors.text.primary} />
                 </Pressable>
               </View>
             </View>
@@ -1365,7 +1433,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
               <View style={styles.premiumCompleteButtonContent}>
                 <View style={styles.completeCheckCircle}>
-                  <Ionicons name="checkmark" size={24} color={colors.accent.primary} />
+                  <Ionicons name="checkmark" size={18} color={colors.accent.primary} />
                 </View>
                 <Text style={styles.premiumCompleteButtonText}>Complete Set</Text>
               </View>
@@ -2620,9 +2688,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.m,
   },
   headerGlassButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.glass.bg,
     borderWidth: 1,
     borderColor: colors.border.default,
@@ -2635,21 +2703,21 @@ const styles = StyleSheet.create({
   },
   timerDigits: {
     fontFamily: 'Poppins',
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
     color: colors.text.primary,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   timerDigitsPaused: {
     color: colors.warning,
   },
   timerStatusLabel: {
     fontFamily: 'Poppins',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
     color: colors.text.tertiary,
-    letterSpacing: 1.5,
-    marginTop: 4,
+    letterSpacing: 1.2,
+    marginTop: 2,
   },
 
   // Segmented Progress Bar
@@ -2828,35 +2896,35 @@ const styles = StyleSheet.create({
   // Premium Input Controls
   premiumControls: {
     paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
-    marginBottom: spacing.xl,
+    gap: spacing.m,
+    marginBottom: spacing.l,
   },
   inputCard: {
     backgroundColor: colors.glass.bg,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
+    borderRadius: borderRadius.l,
+    padding: spacing.m,
     borderWidth: 1,
     borderColor: colors.border.default,
   },
   inputCardLabel: {
     fontFamily: 'Poppins',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.text.tertiary,
-    letterSpacing: 1.5,
+    letterSpacing: 1.3,
     textAlign: 'center',
-    marginBottom: spacing.m,
+    marginBottom: spacing.s,
   },
   stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.lg,
+    gap: spacing.m,
   },
   stepperButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -2864,9 +2932,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   stepperButtonSmall: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.glass.bg,
@@ -2875,42 +2943,42 @@ const styles = StyleSheet.create({
   },
   stepperButtonText: {
     fontFamily: 'Poppins',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.text.primary,
   },
   stepperValueContainer: {
-    minWidth: 120,
+    minWidth: 100,
     alignItems: 'center',
   },
   stepperValue: {
     fontFamily: 'Poppins',
-    fontSize: 48,
+    fontSize: 32,
     fontWeight: '800',
     color: colors.text.primary,
-    letterSpacing: -2,
+    letterSpacing: -1.2,
   },
   stepperUnit: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: colors.text.tertiary,
-    marginTop: -4,
+    marginTop: -2,
   },
   stepperValueContainerCompact: {
-    minWidth: 100,
+    minWidth: 80,
     alignItems: 'center',
   },
   stepperValueCompact: {
     fontFamily: 'Poppins',
-    fontSize: 36,
+    fontSize: 26,
     fontWeight: '800',
     color: colors.text.primary,
-    letterSpacing: -1,
+    letterSpacing: -0.8,
   },
   stepperUnitCompact: {
     fontFamily: 'Poppins',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     color: colors.text.tertiary,
   },
@@ -2918,8 +2986,8 @@ const styles = StyleSheet.create({
   // RPE Dots
   rpeCard: {
     backgroundColor: colors.glass.bg,
-    borderRadius: borderRadius.xl,
-    padding: spacing.lg,
+    borderRadius: borderRadius.l,
+    padding: spacing.m,
     borderWidth: 1,
     borderColor: colors.border.default,
   },
@@ -2927,19 +2995,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.m,
   },
   rpeValueBadge: {
     backgroundColor: colors.accent.primaryMuted,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.glass.borderCyan,
   },
   rpeValueBadgeText: {
     fontFamily: 'Poppins',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '800',
     color: colors.accent.primary,
   },
@@ -2947,12 +3015,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.s,
-    marginBottom: spacing.m,
+    marginBottom: spacing.s,
   },
   rpeDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: colors.glass.bgLight,
     justifyContent: 'center',
     alignItems: 'center',
@@ -3046,30 +3114,30 @@ const styles = StyleSheet.create({
   // Premium Complete Set CTA
   ctaContainer: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    paddingBottom: spacing.xl + 8,
+    paddingVertical: spacing.m,
+    paddingBottom: spacing.l + 4,
     backgroundColor: colors.bg.primary,
     borderTopWidth: 1,
     borderTopColor: colors.border.subtle,
   },
   premiumCompleteButton: {
-    height: 72,
-    borderRadius: 36,
+    height: 52,
+    borderRadius: 26,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: colors.accent.primary,
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.5,
-        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
       },
-      android: { elevation: 12 },
+      android: { elevation: 8 },
     }),
   },
   premiumCompleteButtonGradient: {
     flex: 1,
     position: 'relative',
-    borderRadius: 36,
+    borderRadius: 26,
   },
   premiumCompleteButtonHighlight: {
     position: 'absolute',
@@ -3077,30 +3145,30 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '50%',
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
   },
   premiumCompleteButtonContent: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 10,
   },
   completeCheckCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   premiumCompleteButtonText: {
     fontFamily: 'Poppins',
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '800',
     color: colors.text.inverse,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
 
   // Premium Rest Timer Overlay

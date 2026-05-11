@@ -178,23 +178,32 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    const loadStats = async () => {
-      if (!profile) return;
-      try {
-        const id = profile.user_id || profile.id || 'default';
-        const streak = await getCurrentStreak(id);
-        const stats = await getWeeklyStats(id);
-        setCurrentStreak(streak);
-        setWeeklyStats(stats);
-        setWorkoutsCompleted(stats.totalWorkouts);
-        setWeekProgress(stats.completedWorkouts);
-      } catch (error) {
-        console.error('Error loading stats:', error);
-      }
-    };
-    loadStats();
+  const loadStats = useCallback(async () => {
+    if (!profile) return;
+    try {
+      const id = profile.user_id || profile.id || 'default';
+      const streak = await getCurrentStreak(id);
+      const stats = await getWeeklyStats(id);
+      setCurrentStreak(streak);
+      setWeeklyStats(stats);
+      setWorkoutsCompleted(stats.totalWorkouts);
+      setWeekProgress(stats.completedWorkouts);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
   }, [profile]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  // Refresh stats whenever Home regains focus — e.g. after completing a
+  // workout and navigating back from the summary screen.
+  useFocusEffect(
+    useCallback(() => {
+      loadStats();
+    }, [loadStats]),
+  );
 
   const todayWorkout = useMemo(() => {
     if (!plan || !plan.days || plan.days.length === 0) return null;
@@ -432,11 +441,6 @@ export default function HomeScreen() {
 
         {/* 3. Stats Section */}
         <View style={styles.statsSection}>
-          {workoutsCompleted === 0 && (
-            <View style={styles.day1Banner}>
-              <Text style={styles.day1BannerText}>Welcome — day 1 starts now</Text>
-            </View>
-          )}
           <StatsRow
             streak={currentStreak}
             weekProgress={`${weeklyStats?.completedWorkouts || weekProgress || 0}/${weeklyStats?.achievableWorkouts ?? profile?.workout_frequency ?? 5}`}
@@ -553,25 +557,6 @@ const styles = StyleSheet.create({
   },
   statsSection: {
     marginBottom: 0,
-  },
-  day1Banner: {
-    alignSelf: 'center',
-    paddingHorizontal: spacing.m,
-    paddingVertical: spacing.xs,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(91, 206, 250, 0.35)',
-    backgroundColor: 'rgba(91, 206, 250, 0.08)',
-    marginTop: spacing.s,
-    marginBottom: spacing.xs,
-  },
-  day1BannerText: {
-    fontFamily: 'Poppins',
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.accent.primary,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
   loadingContainer: {
     flex: 1,
