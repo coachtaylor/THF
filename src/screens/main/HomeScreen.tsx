@@ -178,23 +178,32 @@ export default function HomeScreen() {
     }
   };
 
-  useEffect(() => {
-    const loadStats = async () => {
-      if (!profile) return;
-      try {
-        const id = profile.user_id || profile.id || 'default';
-        const streak = await getCurrentStreak(id);
-        const stats = await getWeeklyStats(id);
-        setCurrentStreak(streak);
-        setWeeklyStats(stats);
-        setWorkoutsCompleted(stats.totalWorkouts);
-        setWeekProgress(stats.completedWorkouts);
-      } catch (error) {
-        console.error('Error loading stats:', error);
-      }
-    };
-    loadStats();
+  const loadStats = useCallback(async () => {
+    if (!profile) return;
+    try {
+      const id = profile.user_id || profile.id || 'default';
+      const streak = await getCurrentStreak(id);
+      const stats = await getWeeklyStats(id);
+      setCurrentStreak(streak);
+      setWeeklyStats(stats);
+      setWorkoutsCompleted(stats.totalWorkouts);
+      setWeekProgress(stats.completedWorkouts);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
   }, [profile]);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  // Refresh stats whenever Home regains focus — e.g. after completing a
+  // workout and navigating back from the summary screen.
+  useFocusEffect(
+    useCallback(() => {
+      loadStats();
+    }, [loadStats]),
+  );
 
   const todayWorkout = useMemo(() => {
     if (!plan || !plan.days || plan.days.length === 0) return null;
