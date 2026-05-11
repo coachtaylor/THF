@@ -166,9 +166,14 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
               <>
                 <Ionicons name="checkmark-circle" size={14} color={colors.accent.success} />
                 <Text style={[styles.dayLabel, { color: colors.accent.success }]}>
-                  {completedAtIso
-                    ? `COMPLETED ${new Date(completedAtIso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}`
-                    : 'COMPLETED'}
+                  {(() => {
+                    if (!completedAtIso) return 'COMPLETED';
+                    const completedAt = new Date(completedAtIso);
+                    const today = new Date();
+                    const sameDay = completedAt.toDateString() === today.toDateString();
+                    if (sameDay) return 'COMPLETED';
+                    return `COMPLETED ${completedAt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}`;
+                  })()}
                 </Text>
               </>
             ) : (

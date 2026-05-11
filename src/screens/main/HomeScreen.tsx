@@ -230,41 +230,6 @@ export default function HomeScreen() {
     });
   }, [plan]);
 
-  // Detect today-card completion via plan-day matching (not just calendar
-  // date). Catches "user did Tuesday's workout on Monday" — when Tuesday
-  // arrives, Home shows it as completed with the date it was actually done.
-  useEffect(() => {
-    if (!profile || !plan || todayWorkout?.dayNumber === undefined) {
-      setIsTodayCompleted(false);
-      setTodaySession(null);
-      setTodayCompletedAt(null);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const id = profile.user_id || profile.id || 'default';
-        const map = await getCompletedDayNumbersForPlanThisWeek(id, plan.id);
-        const completedAtIso = map.get(todayWorkout.dayNumber);
-        if (cancelled) return;
-        setIsTodayCompleted(!!completedAtIso);
-        setTodayCompletedAt(completedAtIso ?? null);
-        if (completedAtIso) {
-          const sessions = await getSessions(id);
-          const match = sessions.find(
-            s => s.planId === plan.id && s.scheduledDayNumber === todayWorkout.dayNumber,
-          );
-          if (!cancelled) setTodaySession(match ?? null);
-        } else {
-          setTodaySession(null);
-        }
-      } catch (error) {
-        if (!cancelled) console.error('Error detecting today completion:', error);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [profile, plan, todayWorkout, weeklyStats]);
-
   const getWorkoutName = useCallback((workout: any): string => {
     // First, check if workout has a name set from generation
     if (workout?.name) {
@@ -344,6 +309,67 @@ export default function HomeScreen() {
       return null;
     }
   }, [todayWorkout, plan, exerciseMap, profile, getWorkoutName]);
+
+  // Detect today-card completion. Two signals are combined so legacy
+  // sessions (saved before scheduledDayNumber existed) still register:
+  //   (a) a session whose scheduledDayNumber matches today's plan day,
+  //       OR whose workoutName matches today's plan-day name
+  //   (b) fallback — any session completed on today's calendar date
+  // Display rule: plain "COMPLETED" when completion happened today,
+  // "COMPLETED <date>" when it happened on a different day.
+  useEffect(() => {
+    if (!profile) {
+      setIsTodayCompleted(false);
+      setTodaySession(null);
+      setTodayCompletedAt(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const id = profile.user_id || profile.id || 'default';
+        const sessions = await getSessions(id);
+        let match: SessionData | null = null;
+
+        if (plan && todayWorkout?.dayNumber !== undefined) {
+          const nameMap = new Map<string, number>();
+          if (todayWorkoutDetails?.name) {
+            nameMap.set(todayWorkoutDetails.name, todayWorkout.dayNumber);
+          }
+          const map = await getCompletedDayNumbersForPlanThisWeek(id, plan.id, nameMap);
+          const completedAtIso = map.get(todayWorkout.dayNumber);
+          if (completedAtIso) {
+            match = sessions.find(
+              s =>
+                s.planId === plan.id &&
+                (s.scheduledDayNumber === todayWorkout.dayNumber ||
+                  (!s.scheduledDayNumber &&
+                    s.workoutName === todayWorkoutDetails?.name &&
+                    s.completedAt === completedAtIso)),
+            ) ?? null;
+          }
+        }
+
+        if (!match) {
+          const todayMidnight = new Date();
+          todayMidnight.setHours(0, 0, 0, 0);
+          match = sessions.find(s => {
+            const d = new Date(s.completedAt);
+            d.setHours(0, 0, 0, 0);
+            return d.getTime() === todayMidnight.getTime();
+          }) ?? null;
+        }
+
+        if (cancelled) return;
+        setIsTodayCompleted(!!match);
+        setTodaySession(match);
+        setTodayCompletedAt(match?.completedAt ?? null);
+      } catch (error) {
+        if (!cancelled) console.error('Error detecting today completion:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [profile, plan, todayWorkout, todayWorkoutDetails, weeklyStats]);
 
   const handleStartWorkout = () => {
     if (plan && todayWorkout?.dayNumber !== undefined) {
