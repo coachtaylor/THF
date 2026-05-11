@@ -393,8 +393,9 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
         "Today isn't one of your scheduled workout days. Want to add a workout for today? Your usual schedule will stay the same starting next week.",
         [
           {
-            text: 'Start upcoming instead',
-            onPress: () => { startSession(plan, found); },
+            text: 'Go to Dashboard',
+            style: 'cancel',
+            onPress: () => { handleGoToDashboard(); },
           },
           {
             text: 'Add for today',
