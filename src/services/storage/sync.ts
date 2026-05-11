@@ -264,8 +264,51 @@ async function retrySyncSession(
   item: RetryQueueItem,
 ): Promise<boolean> {
   try {
+    // Pull the latest session row from local SQLite rather than trusting the
+    // cached payload in the queue item. If a one-time repair (e.g.
+    // repairOrphanSessionPlans) corrected the plan_id after this item was
+    // queued, the in-memory copy would still carry the bad value and keep
+    // failing FK 23503 until max retries dropped it.
+    let payload: Record<string, unknown> = { ...item.data };
+    try {
+      const fetchStmt = getDb().prepareSync(
+        "SELECT id, plan_id, workout_data, started_at, completed_at, duration_minutes, synced_at FROM sessions WHERE id = ? LIMIT 1;",
+      );
+      const row = fetchStmt.executeSync([item.id]).getAllSync()[0] as
+        | {
+            id: string;
+            plan_id: string;
+            workout_data: string;
+            started_at: string;
+            completed_at: string;
+            duration_minutes: number;
+            synced_at: string | null;
+          }
+        | undefined;
+      fetchStmt.finalizeSync();
+      if (row) {
+        // If the row was already marked synced by a parallel syncUnsyncedSessions
+        // pass, drop this queue entry — nothing to do.
+        if (row.synced_at) {
+          await removeFromRetryQueue("session", item.id);
+          return true;
+        }
+        payload = {
+          id: row.id,
+          plan_id: row.plan_id,
+          workout_data: row.workout_data,
+          started_at: row.started_at,
+          completed_at: row.completed_at,
+          duration_minutes: row.duration_minutes,
+        };
+      }
+    } catch (lookupError) {
+      // Fall back to cached payload if local lookup fails
+      console.warn("Local session lookup failed, using queued payload:", lookupError);
+    }
+
     const { error } = await supabase.from("workout_sessions").upsert({
-      ...item.data,
+      ...payload,
       user_id: userId,
       synced_at: new Date().toISOString(),
     });
