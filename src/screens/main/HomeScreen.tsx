@@ -470,18 +470,30 @@ export default function HomeScreen() {
                 end={{ x: 0.5, y: 1 }}
                 style={restDayCardStyles.glow}
               />
-              <Text style={restDayCardStyles.title}>REST DAY</Text>
-              <Text style={restDayCardStyles.subtitle}>Tap to generate a workout anyway</Text>
+              <Text style={restDayCardStyles.title}>REST DAY · WANT TO MOVE?</Text>
+              <View style={restDayCardStyles.ctaChip}>
+                <Text style={restDayCardStyles.ctaChipText}>View options →</Text>
+              </View>
             </Pressable>
           ) : (
-            <View style={restDayCardStyles.container}>
+            <Pressable
+              style={({ pressed }) => [
+                restDayCardStyles.container,
+                pressed && restDayCardStyles.containerPressed
+              ]}
+              onPress={() => {
+                refreshPlan();
+              }}
+            >
               <LinearGradient
                 colors={gradients.cardBg}
                 style={StyleSheet.absoluteFill}
               />
               <Text style={restDayCardStyles.title}>No Workout Scheduled</Text>
-              <Text style={restDayCardStyles.subtitle}>Check back tomorrow or regenerate your plan</Text>
-            </View>
+              <View style={restDayCardStyles.ctaChip}>
+                <Text style={restDayCardStyles.ctaChipText}>Refresh plan →</Text>
+              </View>
+            </Pressable>
           )}
         </View>
 
