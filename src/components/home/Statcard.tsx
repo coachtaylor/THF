@@ -172,11 +172,16 @@ export function StatsRow({
     return 0;
   };
 
+  // For first-time users, render an em-dash instead of 0 so the
+  // ring reads as "not started yet" rather than "you already failed."
+  const streakValue = streak === 0 ? '—' : streak;
+  const totalValue = total === 0 ? '—' : total;
+
   return (
     <View style={styles.container}>
       <CircularStat
         icon="flame"
-        value={streak}
+        value={streakValue}
         label="Streak"
         progress={Math.min(streak / streakGoal, 1)}
         accentColor="primary"
@@ -192,7 +197,7 @@ export function StatsRow({
 
       <CircularStat
         icon="barbell"
-        value={total}
+        value={totalValue}
         label="Total"
         progress={Math.min(total / 100, 1)} // Progress toward 100 workouts
         accentColor="neutral"
