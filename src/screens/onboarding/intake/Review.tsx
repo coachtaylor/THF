@@ -25,6 +25,7 @@ import { Platform } from "react-native";
 import {
   trackOnboardingCompleted,
   trackWorkoutGenerated,
+  trackPlanGenerationFailed,
 } from "../../../services/analytics";
 
 type ReviewNavigationProp = StackNavigationProp<
@@ -301,6 +302,15 @@ export default function Review({ navigation }: ReviewProps) {
     } catch (error: any) {
       console.error("Error generating plan:", error);
       setIsGenerating(false);
+
+      // Categorize the failure for analytics — keep the reason short and
+      // free of any user-context strings.
+      const reason = error?.message?.includes("INSUFFICIENT_EXERCISES")
+        ? "insufficient_exercises"
+        : error?.message?.includes("validation failed")
+          ? "validation_failed"
+          : "unknown_error";
+      trackPlanGenerationFailed(reason).catch(() => {});
 
       // Check if error is due to insufficient exercises after safety filtering
       if (error?.message?.includes("INSUFFICIENT_EXERCISES")) {

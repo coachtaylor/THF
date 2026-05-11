@@ -28,6 +28,7 @@ import { useSessionFeedback } from '../hooks/useSessionFeedback';
 import { autoRegress, AutoRegressionResult } from '../services/autoRegress';
 import { fetchAllExercises, getCachedExercises } from '../services/exerciseService';
 import { useProfile } from '../hooks/useProfile';
+import { trackWorkoutAbandoned } from '../services/analytics';
 import { DumbbellIcon } from '../components/icons/DumbbellIcon';
 import ProgressRing from '../components/common/ProgressRing';
 import GlassCard from '../components/common/GlassCard';
@@ -937,10 +938,32 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   // Handle back button with confirmation
   const handleBack = () => {
+    // Fire workout_abandoned when the user exits a workout that was started
+    // (any set logged, or main phase entered). Skip when they exit before
+    // any work happened — that's not an abandonment, that's a glance.
+    const fireAbandoned = () => {
+      if (!workout?.id || phase !== 'main') return;
+      const totalPlannedSets = exercises.reduce(
+        (sum, ex) => sum + (ex.sets || 0),
+        0,
+      );
+      const percent = totalPlannedSets > 0
+        ? Math.round((completedSets.length / totalPlannedSets) * 100)
+        : 0;
+      trackWorkoutAbandoned(workout.id, percent).catch(() => {});
+    };
+
     if (completedSets.length > 0) {
       Alert.alert('End Workout?', 'Progress will be saved but workout incomplete.', [
         { text: 'Keep Going', style: 'cancel' },
-        { text: 'End Workout', style: 'destructive', onPress: () => navigation.goBack() },
+        {
+          text: 'End Workout',
+          style: 'destructive',
+          onPress: () => {
+            fireAbandoned();
+            navigation.goBack();
+          },
+        },
       ]);
     } else {
       navigation.goBack();

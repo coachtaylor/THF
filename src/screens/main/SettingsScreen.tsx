@@ -10,6 +10,7 @@ import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { deleteProfile, getProfile, updateProfile } from '../../services/storage/profile';
+import { trackPlanGenerationFailed } from '../../services/analytics';
 import { signalLogout } from '../../services/events/onboardingEvents';
 import { generatePlan } from '../../services/planGenerator';
 import { savePlan } from '../../services/storage/plan';
@@ -203,6 +204,7 @@ export default function SettingsScreen() {
                 // exercises. Don't silently save a useless plan.
                 const allRest = newPlan.days.every(d => d.isRestDay);
                 if (allRest) {
+                  trackPlanGenerationFailed('all_rest_fallback').catch(() => {});
                   setIsRegenerating(false);
                   Alert.alert(
                     'No workouts could be generated',
@@ -221,6 +223,7 @@ export default function SettingsScreen() {
                 Alert.alert('Success', 'Your workout plan has been updated!');
               } catch (error) {
                 console.error('Error regenerating plan:', error);
+                trackPlanGenerationFailed('exception').catch(() => {});
                 setIsRegenerating(false);
                 Alert.alert('Error', 'Failed to regenerate plan. Please try again.');
               }
@@ -435,6 +438,7 @@ export default function SettingsScreen() {
       // overwrite the user's existing plan with an empty one.
       const allRest = newPlan.days.every(d => d.isRestDay);
       if (allRest) {
+        trackPlanGenerationFailed('all_rest_fallback').catch(() => {});
         setIsRegenerating(false);
         Alert.alert(
           'No workouts could be generated',
@@ -453,6 +457,7 @@ export default function SettingsScreen() {
       Alert.alert('Success', 'Your workout plan has been regenerated with the new scheduling!');
     } catch (error) {
       console.error('Error regenerating plan:', error);
+      trackPlanGenerationFailed('exception').catch(() => {});
       setIsRegenerating(false);
       Alert.alert('Error', 'Failed to regenerate plan. Please try again.');
     }

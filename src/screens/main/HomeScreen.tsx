@@ -10,6 +10,7 @@ import { useProfile } from '../../hooks/useProfile';
 import { usePlan } from '../../hooks/usePlan';
 import { getCurrentStreak, getWeeklyStats, type WeeklyStats } from '../../services/storage/stats';
 import { getWorkoutFromPlan, generatePlan } from '../../services/planGenerator';
+import { trackPlanGenerationFailed } from '../../services/analytics';
 import { getExerciseLibrary } from '../../data/exercises';
 import { colors, spacing, borderRadius, gradients, layout, interaction } from '../../theme/theme';
 import { restDayCardStyles, screenStyles } from '../../theme/components';
@@ -166,6 +167,7 @@ export default function HomeScreen() {
       console.log('✅ New plan generated successfully!');
     } catch (error) {
       console.error('Error generating new plan:', error);
+      trackPlanGenerationFailed('exception').catch(() => {});
       Alert.alert(
         'Error',
         'Failed to generate your new plan. Please try again.',

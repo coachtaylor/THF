@@ -4,11 +4,16 @@
 export {
   initAnalytics,
   trackEvent,
+  trackSignupCompleted,
+  trackOnboardingStarted,
   trackOnboardingStep,
   trackOnboardingCompleted,
   trackWorkoutGenerated,
+  trackPlanGenerationFailed,
   trackWorkoutStarted,
   trackWorkoutCompleted,
+  trackWorkoutAbandoned,
+  trackExerciseSwapUsed,
   trackWhyThisWorkoutOpened,
   trackGuideOpened,
   trackRedFlagTriggered,
@@ -19,3 +24,8 @@ export {
   type AnalyticsEventType,
   type AnalyticsEventProperties,
 } from './analytics';
+
+export {
+  syncAnalyticsEvents,
+  syncAnalyticsEventsInBackground,
+} from './sync';
