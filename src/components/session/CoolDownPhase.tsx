@@ -17,9 +17,10 @@ interface CoolDownPhaseProps {
   coolDownExercises: CoolDownExercise[];
   totalDurationMinutes: number;
   onComplete: () => void;
+  onExit?: () => void;
 }
 
-export default function CoolDownPhase({ coolDownExercises, totalDurationMinutes, onComplete }: CoolDownPhaseProps) {
+export default function CoolDownPhase({ coolDownExercises, totalDurationMinutes, onComplete, onExit }: CoolDownPhaseProps) {
   const insets = useSafeAreaInsets();
   const { disableAnimations } = useSensoryMode();
   const [completedExercises, setCompletedExercises] = useState<boolean[]>(
@@ -76,6 +77,11 @@ export default function CoolDownPhase({ coolDownExercises, totalDurationMinutes,
 
       <View style={styles.header}>
         <View style={styles.headerLeft}>
+          {onExit && (
+            <TouchableOpacity onPress={onExit} hitSlop={8} style={styles.exitButton}>
+              <Ionicons name="close" size={22} color={colors.text.primary} />
+            </TouchableOpacity>
+          )}
           <View style={styles.iconContainer}>
             <Ionicons name="flower-outline" size={24} color={colors.accent.secondary} />
           </View>
@@ -231,6 +237,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.s,
+  },
+  exitButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.glass.bg,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   iconContainer: {
     width: 40,
