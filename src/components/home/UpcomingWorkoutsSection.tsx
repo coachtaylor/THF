@@ -228,12 +228,20 @@ export default function UpcomingWorkoutsSection({
 
   // Load which scheduled plan days have already been completed (handles
   // "I did Tuesday's workout on Monday" — those should render as completed
-  // even before Tuesday arrives).
+  // even before Tuesday arrives). Build a name→dayNumber fallback so
+  // legacy sessions saved before scheduledDayNumber existed still attribute.
   useEffect(() => {
     if (!userId || !planId) return;
     let cancelled = false;
     (async () => {
-      const map = await getCompletedDayNumbersForPlanThisWeek(userId, planId);
+      const nameMap = new Map<string, number>();
+      weekDays.forEach(wd => {
+        const name = wd.workoutName;
+        if (name && wd.day.dayNumber !== undefined && !nameMap.has(name)) {
+          nameMap.set(name, wd.day.dayNumber);
+        }
+      });
+      const map = await getCompletedDayNumbersForPlanThisWeek(userId, planId, nameMap);
       if (!cancelled) setCompletedByDay(map);
     })();
     return () => { cancelled = true; };

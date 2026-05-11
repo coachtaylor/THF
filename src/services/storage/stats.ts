@@ -185,10 +185,16 @@ export async function getCompletedDaysThisWeek(userId: string = 'default'): Prom
  * for every session this ISO week that recorded which plan day it
  * satisfied. Used by upcoming + today cards to render "Completed on ..."
  * for workouts the user did early.
+ *
+ * `nameToDayNumberFallback` is used to recover plan-day attribution for
+ * sessions saved before scheduledDayNumber existed — match by workoutName
+ * to the plan day with that name. Caller builds the map from the current
+ * plan/week.
  */
 export async function getCompletedDayNumbersForPlanThisWeek(
   userId: string = 'default',
   planId: string,
+  nameToDayNumberFallback?: Map<string, number>,
 ): Promise<Map<number, string>> {
   const result = new Map<number, string>();
   try {
@@ -199,19 +205,40 @@ export async function getCompletedDayNumbersForPlanThisWeek(
     startOfWeek.setHours(0, 0, 0, 0);
 
     const sessions = await getSessions(userId);
+
+    const insertIfNewer = (dayNumber: number, completedAt: string) => {
+      const existing = result.get(dayNumber);
+      if (!existing || new Date(existing) < new Date(completedAt)) {
+        result.set(dayNumber, completedAt);
+      }
+    };
+
+    const isInWeek = (iso: string) => {
+      const d = new Date(iso);
+      d.setHours(0, 0, 0, 0);
+      return d >= startOfWeek;
+    };
+
+    // Direct match: session has scheduledDayNumber.
     sessions.forEach(s => {
       if (s.planId !== planId) return;
       if (s.scheduledDayNumber === undefined || s.scheduledDayNumber === null) return;
-      const d = new Date(s.completedAt);
-      const dayMidnight = new Date(d);
-      dayMidnight.setHours(0, 0, 0, 0);
-      if (dayMidnight < startOfWeek) return;
-      // If the same plan day was completed multiple times, keep the latest.
-      const existing = result.get(s.scheduledDayNumber);
-      if (!existing || new Date(existing) < d) {
-        result.set(s.scheduledDayNumber, s.completedAt);
-      }
+      if (!isInWeek(s.completedAt)) return;
+      insertIfNewer(s.scheduledDayNumber, s.completedAt);
     });
+
+    // Legacy fallback: session lacks scheduledDayNumber but has workoutName.
+    if (nameToDayNumberFallback) {
+      sessions.forEach(s => {
+        if (s.planId !== planId) return;
+        if (s.scheduledDayNumber !== undefined && s.scheduledDayNumber !== null) return;
+        if (!s.workoutName) return;
+        if (!isInWeek(s.completedAt)) return;
+        const dayNumber = nameToDayNumberFallback.get(s.workoutName);
+        if (dayNumber === undefined) return;
+        insertIfNewer(dayNumber, s.completedAt);
+      });
+    }
   } catch (error) {
     console.error('Failed to load completed plan days:', error);
   }
