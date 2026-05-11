@@ -246,17 +246,35 @@ export default function HRTStatus({ navigation, route }: HRTStatusProps) {
         hrtData.hrt_type = "none";
       }
 
-      // Save to profile
-      await updateProfile(hrtData);
+      // Skip BindingInfo for trans women — chest binding is almost exclusively
+      // an AFAB practice. Asking trans women if they bind reads as the app
+      // misunderstanding their transition direction and can feel dysphoric.
+      // The rare trans woman who DOES bind in specific contexts can configure
+      // it post-onboarding via EditBindingModal in Settings. We write
+      // binds_chest: false here to match the safe state the BindingInfo
+      // "No" branch produces, so downstream code (rules engine etc.) sees the
+      // same shape it would see for any user who said they don't bind.
+      const profileUpdate: typeof hrtData & { binds_chest?: boolean } = { ...hrtData };
+      if (genderIdentity === "mtf") {
+        profileUpdate.binds_chest = false;
+      }
 
-      // Route ALL gender identities through BindingInfo
-      // Some trans women DO bind (pre-transition, specific contexts, etc.)
-      // The BindingInfo screen has a "I don't bind" option for users who don't
-      navigation.navigate("BindingInfo", { genderIdentity });
+      // Save to profile
+      await updateProfile(profileUpdate);
+
+      if (genderIdentity === "mtf") {
+        navigation.navigate("Surgery", { genderIdentity });
+      } else {
+        navigation.navigate("BindingInfo", { genderIdentity });
+      }
     } catch (error) {
       console.error("Error saving HRT data:", error);
-      // Still navigate even if save fails
-      navigation.navigate("BindingInfo", { genderIdentity });
+      // Still navigate even if save fails, preserving the same gender-based routing.
+      if (genderIdentity === "mtf") {
+        navigation.navigate("Surgery", { genderIdentity });
+      } else {
+        navigation.navigate("BindingInfo", { genderIdentity });
+      }
     }
   };
 
