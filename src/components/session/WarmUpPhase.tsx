@@ -18,6 +18,7 @@ interface WarmUpPhaseProps {
   totalDurationMinutes: number;
   onComplete: () => void;
   onSkip?: () => void;
+  onExit?: () => void;
 }
 
 const formatTime = (seconds: number) => {
@@ -26,7 +27,7 @@ const formatTime = (seconds: number) => {
   return `${mins}:${secs}`;
 };
 
-export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onComplete, onSkip }: WarmUpPhaseProps) {
+export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onComplete, onSkip, onExit }: WarmUpPhaseProps) {
   const insets = useSafeAreaInsets();
   const { disableAnimations } = useSensoryMode();
   const [completedExercises, setCompletedExercises] = useState<boolean[]>(
@@ -87,7 +88,7 @@ export default function WarmUpPhase({ warmUpExercises, totalDurationMinutes, onC
       />
 
       <View style={styles.header}>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={onExit} hitSlop={8}>
           <Ionicons name="close" size={24} color={colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Warm-Up</Text>
