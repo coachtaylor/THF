@@ -153,9 +153,10 @@ export async function getCurrentStreak(userId: string = 'default'): Promise<numb
 export const WEEKLY_HARD_CAP = 10;
 
 /**
- * Count unique completed calendar days in the current ISO week (Mon-Sun).
- * Two sessions on the same day count as one — used for both stats display
- * and the start-workout cap gate so they agree.
+ * Count completed sessions in the current ISO week (Mon-Sun).
+ * Each completion counts once — completing tomorrow's workout today still
+ * increments this. Used for both stats display and the start-workout cap
+ * gate so they agree.
  */
 export async function getCompletedDaysThisWeek(userId: string = 'default'): Promise<number> {
   try {
@@ -166,17 +167,55 @@ export async function getCompletedDaysThisWeek(userId: string = 'default'): Prom
     startOfWeek.setHours(0, 0, 0, 0);
 
     const sessions = await getSessions(userId);
-    const uniqueDays = new Set<string>();
+    let count = 0;
     sessions.forEach(s => {
       const d = new Date(s.completedAt);
       d.setHours(0, 0, 0, 0);
-      if (d >= startOfWeek) uniqueDays.add(d.toISOString().split('T')[0]);
+      if (d >= startOfWeek) count += 1;
     });
-    return uniqueDays.size;
+    return count;
   } catch (error) {
-    console.error('Failed to count completed days this week:', error);
+    console.error('Failed to count completed sessions this week:', error);
     return 0;
   }
+}
+
+/**
+ * For a given plan, return a map of `dayNumber -> completedAt ISO string`
+ * for every session this ISO week that recorded which plan day it
+ * satisfied. Used by upcoming + today cards to render "Completed on ..."
+ * for workouts the user did early.
+ */
+export async function getCompletedDayNumbersForPlanThisWeek(
+  userId: string = 'default',
+  planId: string,
+): Promise<Map<number, string>> {
+  const result = new Map<number, string>();
+  try {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const sessions = await getSessions(userId);
+    sessions.forEach(s => {
+      if (s.planId !== planId) return;
+      if (s.scheduledDayNumber === undefined || s.scheduledDayNumber === null) return;
+      const d = new Date(s.completedAt);
+      const dayMidnight = new Date(d);
+      dayMidnight.setHours(0, 0, 0, 0);
+      if (dayMidnight < startOfWeek) return;
+      // If the same plan day was completed multiple times, keep the latest.
+      const existing = result.get(s.scheduledDayNumber);
+      if (!existing || new Date(existing) < d) {
+        result.set(s.scheduledDayNumber, s.completedAt);
+      }
+    });
+  } catch (error) {
+    console.error('Failed to load completed plan days:', error);
+  }
+  return result;
 }
 
 /**
@@ -208,15 +247,10 @@ export async function getWeeklyStats(
       return sessionDate >= startOfWeek;
     });
 
-    // Count unique completed calendar days — two sessions on the same day
-    // collapse to one to keep the numerator honest.
-    const completedDays = new Set<string>();
-    thisWeekSessions.forEach(s => {
-      const d = new Date(s.completedAt);
-      d.setHours(0, 0, 0, 0);
-      completedDays.add(d.toISOString().split('T')[0]);
-    });
-    const uniqueCompletedCount = completedDays.size;
+    // Count completed sessions this week. Completing tomorrow's workout
+    // today still adds +1 — the user's mental model is "each workout = 1",
+    // not "each calendar day = 1".
+    const uniqueCompletedCount = thisWeekSessions.length;
 
     // Calculate stats from completed sessions
     let totalVolume = 0;
