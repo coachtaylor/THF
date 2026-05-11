@@ -567,8 +567,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         startedAt,
         endTime,
       );
-      await saveSession(sessionData);
-      console.log('✅ Workout saved to database');
+      const sessionUserId = profile?.user_id || profile?.id || 'default';
+      await saveSession(sessionData, sessionUserId);
+      console.log('✅ Workout saved to database for user:', sessionUserId);
     } catch (error) {
       console.error('Failed to save session:', error);
       workoutPersistedRef.current = false;
@@ -1016,7 +1017,8 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           swappedExercises,
           painFlaggedExercises
         );
-        await saveSession(sessionData);
+        const sessionUserId = profile?.user_id || profile?.id || 'default';
+        await saveSession(sessionData, sessionUserId);
         // Show success message or navigate
         navigation.navigate('PlanView');
       } catch (error) {

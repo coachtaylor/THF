@@ -320,9 +320,18 @@ export default function WorkoutOverviewScreen() {
         totalMinutes: workout.estimated_duration_minutes,
       };
 
+      // workoutId is the synthetic `${plan.id}_${dayNumber}` format created in
+      // HomeScreen — split on the last underscore to recover the plan id. The
+      // session's plan_id must match a real workout_plans row, otherwise sync
+      // hits FK 23503 and the session is stuck in the retry queue forever.
+      const lastUnderscore = workoutId.lastIndexOf('_');
+      const resolvedPlanId = lastUnderscore > 0
+        ? workoutId.substring(0, lastUnderscore)
+        : workoutId;
+
       navigation.navigate('SessionPlayer', {
         workout: workoutForSession,
-        planId: workout.id,
+        planId: resolvedPlanId,
         warmUp: workout.warm_up,
         coolDown: workout.cool_down,
         safetyCheckpoints: workout.safety_checkpoints,

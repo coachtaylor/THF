@@ -264,8 +264,51 @@ async function retrySyncSession(
   item: RetryQueueItem,
 ): Promise<boolean> {
   try {
+    // Pull the latest session row from local SQLite rather than trusting the
+    // cached payload in the queue item. If a one-time repair (e.g.
+    // repairOrphanSessionPlans) corrected the plan_id after this item was
+    // queued, the in-memory copy would still carry the bad value and keep
+    // failing FK 23503 until max retries dropped it.
+    let payload: Record<string, unknown> = { ...item.data };
+    try {
+      const fetchStmt = getDb().prepareSync(
+        "SELECT id, plan_id, workout_data, started_at, completed_at, duration_minutes, synced_at FROM sessions WHERE id = ? LIMIT 1;",
+      );
+      const row = fetchStmt.executeSync([item.id]).getAllSync()[0] as
+        | {
+            id: string;
+            plan_id: string;
+            workout_data: string;
+            started_at: string;
+            completed_at: string;
+            duration_minutes: number;
+            synced_at: string | null;
+          }
+        | undefined;
+      fetchStmt.finalizeSync();
+      if (row) {
+        // If the row was already marked synced by a parallel syncUnsyncedSessions
+        // pass, drop this queue entry — nothing to do.
+        if (row.synced_at) {
+          await removeFromRetryQueue("session", item.id);
+          return true;
+        }
+        payload = {
+          id: row.id,
+          plan_id: row.plan_id,
+          workout_data: row.workout_data,
+          started_at: row.started_at,
+          completed_at: row.completed_at,
+          duration_minutes: row.duration_minutes,
+        };
+      }
+    } catch (lookupError) {
+      // Fall back to cached payload if local lookup fails
+      console.warn("Local session lookup failed, using queued payload:", lookupError);
+    }
+
     const { error } = await supabase.from("workout_sessions").upsert({
-      ...item.data,
+      ...payload,
       user_id: userId,
       synced_at: new Date().toISOString(),
     });
@@ -764,6 +807,71 @@ export async function clearRetryQueue(): Promise<void> {
   if (retryTimeoutId) {
     clearTimeout(retryTimeoutId);
     retryTimeoutId = null;
+  }
+}
+
+/**
+ * One-time repair for sessions whose plan_id doesn't reference any known
+ * local plan row. Earlier builds of WorkoutOverviewScreen passed `workout.id`
+ * (e.g. `plan-XYZ_3`) as the planId, which never matches a workout_plans row
+ * in Supabase and gets stuck on FK 23503.
+ *
+ * Strategy: rewrite the orphan plan_id to the user's most recent local plan,
+ * reset synced_at so the next sync pushes the fixed row, and prune stale
+ * session items from the retry queue so they get re-queued with corrected data.
+ */
+export async function repairOrphanSessionPlans(): Promise<number> {
+  try {
+    const planStmt = getDb().prepareSync(
+      "SELECT id FROM plans ORDER BY created_at DESC, start_date DESC",
+    );
+    const planRows = planStmt.executeSync().getAllSync() as Array<{ id: string }>;
+    planStmt.finalizeSync();
+
+    if (planRows.length === 0) return 0;
+    const knownPlanIds = new Set(planRows.map((r) => r.id));
+    const targetPlanId = planRows[0].id;
+
+    const sessStmt = getDb().prepareSync(
+      "SELECT id, plan_id FROM sessions",
+    );
+    const sessRows = sessStmt.executeSync().getAllSync() as Array<{
+      id: string;
+      plan_id: string;
+    }>;
+    sessStmt.finalizeSync();
+
+    const orphanedIds = sessRows
+      .filter((s) => !knownPlanIds.has(s.plan_id))
+      .map((s) => s.id);
+    if (orphanedIds.length === 0) return 0;
+
+    const updateStmt = getDb().prepareSync(
+      "UPDATE sessions SET plan_id = ?, synced_at = NULL WHERE id = ?",
+    );
+    for (const sessId of orphanedIds) {
+      updateStmt.executeSync([targetPlanId, sessId]);
+    }
+    updateStmt.finalizeSync();
+
+    // Prune stale retry queue entries — they carry the bad plan_id in their
+    // data payload. The next sync pass will re-add them with the corrected
+    // plan_id from the sessions table.
+    const queue = await loadRetryQueue();
+    const pruned = queue.filter(
+      (q) => !(q.type === "session" && orphanedIds.includes(q.id)),
+    );
+    if (pruned.length !== queue.length) {
+      await saveRetryQueue(pruned);
+    }
+
+    console.log(
+      `🔧 Repaired ${orphanedIds.length} session(s) with orphan plan_id → '${targetPlanId}'`,
+    );
+    return orphanedIds.length;
+  } catch (error) {
+    console.error("Failed to repair orphan session plans:", error);
+    return 0;
   }
 }
 
