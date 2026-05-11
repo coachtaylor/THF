@@ -155,9 +155,13 @@ export async function getTodaysWorkout(userId: string = 'default'): Promise<Toda
 /**
  * Get workout by ID with full details including exercise names
  */
-export async function getWorkout(workoutId: string, userId: string = 'default'): Promise<WorkoutDetailData | null> {
+export async function getWorkout(
+  workoutId: string,
+  userId: string = 'default',
+  sessionDuration?: 30 | 45 | 60 | 90,
+): Promise<WorkoutDetailData | null> {
   try {
-    console.log('🔍 getWorkout called with:', { workoutId, userId });
+    console.log('🔍 getWorkout called with:', { workoutId, userId, sessionDuration });
     const plan = await getPlan(userId);
     if (!plan) {
       console.log('❌ No plan found for user:', userId);
@@ -184,22 +188,27 @@ export async function getWorkout(workoutId: string, userId: string = 'default'):
     }
     console.log('✅ Day found, checking variants...');
 
-    // Get workout (prefer 30 min, fallback to others)
-    let workout: Workout | null = null;
-    let duration = 30;
-    
-    if (day.variants[30]) {
-      workout = day.variants[30];
-      duration = 30;
-    } else if (day.variants[45]) {
-      workout = day.variants[45];
-      duration = 45;
-    } else if (day.variants[60]) {
-      workout = day.variants[60];
-      duration = 60;
-    } else if (day.variants[90]) {
-      workout = day.variants[90];
-      duration = 90;
+    // Prefer the user's session_duration; fall back to the closest available
+    // variant if generation failed for that duration. Mirrors getWorkoutFromPlan's
+    // fallback order so this resolver behaves identically to the dashboard's.
+    const FALLBACK_ORDER: Record<30 | 45 | 60 | 90, Array<30 | 45 | 60 | 90>> = {
+      30: [45, 60, 90],
+      45: [60, 30, 90],
+      60: [45, 90, 30],
+      90: [60, 45, 30],
+    };
+    const requested: 30 | 45 | 60 | 90 = sessionDuration ?? 45;
+    let workout: Workout | null = day.variants[requested] || null;
+    let duration: 30 | 45 | 60 | 90 = requested;
+    if (!workout) {
+      for (const alt of FALLBACK_ORDER[requested]) {
+        const candidate = day.variants[alt];
+        if (candidate) {
+          workout = candidate;
+          duration = alt;
+          break;
+        }
+      }
     }
 
     if (!workout) {

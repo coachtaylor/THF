@@ -102,8 +102,15 @@ export default function WorkoutOverviewScreen() {
   const loadWorkout = async () => {
     try {
       const userId = profile?.user_id || profile?.id || 'default';
-      console.log('📋 Loading workout with ID:', workoutId, 'userId:', userId);
-      const data = await getWorkout(workoutId, userId);
+      // Resolve the variant matching the user's chosen session length. Without
+      // this, getWorkout falls back to its own default (45) and ignores the
+      // user's onboarding selection, which caused 30-min workouts to surface
+      // on the override path while the dashboard correctly showed 45-min.
+      const sessionDuration = (profile?.session_duration && [30, 45, 60, 90].includes(profile.session_duration))
+        ? (profile.session_duration as 30 | 45 | 60 | 90)
+        : undefined;
+      console.log('📋 Loading workout with ID:', workoutId, 'userId:', userId, 'duration:', sessionDuration);
+      const data = await getWorkout(workoutId, userId, sessionDuration);
       console.log('📋 Workout data received:', data ? 'Found' : 'NULL');
       setWorkout(data);
 
