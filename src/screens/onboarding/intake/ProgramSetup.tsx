@@ -256,6 +256,26 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
     return null;
   };
 
+  // SessionPlayer expects warm-up / cool-down / safety checkpoints as
+  // top-level route params, not nested on `workout`. The Workout type
+  // stores them camelCase (warmUp / coolDown / safetyCheckpoints); the
+  // route param shape WorkoutOverview uses is also top-level. Pass them
+  // through so the warm-up phase actually renders and the timer kicks in.
+  const startSession = (planForRouting: Plan, found: { workout: Workout; dayNumber: number }) => {
+    const w = found.workout as Workout;
+    navigation.navigate('SessionPlayer', {
+      workout: {
+        ...w,
+        name: w.name || getProgramName(),
+        dayNumber: found.dayNumber,
+      } as any,
+      planId: planForRouting.id,
+      warmUp: w.warmUp,
+      coolDown: w.coolDown,
+      safetyCheckpoints: w.safetyCheckpoints || [],
+    } as any);
+  };
+
   const regenerateAndStart = async () => {
     if (!profile) return;
     try {
@@ -270,10 +290,7 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
       setPlan(fresh as any);
       setLoading(false);
       if (found) {
-        navigation.navigate('SessionPlayer', {
-          workout: found.workout as any,
-          planId: fresh.id,
-        });
+        startSession(fresh, found);
       } else {
         Alert.alert(
           'Still no workouts available',
@@ -314,10 +331,7 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
       console.log(`🏋️ Starting first workout from Day ${found.dayNumber}`);
     }
 
-    navigation.navigate('SessionPlayer', {
-      workout: found.workout as any,
-      planId: plan.id,
-    });
+    startSession(plan, found);
   };
 
   const handleGoToDashboard = () => {
