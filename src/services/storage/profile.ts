@@ -368,6 +368,42 @@ export async function deleteProfile(): Promise<void> {
 }
 
 /**
+ * Wipe all local workout / stat data so "Reset Onboarding" starts fresh.
+ * Profile deletion is handled separately by deleteProfile(). This clears
+ * the rows the Home/History/Progress screens read so streak, weekly
+ * counter, totals, history calendar, and saved workouts all read zero
+ * after reset. Best-effort per table — missing tables (e.g. dev builds
+ * predating a migration) shouldn't block the reset.
+ */
+export async function clearLocalUserStats(): Promise<void> {
+  const tables = [
+    "sessions",
+    "workout_sessions",
+    "workout_logs",
+    "set_logs",
+    "streaks",
+    "weekly_aggregates",
+    "plans",
+    "saved_workouts",
+    "personal_records",
+    "week_transitions",
+    "feedback_reports",
+    "sync_retry_queue",
+  ];
+  for (const table of tables) {
+    try {
+      const stmt = getDb().prepareSync(`DELETE FROM ${table};`);
+      stmt.executeSync();
+      stmt.finalizeSync();
+    } catch (err) {
+      // Table may not exist on older installs — ignore.
+      if (__DEV__) console.log(`⚠️ clearLocalUserStats: skipped ${table}`, err);
+    }
+  }
+  logger.log("✅ Local stats cleared - dashboard will start fresh");
+}
+
+/**
  * Result type for data deletion operations
  */
 export interface DataDeletionResult {

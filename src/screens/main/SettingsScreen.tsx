@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import { deleteProfile, getProfile, updateProfile } from '../../services/storage/profile';
+import { deleteProfile, getProfile, updateProfile, clearLocalUserStats } from '../../services/storage/profile';
 import { trackPlanGenerationFailed } from '../../services/analytics';
 import { signalLogout } from '../../services/events/onboardingEvents';
 import { generatePlan } from '../../services/planGenerator';
@@ -283,6 +283,7 @@ export default function SettingsScreen() {
   const confirmDeleteAccount = async () => {
     try {
       setIsDeletingAccount(true);
+      await clearLocalUserStats();
       await deleteProfile();
       await logout();
       setShowDeleteAccountModal(false);
@@ -365,6 +366,11 @@ export default function SettingsScreen() {
   const confirmResetOnboarding = async () => {
     try {
       setIsResetting(true);
+      // Clear stat-bearing tables first so the new profile reads zero
+      // (sessions, workout_logs, streaks, plans, saved_workouts, etc.).
+      // Profile is deleted last so a partial reset still leaves the app
+      // in onboarding rather than a stale-stats main view.
+      await clearLocalUserStats();
       await deleteProfile();
       await logout();
       setShowResetModal(false);
