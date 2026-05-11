@@ -16,7 +16,8 @@
       }
     },
     "preview": {
-      "distribution": "internal",
+      "distribution": "store",
+      "autoIncrement": true,
       "ios": {
         "image": "macos-sonoma-14.6-xcode-15.4"
       }
@@ -29,11 +30,18 @@
     }
   },
   "submit": {
+    "preview": {
+      "ios": {
+        "appleId": "$EAS_SUBMIT_IOS_APPLE_ID",
+        "ascAppId": "$EAS_SUBMIT_IOS_ASC_APP_ID",
+        "appleTeamId": "$EAS_SUBMIT_IOS_APPLE_TEAM_ID"
+      }
+    },
     "production": {
       "ios": {
-        "appleId": "YOUR_APPLE_ID_EMAIL",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID"
+        "appleId": "$EAS_SUBMIT_IOS_APPLE_ID",
+        "ascAppId": "$EAS_SUBMIT_IOS_ASC_APP_ID",
+        "appleTeamId": "$EAS_SUBMIT_IOS_APPLE_TEAM_ID"
       },
       "android": {
         "serviceAccountKeyPath": "./google-service-account.json",
