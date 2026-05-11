@@ -166,7 +166,20 @@ async function processRetryQueue(userId: string): Promise<number> {
   let successCount = 0;
   const updatedQueue: RetryQueueItem[] = [];
 
-  for (const item of queue) {
+  // Process plans and profiles before sessions — workout_sessions has a
+  // foreign key to workout_plans, so retrying a session before its plan
+  // exists will always 23503-fail. Plan retries first guarantee the FK is
+  // satisfied by the time we try the session.
+  const typeOrder: Record<RetryQueueItem["type"], number> = {
+    profile: 0,
+    plan: 1,
+    session: 2,
+  };
+  const orderedQueue = [...queue].sort(
+    (a, b) => (typeOrder[a.type] ?? 99) - (typeOrder[b.type] ?? 99),
+  );
+
+  for (const item of orderedQueue) {
     // Skip items that have exceeded max retries
     if (item.retryCount >= RETRY_CONFIG.maxRetries) {
       if (__DEV__) {
@@ -258,7 +271,15 @@ async function retrySyncSession(
     });
 
     if (error) {
-      console.error("Retry session sync error:", error);
+      // 23503 = foreign key violation, expected when the session's plan
+      // hasn't synced yet. Don't log as error — it would flood the red
+      // overlay on every retry tick. The session stays queued and will
+      // succeed once the plan is uploaded.
+      if ((error as { code?: string })?.code === "23503") {
+        if (__DEV__) console.log("⏳ Session retry waiting on plan FK");
+      } else {
+        console.error("Retry session sync error:", error);
+      }
       return false;
     }
 
