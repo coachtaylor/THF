@@ -38,7 +38,7 @@ const GOAL_LABELS: Record<string, string> = {
 };
 
 export default function ProgramSetup({ navigation }: ProgramSetupProps) {
-  const { profile } = useProfile();
+  const { profile, updateProfile, refreshProfile } = useProfile();
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -256,6 +256,62 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
     return null;
   };
 
+  // Find today's plan day by calendar date (handles rest days vs workout days).
+  const findTodayInPlan = (p: Plan): Day | null => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return p.days.find(d => {
+      const dayDate = new Date(d.date);
+      dayDate.setHours(0, 0, 0, 0);
+      return dayDate.getTime() === today.getTime();
+    }) ?? null;
+  };
+
+  // Regenerate the plan with today added as a one-time substitute day, then
+  // start the workout that now lands on today. The cap-at-frequency logic in
+  // planGenerator means a free user's substitute REPLACES one of this week's
+  // preferred days (per CLAUDE.md beta behavior). Paid-tier "stack on top up
+  // to 7" behavior is deferred until subscription enforcement is wired —
+  // see memory/tier_aware_substitute_day_followup.md.
+  const addTodayAndStart = async () => {
+    if (!profile) return;
+    try {
+      setLoading(true);
+      const todayDayOfWeek = new Date().getDay();
+      await updateProfile({ first_week_substitute_days: [todayDayOfWeek] });
+      await refreshProfile();
+      // updateProfile mutates storage but the local `profile` ref in this
+      // component is stale — read the fresh row from storage for generation.
+      const freshProfile = { ...profile, first_week_substitute_days: [todayDayOfWeek] };
+      const fresh = await generatePlan(freshProfile as any);
+      await savePlan(fresh, profile.user_id || profile.id || 'default');
+      setPlan(fresh as any);
+      setLoading(false);
+
+      const todayDay = findTodayInPlan(fresh);
+      if (todayDay && !todayDay.isRestDay) {
+        const w = getWorkoutForDay(todayDay);
+        if (w) {
+          startSession(fresh, { workout: w, dayNumber: todayDay.dayNumber });
+          return;
+        }
+      }
+      // Fallback if regeneration didn't put a workout on today for some reason.
+      const found = findFirstWorkout(fresh);
+      if (found) {
+        startSession(fresh, found);
+      } else {
+        Alert.alert(
+          'Could not schedule today',
+          "We couldn't fit a workout into today. Try adjusting your equipment or workout days in Settings.",
+        );
+      }
+    } catch (err) {
+      setLoading(false);
+      Alert.alert('Could not add today', err instanceof Error ? err.message : 'Unknown error.');
+    }
+  };
+
   // SessionPlayer expects warm-up / cool-down / safety checkpoints as
   // top-level route params, not nested on `workout`. The Workout type
   // stores them camelCase (warmUp / coolDown / safetyCheckpoints); the
@@ -322,6 +378,28 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Regenerate', onPress: () => { regenerateAndStart(); } },
+        ],
+      );
+      return;
+    }
+
+    // If today isn't a scheduled workout day, ask before silently jumping
+    // to whatever upcoming day the plan has. The user expected to train
+    // today; offer to add it as a one-time substitute.
+    const todayDay = findTodayInPlan(plan);
+    if (todayDay && todayDay.isRestDay) {
+      Alert.alert(
+        'No workout planned for today',
+        "Today isn't one of your scheduled workout days. Want to add a workout for today? Your usual schedule will stay the same starting next week.",
+        [
+          {
+            text: 'Start upcoming instead',
+            onPress: () => { startSession(plan, found); },
+          },
+          {
+            text: 'Add for today',
+            onPress: () => { addTodayAndStart(); },
+          },
         ],
       );
       return;
