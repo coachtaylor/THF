@@ -20,6 +20,9 @@
       "autoIncrement": true,
       "ios": {
         "image": "macos-sonoma-14.6-xcode-16.1"
+      },
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "production": {
