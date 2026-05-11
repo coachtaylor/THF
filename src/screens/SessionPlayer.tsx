@@ -514,6 +514,163 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     }, 100);
   };
 
+  // NOTE: handleMainWorkoutComplete / handleCoolDownComplete /
+  // persistCompletedWorkout / handleWorkoutComplete are declared here (above
+  // the warm-up + cool-down early returns) because handleCoolDownExit
+  // captures handleWorkoutComplete in its closure. On cool-down render the
+  // component returns before reaching declarations placed below — Hermes
+  // leaves the binding `undefined` in that path, which would crash the X-out.
+  const handleMainWorkoutComplete = async () => {
+    if (coolDown) {
+      // Reaching cool-down counts as completing the workout — persist to DB
+      // now so X-ing out of cool-down doesn't lose the session.
+      try {
+        await persistCompletedWorkout();
+      } catch (error) {
+        console.error('❌ Failed to persist workout on cool-down entry:', error);
+      }
+      setPhase('cool-down');
+    } else {
+      handleWorkoutComplete();
+    }
+  };
+
+  const handleCoolDownComplete = async () => {
+    console.log('🏁 handleCoolDownComplete called');
+    try {
+      await handleWorkoutComplete();
+    } catch (error) {
+      console.error('❌ Error in handleCoolDownComplete:', error);
+      Alert.alert('Error', 'Failed to complete workout. Please try again.');
+    }
+  };
+
+  // Save the completed workout to the database. Idempotent — safe to call
+  // when entering cool-down and again when cool-down finishes.
+  const persistCompletedWorkout = async () => {
+    if (workoutPersistedRef.current) return;
+    workoutPersistedRef.current = true;
+
+    const endTime = completedAt || new Date().toISOString();
+    if (!completedAt) setCompletedAt(endTime);
+
+    if (elapsedTimeIntervalRef.current) {
+      clearInterval(elapsedTimeIntervalRef.current);
+      elapsedTimeIntervalRef.current = null;
+    }
+
+    try {
+      const sessionData = buildSessionData(
+        completedSets,
+        planId,
+        workout.duration || 15,
+        startedAt,
+        endTime,
+      );
+      await saveSession(sessionData);
+      console.log('✅ Workout saved to database');
+    } catch (error) {
+      console.error('Failed to save session:', error);
+      workoutPersistedRef.current = false;
+      throw error;
+    }
+  };
+
+  const handleWorkoutComplete = async () => {
+    console.log('🏋️ Workout completion started');
+    const endTime = completedAt || new Date().toISOString();
+    if (!completedAt) setCompletedAt(endTime);
+
+    // Clear interval
+    if (elapsedTimeIntervalRef.current) {
+      clearInterval(elapsedTimeIntervalRef.current);
+      elapsedTimeIntervalRef.current = null;
+    }
+
+    // Calculate workout duration
+    const startTime = new Date(startedAt);
+    const endTimeDate = new Date(endTime);
+    const durationSeconds = Math.floor((endTimeDate.getTime() - startTime.getTime()) / 1000);
+    const durationMinutes = Math.floor(durationSeconds / 60);
+
+    // Convert completed sets to WorkoutContext format
+    // Group by exercise to get correct set numbers
+    const exerciseSetCounts = new Map<string, number>();
+    const contextSets = completedSets.map((set) => {
+      const count = exerciseSetCounts.get(set.exerciseId) || 0;
+      exerciseSetCounts.set(set.exerciseId, count + 1);
+      return {
+        exercise_id: set.exerciseId,
+        set_number: count + 1,
+        reps: set.reps,
+        weight: set.weight || 0,
+        rpe: set.rpe,
+        timestamp: new Date(set.completedAt),
+      };
+    });
+
+    // Create ActiveWorkout for context
+    const activeWorkout = {
+      id: planId,
+      workout_name: `Workout - ${new Date().toLocaleDateString()}`,
+      estimated_duration_minutes: durationMinutes,
+      warm_up: warmUp || { total_duration_minutes: 0, exercises: [] },
+      main_workout: exercises.map((ex, idx) => ({
+        exerciseId: ex.id,
+        sets: ex.sets || 3,
+        reps: ex.reps || 10,
+        format: 'straight_sets' as const,
+        restSeconds: ex.restSeconds || 60,
+        exercise_name: ex.name,
+      })),
+      cool_down: coolDown || { total_duration_minutes: 0, exercises: [] },
+      safety_checkpoints: safetyCheckpoints,
+      metadata: {
+        template_name: 'Session',
+        day_focus: 'Full Body',
+        user_goal: profile?.primary_goal || 'general_fitness',
+        hrt_adjusted: false,
+        rules_applied: [],
+        exercises_excluded_count: 0,
+        total_exercises: exercises.length,
+        generation_timestamp: new Date(),
+      },
+    };
+
+    // Note: We'll pass data via navigation params instead of context
+    // since startWorkout resets everything. WorkoutSummaryScreen will
+    // need to be updated to accept navigation params as fallback.
+    console.log('✅ Workout data prepared:', {
+      exercises: exercises.length,
+      sets: completedSets.length,
+      duration: durationMinutes,
+    });
+
+    // POST /workouts/{id}/complete — idempotent if already persisted at
+    // cool-down entry.
+    try {
+      await persistCompletedWorkout();
+    } catch (error) {
+      console.error('Failed to save session:', error);
+    }
+
+    // Navigate to summary screen with data
+    console.log('🧭 Navigating to WorkoutSummaryScreen');
+    // WorkoutSummary is now in both OnboardingNavigator and MainNavigator
+    navigation.navigate('WorkoutSummary', {
+      workoutData: {
+        completedSets: contextSets,
+        workoutDuration: durationSeconds,
+        totalExercises: exercises.length,
+        exercisesCompleted: exercises.length,
+        workoutName: `Workout - ${new Date().toLocaleDateString()}`,
+      },
+      // Pass flagged exercises for post-workout review
+      flaggedExercises,
+      sessionId,
+    });
+  };
+
   if (loading) {
     return (
       <View style={[styles.container, styles.centerContent, { paddingTop: Math.max(insets.top, spacing.l) }]}>
@@ -772,157 +929,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
 
   // Update ref with completion callback (safe to do in render since it's not a hook)
   restTimerCompleteCallbackRef.current = handleRestTimerComplete;
-
-  const handleMainWorkoutComplete = async () => {
-    if (coolDown) {
-      // Reaching cool-down counts as completing the workout — persist to DB
-      // now so X-ing out of cool-down doesn't lose the session.
-      try {
-        await persistCompletedWorkout();
-      } catch (error) {
-        console.error('❌ Failed to persist workout on cool-down entry:', error);
-      }
-      setPhase('cool-down');
-    } else {
-      handleWorkoutComplete();
-    }
-  };
-
-  const handleCoolDownComplete = async () => {
-    console.log('🏁 handleCoolDownComplete called');
-    try {
-      await handleWorkoutComplete();
-    } catch (error) {
-      console.error('❌ Error in handleCoolDownComplete:', error);
-      Alert.alert('Error', 'Failed to complete workout. Please try again.');
-    }
-  };
-
-  // Save the completed workout to the database. Idempotent — safe to call
-  // when entering cool-down and again when cool-down finishes.
-  const persistCompletedWorkout = async () => {
-    if (workoutPersistedRef.current) return;
-    workoutPersistedRef.current = true;
-
-    const endTime = completedAt || new Date().toISOString();
-    if (!completedAt) setCompletedAt(endTime);
-
-    if (elapsedTimeIntervalRef.current) {
-      clearInterval(elapsedTimeIntervalRef.current);
-      elapsedTimeIntervalRef.current = null;
-    }
-
-    try {
-      const sessionData = buildSessionData(
-        completedSets,
-        planId,
-        workout.duration || 15,
-        startedAt,
-        endTime,
-      );
-      await saveSession(sessionData);
-      console.log('✅ Workout saved to database');
-    } catch (error) {
-      console.error('Failed to save session:', error);
-      workoutPersistedRef.current = false;
-      throw error;
-    }
-  };
-
-  const handleWorkoutComplete = async () => {
-    console.log('🏋️ Workout completion started');
-    const endTime = completedAt || new Date().toISOString();
-    if (!completedAt) setCompletedAt(endTime);
-
-    // Clear interval
-    if (elapsedTimeIntervalRef.current) {
-      clearInterval(elapsedTimeIntervalRef.current);
-      elapsedTimeIntervalRef.current = null;
-    }
-
-    // Calculate workout duration
-    const startTime = new Date(startedAt);
-    const endTimeDate = new Date(endTime);
-    const durationSeconds = Math.floor((endTimeDate.getTime() - startTime.getTime()) / 1000);
-    const durationMinutes = Math.floor(durationSeconds / 60);
-
-    // Convert completed sets to WorkoutContext format
-    // Group by exercise to get correct set numbers
-    const exerciseSetCounts = new Map<string, number>();
-    const contextSets = completedSets.map((set) => {
-      const count = exerciseSetCounts.get(set.exerciseId) || 0;
-      exerciseSetCounts.set(set.exerciseId, count + 1);
-      return {
-        exercise_id: set.exerciseId,
-        set_number: count + 1,
-        reps: set.reps,
-        weight: set.weight || 0,
-        rpe: set.rpe,
-        timestamp: new Date(set.completedAt),
-      };
-    });
-
-    // Create ActiveWorkout for context
-    const activeWorkout = {
-      id: planId,
-      workout_name: `Workout - ${new Date().toLocaleDateString()}`,
-      estimated_duration_minutes: durationMinutes,
-      warm_up: warmUp || { total_duration_minutes: 0, exercises: [] },
-      main_workout: exercises.map((ex, idx) => ({
-        exerciseId: ex.id,
-        sets: ex.sets || 3,
-        reps: ex.reps || 10,
-        format: 'straight_sets' as const,
-        restSeconds: ex.restSeconds || 60,
-        exercise_name: ex.name,
-      })),
-      cool_down: coolDown || { total_duration_minutes: 0, exercises: [] },
-      safety_checkpoints: safetyCheckpoints,
-      metadata: {
-        template_name: 'Session',
-        day_focus: 'Full Body',
-        user_goal: profile?.primary_goal || 'general_fitness',
-        hrt_adjusted: false,
-        rules_applied: [],
-        exercises_excluded_count: 0,
-        total_exercises: exercises.length,
-        generation_timestamp: new Date(),
-      },
-    };
-
-    // Note: We'll pass data via navigation params instead of context
-    // since startWorkout resets everything. WorkoutSummaryScreen will
-    // need to be updated to accept navigation params as fallback.
-    console.log('✅ Workout data prepared:', {
-      exercises: exercises.length,
-      sets: completedSets.length,
-      duration: durationMinutes,
-    });
-
-    // POST /workouts/{id}/complete — idempotent if already persisted at
-    // cool-down entry.
-    try {
-      await persistCompletedWorkout();
-    } catch (error) {
-      console.error('Failed to save session:', error);
-    }
-
-    // Navigate to summary screen with data
-    console.log('🧭 Navigating to WorkoutSummaryScreen');
-    // WorkoutSummary is now in both OnboardingNavigator and MainNavigator
-    navigation.navigate('WorkoutSummary', {
-      workoutData: {
-        completedSets: contextSets,
-        workoutDuration: durationSeconds,
-        totalExercises: exercises.length,
-        exercisesCompleted: exercises.length,
-        workoutName: `Workout - ${new Date().toLocaleDateString()}`,
-      },
-      // Pass flagged exercises for post-workout review
-      flaggedExercises,
-      sessionId,
-    });
-  };
 
   const handleRPESubmit = (rpe: number) => {
     setCurrentRPE(rpe);
