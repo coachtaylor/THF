@@ -11,7 +11,8 @@ import { Exercise } from "../../../types";
 import { colors, spacing, borderRadius, layout } from "../../../theme/theme";
 import { textStyles, buttonStyles } from "../../../theme/components";
 import { useProfile } from "../../../hooks/useProfile";
-import { getPlan } from "../../../services/storage/plan";
+import { getPlan, savePlan } from "../../../services/storage/plan";
+import { generatePlan } from "../../../services/planGenerator";
 import { getExerciseLibrary } from "../../../data/exercises";
 import { signalOnboardingComplete } from "../../../services/events/onboardingEvents";
 import { Platform } from "react-native";
@@ -245,40 +246,76 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
     return badges;
   };
 
+  // Scan a plan for the first usable workout for this user's session duration.
+  const findFirstWorkout = (p: Plan): { workout: Workout; dayNumber: number } | null => {
+    for (const day of p.days) {
+      if (day.isRestDay) continue;
+      const w = getWorkoutForDay(day);
+      if (w) return { workout: w, dayNumber: day.dayNumber };
+    }
+    return null;
+  };
+
+  const regenerateAndStart = async () => {
+    if (!profile) return;
+    try {
+      setLoading(true);
+      const fresh = await generatePlan(profile);
+      await savePlan(fresh, profile.user_id || profile.id || 'default');
+      const found = findFirstWorkout(fresh);
+      if (__DEV__) {
+        const workoutDayCount = fresh.days.filter(d => !d.isRestDay).length;
+        console.log(`🔁 Regenerated plan: ${workoutDayCount} workout days, found=${!!found}`);
+      }
+      setPlan(fresh as any);
+      setLoading(false);
+      if (found) {
+        navigation.navigate('SessionPlayer', {
+          workout: found.workout as any,
+          planId: fresh.id,
+        });
+      } else {
+        Alert.alert(
+          'Still no workouts available',
+          "We couldn't build a workout for your current settings. Try adjusting your workout days, environment, or equipment in Settings after you reach the dashboard.",
+          [{ text: 'OK' }],
+        );
+      }
+    } catch (err) {
+      setLoading(false);
+      Alert.alert('Regeneration failed', err instanceof Error ? err.message : 'Unknown error.');
+    }
+  };
+
   const handleGetStarted = () => {
     if (!plan || !profile) {
       Alert.alert('Cannot start workout', 'Your plan or profile is not loaded yet. Try again in a moment.');
       return;
     }
 
-    // Find the first non-rest day with a valid workout for this user's session duration.
-    // plan.days[0] may be a rest day (variants are all null), so we have to scan.
-    let firstWorkout: Workout | null = null;
-    let firstWorkoutDayNumber: number | null = null;
-    for (const day of plan.days) {
-      if (day.isRestDay) continue;
-      const w = getWorkoutForDay(day);
-      if (w) {
-        firstWorkout = w;
-        firstWorkoutDayNumber = day.dayNumber;
-        break;
+    const found = findFirstWorkout(plan);
+    if (!found) {
+      const workoutDayCount = plan.days.filter(d => !d.isRestDay).length;
+      if (__DEV__) {
+        console.log(`⚠️ Plan has no usable workouts. workoutDayCount=${workoutDayCount} totalDays=${plan.days.length} session_duration=${profile.session_duration} preferred_workout_days=${JSON.stringify(profile.preferred_workout_days)}`);
       }
-    }
-
-    if (!firstWorkout) {
       Alert.alert(
         'No workouts found',
-        'Your plan does not have any workout days configured. Please regenerate your program.',
+        'Your plan does not have any workout days configured. We can rebuild your program now.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Regenerate', onPress: () => { regenerateAndStart(); } },
+        ],
       );
       return;
     }
 
     if (__DEV__) {
-      console.log(`🏋️ Starting first workout from Day ${firstWorkoutDayNumber}`);
+      console.log(`🏋️ Starting first workout from Day ${found.dayNumber}`);
     }
 
     navigation.navigate('SessionPlayer', {
-      workout: firstWorkout as any,
+      workout: found.workout as any,
       planId: plan.id,
     });
   };
