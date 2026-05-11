@@ -32,10 +32,11 @@ interface TodayWorkoutCardProps {
   onSaveWorkout?: () => void;
   isSaved?: boolean;
   isCompleted?: boolean;
+  completedAtIso?: string | null;
   onViewSummary?: () => void;
 }
 
-export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkout, isSaved = false, isCompleted = false, onViewSummary }: TodayWorkoutCardProps) {
+export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkout, isSaved = false, isCompleted = false, completedAtIso, onViewSummary }: TodayWorkoutCardProps) {
   const { profile } = useProfile();
   const { disableAnimations } = useSensoryMode();
   const duration = workout.duration || 45;
@@ -164,7 +165,11 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
             {isCompleted ? (
               <>
                 <Ionicons name="checkmark-circle" size={14} color={colors.accent.success} />
-                <Text style={[styles.dayLabel, { color: colors.accent.success }]}>COMPLETED</Text>
+                <Text style={[styles.dayLabel, { color: colors.accent.success }]}>
+                  {completedAtIso
+                    ? `COMPLETED ${new Date(completedAtIso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()}`
+                    : 'COMPLETED'}
+                </Text>
               </>
             ) : (
               <>

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/theme';
 import { getWeekWorkoutLogs, type WorkoutLog } from '../../services/storage/workoutLog';
+import { getCompletedDayNumbersForPlanThisWeek } from '../../services/storage/stats';
 import { saveWorkout, isWorkoutSaved, deleteSavedWorkout, findSavedWorkout } from '../../services/storage/savedWorkouts';
 import { useProfile } from '../../hooks/useProfile';
 import type { Day } from '../../types/plan';
@@ -176,6 +177,7 @@ export default function UpcomingWorkoutsSection({
   const [viewMode, setViewMode] = useState<ViewMode>('upcoming');
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
   const [savedWorkouts, setSavedWorkouts] = useState<Record<string, boolean>>({});
+  const [completedByDay, setCompletedByDay] = useState<Map<number, string>>(new Map());
 
   // Build tags based on user profile
   const tags: string[] = [];
@@ -222,6 +224,19 @@ export default function UpcomingWorkoutsSection({
     }
 
     checkSavedStatus();
+  }, [userId, planId, weekDays]);
+
+  // Load which scheduled plan days have already been completed (handles
+  // "I did Tuesday's workout on Monday" — those should render as completed
+  // even before Tuesday arrives).
+  useEffect(() => {
+    if (!userId || !planId) return;
+    let cancelled = false;
+    (async () => {
+      const map = await getCompletedDayNumbersForPlanThisWeek(userId, planId);
+      if (!cancelled) setCompletedByDay(map);
+    })();
+    return () => { cancelled = true; };
   }, [userId, planId, weekDays]);
 
   // Handle save/unsave workout
@@ -507,6 +522,17 @@ export default function UpcomingWorkoutsSection({
               const muscleGroups = getMuscleGroups(exercises);
               const exercisePreview = getExercisePreview(exercises);
               const totalSets = exercises.reduce((sum: number, ex: any) => sum + (ex.sets || 0), 0);
+              const dayNumberKey = day.workout?.day?.dayNumber;
+              const completedAtIso = dayNumberKey !== undefined
+                ? completedByDay.get(dayNumberKey)
+                : undefined;
+              const completedLabel = completedAtIso
+                ? new Date(completedAtIso).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                : null;
 
               return (
                 <Pressable
@@ -567,6 +593,13 @@ export default function UpcomingWorkoutsSection({
                         </Pressable>
                       )}
                     </View>
+
+                    {completedLabel && (
+                      <View style={styles.completedRow}>
+                        <Ionicons name="checkmark-circle" size={12} color={colors.accent.success} />
+                        <Text style={styles.completedText}>Completed on {completedLabel}</Text>
+                      </View>
+                    )}
 
                     {/* Profile-based tags */}
                     {tags.length > 0 && (
@@ -944,6 +977,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     marginBottom: 6,
+  },
+  completedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  completedText: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.accent.success,
   },
   tag: {
     flexDirection: 'row',

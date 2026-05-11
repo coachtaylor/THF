@@ -6,6 +6,9 @@ export interface SessionData {
   id: string;
   planId: string;
   workoutName?: string;
+  // Day number on the plan that this session was scheduled against —
+  // used to detect "completed early" workouts on Home + Upcoming cards.
+  scheduledDayNumber?: number;
   workoutDuration: number;
   exercises: Array<{
     exerciseId: string;
@@ -151,6 +154,7 @@ export function buildSessionData(
   swappedExercises?: Map<string, string>,
   painFlaggedExercises?: Set<string>,
   workoutName?: string,
+  scheduledDayNumber?: number,
 ): SessionData {
   // Group sets by exercise
   const exerciseMap = new Map<string, SessionData['exercises'][0]>();
@@ -182,6 +186,7 @@ export function buildSessionData(
     id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     planId,
     workoutName,
+    scheduledDayNumber,
     workoutDuration,
     exercises: Array.from(exerciseMap.values()),
     startedAt,

@@ -8,7 +8,7 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useProfile } from '../../hooks/useProfile';
 import { usePlan } from '../../hooks/usePlan';
-import { getCurrentStreak, getWeeklyStats, type WeeklyStats } from '../../services/storage/stats';
+import { getCurrentStreak, getWeeklyStats, getCompletedDayNumbersForPlanThisWeek, type WeeklyStats } from '../../services/storage/stats';
 import { getSessions, type SessionData } from '../../services/sessionLogger';
 import { getWorkoutFromPlan, generatePlan } from '../../services/planGenerator';
 import { trackPlanGenerationFailed } from '../../services/analytics';
@@ -98,6 +98,7 @@ export default function HomeScreen() {
   const [isTodayWorkoutSaved, setIsTodayWorkoutSaved] = useState(false);
   const [isTodayCompleted, setIsTodayCompleted] = useState(false);
   const [todaySession, setTodaySession] = useState<SessionData | null>(null);
+  const [todayCompletedAt, setTodayCompletedAt] = useState<string | null>(null);
 
   // Weekly Summary Modal state
   const [showWeeklySummary, setShowWeeklySummary] = useState(false);
@@ -201,17 +202,6 @@ export default function HomeScreen() {
       setWeeklyStats(stats);
       setWorkoutsCompleted(stats.totalWorkouts);
       setWeekProgress(stats.completedWorkouts);
-
-      const sessions = await getSessions(id);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayMatch = sessions.find(s => {
-        const d = new Date(s.completedAt);
-        d.setHours(0, 0, 0, 0);
-        return d.getTime() === today.getTime();
-      });
-      setIsTodayCompleted(!!todayMatch);
-      setTodaySession(todayMatch ?? null);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -239,6 +229,41 @@ export default function HomeScreen() {
       return dayDate.getTime() === todayDate.getTime();
     });
   }, [plan]);
+
+  // Detect today-card completion via plan-day matching (not just calendar
+  // date). Catches "user did Tuesday's workout on Monday" — when Tuesday
+  // arrives, Home shows it as completed with the date it was actually done.
+  useEffect(() => {
+    if (!profile || !plan || todayWorkout?.dayNumber === undefined) {
+      setIsTodayCompleted(false);
+      setTodaySession(null);
+      setTodayCompletedAt(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const id = profile.user_id || profile.id || 'default';
+        const map = await getCompletedDayNumbersForPlanThisWeek(id, plan.id);
+        const completedAtIso = map.get(todayWorkout.dayNumber);
+        if (cancelled) return;
+        setIsTodayCompleted(!!completedAtIso);
+        setTodayCompletedAt(completedAtIso ?? null);
+        if (completedAtIso) {
+          const sessions = await getSessions(id);
+          const match = sessions.find(
+            s => s.planId === plan.id && s.scheduledDayNumber === todayWorkout.dayNumber,
+          );
+          if (!cancelled) setTodaySession(match ?? null);
+        } else {
+          setTodaySession(null);
+        }
+      } catch (error) {
+        if (!cancelled) console.error('Error detecting today completion:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [profile, plan, todayWorkout, weeklyStats]);
 
   const getWorkoutName = useCallback((workout: any): string => {
     // First, check if workout has a name set from generation
@@ -506,6 +531,7 @@ export default function HomeScreen() {
               onSaveWorkout={handleSaveWorkout}
               isSaved={isTodayWorkoutSaved}
               isCompleted={isTodayCompleted}
+              completedAtIso={todayCompletedAt}
               onViewSummary={handleViewTodaySummary}
             />
           ) : plan && todayWorkout ? (

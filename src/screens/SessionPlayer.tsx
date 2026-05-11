@@ -569,6 +569,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         undefined,
         undefined,
         workout.name,
+        (workout as any).dayNumber,
       );
       const sessionUserId = profile?.user_id || profile?.id || 'default';
       await saveSession(sessionData, sessionUserId);
@@ -1015,6 +1016,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           swappedExercises,
           painFlaggedExercises,
           workout.name,
+          (workout as any).dayNumber,
         );
         const sessionUserId = profile?.user_id || profile?.id || 'default';
         await saveSession(sessionData, sessionUserId);

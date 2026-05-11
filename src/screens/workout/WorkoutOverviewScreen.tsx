@@ -301,6 +301,18 @@ export default function WorkoutOverviewScreen() {
         workout.estimated_duration_minutes
       );
 
+      // workoutId is the synthetic `${plan.id}_${dayNumber}` format created in
+      // HomeScreen — split on the last underscore to recover the plan id. The
+      // session's plan_id must match a real workout_plans row, otherwise sync
+      // hits FK 23503 and the session is stuck in the retry queue forever.
+      const lastUnderscore = workoutId.lastIndexOf('_');
+      const resolvedPlanId = lastUnderscore > 0
+        ? workoutId.substring(0, lastUnderscore)
+        : workoutId;
+      const resolvedDayNumber = lastUnderscore > 0
+        ? Number(workoutId.substring(lastUnderscore + 1))
+        : undefined;
+
       const workoutForSession = {
         duration: workout.estimated_duration_minutes as 5 | 15 | 30 | 45,
         exercises: workout.main_workout.map((ex, index) => ({
@@ -312,16 +324,8 @@ export default function WorkoutOverviewScreen() {
         })),
         totalMinutes: workout.estimated_duration_minutes,
         name: workout.workout_name,
+        dayNumber: Number.isFinite(resolvedDayNumber) ? resolvedDayNumber : undefined,
       };
-
-      // workoutId is the synthetic `${plan.id}_${dayNumber}` format created in
-      // HomeScreen — split on the last underscore to recover the plan id. The
-      // session's plan_id must match a real workout_plans row, otherwise sync
-      // hits FK 23503 and the session is stuck in the retry queue forever.
-      const lastUnderscore = workoutId.lastIndexOf('_');
-      const resolvedPlanId = lastUnderscore > 0
-        ? workoutId.substring(0, lastUnderscore)
-        : workoutId;
 
       navigation.navigate('SessionPlayer', {
         workout: workoutForSession,
