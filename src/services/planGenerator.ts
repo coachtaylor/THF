@@ -927,8 +927,31 @@ export async function regenerateDay(
 
   logger.log(`\n🔄 Regenerating Day ${dayNumber}`);
 
-  // Use first template day as default for regeneration
-  const dayTemplate = template.days[0];
+  // Pick a template day not already used by another workout day in the same
+  // calendar week. Without this, every rest-day override hits template.days[0]
+  // and produces a workout identical to whichever existing day was generated
+  // first — defeating the point of an override for users with 2-3 workouts/week.
+  // Fall back to template.days[0] only if every template day is already
+  // scheduled this week (rare: would require workouts/week >= template.days.length).
+  const targetDate = new Date(existingDay.date);
+  const weekStart = new Date(targetDate);
+  weekStart.setDate(targetDate.getDate() - targetDate.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+
+  const usedTemplateNames = new Set<string>();
+  for (const d of plan.days) {
+    if (d.isRestDay || d.dayNumber === dayNumber) continue;
+    const dDate = new Date(d.date);
+    if (dDate < weekStart || dDate >= weekEnd) continue;
+    const anyVariant = d.variants[30] || d.variants[45] || d.variants[60] || d.variants[90];
+    if (anyVariant?.name) usedTemplateNames.add(anyVariant.name);
+  }
+
+  const dayTemplate = template.days.find(t => !usedTemplateNames.has(t.name))
+    ?? template.days[0];
+  logger.log(`  🏋️ Override workout: ${dayTemplate.name} (avoided: ${[...usedTemplateNames].join(', ') || 'none'})`);
   const variants: Day['variants'] = {
     30: generatePhase2Workout(profile, 30, exercises, dayTemplate, template, safetyContext),
     45: generatePhase2Workout(profile, 45, exercises, dayTemplate, template, safetyContext),
