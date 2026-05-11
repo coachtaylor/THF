@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
   },
   checkpointItem: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingVertical: spacing.s,
     gap: spacing.m,
   },
