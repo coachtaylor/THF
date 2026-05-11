@@ -5,6 +5,7 @@ import { CompletedSet } from '../types/session';
 export interface SessionData {
   id: string;
   planId: string;
+  workoutName?: string;
   workoutDuration: number;
   exercises: Array<{
     exerciseId: string;
@@ -148,7 +149,8 @@ export function buildSessionData(
   startedAt: string,
   completedAt: string,
   swappedExercises?: Map<string, string>,
-  painFlaggedExercises?: Set<string>
+  painFlaggedExercises?: Set<string>,
+  workoutName?: string,
 ): SessionData {
   // Group sets by exercise
   const exerciseMap = new Map<string, SessionData['exercises'][0]>();
@@ -179,6 +181,7 @@ export function buildSessionData(
   return {
     id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     planId,
+    workoutName,
     workoutDuration,
     exercises: Array.from(exerciseMap.values()),
     startedAt,

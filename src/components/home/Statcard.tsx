@@ -184,7 +184,7 @@ export function StatsRow({
         value={streakValue}
         label="Streak"
         progress={Math.min(streak / streakGoal, 1)}
-        accentColor="primary"
+        accentColor="secondary"
       />
 
       <CircularStat
@@ -192,7 +192,7 @@ export function StatsRow({
         value={weekProgress}
         label="This Week"
         progress={parseWeekProgress()}
-        accentColor="secondary"
+        accentColor="primary"
       />
 
       <CircularStat

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useProfile } from '../../hooks/useProfile';
@@ -30,13 +30,10 @@ export default function WorkoutsScreen() {
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadMonthData();
-  }, [currentMonth]);
+  const userId = profile?.user_id || profile?.id || 'default';
 
-  const loadMonthData = async () => {
+  const loadMonthData = useCallback(async () => {
     try {
-      const userId = profile?.user_id || profile?.id || 'default';
       const [monthWorkouts, currentStreak] = await Promise.all([
         getMonthWorkouts(userId, currentMonth),
         getCurrentStreak(userId),
@@ -49,7 +46,17 @@ export default function WorkoutsScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, currentMonth]);
+
+  useEffect(() => {
+    loadMonthData();
+  }, [loadMonthData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadMonthData();
+    }, [loadMonthData])
+  );
 
   const changeMonth = (direction: 'prev' | 'next') => {
     const newMonth = new Date(currentMonth);
@@ -89,7 +96,7 @@ export default function WorkoutsScreen() {
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -244,7 +251,7 @@ export default function WorkoutsScreen() {
             <GlassCard variant="default" style={styles.statCard}>
               <View style={styles.statContent}>
                 <View style={styles.streakCircle}>
-                  <Ionicons name="flame" size={20} color={colors.accent.primary} />
+                  <Ionicons name="flame" size={20} color={colors.accent.secondary} />
                 </View>
                 <View style={styles.statText}>
                   <Text style={styles.statValue}>{streak}</Text>
@@ -276,11 +283,16 @@ export default function WorkoutsScreen() {
                 <View style={styles.workoutHeader}>
                   <View style={styles.workoutDateBadge}>
                     <Text style={styles.workoutDateText}>
-                      {new Date(workout.workout_date).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
+                      {(() => {
+                        // workout_date is YYYY-MM-DD; new Date(str) parses as UTC
+                        // midnight which shifts the displayed day. Build a local Date.
+                        const [y, m, d] = workout.workout_date.split('-').map(Number);
+                        return new Date(y, m - 1, d).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                        });
+                      })()}
                     </Text>
                   </View>
                   <View style={styles.completedBadge}>
@@ -515,9 +527,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.glass.bgHero,
+    backgroundColor: colors.accent.secondaryMuted,
     borderWidth: 1,
-    borderColor: colors.glass.borderCyan,
+    borderColor: colors.accent.secondary,
     justifyContent: 'center',
     alignItems: 'center',
   },

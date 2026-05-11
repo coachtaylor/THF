@@ -384,8 +384,13 @@ export default function WorkoutSummaryScreen() {
   }, [completedSets]);
 
   const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes} min`;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(secs).padStart(2, '0')}`;
   };
 
   const achievements = useMemo(() => {
@@ -398,7 +403,7 @@ export default function WorkoutSummaryScreen() {
         text: currentStreak === 1
           ? 'Workout streak started!'
           : `${currentStreak}-day streak maintained!`,
-        color: colors.warning,
+        color: colors.accent.secondary,
       });
     }
 
