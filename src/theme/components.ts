@@ -143,6 +143,22 @@ export const restDayCardStyles = StyleSheet.create({
     fontWeight: '400',
     color: colors.text.disabled,
   },
+  ctaChip: {
+    marginTop: spacing.s,
+    paddingHorizontal: spacing.m,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    borderColor: colors.accent.primary,
+    backgroundColor: 'rgba(91, 206, 250, 0.12)',
+  },
+  ctaChipText: {
+    fontFamily: 'Poppins',
+    fontSize: typography.bodySmall,
+    fontWeight: '600',
+    color: colors.accent.primary,
+    letterSpacing: 0.3,
+  },
 });
 
 // ============================================
