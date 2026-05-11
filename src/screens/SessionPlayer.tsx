@@ -430,6 +430,26 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     setShowSkipExerciseModal(false);
   };
 
+  // Confirm before exiting the warm-up. The X button in the warm-up header
+  // previously had no onPress, so taps did nothing. We don't fire
+  // workout_abandoned here because the user hasn't logged any sets — that
+  // matches the convention in handleBack: pre-main-phase exits are "glances,"
+  // not abandonments.
+  const handleWarmUpExit = () => {
+    Alert.alert(
+      'Stop workout?',
+      'You can resume from the dashboard. Your warm-up progress won’t be saved.',
+      [
+        { text: 'Keep going', style: 'cancel' },
+        {
+          text: 'Stop workout',
+          style: 'destructive',
+          onPress: () => navigation.goBack(),
+        },
+      ],
+    );
+  };
+
   const handleWarmUpComplete = () => {
     console.log('🔥🔥🔥 Warm-up complete button clicked 🔥🔥🔥');
     console.log('Current state BEFORE update:', { 
@@ -486,6 +506,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           warmUpExercises={warmUpExercises}
           totalDurationMinutes={warmUp.total_duration_minutes}
           onComplete={handleWarmUpComplete}
+          onExit={handleWarmUpExit}
         />
         {/* Render appropriate modal based on checkpoint type */}
         {currentCheckpoint?.type === 'binder_break' ? (
