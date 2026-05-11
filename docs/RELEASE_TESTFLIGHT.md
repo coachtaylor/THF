@@ -98,6 +98,46 @@ Open `app.config.js` and verify:
   from here on subsequent builds (because `eas.json` has
   `autoIncrement: true` on the `preview` profile).
 
+### 2.3 Register EAS file secrets
+
+Some files referenced by the bundler are gitignored because they're
+proprietary IP. `scripts/eas-prebuild-secrets.js` (wired into
+`eas-build-pre-install`) copies them into place at build time, but
+only if EAS knows where the secret content lives.
+
+Register the secrets ONCE per project. The script self-documents the
+list to keep in sync; today it's:
+
+```sh
+eas secret:create --scope project --type file \
+  --name RECOVERY_PHASES_TS \
+  --value ./src/data/recoveryPhases.ts
+```
+
+If you skip this, builds fail at bundle time with `Unable to resolve
+"./recoveryPhases"` (or similar) because the file the import points
+to doesn't exist on EAS's filesystem.
+
+To audit what's registered:
+
+```sh
+eas secret:list
+```
+
+To rotate the value (e.g. after editing the local file):
+
+```sh
+eas secret:delete --name RECOVERY_PHASES_TS
+eas secret:create --scope project --type file \
+  --name RECOVERY_PHASES_TS \
+  --value ./src/data/recoveryPhases.ts
+```
+
+> **When to add new secrets here:** any time `scripts/eas-prebuild-secrets.js`'s
+> `secrets` array grows. The script no-ops cleanly when the env var
+> isn't set, so local dev is unaffected even before you register —
+> only EAS builds break.
+
 ---
 
 ## Phase 3 — Build for TestFlight
@@ -213,6 +253,37 @@ They:
 ---
 
 ## Common gotchas
+
+### Build fails with `Unable to resolve "./recoveryPhases"` or similar gitignored module
+
+You haven't registered the EAS file secret. See 2.3 — run
+`eas secret:create --scope project --type file --name RECOVERY_PHASES_TS --value ./src/data/recoveryPhases.ts`
+(or whichever secret `scripts/eas-prebuild-secrets.js` is waiting on).
+
+### Build fails with `pod ... not found` or pod install errors
+
+`ios/Podfile.lock` in `git HEAD` doesn't match `package.json`. Someone
+changed JS deps without re-running `pod install` + committing the
+resulting iOS files. Recovery:
+
+```sh
+cd ios && pod install && cd ..
+git add ios/Podfile.lock ios/TransFitness.xcodeproj/project.pbxproj \
+        ios/TransFitness/PrivacyInfo.xcprivacy
+git commit -m "Sync iOS pods with current JS deps"
+git push origin develop
+```
+
+Then retry the build.
+
+### Build fails with `Unsupported macOS image` or Xcode version mismatch
+
+EAS deprecates older macOS/Xcode images on a rolling schedule. Update
+all three profiles in `eas.json`'s `build` section. As of this writing
+the working image is `macos-sonoma-14.6-xcode-16.1` (required by RN
+0.81). Check
+https://docs.expo.dev/build-reference/infrastructure/ for the current
+supported list.
 
 ### "Bundle ID not found" during EAS build
 
