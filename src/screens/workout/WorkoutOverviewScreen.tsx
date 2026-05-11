@@ -7,6 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { getWorkout, WorkoutDetailData, removeExerciseFromWorkout } from '../../services/storage/workout';
+import { getWeeklyStats } from '../../services/storage/stats';
 import { useProfile } from '../../hooks/useProfile';
 import { colors, spacing, borderRadius, timing, layout, iconContainer, shadows, gradients } from '../../theme/theme';
 import { headerStyles, sectionStyles, screenStyles } from '../../theme/components';
@@ -66,6 +67,10 @@ export default function WorkoutOverviewScreen() {
   const [explanations, setExplanations] = useState<WorkoutExplanation[]>([]);
   const [personalizationSummary, setPersonalizationSummary] = useState<WorkoutPersonalizationSummary | null>(null);
   const [shortSummaries, setShortSummaries] = useState<ShortSummary[]>([]);
+  // Used to gate the day-1 "here's how it works" banner. Loaded once when the
+  // screen mounts; if zero, the user has never completed a workout and the
+  // flow needs framing they haven't seen yet.
+  const [totalWorkouts, setTotalWorkouts] = useState<number | null>(null);
 
   // Workout limit tracking for free tier
   const userId = profile?.user_id || profile?.id || 'default';
@@ -82,6 +87,22 @@ export default function WorkoutOverviewScreen() {
       ])
     ).start();
   }, [workoutId, profile?.user_id, profile?.id]);
+
+  // Load lifetime total workout count once, to gate the day-1 banner.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const stats = await getWeeklyStats(userId);
+        if (!cancelled) setTotalWorkouts(stats.totalWorkouts);
+      } catch {
+        if (!cancelled) setTotalWorkouts(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   // Reload workout when screen comes into focus (e.g., after adding exercise)
   useFocusEffect(
@@ -600,6 +621,21 @@ export default function WorkoutOverviewScreen() {
           </View>
         )}
 
+        {/* First-workout framing — only when the user has never completed
+            one before. Sets expectations for the flow they're about to
+            enter (warm-up → main → cool-down + set logging). */}
+        {totalWorkouts === 0 && (
+          <View style={styles.firstWorkoutBanner}>
+            <View style={styles.firstWorkoutBadge}>
+              <Text style={styles.firstWorkoutBadgeText}>DAY 1</Text>
+            </View>
+            <Text style={styles.firstWorkoutTitle}>Here's how it works</Text>
+            <Text style={styles.firstWorkoutBody}>
+              You'll move through warm-up → main exercises → cool-down. Check off each set as you complete it.
+            </Text>
+          </View>
+        )}
+
         {/* Start Button */}
         <View style={styles.buttonContainer}>
           <Pressable style={styles.startButton} onPress={handleStartWorkout}>
@@ -973,6 +1009,43 @@ const styles = StyleSheet.create({
   buttonContainer: {
     paddingTop: spacing.l,
     paddingBottom: spacing.m,
+  },
+  firstWorkoutBanner: {
+    marginTop: spacing.l,
+    padding: spacing.m,
+    borderRadius: borderRadius.card,
+    borderWidth: 1,
+    borderColor: 'rgba(91, 206, 250, 0.35)',
+    backgroundColor: 'rgba(91, 206, 250, 0.08)',
+  },
+  firstWorkoutBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.s,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: 'rgba(91, 206, 250, 0.18)',
+    marginBottom: spacing.xs,
+  },
+  firstWorkoutBadgeText: {
+    fontFamily: 'Poppins',
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.accent.primary,
+    letterSpacing: 1,
+  },
+  firstWorkoutTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  firstWorkoutBody: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '400',
+    color: colors.text.secondary,
+    lineHeight: 19,
   },
   startButton: {
     height: 56,
