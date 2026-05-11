@@ -31,9 +31,11 @@ interface TodayWorkoutCardProps {
   onStartWorkout: () => void;
   onSaveWorkout?: () => void;
   isSaved?: boolean;
+  isCompleted?: boolean;
+  onViewSummary?: () => void;
 }
 
-export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkout, isSaved = false }: TodayWorkoutCardProps) {
+export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkout, isSaved = false, isCompleted = false, onViewSummary }: TodayWorkoutCardProps) {
   const { profile } = useProfile();
   const { disableAnimations } = useSensoryMode();
   const duration = workout.duration || 45;
@@ -159,8 +161,17 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
         {/* Header row */}
         <View style={styles.header}>
           <View style={styles.dayBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.dayLabel}>{getDayLabel()}</Text>
+            {isCompleted ? (
+              <>
+                <Ionicons name="checkmark-circle" size={14} color={colors.accent.success} />
+                <Text style={[styles.dayLabel, { color: colors.accent.success }]}>COMPLETED</Text>
+              </>
+            ) : (
+              <>
+                <View style={styles.liveDot} />
+                <Text style={styles.dayLabel}>{getDayLabel()}</Text>
+              </>
+            )}
           </View>
           <View style={styles.headerRight}>
             <Text style={styles.meta}>
@@ -175,7 +186,7 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
                 <Ionicons
                   name={isSaved ? 'bookmark' : 'bookmark-outline'}
                   size={18}
-                  color={isSaved ? colors.accent.primary : colors.text.tertiary}
+                  color={colors.accent.secondary}
                 />
               </Pressable>
             )}
@@ -221,7 +232,19 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
           )}
         </View>
 
-        {/* Start button - Primary CTA, accent gradient */}
+        {/* Completed state - taps to open today's summary */}
+        {isCompleted ? (
+          <Pressable
+            style={({ pressed }) => [styles.completedButton, pressed && styles.completedButtonPressed]}
+            onPress={onViewSummary}
+            disabled={!onViewSummary}
+          >
+            <Ionicons name="checkmark-circle" size={20} color={colors.accent.success} />
+            <Text style={styles.completedButtonText}>View Workout Summary</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.accent.success} />
+          </Pressable>
+        ) : (
+        /* Start button - Primary CTA, accent gradient */
         <Pressable
           style={({ pressed }) => [styles.startButton, pressed && styles.startButtonPressed]}
           onPress={onStartWorkout}
@@ -262,6 +285,7 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
             <Text style={styles.startButtonText}>Start Workout</Text>
           </View>
         </Pressable>
+        )}
       </View>
     </View>
   );
@@ -507,6 +531,28 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.text.primary,
+    letterSpacing: 0.5,
+  },
+  completedButton: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(74, 222, 128, 0.35)',
+    backgroundColor: 'rgba(74, 222, 128, 0.12)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  completedButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  completedButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.accent.success,
     letterSpacing: 0.5,
   },
 });

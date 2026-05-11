@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, Animated, Alert } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -7,7 +7,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { getWorkout, WorkoutDetailData, removeExerciseFromWorkout } from '../../services/storage/workout';
-import { getWeeklyStats } from '../../services/storage/stats';
+import { getWeeklyStats, getCompletedDaysThisWeek, WEEKLY_HARD_CAP } from '../../services/storage/stats';
 import { useProfile } from '../../hooks/useProfile';
 import { colors, spacing, borderRadius, timing, layout, iconContainer, shadows, gradients } from '../../theme/theme';
 import { headerStyles, sectionStyles, screenStyles } from '../../theme/components';
@@ -291,15 +291,8 @@ export default function WorkoutOverviewScreen() {
     return explanations;
   };
 
-  const handleStartWorkout = async () => {
+  const proceedToSession = async () => {
     if (!workout) return;
-
-    // Check workout limit for free tier users
-    if (!canStart) {
-      navigation.navigate('Paywall');
-      return;
-    }
-
     try {
       // Track workout started
       await trackWorkoutStarted(
@@ -318,6 +311,7 @@ export default function WorkoutOverviewScreen() {
           restSeconds: ex.rest_seconds,
         })),
         totalMinutes: workout.estimated_duration_minutes,
+        name: workout.workout_name,
       };
 
       // workoutId is the synthetic `${plan.id}_${dayNumber}` format created in
@@ -339,6 +333,43 @@ export default function WorkoutOverviewScreen() {
     } catch (error) {
       console.error('Failed to start workout:', error);
     }
+  };
+
+  const handleStartWorkout = async () => {
+    if (!workout) return;
+
+    // Check workout limit for free tier users
+    if (!canStart) {
+      navigation.navigate('Paywall');
+      return;
+    }
+
+    // Weekly cap policy. Source of truth: stats.WEEKLY_HARD_CAP + profile.workout_frequency.
+    const completedDays = await getCompletedDaysThisWeek(userId);
+    const selectedFrequency = profile?.workout_frequency ?? 0;
+
+    if (completedDays >= WEEKLY_HARD_CAP) {
+      Alert.alert(
+        'Weekly limit reached',
+        `You've already trained ${completedDays} days this week. For your safety, the app caps weekly sessions at ${WEEKLY_HARD_CAP}. Take a rest day — your body adapts and gets stronger during recovery, not just during training.`,
+        [{ text: 'OK', style: 'cancel' }],
+      );
+      return;
+    }
+
+    if (selectedFrequency > 0 && completedDays >= selectedFrequency) {
+      Alert.alert(
+        'Consider a rest day',
+        `You've already hit your goal of ${selectedFrequency} workout${selectedFrequency === 1 ? '' : 's'} this week. Rest days are when your muscles repair and grow stronger — overtraining can stall progress and raise injury risk.\n\nStill want to train today?`,
+        [
+          { text: 'Take a rest day', style: 'cancel' },
+          { text: 'Train anyway', style: 'destructive', onPress: () => { proceedToSession(); } },
+        ],
+      );
+      return;
+    }
+
+    await proceedToSession();
   };
 
   const handleOpenWhyThisWorkout = () => {

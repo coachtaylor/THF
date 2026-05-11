@@ -9,6 +9,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useProfile } from '../../hooks/useProfile';
 import { usePlan } from '../../hooks/usePlan';
 import { getCurrentStreak, getWeeklyStats, type WeeklyStats } from '../../services/storage/stats';
+import { getSessions, type SessionData } from '../../services/sessionLogger';
 import { getWorkoutFromPlan, generatePlan } from '../../services/planGenerator';
 import { trackPlanGenerationFailed } from '../../services/analytics';
 import { getExerciseLibrary } from '../../data/exercises';
@@ -42,6 +43,16 @@ type MainStackParamList = {
   RestDayOverview: { day: Day; planId?: string };
   SessionPlayer: { workout: any; planId?: string };
   Profile: undefined;
+  WorkoutSummary: {
+    workoutData?: {
+      completedSets: any[];
+      workoutDuration: number;
+      totalExercises: number;
+      exercisesCompleted: number;
+      workoutName?: string;
+    };
+    sessionId?: string;
+  };
 };
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
@@ -85,6 +96,8 @@ export default function HomeScreen() {
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats | null>(null);
   const [exerciseMap, setExerciseMap] = useState<Record<string, Exercise>>({});
   const [isTodayWorkoutSaved, setIsTodayWorkoutSaved] = useState(false);
+  const [isTodayCompleted, setIsTodayCompleted] = useState(false);
+  const [todaySession, setTodaySession] = useState<SessionData | null>(null);
 
   // Weekly Summary Modal state
   const [showWeeklySummary, setShowWeeklySummary] = useState(false);
@@ -158,7 +171,7 @@ export default function HomeScreen() {
 
       // Reload stats
       const streak = await getCurrentStreak(userId);
-      const stats = await getWeeklyStats(userId);
+      const stats = await getWeeklyStats(userId, profile?.workout_frequency);
       setCurrentStreak(streak);
       setWeeklyStats(stats);
       setWorkoutsCompleted(stats.totalWorkouts);
@@ -183,11 +196,22 @@ export default function HomeScreen() {
     try {
       const id = profile.user_id || profile.id || 'default';
       const streak = await getCurrentStreak(id);
-      const stats = await getWeeklyStats(id);
+      const stats = await getWeeklyStats(id, profile.workout_frequency);
       setCurrentStreak(streak);
       setWeeklyStats(stats);
       setWorkoutsCompleted(stats.totalWorkouts);
       setWeekProgress(stats.completedWorkouts);
+
+      const sessions = await getSessions(id);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayMatch = sessions.find(s => {
+        const d = new Date(s.completedAt);
+        d.setHours(0, 0, 0, 0);
+        return d.getTime() === today.getTime();
+      });
+      setIsTodayCompleted(!!todayMatch);
+      setTodaySession(todayMatch ?? null);
     } catch (error) {
       console.error('Error loading stats:', error);
     }
@@ -304,6 +328,30 @@ export default function HomeScreen() {
         isToday: true
       });
     }
+  };
+
+  const handleViewTodaySummary = () => {
+    if (!todaySession) return;
+    const completedSets = todaySession.exercises.flatMap(ex =>
+      ex.sets.map((set, i) => ({
+        exerciseId: ex.exerciseId,
+        setNumber: i + 1,
+        rpe: set.rpe,
+        reps: set.reps,
+        weight: set.weight ?? 0,
+        completedAt: set.completedAt,
+      }))
+    );
+    navigation.navigate('WorkoutSummary', {
+      workoutData: {
+        completedSets,
+        workoutDuration: todaySession.workoutDuration,
+        totalExercises: todaySession.exercises.length,
+        exercisesCompleted: todaySession.exercises.length,
+        workoutName: todayWorkoutDetails?.name,
+      },
+      sessionId: todaySession.id,
+    });
   };
 
   // Check if today's workout is saved
@@ -457,6 +505,8 @@ export default function HomeScreen() {
               onStartWorkout={handleStartWorkout}
               onSaveWorkout={handleSaveWorkout}
               isSaved={isTodayWorkoutSaved}
+              isCompleted={isTodayCompleted}
+              onViewSummary={handleViewTodaySummary}
             />
           ) : plan && todayWorkout ? (
             <Pressable

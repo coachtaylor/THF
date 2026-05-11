@@ -127,7 +127,7 @@ function HistoryWorkoutCard({
                 <Ionicons
                   name={isSaved ? 'bookmark' : 'bookmark-outline'}
                   size={18}
-                  color={isSaved ? colors.accent.primary : colors.text.tertiary}
+                  color={isSaved ? colors.accent.secondary : colors.text.tertiary}
                 />
               </Pressable>
             )}
@@ -562,7 +562,7 @@ export default function UpcomingWorkoutsSection({
                           <Ionicons
                             name={savedWorkouts[`${day.workout.day.dayNumber}-45`] ? 'bookmark' : 'bookmark-outline'}
                             size={18}
-                            color={savedWorkouts[`${day.workout.day.dayNumber}-45`] ? colors.accent.primary : colors.text.tertiary}
+                            color={savedWorkouts[`${day.workout.day.dayNumber}-45`] ? colors.accent.secondary : colors.text.tertiary}
                           />
                         </Pressable>
                       )}

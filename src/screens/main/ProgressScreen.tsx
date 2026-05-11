@@ -138,7 +138,7 @@ export default function ProgressScreen() {
       const [currentStreak, stats, volume, frequency, exercises] =
         await Promise.all([
           getCurrentStreak(userId),
-          getWeeklyStats(userId),
+          getWeeklyStats(userId, profile?.workout_frequency),
           getVolumeByWeek(userId, timeRange),
           getWorkoutFrequency(userId, timeRange),
           getExercisesWithData(userId),
@@ -426,7 +426,7 @@ export default function ProgressScreen() {
               <Ionicons
                 name="calendar"
                 size={18}
-                color={colors.accent.secondary}
+                color={colors.accent.primary}
               />
               <Text style={styles.chartTitle}>Workout Consistency</Text>
             </View>

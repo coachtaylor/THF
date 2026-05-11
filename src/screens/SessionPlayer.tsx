@@ -566,6 +566,9 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         workout.duration || 15,
         startedAt,
         endTime,
+        undefined,
+        undefined,
+        workout.name,
       );
       const sessionUserId = profile?.user_id || profile?.id || 'default';
       await saveSession(sessionData, sessionUserId);
@@ -959,15 +962,10 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           const updated = [...prev];
           const currentInstance = updated[currentExerciseIndex];
           updated[currentExerciseIndex] = {
-            // Spread the new exercise data
-            ...swappedExercise,
-            // Preserve the instance data (sets, reps, format, rest)
-            sets: currentInstance.sets,
-            reps: currentInstance.reps,
-            format: currentInstance.format,
-            restSeconds: currentInstance.restSeconds,
+            ...currentInstance,
             exerciseId: swappedExercise.id,
-          } as ExerciseInstanceWithData;
+            exercise: swappedExercise,
+          };
           return updated;
         });
 
@@ -1015,7 +1013,8 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
           startedAt,
           completedAt,
           swappedExercises,
-          painFlaggedExercises
+          painFlaggedExercises,
+          workout.name,
         );
         const sessionUserId = profile?.user_id || profile?.id || 'default';
         await saveSession(sessionData, sessionUserId);

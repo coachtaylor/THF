@@ -242,7 +242,7 @@ export default function WeeklySummaryModal({
                 value={summaryData.streakAtEndOfWeek.toString()}
                 label="Streak"
                 progress={Math.min(summaryData.streakAtEndOfWeek / 7, 1)}
-                color={colors.warning}
+                color={colors.accent.secondary}
               />
             </View>
 

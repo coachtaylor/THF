@@ -147,10 +147,49 @@ export async function getCurrentStreak(userId: string = 'default'): Promise<numb
   }
 }
 
+// Weekly cap policy (added 2026-05-11 — see memory/sprint2_freeze_override_weekly_caps.md):
+// - Soft nudge (rest-day reminder) fires when completed >= user's selected frequency
+// - Hard block fires at WEEKLY_HARD_CAP completed days for safety
+export const WEEKLY_HARD_CAP = 10;
+
 /**
- * Get stats for current week
+ * Count unique completed calendar days in the current ISO week (Mon-Sun).
+ * Two sessions on the same day count as one — used for both stats display
+ * and the start-workout cap gate so they agree.
  */
-export async function getWeeklyStats(userId: string = 'default'): Promise<WeeklyStats> {
+export async function getCompletedDaysThisWeek(userId: string = 'default'): Promise<number> {
+  try {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const sessions = await getSessions(userId);
+    const uniqueDays = new Set<string>();
+    sessions.forEach(s => {
+      const d = new Date(s.completedAt);
+      d.setHours(0, 0, 0, 0);
+      if (d >= startOfWeek) uniqueDays.add(d.toISOString().split('T')[0]);
+    });
+    return uniqueDays.size;
+  } catch (error) {
+    console.error('Failed to count completed days this week:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get stats for current week.
+ *
+ * `selectedFrequency` is the user's static workout_frequency from profile —
+ * the denominator on Home becomes the user's choice, not a moving target
+ * derived from the plan. Capped at 7 (one workout per calendar day max).
+ */
+export async function getWeeklyStats(
+  userId: string = 'default',
+  selectedFrequency?: number,
+): Promise<WeeklyStats> {
   try {
     // Get start of current week (Monday)
     const now = new Date();
@@ -168,6 +207,16 @@ export async function getWeeklyStats(userId: string = 'default'): Promise<Weekly
       sessionDate.setHours(0, 0, 0, 0);
       return sessionDate >= startOfWeek;
     });
+
+    // Count unique completed calendar days — two sessions on the same day
+    // collapse to one to keep the numerator honest.
+    const completedDays = new Set<string>();
+    thisWeekSessions.forEach(s => {
+      const d = new Date(s.completedAt);
+      d.setHours(0, 0, 0, 0);
+      completedDays.add(d.toISOString().split('T')[0]);
+    });
+    const uniqueCompletedCount = completedDays.size;
 
     // Calculate stats from completed sessions
     let totalVolume = 0;
@@ -192,45 +241,51 @@ export async function getWeeklyStats(userId: string = 'default'): Promise<Weekly
 
     const averageRPE = rpeCount > 0 ? totalRPE / rpeCount : 0;
 
-    // Get scheduled workouts from plan (if available)
+    // Denominator: the user's static selected frequency, clamped to [1, 7].
+    // Falls back to the plan's deduped scheduled-day count when no selection
+    // is provided.
     let scheduledWorkouts = 4; // Default
     let achievableWorkouts = 4; // Default
     try {
-      const plan = await getPlan(userId);
-      if (plan) {
-        // Count days in current week that have workouts scheduled (exclude rest days)
-        const weekEnd = new Date(startOfWeek);
-        weekEnd.setDate(weekEnd.getDate() + 7);
+      if (selectedFrequency && selectedFrequency > 0) {
+        scheduledWorkouts = Math.min(7, Math.max(1, Math.floor(selectedFrequency)));
+      } else {
+        const plan = await getPlan(userId);
+        if (plan) {
+          const weekEnd = new Date(startOfWeek);
+          weekEnd.setDate(weekEnd.getDate() + 7);
 
-        const scheduledDays = plan.days.filter(day => {
-          const dayDate = new Date(day.date);
-          dayDate.setHours(0, 0, 0, 0);
-          // Only count days that are in this week AND are not rest days
-          return dayDate >= startOfWeek && dayDate < weekEnd && !day.isRestDay;
-        });
-
-        scheduledWorkouts = scheduledDays.length;
-
-        // Calculate achievable workouts: days from today onwards that have workouts
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const futureDays = plan.days.filter(day => {
-          const dayDate = new Date(day.date);
-          dayDate.setHours(0, 0, 0, 0);
-          // Only count days that are in this week, from today onwards, and not rest days
-          return dayDate >= startOfWeek && dayDate < weekEnd && dayDate >= today && !day.isRestDay;
-        });
-
-        // Achievable = already completed + future scheduled
-        achievableWorkouts = thisWeekSessions.length + futureDays.length;
+          // Dedup plan days by calendar date so duplicate rows can't push
+          // the denominator above 7.
+          const scheduledDayKeys = new Set<string>();
+          plan.days.forEach(day => {
+            const dayDate = new Date(day.date);
+            dayDate.setHours(0, 0, 0, 0);
+            if (
+              dayDate >= startOfWeek &&
+              dayDate < weekEnd &&
+              !day.isRestDay
+            ) {
+              scheduledDayKeys.add(dayDate.toISOString().split('T')[0]);
+            }
+          });
+          scheduledWorkouts = Math.min(7, scheduledDayKeys.size);
+        }
       }
+
+      // Achievable = unique completed days + remaining days in week
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const msPerDay = 1000 * 60 * 60 * 24;
+      const daysIntoWeek = Math.floor((today.getTime() - startOfWeek.getTime()) / msPerDay);
+      const daysRemaining = Math.max(0, 7 - daysIntoWeek - 1); // exclude today
+      achievableWorkouts = Math.min(scheduledWorkouts, uniqueCompletedCount + daysRemaining + 1);
     } catch (error) {
-      console.warn('Could not get scheduled workouts from plan:', error);
+      console.warn('Could not get scheduled workouts:', error);
     }
 
     return {
-      completedWorkouts: thisWeekSessions.length,
+      completedWorkouts: uniqueCompletedCount,
       scheduledWorkouts,
       achievableWorkouts,
       totalVolume: Math.round(totalVolume),
@@ -291,7 +346,10 @@ export async function getMonthWorkouts(
     // Convert sessions to workout format
     const workouts: MonthWorkout[] = monthSessions.map(session => {
       const sessionDate = new Date(session.completedAt);
-      const workoutDate = sessionDate.toISOString().split('T')[0];
+      // Use local date parts — toISOString would shift the day across UTC
+      // boundaries for users west of UTC (e.g. a 9am PDT completion would
+      // render as the previous day).
+      const workoutDate = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, '0')}-${String(sessionDate.getDate()).padStart(2, '0')}`;
 
       // Calculate volume and RPE from session
       let totalVolume = 0;
@@ -312,12 +370,14 @@ export async function getMonthWorkouts(
 
       const averageRPE = rpeCount > 0 ? totalRPE / rpeCount : undefined;
 
-      // Generate workout name from plan or default
-      const workoutName = `Workout - ${sessionDate.toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric' 
-      })}`;
+      // Use the stored workout name when available (newer sessions);
+      // fall back to a date-based label for legacy sessions.
+      const workoutName = session.workoutName?.trim()
+        || `Workout - ${sessionDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        })}`;
 
       return {
         id: session.id,
