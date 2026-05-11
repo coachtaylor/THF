@@ -71,6 +71,14 @@ const RATING_OPTIONS: Array<{ value: WorkoutRating; emoji: string; label: string
   { value: 'tough', emoji: '😣', label: 'Tough', color: colors.accent.secondary },
 ];
 
+const RATING_TO_NUMBER: Record<WorkoutRating, number> = {
+  great: 5,
+  good: 4,
+  okay: 3,
+  hard: 2,
+  tough: 1,
+};
+
 // Celebration confetti animation component
 function CelebrationHeader({ duration, disableAnimations }: { duration: string; disableAnimations?: boolean }) {
   const scaleAnim = useRef(new Animated.Value(disableAnimations ? 1 : 0)).current;
@@ -229,6 +237,7 @@ export default function WorkoutSummaryScreen() {
   const exercisesCompleted = routeData?.exercisesCompleted || workoutContext?.exercisesCompleted || 0;
   const completeWorkout = workoutContext?.completeWorkout || (() => {});
   const clearWorkout = workoutContext?.clearWorkout || (() => {});
+  const saveWorkoutFeedback = workoutContext?.saveWorkoutFeedback || (async () => {});
 
   const [rating, setRating] = useState<WorkoutRating | null>(null);
   const [notes, setNotes] = useState('');
@@ -275,22 +284,35 @@ export default function WorkoutSummaryScreen() {
     });
   };
 
-  const handleBodyCheckinSubmit = (data: BodyCheckinData) => {
+  const persistFeedback = async (
+    body_checkin: BodyCheckinData['response'],
+  ): Promise<void> => {
+    await saveWorkoutFeedback({
+      body_checkin,
+      workout_rating: rating ? RATING_TO_NUMBER[rating] : undefined,
+      performance_notes: notes.trim() || undefined,
+    });
+  };
+
+  const handleBodyCheckinSubmit = async (data: BodyCheckinData) => {
     setBodyCheckinData(data);
     setShowBodyCheckin(false);
-    console.log('Body check-in response:', data.response);
+    await persistFeedback(data.response);
     if (shouldShowSurveyAfterDone) {
       setShowSurvey(true);
     } else {
+      await clearWorkout();
       navigateHome();
     }
   };
 
-  const handleBodyCheckinSkip = () => {
+  const handleBodyCheckinSkip = async () => {
     setShowBodyCheckin(false);
+    await persistFeedback('skip');
     if (shouldShowSurveyAfterDone) {
       setShowSurvey(true);
     } else {
+      await clearWorkout();
       navigateHome();
     }
   };
@@ -298,12 +320,14 @@ export default function WorkoutSummaryScreen() {
   const handleSurveySubmit = async (response: SurveyResponse) => {
     await saveSurveyResponse(response);
     setShowSurvey(false);
+    await clearWorkout();
     navigateHome();
   };
 
   const handleSurveyClose = async () => {
     await trackSurveySkipped('workout');
     setShowSurvey(false);
+    await clearWorkout();
     navigateHome();
   };
 
@@ -445,8 +469,12 @@ export default function WorkoutSummaryScreen() {
         totalExercises
       );
 
+      // Save the workout as completed first so the row is durable even if
+      // the user bails on the feedback chain. Don't clearWorkout yet —
+      // saveWorkoutFeedback needs workoutLogId from context. The clear
+      // happens at the end of the prompt chain (in body-check-in / survey
+      // handlers) before navigateHome.
       await completeWorkout();
-      clearWorkout();
 
       // Chain optional post-workout prompts after the user explicitly taps Done.
       // Body check-in first (if not yet collected), then survey (if eligible),
@@ -459,6 +487,7 @@ export default function WorkoutSummaryScreen() {
         setShowSurvey(true);
         return;
       }
+      await clearWorkout();
       navigateHome();
     } catch (error) {
       console.error('Error completing workout:', error);

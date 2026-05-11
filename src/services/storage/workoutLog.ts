@@ -272,6 +272,52 @@ export async function completeWorkoutLog(
 }
 
 /**
+ * Update post-workout feedback fields on an existing workout log.
+ *
+ * Separate from completeWorkoutLog because the workout is saved as
+ * completed before the user is prompted for feedback (so the row exists
+ * even if they bail). Only writes the fields that are provided so a later
+ * call to add notes doesn't clobber a previously-saved rating.
+ */
+export async function updateWorkoutLogFeedback(
+  workoutLogId: string,
+  data: {
+    workout_rating?: number;
+    performance_notes?: string;
+    body_checkin?: "connected" | "neutral" | "disconnected" | "skip";
+  },
+): Promise<void> {
+  try {
+    const fields: string[] = [];
+    const values: (string | number | null)[] = [];
+
+    if (data.workout_rating !== undefined) {
+      fields.push("workout_rating = ?");
+      values.push(data.workout_rating);
+    }
+    if (data.performance_notes !== undefined) {
+      fields.push("performance_notes = ?");
+      values.push(data.performance_notes);
+    }
+    if (data.body_checkin !== undefined) {
+      fields.push("body_checkin = ?");
+      values.push(data.body_checkin);
+    }
+
+    if (fields.length === 0) return;
+
+    values.push(workoutLogId);
+    const stmt = getDb().prepareSync(
+      `UPDATE workout_logs SET ${fields.join(", ")} WHERE id = ?`,
+    );
+    stmt.executeSync(values);
+    stmt.finalizeSync();
+  } catch (error) {
+    console.error("❌ Failed to update workout log feedback:", error);
+  }
+}
+
+/**
  * Get workout log with all sets
  */
 export async function getWorkoutLog(
