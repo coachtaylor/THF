@@ -1029,8 +1029,12 @@ export default function SettingsScreen() {
               onPress={handleExportData}
               showChevron
             />
+            {/* Until a real cloud-side delete-account flow ships
+                (Edge Function with service-role key), this button only
+                resets local data + signs out. Copy reflects what it
+                actually does so the label isn't misleading. */}
             <GlassListItem
-              title="Delete account"
+              title="Reset app data"
               leftIcon="trash-outline"
               variant="danger"
               onPress={handleDeleteAccount}
@@ -1201,17 +1205,17 @@ export default function SettingsScreen() {
         initialCategory="technical_bug"
       />
 
-      {/* Delete Account Modal */}
+      {/* Reset App Data Modal */}
       <GlassModal
         visible={showDeleteAccountModal}
         onClose={() => setShowDeleteAccountModal(false)}
-        title="Delete Account"
-        message="This will permanently delete your account, profile, and all workout data. This action cannot be undone."
+        title="Reset app data?"
+        message="This signs you out and clears your profile and workout history on this device. Full cloud account deletion is coming before public launch — for now, contact support if you need your cloud data removed."
         icon="trash-outline"
         iconColor={colors.error}
         actions={[
           {
-            label: 'Delete Account',
+            label: 'Reset',
             onPress: confirmDeleteAccount,
             variant: 'danger',
             loading: isDeletingAccount,
