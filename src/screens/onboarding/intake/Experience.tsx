@@ -4,6 +4,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { intakeStepDisplay } from "../../../utils/onboardingSteps";
 import SelectionCard from "../../../components/onboarding/SelectionCard";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
 import { textStyles } from "../../../theme/components";
@@ -101,8 +102,7 @@ export default function Experience({ navigation }: ExperienceProps) {
 
   return (
     <OnboardingLayout
-      currentStep={6}
-      totalSteps={8}
+      {...intakeStepDisplay(6, profile?.gender_identity)}
       title="Experience & Schedule"
       subtitle="Tell us your fitness level and how often you want to train. You'll pick equipment on the next screen."
       onBack={handleBack}

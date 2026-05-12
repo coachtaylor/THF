@@ -12,6 +12,7 @@ import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { intakeStepDisplay } from "../../../utils/onboardingSteps";
 import ToggleButtonGroup from "../../../components/onboarding/ToggleButtonGroup";
 import MedicationSection from "../../../components/onboarding/MedicationSection";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
@@ -284,8 +285,7 @@ export default function HRTStatus({ navigation, route }: HRTStatusProps) {
 
   return (
     <OnboardingLayout
-      currentStep={2}
-      totalSteps={8}
+      {...intakeStepDisplay(2, genderIdentity as any)}
       title="Hormone Therapy"
       subtitle="HRT affects training capacity and recovery. This helps us provide workout advice based on your medication schedule."
       onBack={handleBack}

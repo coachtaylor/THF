@@ -4,6 +4,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { intakeStepDisplay } from "../../../utils/onboardingSteps";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
 import { useProfile } from "../../../hooks/useProfile";
 import { updateProfile } from "../../../services/storage/profile";
@@ -193,8 +194,7 @@ export default function Goals({ navigation }: GoalsProps) {
 
   return (
     <OnboardingLayout
-      currentStep={5}
-      totalSteps={8}
+      {...intakeStepDisplay(5, profile?.gender_identity)}
       title="Your Fitness Goals"
       subtitle="Select your primary goal and optionally a secondary focus to blend training styles."
       onBack={handleBack}

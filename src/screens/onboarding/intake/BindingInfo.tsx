@@ -12,6 +12,7 @@ import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { intakeStepDisplay } from "../../../utils/onboardingSteps";
 import SelectionCard from "../../../components/onboarding/SelectionCard";
 import BinderSafetyWarningModal from "../../../components/onboarding/BinderSafetyWarningModal";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
@@ -157,8 +158,7 @@ export default function BindingInfo({ navigation, route }: BindingInfoProps) {
 
   return (
     <OnboardingLayout
-      currentStep={3}
-      totalSteps={8}
+      {...intakeStepDisplay(3, undefined)}
       title="Chest Binding"
       subtitle="Binding affects breathing and exercise selection. This helps us recommend safe, comfortable workouts."
       onBack={handleBack}

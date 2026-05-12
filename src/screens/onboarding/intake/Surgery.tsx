@@ -17,6 +17,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import { Surgery as SurgeryType } from "../../../types";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { intakeStepDisplay } from "../../../utils/onboardingSteps";
 import { useNavigation as useRootNavigation } from "@react-navigation/native";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
 import {
@@ -344,8 +345,7 @@ export default function Surgery({ navigation, route }: SurgeryProps) {
 
   return (
     <OnboardingLayout
-      currentStep={4}
-      totalSteps={8}
+      {...intakeStepDisplay(4, genderIdentity as any)}
       title="Surgery History"
       subtitle="Post-surgical recovery requires modified programming. We'll adjust your workouts for safe healing."
       onBack={handleBack}
