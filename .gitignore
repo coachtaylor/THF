@@ -80,3 +80,6 @@ QUALITY_ASSESSMENT.md
 PRD.md
 GTM_FOUNDATION.md
 PRODUCT_STATUS.md
+
+# Supabase CLI local state (version cache, linked project ref)
+supabase/.temp/
