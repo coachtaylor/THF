@@ -240,7 +240,11 @@ export interface Exercise {
   effectiveness_rating?: number;
   source?: string;
   notes?: string;
-  dysphoria_tags?: string;
+  // Canonical shape: string[]. DB stores as comma-separated `text` column;
+  // supabaseMapper splits to array. Rules and selection use exact-match
+  // .includes() — the previous string-with-substring-match was a latent bug
+  // that only worked because no tag was a substring of another.
+  dysphoria_tags?: string[];
   post_op_safe_weeks?: number;
 
   // Safety flags (migration 009, 2026-05-11). Both nullable to support a

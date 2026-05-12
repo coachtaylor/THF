@@ -170,9 +170,15 @@ export function mapSupabaseExercise(row: any): Exercise {
     effectiveness_rating: row.effectiveness_rating || undefined,
     source: row.source || undefined,
     notes: row.notes || undefined,
+    // Canonical shape: string[]. The DB column is `text` storing
+    // comma-separated values (legacy choice — see audit_rules_engine_data_shape.md).
+    // Defensive parse: handle both array-typed columns (if migrated later)
+    // and comma-string. Empty string → empty array, not [''].
     dysphoria_tags: Array.isArray(row.dysphoria_tags)
-      ? row.dysphoria_tags.join(', ')
-      : (row.dysphoria_tags || undefined),
+      ? row.dysphoria_tags.map((t: string) => t.trim()).filter(Boolean)
+      : typeof row.dysphoria_tags === 'string' && row.dysphoria_tags.length > 0
+        ? row.dysphoria_tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+        : [],
     post_op_safe_weeks: row.post_op_safe_weeks || undefined,
     // Safety flags from migration 009. Preserve null exactly — rules use
     // null-as-unknown as the default-deny signal. DO NOT default to false here;
