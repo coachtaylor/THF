@@ -173,7 +173,7 @@ export default function HomeScreen() {
 
       // Reload stats
       const streak = await getCurrentStreak(userId);
-      const stats = await getWeeklyStats(userId, profile?.workout_frequency);
+      const stats = await getWeeklyStats(userId, profile?.workout_frequency, profile?.skipped_workout_dates);
       setCurrentStreak(streak);
       setWeeklyStats(stats);
       setWorkoutsCompleted(stats.totalWorkouts);
@@ -198,7 +198,7 @@ export default function HomeScreen() {
     try {
       const id = profile.user_id || profile.id || 'default';
       const streak = await getCurrentStreak(id);
-      const stats = await getWeeklyStats(id, profile.workout_frequency);
+      const stats = await getWeeklyStats(id, profile.workout_frequency, profile.skipped_workout_dates);
       setCurrentStreak(streak);
       setWeeklyStats(stats);
       setWorkoutsCompleted(stats.totalWorkouts);
