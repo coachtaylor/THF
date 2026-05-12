@@ -16,6 +16,7 @@ import SavedWorkoutsScreen from '../screens/main/SavedWorkoutsScreen';
 import WorkoutOverviewScreen from '../screens/workout/WorkoutOverviewScreen';
 import SessionPlayer from '../screens/SessionPlayer';
 import WorkoutSummaryScreen from '../screens/workout/WorkoutSummaryScreen';
+import WorkoutDetailScreen from '../screens/workout/WorkoutDetailScreen';
 import WorkoutSwapScreen from '../screens/workout/WorkoutSwapScreen';
 import { BinderSafetyGuide, PostOpMovementGuide } from '../screens/guides';
 import { ExerciseLibraryScreen } from '../screens/exercise';
@@ -147,6 +148,10 @@ export default function MainNavigator() {
         <Stack.Screen
           name="WorkoutSwap"
           component={WorkoutSwapScreen}
+        />
+        <Stack.Screen
+          name="WorkoutDetail"
+          component={WorkoutDetailScreen}
         />
         <Stack.Screen
           name="BinderSafetyGuide"
