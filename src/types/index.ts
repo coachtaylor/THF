@@ -304,6 +304,7 @@ export interface Day {
 }
 
 export interface Workout {
+  id?: string;
   name?: string;
   duration: 30 | 45 | 60 | 90;
   exercises: ExerciseInstance[];
