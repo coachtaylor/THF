@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
   },
   skipLinkText: {
     fontFamily: 'Poppins',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.text.tertiary,
     textDecorationLine: 'underline',
