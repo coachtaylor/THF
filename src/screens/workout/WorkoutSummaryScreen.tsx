@@ -15,7 +15,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useWorkoutSafe } from '../../contexts/WorkoutContext';
 import { colors, spacing, borderRadius, timing, gradients, layout } from '../../theme/theme';
 import { GlassCard, ProgressRing } from '../../components/common';
 import { trackWorkoutCompleted } from '../../services/analytics';
@@ -226,18 +225,20 @@ export default function WorkoutSummaryScreen() {
   const routeData = route.params?.workoutData;
   const routeFlaggedExercises = route.params?.flaggedExercises || [];
   const routeSessionId = route.params?.sessionId;
-  const workoutContext = useWorkoutSafe();
   const { profile } = useProfile();
   const userId = profile?.user_id || profile?.id || 'default';
 
-  const workout = routeData ? null : (workoutContext?.workout || null);
-  const completedSets = routeData?.completedSets || workoutContext?.completedSets || [];
-  const workoutDuration = routeData?.workoutDuration || workoutContext?.workoutDuration || 0;
-  const totalExercises = routeData?.totalExercises || workoutContext?.totalExercises || 0;
-  const exercisesCompleted = routeData?.exercisesCompleted || workoutContext?.exercisesCompleted || 0;
-  const completeWorkout = workoutContext?.completeWorkout || (() => {});
-  const clearWorkout = workoutContext?.clearWorkout || (() => {});
-  const saveWorkoutFeedback = workoutContext?.saveWorkoutFeedback || (async () => {});
+  // All workout data comes from navigation params now — the legacy
+  // WorkoutContext-backed fallback was always-null (no provider was ever
+  // mounted) and got removed in the 2026-05-12 dead-code sweep.
+  const workout = null;
+  const completedSets = routeData?.completedSets || [];
+  const workoutDuration = routeData?.workoutDuration || 0;
+  const totalExercises = routeData?.totalExercises || 0;
+  const exercisesCompleted = routeData?.exercisesCompleted || 0;
+  const completeWorkout = () => {};
+  const clearWorkout = () => {};
+  const saveWorkoutFeedback = async (_: unknown) => {};
 
   const [rating, setRating] = useState<WorkoutRating | null>(null);
   const [notes, setNotes] = useState('');

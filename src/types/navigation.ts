@@ -39,13 +39,6 @@ export type MainStackParamList = {
     exercises?: ExerciseInstance[];
     workoutName?: string;
   };
-  ActiveWorkout: {
-    dayIndex: number;
-    weekIndex?: number;
-    day?: Day;
-    exercises?: ExerciseInstance[];
-    workoutName?: string;
-  };
   WorkoutSummary: {
     dayIndex?: number;
     weekIndex?: number;
@@ -99,7 +92,6 @@ export type CombinedNavigationProp = CompositeNavigationProp<
 export type HomeScreenProps = StackScreenProps<MainStackParamList, 'MainTabs'>;
 export type WorkoutOverviewScreenProps = StackScreenProps<MainStackParamList, 'WorkoutOverview'>;
 export type SessionPlayerScreenProps = StackScreenProps<MainStackParamList, 'SessionPlayer'>;
-export type ActiveWorkoutScreenProps = StackScreenProps<MainStackParamList, 'ActiveWorkout'>;
 export type WorkoutSummaryScreenProps = StackScreenProps<MainStackParamList, 'WorkoutSummary'>;
 export type RestDayOverviewScreenProps = StackScreenProps<MainStackParamList, 'RestDayOverview'>;
 export type ExerciseLibraryScreenProps = StackScreenProps<MainStackParamList, 'ExerciseLibrary'>;
