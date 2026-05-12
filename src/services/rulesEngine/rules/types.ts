@@ -17,12 +17,33 @@ export interface Rule {
     current_date: Date;
   }
   
-  export type RuleAction = 
-    | { type: 'critical_block'; criteria: BlockCriteria }
-    | { type: 'exclude_exercises'; criteria: ExclusionCriteria }
-    | { type: 'modify_parameters'; modification: ParameterModification }
+  // Rule actions support both a static value and a dynamic async resolver.
+  // The evaluator (src/services/rulesEngine/evaluator.ts) checks for the
+  // getXxx variant first and awaits it; otherwise it falls back to the
+  // static value. Most rules use the dynamic form because their values
+  // depend on the user's profile (e.g. weeks post-op, HRT phase).
+  export type RuleAction =
+    | {
+        type: 'critical_block';
+        criteria?: BlockCriteria;
+        getCriteria?: (ctx: EvaluationContext) => BlockCriteria | Promise<BlockCriteria>;
+      }
+    | {
+        type: 'exclude_exercises';
+        criteria?: ExclusionCriteria;
+        getCriteria?: (ctx: EvaluationContext) => ExclusionCriteria | Promise<ExclusionCriteria>;
+      }
+    | {
+        type: 'modify_parameters';
+        modification?: ParameterModification;
+        getModification?: (ctx: EvaluationContext) => ParameterModification | Promise<ParameterModification>;
+      }
     | { type: 'inject_checkpoint'; checkpoint: SafetyCheckpoint }
-    | { type: 'soft_filter'; filter: SoftFilterCriteria };
+    | {
+        type: 'soft_filter';
+        filter?: SoftFilterCriteria;
+        getFilter?: (ctx: EvaluationContext) => SoftFilterCriteria | undefined | Promise<SoftFilterCriteria | undefined>;
+      };
   
   export interface BlockCriteria {
     muscle_groups?: string[];
@@ -33,6 +54,7 @@ export interface Rule {
   export interface ExclusionCriteria {
     contraindications?: string[];
     exercise_ids?: number[];
+    patterns?: string[]; // Exercise.pattern values to exclude (e.g. 'plyometric', 'hinge')
     custom_filter?: (ex: Exercise) => boolean;
   }
   

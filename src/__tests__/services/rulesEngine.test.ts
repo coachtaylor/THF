@@ -102,6 +102,43 @@ describe("Rules Engine", () => {
       );
     });
 
+    it("BS-01b: excludes plyometric exercises for ace-bandage / DIY binder users", async () => {
+      // Regression guard: BS-01b declares `patterns: ['plyometric']` in its
+      // exclusion criteria. Until 2026-05-11 the evaluator's
+      // filterExcludedExercises ignored `patterns` entirely, so plyometric
+      // exercises were silently NOT excluded for users in ace bandages or
+      // DIY binders. This test locks the wired-up behavior.
+      const aceBandageProfile = createBaseProfile({
+        binds_chest: true,
+        binder_type: "ace_bandage",
+        binding_frequency: "daily",
+        binding_duration_hours: 4,
+      });
+
+      const exercises = [
+        createMockExercise({
+          id: "100",
+          name: "Box Jumps",
+          pattern: "plyometric",
+          binder_aware: true,
+          heavy_binding_safe: true,
+        }),
+        createMockExercise({
+          id: "101",
+          name: "Bodyweight Squat",
+          pattern: "squat",
+          binder_aware: true,
+          heavy_binding_safe: true,
+        }),
+      ];
+
+      const result = await evaluateSafetyRules(aceBandageProfile, exercises);
+
+      // Plyometric exercise excluded; non-plyometric kept.
+      expect(result.excluded_exercise_ids).toContain(100);
+      expect(result.excluded_exercise_ids).not.toContain(101);
+    });
+
     it("BS-02: applies volume reduction for 8+ hour binding", async () => {
       const heavyBindingProfile = createBaseProfile({
         binds_chest: true,
@@ -943,8 +980,8 @@ describe("Rules Engine", () => {
       // But should have other post-op checkpoints
 
       // Critical block should include patterns like push, pull, core
-      const criticalBlockPatterns = result.critical_blocks.map(
-        (b) => b.pattern,
+      const criticalBlockPatterns = result.critical_blocks.flatMap(
+        (b) => b.patterns ?? [],
       );
       expect(criticalBlockPatterns.length).toBeGreaterThan(0);
     });
