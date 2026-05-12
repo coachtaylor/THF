@@ -575,27 +575,24 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
 
   // Compute the EFFECTIVE workout days for week 1.
   //
-  // Why this exists: a user's `workout_frequency` is the cap on workouts per
-  // week (2 for free plan, higher for paid). When a user joins mid-week and
-  // some of their preferred days have already passed, the substitute should
-  // *replace* those passed days, not stack on top — otherwise a 2/week user
-  // could end up with 3 workouts in week 1.
+  // Current beta behavior (per user direction 2026-05-11): substitute days
+  // STACK on top of preferred days, capped only at 7 (one workout per
+  // calendar day max). Adding "today" via the ProgramSetup prompt should
+  // not displace any of the user's selected days for the week.
   //
-  // The cap reads directly from `profile.workout_frequency`, which is already
-  // the right place for tier-aware enforcement: when subscription enforcement
-  // turns on, free users will be capped at 2 in onboarding/settings, and
-  // `workout_frequency` will reflect that automatically. Do not duplicate
-  // tier logic here.
+  // Deferred: tier-aware behavior where free users SWAP (slice at
+  // workout_frequency) and paid users STACK. See
+  // memory/tier_aware_substitute_day_followup.md — wire when subscription
+  // enforcement is online.
   const todayDate = new Date();
   todayDate.setHours(0, 0, 0, 0);
   const todayDayOfWeek = todayDate.getDay();
-  const cap = profile.workout_frequency || workoutDays.length;
   const futurePreferred = workoutDays.filter(d => d >= todayDayOfWeek);
-  // Substitute days replace passed preferred days, then we cap at frequency.
   const week1Set = new Set<number>([...futurePreferred, ...firstWeekSubstituteDays]);
   const week1WorkoutDays = Array.from(week1Set)
     .sort((a, b) => a - b)
-    .slice(0, cap);
+    .slice(0, 7);
+  const cap = week1WorkoutDays.length;
 
   logger.log(`📆 Workout days: ${workoutDays.map(d => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]).join(', ')}`);
   if (firstWeekSubstituteDays.length > 0) {
