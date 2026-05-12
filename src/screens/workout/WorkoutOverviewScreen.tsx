@@ -313,7 +313,18 @@ export default function WorkoutOverviewScreen() {
         ? Number(workoutId.substring(lastUnderscore + 1))
         : undefined;
 
+      // Compose the workout id in the same format as planGenerator's
+      // assignWorkoutIds helper so telemetry events from SessionPlayer can be
+      // grouped by workout instance. Omit when we can't form a valid id
+      // (no day number) — leaving it undefined preserves the prior behavior
+      // rather than emitting a malformed string.
+      const composedWorkoutId =
+        Number.isFinite(resolvedDayNumber) && resolvedPlanId
+          ? `${resolvedPlanId}_d${resolvedDayNumber}_${workout.estimated_duration_minutes}`
+          : undefined;
+
       const workoutForSession = {
+        id: composedWorkoutId,
         duration: workout.estimated_duration_minutes as 5 | 15 | 30 | 45,
         exercises: workout.main_workout.map((ex, index) => ({
           exerciseId: ex.exercise_id,
