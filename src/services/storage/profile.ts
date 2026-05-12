@@ -454,14 +454,16 @@ export async function deleteAllUserData(): Promise<DataDeletionResult> {
       try {
         const cloudDeletionErrors: string[] = [];
 
-        // Delete from all cloud tables (order matters due to potential foreign keys)
+        // Delete from cloud tables (order matters due to FKs).
+        // Only tables that actually exist in the public schema are listed
+        // here — adding refs to non-existent tables would just spam
+        // cloudDeletionErrors. When new user-data tables ship, add them
+        // here. Verified 2026-05-12.
         const tablesToDelete = [
-          'rules_audit_log',      // Safety audit logs
           'feedback_reports',      // User feedback
           'saved_workouts',        // Saved workout favorites
           'workout_sessions',      // Completed workout sessions
           'workout_plans',         // Generated workout plans
-          'onboarding_feedback',   // Onboarding survey responses
           'equipment_requests',    // Equipment requests (may have null user_id)
           'profiles',              // User profile (delete last)
         ];

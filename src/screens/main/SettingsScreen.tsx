@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import { deleteProfile, getProfile, updateProfile, clearLocalUserStats } from '../../services/storage/profile';
+import { deleteProfile, getProfile, updateProfile, clearLocalUserStats, deleteAllUserData } from '../../services/storage/profile';
 import { trackPlanGenerationFailed } from '../../services/analytics';
 import { signalLogout } from '../../services/events/onboardingEvents';
 import { generatePlan } from '../../services/planGenerator';
@@ -302,9 +302,17 @@ export default function SettingsScreen() {
   const confirmDeleteAccount = async () => {
     try {
       setIsDeletingAccount(true);
-      await clearLocalUserStats();
-      await deleteProfile();
-      await logout();
+      // deleteAllUserData handles: cloud table deletion (workouts, sessions,
+      // plans, feedback, equipment requests, profile), Edge Function call
+      // to delete the auth.users row (if the function exists — currently
+      // missing, will fail gracefully), local SQLite wipe, token clear,
+      // and sign-out. Partial failures are logged but don't block the
+      // user-facing flow. Full account removal (auth.users) requires the
+      // `delete-account` Edge Function to be deployed — see CLAUDE.md.
+      const result = await deleteAllUserData();
+      if (!result.success && result.errors.length > 0) {
+        console.warn('Partial deletion completed with errors:', result.errors);
+      }
       setShowDeleteAccountModal(false);
       signalLogout();
     } catch (error) {
@@ -1029,12 +1037,12 @@ export default function SettingsScreen() {
               onPress={handleExportData}
               showChevron
             />
-            {/* Until a real cloud-side delete-account flow ships
-                (Edge Function with service-role key), this button only
-                resets local data + signs out. Copy reflects what it
-                actually does so the label isn't misleading. */}
+            {/* Wired to deleteAllUserData (2026-05-12): cloud tables
+                + local SQLite + token + sign-out. Auth.users record
+                still persists until the delete-account Edge Function
+                is deployed — see modal copy and CLAUDE.md. */}
             <GlassListItem
-              title="Reset app data"
+              title="Delete account data"
               leftIcon="trash-outline"
               variant="danger"
               onPress={handleDeleteAccount}
@@ -1205,17 +1213,17 @@ export default function SettingsScreen() {
         initialCategory="technical_bug"
       />
 
-      {/* Reset App Data Modal */}
+      {/* Delete Account Data Modal */}
       <GlassModal
         visible={showDeleteAccountModal}
         onClose={() => setShowDeleteAccountModal(false)}
-        title="Reset app data?"
-        message="This signs you out and clears your profile and workout history on this device. Full cloud account deletion is coming before public launch — for now, contact support if you need your cloud data removed."
+        title="Delete account data?"
+        message="This deletes your profile and workout history from this device and from the cloud, then signs you out. Your sign-in record will be fully removed once the delete-account function is deployed — contact support if you need that done now."
         icon="trash-outline"
         iconColor={colors.error}
         actions={[
           {
-            label: 'Reset',
+            label: 'Delete data',
             onPress: confirmDeleteAccount,
             variant: 'danger',
             loading: isDeletingAccount,
