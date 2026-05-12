@@ -25,6 +25,7 @@ import { StatsRow } from '../../components/home/Statcard';
 import UpcomingWorkoutsSection from '../../components/home/UpcomingWorkoutsSection';
 import WeeklySummaryModal from '../../components/home/WeeklySummaryModal';
 import { isNewWeekNeedingPlan, setLastPlanGeneratedWeek, getWeekStart } from '../../services/storage/weeklyTransition';
+import { consumePendingFirstWorkout } from '../../services/events/onboardingEvents';
 import { getLastWeekSummary, WeeklySummaryData } from '../../services/storage/weeklySummary';
 import { FeedbackFAB } from '../../components/feedback';
 
@@ -210,6 +211,16 @@ export default function HomeScreen() {
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+  // Drain the "start first workout" hand-off from ProgramSetup. The
+  // payload is set right before signalOnboardingComplete fires, so by
+  // the time Home mounts there's a workout waiting to launch. Consuming
+  // is idempotent (single read) so a re-mount doesn't re-launch.
+  useEffect(() => {
+    const pending = consumePendingFirstWorkout();
+    if (!pending) return;
+    navigation.navigate('SessionPlayer' as any, pending as any);
+  }, [navigation]);
 
   // Refresh stats whenever Home regains focus — e.g. after completing a
   // workout and navigating back from the summary screen.

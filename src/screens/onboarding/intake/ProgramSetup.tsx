@@ -14,7 +14,7 @@ import { useProfile } from "../../../hooks/useProfile";
 import { getPlan, savePlan } from "../../../services/storage/plan";
 import { generatePlan } from "../../../services/planGenerator";
 import { getExerciseLibrary } from "../../../data/exercises";
-import { signalOnboardingComplete } from "../../../services/events/onboardingEvents";
+import { signalOnboardingComplete, setPendingFirstWorkout } from "../../../services/events/onboardingEvents";
 import { Platform } from "react-native";
 import { BetaSurveyModal, SurveyResponse } from "../../../components/feedback";
 import {
@@ -312,24 +312,26 @@ export default function ProgramSetup({ navigation }: ProgramSetupProps) {
     }
   };
 
-  // SessionPlayer expects warm-up / cool-down / safety checkpoints as
-  // top-level route params, not nested on `workout`. The Workout type
-  // stores them camelCase (warmUp / coolDown / safetyCheckpoints); the
-  // route param shape WorkoutOverview uses is also top-level. Pass them
-  // through so the warm-up phase actually renders and the timer kicks in.
+  // Hand off the workout to HomeScreen via the pending-workout queue,
+  // then signal onboarding complete. App.tsx swaps to MainNavigator;
+  // HomeScreen drains the queue on mount and navigates to SessionPlayer
+  // from the Main stack. This way the back-stack roots at Home, so
+  // quitting the workout mid-flow lands the user on the dashboard
+  // instead of bouncing back to this onboarding screen.
   const startSession = (planForRouting: Plan, found: { workout: Workout; dayNumber: number }) => {
     const w = found.workout as Workout;
-    navigation.navigate('SessionPlayer', {
+    setPendingFirstWorkout({
       workout: {
         ...w,
         name: w.name || getProgramName(),
         dayNumber: found.dayNumber,
-      } as any,
+      },
       planId: planForRouting.id,
       warmUp: w.warmUp,
       coolDown: w.coolDown,
       safetyCheckpoints: w.safetyCheckpoints || [],
-    } as any);
+    });
+    signalOnboardingComplete();
   };
 
   const regenerateAndStart = async () => {
