@@ -34,9 +34,10 @@ interface TodayWorkoutCardProps {
   isCompleted?: boolean;
   completedAtIso?: string | null;
   onViewSummary?: () => void;
+  onSkipWorkout?: () => void;
 }
 
-export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkout, isSaved = false, isCompleted = false, completedAtIso, onViewSummary }: TodayWorkoutCardProps) {
+export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkout, isSaved = false, isCompleted = false, completedAtIso, onViewSummary, onSkipWorkout }: TodayWorkoutCardProps) {
   const { profile } = useProfile();
   const { disableAnimations } = useSensoryMode();
   const duration = workout.duration || 45;
@@ -295,6 +296,18 @@ export default function TodayWorkoutCard({ workout, onStartWorkout, onSaveWorkou
             <Text style={styles.startButtonText}>Start Workout</Text>
           </View>
         </Pressable>
+        )}
+
+        {/* Skip — converts today to rest. Doesn't break streak, doesn't
+            count toward this week. Only shown when there's a workout to skip. */}
+        {!isCompleted && onSkipWorkout && (
+          <Pressable
+            style={({ pressed }) => [styles.skipLink, pressed && styles.skipLinkPressed]}
+            onPress={onSkipWorkout}
+            hitSlop={8}
+          >
+            <Text style={styles.skipLinkText}>Skip today's workout</Text>
+          </Pressable>
         )}
       </View>
     </View>
@@ -564,5 +577,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.accent.success,
     letterSpacing: 0.5,
+  },
+  skipLink: {
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  skipLinkPressed: {
+    opacity: 0.6,
+  },
+  skipLinkText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    textDecorationLine: 'underline',
   },
 });

@@ -27,6 +27,7 @@ export interface Profile {
   workout_frequency: number; // days per week
   preferred_workout_days?: number[]; // 0=Sunday, 1=Monday, ..., 6=Saturday. e.g., [1, 3, 5] = Mon/Wed/Fri
   first_week_substitute_days?: number[]; // One-time substitute days for first week when user joins mid-week
+  skipped_workout_dates?: string[]; // YYYY-MM-DD local dates the user actively skipped via Today card
   session_duration: number; // minutes per workout (replaces block_length) - typically 30, 45, 60, or 90
   equipment: string[];
   created_at: Date;

@@ -63,7 +63,7 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const insets = useSafeAreaInsets();
-  const { profile, loading: profileLoading, refreshProfile } = useProfile();
+  const { profile, loading: profileLoading, refreshProfile, updateProfile } = useProfile();
   const userId = profile?.user_id || profile?.id || 'default';
   const { plan, loading: planLoading, refreshPlan } = usePlan(userId);
 
@@ -219,16 +219,30 @@ export default function HomeScreen() {
     }, [loadStats]),
   );
 
+  // Local YYYY-MM-DD for today; used to check if user skipped today.
+  const todayKey = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+  const isTodaySkipped = (profile?.skipped_workout_dates ?? []).includes(todayKey);
+
   const todayWorkout = useMemo(() => {
     if (!plan || !plan.days || plan.days.length === 0) return null;
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
-    return plan.days.find(day => {
+    const match = plan.days.find(day => {
       const dayDate = new Date(day.date);
       dayDate.setHours(0, 0, 0, 0);
       return dayDate.getTime() === todayDate.getTime();
     });
-  }, [plan]);
+    if (!match) return match;
+    // If the user actively skipped today, render the day as a rest day.
+    // The plan still has the workout — skip is just a local preference.
+    if (isTodaySkipped) {
+      return { ...match, isRestDay: true };
+    }
+    return match;
+  }, [plan, isTodaySkipped]);
 
   const getWorkoutName = useCallback((workout: any): string => {
     // First, check if workout has a name set from generation
@@ -284,6 +298,10 @@ export default function HomeScreen() {
 
   const todayWorkoutDetails = useMemo(() => {
     if (!todayWorkout || !plan || !profile) return null;
+    // If the user actively skipped today, fall through to the rest-day
+    // card by returning null details. The plan's workout is still there
+    // (untouched), so the user can undo or re-train if they change their mind.
+    if (isTodaySkipped) return null;
     try {
       const duration = (profile.session_duration && [30, 45, 60, 90].includes(profile.session_duration))
         ? profile.session_duration as 30 | 45 | 60 | 90
@@ -308,7 +326,7 @@ export default function HomeScreen() {
     } catch {
       return null;
     }
-  }, [todayWorkout, plan, exerciseMap, profile, getWorkoutName]);
+  }, [todayWorkout, plan, exerciseMap, profile, getWorkoutName, isTodaySkipped]);
 
   // Detect today-card completion. Two signals are combined so legacy
   // sessions (saved before scheduledDayNumber existed) still register:
@@ -379,6 +397,26 @@ export default function HomeScreen() {
         isToday: true
       });
     }
+  };
+
+  const handleSkipTodayWorkout = () => {
+    Alert.alert(
+      "Skip today's workout?",
+      "Today will count as a rest day on your dashboard. Your streak won't break and your weekly schedule is unaffected.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Skip',
+          style: 'destructive',
+          onPress: async () => {
+            const existing = profile?.skipped_workout_dates ?? [];
+            if (existing.includes(todayKey)) return;
+            await updateProfile({ skipped_workout_dates: [...existing, todayKey] });
+            await refreshProfile();
+          },
+        },
+      ],
+    );
   };
 
   const handleViewTodaySummary = () => {
@@ -559,6 +597,7 @@ export default function HomeScreen() {
               isCompleted={isTodayCompleted}
               completedAtIso={todayCompletedAt}
               onViewSummary={handleViewTodaySummary}
+              onSkipWorkout={handleSkipTodayWorkout}
             />
           ) : plan && todayWorkout ? (
             <Pressable
