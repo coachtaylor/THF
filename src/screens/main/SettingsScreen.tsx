@@ -31,7 +31,7 @@ import {
   EditEnvironmentModal,
   EditDysphoriaModal,
 } from '../../components/settings';
-import { getWorkoutHistory } from '../../services/storage/workoutLog';
+import { getSessions } from '../../services/sessionLogger';
 import { useNotificationContext } from '../../contexts/NotificationContext';
 import { db } from '../../utils/database';
 
@@ -240,25 +240,44 @@ export default function SettingsScreen() {
     try {
       setIsExporting(true);
       const userId = profile?.user_id || profile?.id || 'default';
-      const history = await getWorkoutHistory(userId, 100);
+      const sessions = (await getSessions(userId)).slice(0, 100);
 
-      if (history.length === 0) {
+      if (sessions.length === 0) {
         Alert.alert('No Data', 'You have no workout history to export yet.');
         return;
       }
 
-      // Format workout data for export
       const exportData = {
         exportDate: new Date().toISOString(),
-        totalWorkouts: history.length,
-        workouts: history.map((log) => ({
-          date: `${log.workout_date.getFullYear()}-${String(log.workout_date.getMonth() + 1).padStart(2, '0')}-${String(log.workout_date.getDate()).padStart(2, '0')}`,
-          duration: log.duration_minutes,
-          exercisesCompleted: log.exercises_completed,
-          totalVolume: log.total_volume,
-          averageRPE: log.average_rpe,
-          rating: log.workout_rating,
-        })),
+        totalWorkouts: sessions.length,
+        workouts: sessions.map((session) => {
+          const completed = new Date(session.completedAt);
+          const dateKey = `${completed.getFullYear()}-${String(completed.getMonth() + 1).padStart(2, '0')}-${String(completed.getDate()).padStart(2, '0')}`;
+
+          let totalVolume = 0;
+          let rpeSum = 0;
+          let rpeCount = 0;
+          for (const exercise of session.exercises) {
+            for (const set of exercise.sets) {
+              if (typeof set.weight === 'number') {
+                totalVolume += set.weight * set.reps;
+              }
+              if (typeof set.rpe === 'number') {
+                rpeSum += set.rpe;
+                rpeCount += 1;
+              }
+            }
+          }
+
+          return {
+            date: dateKey,
+            workoutName: session.workoutName ?? null,
+            duration: session.durationMinutes,
+            exercisesCompleted: session.exercises.length,
+            totalVolume,
+            averageRPE: rpeCount > 0 ? Number((rpeSum / rpeCount).toFixed(1)) : null,
+          };
+        }),
       };
 
       const jsonString = JSON.stringify(exportData, null, 2);
