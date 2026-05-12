@@ -252,7 +252,7 @@ export default function SettingsScreen() {
         exportDate: new Date().toISOString(),
         totalWorkouts: history.length,
         workouts: history.map((log) => ({
-          date: log.workout_date.toISOString().split('T')[0],
+          date: `${log.workout_date.getFullYear()}-${String(log.workout_date.getMonth() + 1).padStart(2, '0')}-${String(log.workout_date.getDate()).padStart(2, '0')}`,
           duration: log.duration_minutes,
           exercisesCompleted: log.exercises_completed,
           totalVolume: log.total_volume,

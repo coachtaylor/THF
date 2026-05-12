@@ -30,13 +30,16 @@ export async function saveWorkoutToDatabase(
   console.log(`\n💾 Saving workout to database...`);
 
   try {
+    const now = new Date();
+    const workoutDateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
     // STEP 1: Create workout record
     const { data: workoutData, error: workoutError } = await supabase
       .from('workouts')
       .insert({
         user_id: profile.user_id,
         workout_name: workout.workout_name,
-        workout_date: new Date().toISOString().split('T')[0],
+        workout_date: workoutDateKey,
         status: 'generated',
         generated_at: new Date().toISOString(),
         user_hrt_months_at_generation: profile.hrt_months_duration,
