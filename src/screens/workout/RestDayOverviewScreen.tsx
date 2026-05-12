@@ -18,6 +18,7 @@ import { useProfile } from '../../hooks/useProfile';
 import { usePlan } from '../../hooks/usePlan';
 import { regenerateDay } from '../../services/planGenerator';
 import { savePlan } from '../../services/storage/plan';
+import { updateProfile } from '../../services/storage/profile';
 import { MobilityRoutine } from '../../components/restday';
 import type { Day } from '../../types/plan';
 
@@ -105,6 +106,22 @@ export default function RestDayOverviewScreen({ navigation, route }: Props) {
 
       // Save the updated plan
       await savePlan(updatedPlan, userId);
+
+      // Generating a workout for this day is an explicit un-skip: if today
+      // was in skipped_workout_dates (e.g. user tapped Skip earlier and then
+      // changed their mind via Rest Day · Want to move?), remove it so the
+      // dashboard's "This Week" denominator and Today card reflect the
+      // commitment. Without this, profile.skipped_workout_dates and
+      // plan.days[N].isRestDay end up in conflict — plan says workout day,
+      // profile says skipped — and the dashboard renders the skipped state.
+      const dayDate = new Date(day.date);
+      const dayKey = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
+      const skipped = profile.skipped_workout_dates ?? [];
+      if (skipped.includes(dayKey)) {
+        await updateProfile({
+          skipped_workout_dates: skipped.filter(d => d !== dayKey),
+        });
+      }
 
       // Refresh the plan in context
       await refreshPlan?.();

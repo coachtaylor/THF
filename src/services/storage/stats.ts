@@ -103,16 +103,25 @@ export async function getCurrentStreak(userId: string = 'default'): Promise<numb
       return 0;
     }
 
-    // Get unique workout dates in descending order
+    // Get unique workout dates (local YYYY-MM-DD) in descending order.
+    // Using toISOString() to derive the key would shift west-of-UTC evening
+    // completions to the next UTC day, then reconstruction via
+    // `new Date('YYYY-MM-DD')` (UTC midnight) compared to the local-midnight
+    // `today` reference produces an off-by-one daysDiff — making a single
+    // workout completed tonight read as a 2-day streak. Use local-date parts
+    // consistently and the multi-arg Date constructor for reconstruction.
     const workoutDates = new Set<string>();
     sessions.forEach(session => {
       const date = new Date(session.completedAt);
-      date.setHours(0, 0, 0, 0);
-      workoutDates.add(date.toISOString().split('T')[0]);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      workoutDates.add(key);
     });
 
     const sortedDates = Array.from(workoutDates)
-      .map(d => new Date(d))
+      .map(d => {
+        const [year, month, day] = d.split('-').map(Number);
+        return new Date(year, month - 1, day); // local midnight
+      })
       .sort((a, b) => b.getTime() - a.getTime());
 
     if (sortedDates.length === 0) {
