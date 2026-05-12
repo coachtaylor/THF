@@ -6,6 +6,7 @@ import { palette, spacing, typography } from '../../theme';
 import { Exercise } from '../../types';
 import { FlaggedExercise } from '../../types/feedback';
 import ExerciseFlagButton from '../feedback/ExerciseFlagButton';
+import { useProfile } from '../../hooks/useProfile';
 
 interface SetCompletionFormProps {
   setNumber: number;
@@ -40,6 +41,8 @@ export default function SetCompletionForm({
   onFlagExercise,
   isExerciseFlagged,
 }: SetCompletionFormProps) {
+  const { profile } = useProfile();
+
   // Pre-fill with previous set values if available
   const [reps, setReps] = useState<number>(previousSet?.reps || prescribedReps);
   const [weight, setWeight] = useState<number>(previousSet?.weight || 0);
@@ -69,8 +72,8 @@ export default function SetCompletionForm({
             {exercise.target_muscles && (
               <Text style={styles.tag}>{exercise.target_muscles}</Text>
             )}
-            {exercise.binder_aware && (
-              <Text style={styles.safetyTag}>✓ binding-safe</Text>
+            {profile?.binds_chest && exercise.binder_aware && (
+              <Text style={styles.safetyTag}>✓ low chest pressure</Text>
             )}
           </View>
         </View>

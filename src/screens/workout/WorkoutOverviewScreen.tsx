@@ -614,11 +614,15 @@ export default function WorkoutOverviewScreen() {
                   <Text style={styles.exercisePrescription}>
                     {ex.sets} sets × {ex.reps} reps • Rest {ex.rest_seconds}s
                   </Text>
-                  {ex.binding_safe && (
+                  {/* Badge shows the specific property — "low chest pressure"
+                      — instead of the binary "binding-safe" framing that
+                      implied unbadged exercises were unsafe. Gated on
+                      profile.binds_chest so non-binders don't see asymmetry. */}
+                  {profile?.binds_chest && ex.binding_safe && (
                     <View style={styles.exerciseTags}>
                       <View style={styles.safetyTag}>
                         <Ionicons name="shield-checkmark" size={10} color={colors.accent.primary} />
-                        <Text style={styles.safetyTagText}>binding-safe</Text>
+                        <Text style={styles.safetyTagText}>low chest pressure</Text>
                       </View>
                     </View>
                   )}
