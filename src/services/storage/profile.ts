@@ -117,28 +117,28 @@ export async function getProfile(): Promise<Profile | null> {
 // SECURITY: Encrypts sensitive health data fields before storage
 export async function updateProfile(updates: Partial<Profile>): Promise<void> {
   try {
-    // Get current profile first (outside transaction for async decryption)
-    let existing: {
+    // Get current profile first (outside transaction for async decryption).
+    // Use a ref wrapper so TS control-flow analysis can see the assignment
+    // through the transaction callback boundary.
+    type ProfileRow = {
       id: string;
       email: string | null;
       profile_data: string;
-    } | null = null;
+    };
+    const existingRef: { value: ProfileRow | null } = { value: null };
 
     getDb().withTransactionSync(() => {
       const selectStmt = getDb().prepareSync(
         "SELECT id, email, profile_data FROM profiles_storage LIMIT 1;",
       );
-      const rows = selectStmt.executeSync().getAllSync() as Array<{
-        id: string;
-        email: string | null;
-        profile_data: string;
-      }>;
+      const rows = selectStmt.executeSync().getAllSync() as ProfileRow[];
       if (rows.length > 0) {
-        existing = rows[0];
+        existingRef.value = rows[0];
       }
       selectStmt.finalizeSync();
     });
 
+    const existing = existingRef.value;
     let currentProfile: Profile;
     if (existing) {
       let parsed = JSON.parse(existing.profile_data || "{}");

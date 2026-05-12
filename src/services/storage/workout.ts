@@ -36,6 +36,7 @@ export interface TodaysWorkoutData {
 }
 
 export interface WorkoutDetailData extends TodaysWorkoutData {
+  scheduled_date?: string; // ISO string of the day this workout is scheduled for
   warm_up: {
     total_duration_minutes: number;
     exercises: Array<{
@@ -278,6 +279,7 @@ export async function getWorkout(
       id: workoutId,
       workout_name: workoutName,
       estimated_duration_minutes: duration,
+      scheduled_date: day.date instanceof Date ? day.date.toISOString() : new Date(day.date).toISOString(),
       warm_up: {
         total_duration_minutes: 5,
         exercises: warmupExercises,
