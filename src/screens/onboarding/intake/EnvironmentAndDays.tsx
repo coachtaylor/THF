@@ -11,6 +11,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
+import { intakeStepDisplay } from "../../../utils/onboardingSteps";
 import SelectionCard from "../../../components/onboarding/SelectionCard";
 import { colors, spacing, borderRadius } from "../../../theme/theme";
 import { textStyles, inputStyles } from "../../../theme/components";
@@ -372,8 +373,7 @@ export default function EnvironmentAndDays({
 
   return (
     <OnboardingLayout
-      currentStep={7}
-      totalSteps={8}
+      {...intakeStepDisplay(7, profile?.gender_identity)}
       title="Your Training Setup"
       subtitle="Pick where you train, what equipment you have, and which days work for your weekly schedule."
       onBack={handleBack}

@@ -15,6 +15,7 @@ import { OnboardingStackParamList } from "../../../types/onboarding";
 import OnboardingLayout from "../../../components/onboarding/OnboardingLayout";
 import SelectionCard from "../../../components/onboarding/SelectionCard";
 import { colors, spacing, borderRadius } from "../../../theme";
+import { intakeStepDisplay } from "../../../utils/onboardingSteps";
 import { inputStyles, textStyles } from "../../../theme/components";
 import { updateProfile } from "../../../services/storage/profile";
 
@@ -126,8 +127,7 @@ export default function GenderIdentity({
 
   return (
     <OnboardingLayout
-      currentStep={1}
-      totalSteps={8}
+      {...intakeStepDisplay(1, selectedGender)}
       title="Your Gender Identity"
       subtitle="Help us personalize your fitness journey. This information is private and stays on your device."
       onBack={handleBack}
