@@ -580,9 +580,11 @@ const styles = StyleSheet.create({
   },
   skipLink: {
     alignSelf: 'center',
-    paddingVertical: 10,
+    paddingTop: 8,
+    paddingBottom: 0,
     paddingHorizontal: 16,
-    marginTop: 8,
+    marginTop: 4,
+    marginBottom: -8,
   },
   skipLinkPressed: {
     opacity: 0.6,
