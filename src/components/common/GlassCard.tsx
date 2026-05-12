@@ -26,7 +26,19 @@ interface GlassCardProps extends Omit<PressableProps, 'style'> {
   accessibilityHint?: string;
 }
 
-const variantConfig = {
+type GlowColor = 'cyan' | 'pink' | 'both';
+
+const variantConfig: Record<
+  'default' | 'hero' | 'heroPink' | 'liquid',
+  {
+    baseColors: [string, string];
+    borderColor: string;
+    showGlows: boolean;
+    glowColor?: GlowColor;
+    shadowColor: string;
+    shadowOpacity: number;
+  }
+> = {
   default: {
     baseColors: ['#0A0A0C', '#0A0A0C'] as [string, string],
     borderColor: colors.glass.border,

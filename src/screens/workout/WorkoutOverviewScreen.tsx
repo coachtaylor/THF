@@ -994,7 +994,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.glass.bgLight,
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
-    borderRadius: borderRadius.xxs,
+    borderRadius: borderRadius.xs,
   },
   tagText: {
     fontFamily: 'Poppins',
@@ -1009,7 +1009,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent.primaryMuted,
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
-    borderRadius: borderRadius.xxs,
+    borderRadius: borderRadius.xs,
   },
   safetyTagText: {
     fontFamily: 'Poppins',
