@@ -137,6 +137,19 @@ export async function getPlan(
           date: new Date(day.date),
         }));
       }
+      // Backfill workout ids for plans saved before populate-on-generation
+      // shipped. Format must match planGenerator.assignWorkoutIds.
+      if (planData.id && Array.isArray(planData.days)) {
+        for (const day of planData.days) {
+          if (!day?.variants) continue;
+          for (const duration of [30, 45, 60, 90] as const) {
+            const workout = day.variants[duration];
+            if (workout && !workout.id) {
+              workout.id = `${planData.id}_d${day.dayNumber}_${duration}`;
+            }
+          }
+        }
+      }
       return planData as Plan;
     } else {
       return null;
