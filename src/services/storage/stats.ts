@@ -387,11 +387,18 @@ export interface MonthWorkout {
 }
 
 /**
- * Get workouts for a specific month
+ * Get workouts for a specific month.
+ *
+ * `skippedDates` is YYYY-MM-DD (local) strings the user actively skipped via
+ * the Today card. Scheduled workouts for those dates are dropped from the
+ * returned list so the "This Month" denominator on the history screen
+ * matches the dashboard's "This Week" denominator (which also subtracts
+ * skipped dates).
  */
 export async function getMonthWorkouts(
   userId: string = 'default',
-  month: Date = new Date()
+  month: Date = new Date(),
+  skippedDates: string[] = [],
 ): Promise<MonthWorkout[]> {
   try {
     // Get start and end of month
@@ -461,10 +468,12 @@ export async function getMonthWorkouts(
       };
     });
 
-    // Also get scheduled workouts from plan for this month (exclude rest days)
+    // Also get scheduled workouts from plan for this month (exclude rest days
+    // and any days the user actively skipped via the Today card).
     try {
       const plan = await getPlan(userId);
       if (plan) {
+        const skippedSet = new Set(skippedDates);
         const scheduledDays = plan.days.filter(day => {
           const dayDate = new Date(day.date);
           dayDate.setHours(0, 0, 0, 0);
@@ -474,7 +483,17 @@ export async function getMonthWorkouts(
 
         scheduledDays.forEach(day => {
           const dayDate = new Date(day.date);
-          const workoutDate = dayDate.toISOString().split('T')[0];
+          // Use local date parts to match how skipped_workout_dates is keyed
+          // and how completed sessions are dated above. toISOString() would
+          // shift across UTC boundaries for users west of UTC and produce
+          // mismatched keys.
+          const workoutDate = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
+
+          // Drop scheduled days the user explicitly skipped; the dashboard's
+          // "This Week" denominator does the same so the two counts agree.
+          if (skippedSet.has(workoutDate)) {
+            return;
+          }
 
           // Check if we already have a completed workout for this day
           const hasCompleted = workouts.some(w => w.workout_date === workoutDate);

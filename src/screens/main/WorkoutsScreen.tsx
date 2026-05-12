@@ -35,7 +35,7 @@ export default function WorkoutsScreen() {
   const loadMonthData = useCallback(async () => {
     try {
       const [monthWorkouts, currentStreak] = await Promise.all([
-        getMonthWorkouts(userId, currentMonth),
+        getMonthWorkouts(userId, currentMonth, profile?.skipped_workout_dates),
         getCurrentStreak(userId),
       ]);
 
@@ -46,7 +46,7 @@ export default function WorkoutsScreen() {
     } finally {
       setLoading(false);
     }
-  }, [userId, currentMonth]);
+  }, [userId, currentMonth, profile?.skipped_workout_dates]);
 
   useEffect(() => {
     loadMonthData();
