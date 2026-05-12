@@ -1037,12 +1037,11 @@ export default function SettingsScreen() {
               onPress={handleExportData}
               showChevron
             />
-            {/* Wired to deleteAllUserData (2026-05-12): cloud tables
-                + local SQLite + token + sign-out. Auth.users record
-                still persists until the delete-account Edge Function
-                is deployed — see modal copy and CLAUDE.md. */}
+            {/* Wired to deleteAllUserData (2026-05-12) → cloud tables,
+                Edge Function for auth.users delete, local SQLite, tokens,
+                sign-out. Full end-to-end account deletion. */}
             <GlassListItem
-              title="Delete account data"
+              title="Delete account"
               leftIcon="trash-outline"
               variant="danger"
               onPress={handleDeleteAccount}
@@ -1213,17 +1212,19 @@ export default function SettingsScreen() {
         initialCategory="technical_bug"
       />
 
-      {/* Delete Account Data Modal */}
+      {/* Delete Account Modal — full delete: cloud tables, sign-in record,
+          local data, tokens. Edge Function delete-account deployed
+          2026-05-12 closes the auth.users gap. */}
       <GlassModal
         visible={showDeleteAccountModal}
         onClose={() => setShowDeleteAccountModal(false)}
-        title="Delete account data?"
-        message="This deletes your profile and workout history from this device and from the cloud, then signs you out. Your sign-in record will be fully removed once the delete-account function is deployed — contact support if you need that done now."
+        title="Delete your account?"
+        message="This permanently deletes your profile, workout history, and sign-in record. Your data is removed from this device and from the cloud. This action cannot be undone."
         icon="trash-outline"
         iconColor={colors.error}
         actions={[
           {
-            label: 'Delete data',
+            label: 'Delete account',
             onPress: confirmDeleteAccount,
             variant: 'danger',
             loading: isDeletingAccount,
