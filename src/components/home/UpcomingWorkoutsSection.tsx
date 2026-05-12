@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/theme';
 import { getWeekWorkoutLogs, type WorkoutLog } from '../../services/storage/workoutLog';
 import { getCompletedDayNumbersForPlanThisWeek } from '../../services/storage/stats';
+import { getSessions, type SessionData } from '../../services/sessionLogger';
 import { saveWorkout, isWorkoutSaved, deleteSavedWorkout, findSavedWorkout } from '../../services/storage/savedWorkouts';
 import { useProfile } from '../../hooks/useProfile';
 import type { Day } from '../../types/plan';
@@ -176,6 +177,11 @@ export default function UpcomingWorkoutsSection({
   const { profile } = useProfile();
   const [viewMode, setViewMode] = useState<ViewMode>('upcoming');
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
+  // Bridge data source: SessionPlayer writes to `sessions` but not to
+  // `workout_logs`, so the history view used to render completed workouts
+  // as "missed" for users who finished via SessionPlayer (which is most of
+  // them). Load both sources; either signal counts as a completion.
+  const [weekSessions, setWeekSessions] = useState<SessionData[]>([]);
   const [savedWorkouts, setSavedWorkouts] = useState<Record<string, boolean>>({});
   const [completedByDay, setCompletedByDay] = useState<Map<number, string>>(new Map());
 
@@ -184,9 +190,13 @@ export default function UpcomingWorkoutsSection({
   if (profile?.binds_chest) tags.push('Binding-Safe');
   if (profile?.on_hrt) tags.push('HRT-Optimized');
 
-  // Fetch workout logs when switching to history view
+  // Fetch workout logs AND sessions when switching to history view.
+  // Sessions are the source of truth for SessionPlayer-completed workouts;
+  // workout_logs is the legacy path used by the ActiveWorkoutScreen flow.
+  // Reading both keeps the history accurate regardless of which path
+  // produced a given completion.
   useEffect(() => {
-    async function fetchLogs() {
+    async function fetchHistorySources() {
       if (!userId) return;
 
       const today = new Date();
@@ -195,12 +205,24 @@ export default function UpcomingWorkoutsSection({
       monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
       monday.setHours(0, 0, 0, 0);
 
-      const logs = await getWeekWorkoutLogs(userId, monday);
+      const [logs, allSessions] = await Promise.all([
+        getWeekWorkoutLogs(userId, monday),
+        getSessions(userId),
+      ]);
+
+      // Filter sessions to this week.
+      const sessionsThisWeek = allSessions.filter(s => {
+        const d = new Date(s.completedAt);
+        d.setHours(0, 0, 0, 0);
+        return d >= monday;
+      });
+
       setWorkoutLogs(logs);
+      setWeekSessions(sessionsThisWeek);
     }
 
     if (viewMode === 'history' && userId) {
-      fetchLogs();
+      fetchHistorySources();
     }
   }, [viewMode, userId]);
 
@@ -393,17 +415,37 @@ export default function UpcomingWorkoutsSection({
 
       if (!workoutDay?.workout) continue;
 
-      // Check if user completed the workout that day
-      const dateStr = date.toISOString().split('T')[0];
+      // Local YYYY-MM-DD — using toISOString() here would shift west-of-UTC
+      // evening dates by one day and miss the matching session/log.
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+      // workout_logs match (legacy ActiveWorkoutScreen path)
       const log = workoutLogs.find(l => {
-        const logDate = new Date(l.workout_date).toISOString().split('T')[0];
-        return logDate === dateStr;
+        const lDate = new Date(l.workout_date);
+        const lKey = `${lDate.getFullYear()}-${String(lDate.getMonth() + 1).padStart(2, '0')}-${String(lDate.getDate()).padStart(2, '0')}`;
+        return lKey === dateStr;
+      });
+
+      // session match (SessionPlayer path — currently the primary one).
+      // Either signal is sufficient evidence the user finished the workout.
+      const session = weekSessions.find(s => {
+        const d = new Date(s.completedAt);
+        const sKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return sKey === dateStr;
       });
 
       let status: 'completed' | 'missed' | 'abandoned' = 'missed';
-      if (log) {
-        status = log.status === 'completed' ? 'completed' : 'abandoned';
+      if (log?.status === 'completed' || session) {
+        status = 'completed';
+      } else if (log) {
+        status = 'abandoned';
       }
+
+      // Prefer log values when present (richer), otherwise derive from session.
+      const durationMinutes =
+        log?.duration_minutes ?? session?.durationMinutes;
+      const exerciseCount =
+        log?.exercises_completed ?? session?.exercises?.length;
 
       history.push({
         dayName: dayNames[i].slice(0, 3).toUpperCase(),
@@ -411,15 +453,15 @@ export default function UpcomingWorkoutsSection({
         month: date.toLocaleDateString('en-US', { month: 'short' }),
         workoutName: workoutDay.workoutName || 'Workout',
         status,
-        durationMinutes: log?.duration_minutes,
-        exerciseCount: log?.exercises_completed,
+        durationMinutes,
+        exerciseCount,
         dayNumber: workoutDay.day.dayNumber,
         workoutData: workoutDay.workout,
       });
     }
 
     return history;
-  }, [weekDays, workoutLogs]);
+  }, [weekDays, workoutLogs, weekSessions]);
 
   const upcomingWorkouts = getUpcomingWorkouts();
 

@@ -128,10 +128,22 @@ export async function getCurrentStreak(userId: string = 'default'): Promise<numb
       return 0;
     }
 
-    // Calculate streak
-    let streak = 0;
+    // Calculate streak. The streak is the number of consecutive workout days
+    // anchored at today or yesterday — NOT a derivation from "how many days
+    // back is the latest workout" (the prior implementation set streak =
+    // daysDiff + 1, which inflated a single workout completed yesterday to
+    // a streak of 2 because there was no requirement to verify completions
+    // on each intervening day).
+    //
+    // Walk the workouts most-recent-first. The first workout must be today
+    // or yesterday for there to be any active streak. Each subsequent
+    // workout must be exactly one day earlier than the previous one;
+    // otherwise the streak ends.
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
+    let streak = 0;
+    let expectedDaysDiff = -1; // sentinel for "first iteration"
 
     for (let i = 0; i < sortedDates.length; i++) {
       const workoutDate = sortedDates[i];
@@ -141,10 +153,24 @@ export async function getCurrentStreak(userId: string = 'default'): Promise<numb
         (today.getTime() - workoutDate.getTime()) / (1000 * 60 * 60 * 24)
       );
 
-      // If this workout was today or yesterday (allowing 1-day gap)
-      if (daysDiff === streak || daysDiff === streak + 1) {
-        streak = daysDiff + 1;
+      if (i === 0) {
+        // Streak only active if the latest workout is today or yesterday.
+        if (daysDiff === 0 || daysDiff === 1) {
+          streak = 1;
+          expectedDaysDiff = daysDiff + 1;
+        } else {
+          break; // gap > 1 day before today → no active streak
+        }
+      } else if (daysDiff === expectedDaysDiff) {
+        // Workout on the exact day before the previous one — streak continues.
+        streak += 1;
+        expectedDaysDiff += 1;
+      } else if (daysDiff < expectedDaysDiff) {
+        // Two completions on the same day (shouldn't happen after the Set
+        // dedupe, but defensive); ignore without breaking the streak.
+        continue;
       } else {
+        // Gap > 1 day — streak ends here.
         break;
       }
     }
@@ -322,6 +348,18 @@ export async function getWeeklyStats(
     // week, deduped by calendar date and excluding any the user actively
     // skipped via the Today card. Falls back to selectedFrequency only
     // when no plan exists (newly signed-up user pre-plan-generation).
+    //
+    // A completed session for a date overrides the skip flag for that
+    // date — the user clearly didn't skip if they completed a workout.
+    // This handles users with stale `skipped_workout_dates` state from
+    // before the substitute-day auto-unskip fix (2026-05-12) shipped.
+    const completedDateKeysThisWeek = new Set<string>();
+    thisWeekSessions.forEach(s => {
+      const d = new Date(s.completedAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      completedDateKeysThisWeek.add(key);
+    });
+
     let scheduledWorkouts = 4; // Default
     let achievableWorkouts = 4; // Default
     try {
@@ -341,7 +379,9 @@ export async function getWeeklyStats(
             !day.isRestDay
           ) {
             const key = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
-            if (!skippedSet.has(key)) {
+            // Skip subtracts from denominator unless the user actually
+            // completed a workout that day (skip is then a no-op).
+            if (!skippedSet.has(key) || completedDateKeysThisWeek.has(key)) {
               scheduledDayKeys.add(key);
             }
           }
@@ -483,6 +523,13 @@ export async function getMonthWorkouts(
       const plan = await getPlan(userId);
       if (plan) {
         const skippedSet = new Set(skippedDates);
+        // Completed-session dates this month — a completed workout overrides
+        // a stale skip flag for the same date so the user doesn't see the
+        // exercise count diverge from reality (matches the dashboard's
+        // getWeeklyStats behavior).
+        const completedDateKeysThisMonth = new Set(
+          workouts.map(w => w.workout_date),
+        );
         const scheduledDays = plan.days.filter(day => {
           const dayDate = new Date(day.date);
           dayDate.setHours(0, 0, 0, 0);
@@ -498,9 +545,11 @@ export async function getMonthWorkouts(
           // mismatched keys.
           const workoutDate = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
 
-          // Drop scheduled days the user explicitly skipped; the dashboard's
-          // "This Week" denominator does the same so the two counts agree.
-          if (skippedSet.has(workoutDate)) {
+          // Drop scheduled days the user explicitly skipped — UNLESS they
+          // later completed a workout that day (skip is overridden by
+          // completion). Without the override, stale skip state from
+          // before the auto-unskip fix would hide completed days here.
+          if (skippedSet.has(workoutDate) && !completedDateKeysThisMonth.has(workoutDate)) {
             return;
           }
 
