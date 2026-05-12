@@ -11,6 +11,20 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme';
 import { Exercise } from '../../types';
+import { useProfile } from '../../hooks/useProfile';
+
+// Surgery types where pelvic-floor-safe information is materially useful.
+// Defensive set — includes recent + historical bottom-floor surgeries plus
+// hysterectomy (which directly affects pelvic floor regardless of recovery
+// phase). Users without one of these in their surgeries array won't see
+// the pelvic badge — it would be irrelevant noise.
+const PELVIC_FLOOR_AFFECTING_SURGERIES = new Set<string>([
+  'vaginoplasty',
+  'phalloplasty',
+  'metoidioplasty',
+  'bottom_surgery',
+  'hysterectomy',
+]);
 
 export interface ExerciseLibraryCardProps {
   exercise: Exercise;
@@ -25,6 +39,20 @@ const ExerciseLibraryCard: React.FC<ExerciseLibraryCardProps> = ({
   isSwapMode = false,
   isInWorkout = false,
 }) => {
+  const { profile } = useProfile();
+
+  // Badge gating: each safety badge shows only for users in the cohort
+  // where that signal carries actionable information. Same strategic
+  // principle as the "low chest pressure" gate on Today's Workout —
+  // absence of badge should never imply unsafety, just irrelevance.
+  const showBinderBadge = profile?.binds_chest === true;
+  const showHeavyBindingBadge =
+    profile?.binder_type === 'ace_bandage' || profile?.binder_type === 'diy';
+  const showPelvicBadge =
+    profile?.surgeries?.some(s =>
+      PELVIC_FLOOR_AFFECTING_SURGERIES.has(String(s.type))
+    ) ?? false;
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'beginner':
@@ -92,19 +120,20 @@ const ExerciseLibraryCard: React.FC<ExerciseLibraryCardProps> = ({
             )}
           </View>
 
-          {/* Safety Badges */}
+          {/* Safety Badges — each gated on the user cohort where it carries
+              actionable meaning. See badge-gate predicates above. */}
           <View style={styles.safetyBadges}>
-            {exercise.binder_aware && (
+            {showBinderBadge && exercise.binder_aware && (
               <View style={[styles.safetyBadge, styles.binderBadge]}>
                 <Ionicons name="shield-checkmark" size={12} color={colors.accent.primary} />
               </View>
             )}
-            {exercise.heavy_binding_safe && (
+            {showHeavyBindingBadge && exercise.heavy_binding_safe && (
               <View style={[styles.safetyBadge, styles.heavyBindingBadge]}>
                 <Ionicons name="shield" size={12} color={colors.accent.secondary} />
               </View>
             )}
-            {exercise.pelvic_floor_safe && (
+            {showPelvicBadge && exercise.pelvic_floor_safe && (
               <View style={[styles.safetyBadge, styles.pelvicBadge]}>
                 <Ionicons name="heart" size={12} color={colors.success} />
               </View>
