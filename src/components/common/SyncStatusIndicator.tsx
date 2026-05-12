@@ -37,7 +37,7 @@ export default function SyncStatusIndicator({
         return (
           <ActivityIndicator
             size="small"
-            color={colors.text.muted}
+            color={colors.text.tertiary}
             style={styles.indicator}
           />
         );
@@ -62,7 +62,7 @@ export default function SyncStatusIndicator({
           <MaterialCommunityIcons
             name="cloud-outline"
             size={iconSize}
-            color={colors.text.muted}
+            color={colors.text.tertiary}
           />
         );
     }
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    color: colors.text.muted,
+    color: colors.text.tertiary,
   },
   errorLabel: {
     color: colors.accent.warning,

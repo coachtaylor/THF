@@ -313,7 +313,7 @@ export async function signOutFromGoogle(): Promise<void> {
  */
 export async function isGoogleSignedIn(): Promise<boolean> {
   try {
-    return await GoogleSignin.isSignedIn();
+    return GoogleSignin.hasPreviousSignIn();
   } catch {
     return false;
   }
