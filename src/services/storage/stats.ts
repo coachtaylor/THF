@@ -248,13 +248,20 @@ export async function getCompletedDayNumbersForPlanThisWeek(
 /**
  * Get stats for current week.
  *
- * `selectedFrequency` is the user's static workout_frequency from profile —
- * the denominator on Home becomes the user's choice, not a moving target
- * derived from the plan. Capped at 7 (one workout per calendar day max).
+ * The denominator reflects this week's actual scheduled workout count
+ * from the plan, NOT the static `workout_frequency`. A user with a 2/week
+ * schedule who adds today via the "Add for today" prompt should see 0/3
+ * — their commitment for this specific week is 3. Skipped days drop out
+ * of the denominator (they're consumed by the skip, not pending).
+ *
+ * `skippedDates` is the local YYYY-MM-DD list of days the user opted out
+ * of via the Today card's Skip link. `selectedFrequency` is used only as
+ * a fallback when no plan exists.
  */
 export async function getWeeklyStats(
   userId: string = 'default',
   selectedFrequency?: number,
+  skippedDates: string[] = [],
 ): Promise<WeeklyStats> {
   try {
     // Get start of current week (Monday)
@@ -302,36 +309,37 @@ export async function getWeeklyStats(
 
     const averageRPE = rpeCount > 0 ? totalRPE / rpeCount : 0;
 
-    // Denominator: the user's static selected frequency, clamped to [1, 7].
-    // Falls back to the plan's deduped scheduled-day count when no selection
-    // is provided.
+    // Denominator: count workout days in the plan that fall in this ISO
+    // week, deduped by calendar date and excluding any the user actively
+    // skipped via the Today card. Falls back to selectedFrequency only
+    // when no plan exists (newly signed-up user pre-plan-generation).
     let scheduledWorkouts = 4; // Default
     let achievableWorkouts = 4; // Default
     try {
-      if (selectedFrequency && selectedFrequency > 0) {
-        scheduledWorkouts = Math.min(7, Math.max(1, Math.floor(selectedFrequency)));
-      } else {
-        const plan = await getPlan(userId);
-        if (plan) {
-          const weekEnd = new Date(startOfWeek);
-          weekEnd.setDate(weekEnd.getDate() + 7);
+      const plan = await getPlan(userId);
+      if (plan) {
+        const weekEnd = new Date(startOfWeek);
+        weekEnd.setDate(weekEnd.getDate() + 7);
 
-          // Dedup plan days by calendar date so duplicate rows can't push
-          // the denominator above 7.
-          const scheduledDayKeys = new Set<string>();
-          plan.days.forEach(day => {
-            const dayDate = new Date(day.date);
-            dayDate.setHours(0, 0, 0, 0);
-            if (
-              dayDate >= startOfWeek &&
-              dayDate < weekEnd &&
-              !day.isRestDay
-            ) {
-              scheduledDayKeys.add(dayDate.toISOString().split('T')[0]);
+        const skippedSet = new Set(skippedDates);
+        const scheduledDayKeys = new Set<string>();
+        plan.days.forEach(day => {
+          const dayDate = new Date(day.date);
+          dayDate.setHours(0, 0, 0, 0);
+          if (
+            dayDate >= startOfWeek &&
+            dayDate < weekEnd &&
+            !day.isRestDay
+          ) {
+            const key = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, '0')}-${String(dayDate.getDate()).padStart(2, '0')}`;
+            if (!skippedSet.has(key)) {
+              scheduledDayKeys.add(key);
             }
-          });
-          scheduledWorkouts = Math.min(7, scheduledDayKeys.size);
-        }
+          }
+        });
+        scheduledWorkouts = Math.min(7, scheduledDayKeys.size);
+      } else if (selectedFrequency && selectedFrequency > 0) {
+        scheduledWorkouts = Math.min(7, Math.max(1, Math.floor(selectedFrequency)));
       }
 
       // Achievable = unique completed days + remaining days in week

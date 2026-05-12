@@ -138,7 +138,7 @@ export default function ProgressScreen() {
       const [currentStreak, stats, volume, frequency, exercises] =
         await Promise.all([
           getCurrentStreak(userId),
-          getWeeklyStats(userId, profile?.workout_frequency),
+          getWeeklyStats(userId, profile?.workout_frequency, profile?.skipped_workout_dates),
           getVolumeByWeek(userId, timeRange),
           getWorkoutFrequency(userId, timeRange),
           getExercisesWithData(userId),
