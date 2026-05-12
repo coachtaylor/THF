@@ -145,14 +145,32 @@ export const dysphoriaFilteringRules: Rule[] = [
     action: {
       type: 'exclude_exercises',
       criteria: {
-        custom_filter: (ex: { environment?: string; name?: string; dysphoria_tags?: string[]; equipment?: string[] }) => {
-          const isAquatic = ex.environment === 'pool' ||
+        custom_filter: (ex) => {
+          // PRIMARY (migration 009): explicit is_aquatic flag with default-deny.
+          // null/undefined → treat as potentially aquatic, exclude. Only
+          // exercises explicitly labeled `is_aquatic: false` are surfaced to
+          // users with swimming dysphoria.
+          if (ex.is_aquatic !== false) {
+            // Note: ex.is_aquatic === true OR null/undefined both land here.
+            // Defense in depth: also keep the heuristic fallbacks below so
+            // that exercises mislabeled (or pre-backfill, in test fixtures)
+            // still get caught when they obviously match.
+            return true;
+          }
+          // Defensive secondary filters in case the flag is wrong/missing.
+          // Reaches here only when ex.is_aquatic === false (explicit safe).
+          // If the heuristics still match, override the explicit safe label —
+          // i.e. trust visible name signals over a possibly-wrong DB value.
+          const nameSuggestsAquatic =
             ex.name?.toLowerCase().includes('swim') ||
             ex.name?.toLowerCase().includes('aqua') ||
-            ex.name?.toLowerCase().includes('water') ||
-            ex.dysphoria_tags?.includes('aquatic') ||
-            ex.equipment?.some((e: string) => e.toLowerCase().includes('pool'));
-          return isAquatic;
+            ex.name?.toLowerCase().includes('water');
+          const equipmentSuggestsAquatic = ex.equipment?.some(
+            (e: string) => e.toLowerCase().includes('pool'),
+          );
+          const tagsSuggestAquatic = typeof ex.dysphoria_tags === 'string' &&
+            ex.dysphoria_tags.includes('aquatic');
+          return Boolean(nameSuggestsAquatic || equipmentSuggestsAquatic || tagsSuggestAquatic);
         }
       }
     },

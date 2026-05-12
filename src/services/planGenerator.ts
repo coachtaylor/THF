@@ -474,6 +474,7 @@ export async function generateQuickStartPlan(): Promise<Plan> {
     days: [day],
   };
 
+  assignWorkoutIds(plan.id, plan.days);
   return plan;
 }
 
@@ -765,6 +766,8 @@ export async function generatePlan(profile: Profile): Promise<Plan> {
     workoutDays, // Store user's selected workout days
   };
 
+  assignWorkoutIds(plan.id, plan.days);
+
   logger.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   logger.log('✅ PLAN GENERATION COMPLETE');
   logger.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -892,7 +895,7 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
     });
   }
 
-  return {
+  const plan: Plan = {
     id: generatePlanId(),
     blockLength: (profile.block_length || 1) as 1 | 4,
     startDate,
@@ -901,6 +904,9 @@ export async function generatePlanWithVariety(profile: Profile): Promise<Plan> {
     days,
     workoutDays,
   };
+
+  assignWorkoutIds(plan.id, plan.days);
+  return plan;
 }
 
 /**
@@ -956,13 +962,16 @@ export async function regenerateDay(
     90: generatePhase2Workout(profile, 90, exercises, dayTemplate, template, safetyContext),
   };
 
-  return {
+  const updatedDay: Day = {
     ...existingDay,
     dayOfWeek: existingDay.dayOfWeek ?? new Date(existingDay.date).getDay(),
     isRestDay: false, // Mark as no longer a rest day since we're generating a workout
     wasRestDay: existingDay.isRestDay, // Remember if this was originally a rest day
     variants,
   };
+
+  assignWorkoutIds(plan.id, [updatedDay]);
+  return updatedDay;
 }
 
 /**
@@ -1102,6 +1111,23 @@ function generatePlanId(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 9);
   return `plan-${timestamp}-${random}`;
+}
+
+/**
+ * Assign deterministic ids to every non-null Workout in the given days.
+ * Format: `${planId}_d${dayNumber}_${duration}`. Stable across regenerations
+ * of the same plan/day/duration so telemetry events can be grouped by workout
+ * instance. Safe to call multiple times — overwrites existing ids.
+ */
+function assignWorkoutIds(planId: string, days: Day[]): void {
+  for (const day of days) {
+    for (const duration of [30, 45, 60, 90] as const) {
+      const workout = day.variants[duration];
+      if (workout) {
+        workout.id = `${planId}_d${day.dayNumber}_${duration}`;
+      }
+    }
+  }
 }
 
 /**

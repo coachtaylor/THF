@@ -102,6 +102,103 @@ describe("Rules Engine", () => {
       );
     });
 
+    it("BS-01b: excludes cardio with binder_unsafe_cardio=true for ace-bandage users", async () => {
+      // Migration 009 added `binder_unsafe_cardio` flag. Cardio explicitly
+      // labeled unsafe is excluded for ace-bandage / DIY-binder users
+      // regardless of binder_aware / heavy_binding_safe.
+      const aceBandageProfile = createBaseProfile({
+        binds_chest: true,
+        binder_type: "ace_bandage",
+      });
+
+      const exercises = [
+        createMockExercise({
+          id: "200",
+          name: "Sprint Intervals",
+          pattern: "cardio",
+          binder_aware: true,
+          heavy_binding_safe: true,
+          binder_unsafe_cardio: true,
+        }),
+        createMockExercise({
+          id: "201",
+          name: "Easy Walk",
+          pattern: "cardio",
+          binder_aware: true,
+          heavy_binding_safe: true,
+          binder_unsafe_cardio: false,
+        }),
+      ];
+
+      const result = await evaluateSafetyRules(aceBandageProfile, exercises);
+
+      // Unsafe cardio excluded; explicitly-safe cardio kept.
+      expect(result.excluded_exercise_ids).toContain(200);
+      expect(result.excluded_exercise_ids).not.toContain(201);
+    });
+
+    it("BS-01b: DEFAULT-DENY — excludes cardio with NULL binder_unsafe_cardio for ace-bandage users", async () => {
+      // Default-deny posture: unlabeled cardio (null / undefined) is treated
+      // as potentially unsafe. New cardio exercises must be explicitly
+      // labeled `binder_unsafe_cardio: false` before they reach ace-bandage
+      // / DIY-binder users.
+      const aceBandageProfile = createBaseProfile({
+        binds_chest: true,
+        binder_type: "ace_bandage",
+      });
+
+      const exercises = [
+        createMockExercise({
+          id: "300",
+          name: "Unlabeled Cardio",
+          pattern: "cardio",
+          binder_aware: true,
+          heavy_binding_safe: true,
+          binder_unsafe_cardio: null,
+        }),
+      ];
+
+      const result = await evaluateSafetyRules(aceBandageProfile, exercises);
+      expect(result.excluded_exercise_ids).toContain(300);
+    });
+
+    it("BS-01b: excludes plyometric exercises for ace-bandage / DIY binder users", async () => {
+      // Regression guard: BS-01b declares `patterns: ['plyometric']` in its
+      // exclusion criteria. Until 2026-05-11 the evaluator's
+      // filterExcludedExercises ignored `patterns` entirely, so plyometric
+      // exercises were silently NOT excluded for users in ace bandages or
+      // DIY binders. This test locks the wired-up behavior.
+      const aceBandageProfile = createBaseProfile({
+        binds_chest: true,
+        binder_type: "ace_bandage",
+        binding_frequency: "daily",
+        binding_duration_hours: 4,
+      });
+
+      const exercises = [
+        createMockExercise({
+          id: "100",
+          name: "Box Jumps",
+          pattern: "plyometric",
+          binder_aware: true,
+          heavy_binding_safe: true,
+        }),
+        createMockExercise({
+          id: "101",
+          name: "Bodyweight Squat",
+          pattern: "squat",
+          binder_aware: true,
+          heavy_binding_safe: true,
+        }),
+      ];
+
+      const result = await evaluateSafetyRules(aceBandageProfile, exercises);
+
+      // Plyometric exercise excluded; non-plyometric kept.
+      expect(result.excluded_exercise_ids).toContain(100);
+      expect(result.excluded_exercise_ids).not.toContain(101);
+    });
+
     it("BS-02: applies volume reduction for 8+ hour binding", async () => {
       const heavyBindingProfile = createBaseProfile({
         binds_chest: true,
@@ -404,6 +501,72 @@ describe("Rules Engine", () => {
         (r) => r.rule_id === "DYS-03",
       );
       expect(dys03Applied).toBeDefined();
+    });
+
+    it("DYS-07: excludes is_aquatic=true exercises for swimming-dysphoria users", async () => {
+      // Migration 009 added `is_aquatic` flag. Aquatic exercises explicitly
+      // labeled are excluded for users with the swimming dysphoria trigger.
+      const swimmingProfile = createBaseProfile({
+        dysphoria_triggers: ["swimming"],
+      });
+
+      const exercises = [
+        createMockExercise({
+          id: "400",
+          name: "Lane Swim",
+          is_aquatic: true,
+        }),
+        createMockExercise({
+          id: "401",
+          name: "Dry Squat",
+          is_aquatic: false,
+        }),
+      ];
+
+      const result = await evaluateSafetyRules(swimmingProfile, exercises);
+      expect(result.excluded_exercise_ids).toContain(400);
+      expect(result.excluded_exercise_ids).not.toContain(401);
+    });
+
+    it("DYS-07: DEFAULT-DENY — excludes is_aquatic=NULL exercises for swimming-dysphoria users", async () => {
+      // Default-deny: unlabeled exercises (null / undefined) are excluded for
+      // at-risk users. New exercises must be explicitly labeled
+      // `is_aquatic: false` to reach swimming-dysphoric users.
+      const swimmingProfile = createBaseProfile({
+        dysphoria_triggers: ["swimming"],
+      });
+
+      const exercises = [
+        createMockExercise({
+          id: "500",
+          name: "Unlabeled Movement",
+          is_aquatic: null,
+        }),
+      ];
+
+      const result = await evaluateSafetyRules(swimmingProfile, exercises);
+      expect(result.excluded_exercise_ids).toContain(500);
+    });
+
+    it("DYS-07: defense-in-depth — name-substring overrides is_aquatic=false mislabel", async () => {
+      // If an exercise is explicitly labeled is_aquatic: false but its name
+      // visibly contains aquatic keywords ('swim', 'aqua', 'water'), the
+      // visible signal wins and the exercise is still excluded. Guards
+      // against accidentally-wrong DB values.
+      const swimmingProfile = createBaseProfile({
+        dysphoria_triggers: ["swimming"],
+      });
+
+      const exercises = [
+        createMockExercise({
+          id: "600",
+          name: "Water Aerobics",
+          is_aquatic: false, // mislabeled
+        }),
+      ];
+
+      const result = await evaluateSafetyRules(swimmingProfile, exercises);
+      expect(result.excluded_exercise_ids).toContain(600);
     });
 
     it("applies multiple dysphoria rules for users with multiple triggers", async () => {
@@ -943,8 +1106,8 @@ describe("Rules Engine", () => {
       // But should have other post-op checkpoints
 
       // Critical block should include patterns like push, pull, core
-      const criticalBlockPatterns = result.critical_blocks.map(
-        (b) => b.pattern,
+      const criticalBlockPatterns = result.critical_blocks.flatMap(
+        (b) => b.patterns ?? [],
       );
       expect(criticalBlockPatterns.length).toBeGreaterThan(0);
     });

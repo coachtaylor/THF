@@ -287,12 +287,14 @@ export default function Review({ navigation }: ReviewProps) {
 
       // Track workout generation for each day in the plan
       if (plan.days && plan.days.length > 0) {
-        const firstWorkout = plan.days[0];
+        const firstDay = plan.days[0];
+        const duration = (profile.session_duration || 45) as 30 | 45 | 60 | 90;
+        const firstWorkout = firstDay.variants[duration] ?? firstDay.variants[45] ?? firstDay.variants[30];
         await trackWorkoutGenerated(
           plan.id,
-          firstWorkout.workout?.name || "Generated Workout",
-          profile.session_duration || 45,
-          firstWorkout.workout?.exercises?.length || 0,
+          firstWorkout?.name || "Generated Workout",
+          duration,
+          firstWorkout?.exercises?.length || 0,
         );
       }
 

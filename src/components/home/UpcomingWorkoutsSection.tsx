@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, Platform, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/theme';
-import { getWeekWorkoutLogs, type WorkoutLog } from '../../services/storage/workoutLog';
 import { getCompletedDayNumbersForPlanThisWeek } from '../../services/storage/stats';
+import { getSessions, type SessionData } from '../../services/sessionLogger';
 import { saveWorkout, isWorkoutSaved, deleteSavedWorkout, findSavedWorkout } from '../../services/storage/savedWorkouts';
 import { useProfile } from '../../hooks/useProfile';
 import type { Day } from '../../types/plan';
@@ -175,7 +175,11 @@ export default function UpcomingWorkoutsSection({
 }: UpcomingWorkoutsSectionProps) {
   const { profile } = useProfile();
   const [viewMode, setViewMode] = useState<ViewMode>('upcoming');
-  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
+  // Completed workouts this week — source of truth is the `sessions` table
+  // (written by SessionPlayer on completion). The legacy `workout_logs`
+  // table belonged to a now-removed ActiveWorkoutScreen flow that the app
+  // never reaches, so we don't query it.
+  const [weekSessions, setWeekSessions] = useState<SessionData[]>([]);
   const [savedWorkouts, setSavedWorkouts] = useState<Record<string, boolean>>({});
   const [completedByDay, setCompletedByDay] = useState<Map<number, string>>(new Map());
 
@@ -184,9 +188,9 @@ export default function UpcomingWorkoutsSection({
   if (profile?.binds_chest) tags.push('Binding-Safe');
   if (profile?.on_hrt) tags.push('HRT-Optimized');
 
-  // Fetch workout logs when switching to history view
+  // Load completed sessions for the current week when the history view is open.
   useEffect(() => {
-    async function fetchLogs() {
+    async function fetchSessions() {
       if (!userId) return;
 
       const today = new Date();
@@ -195,12 +199,18 @@ export default function UpcomingWorkoutsSection({
       monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
       monday.setHours(0, 0, 0, 0);
 
-      const logs = await getWeekWorkoutLogs(userId, monday);
-      setWorkoutLogs(logs);
+      const allSessions = await getSessions(userId);
+      const sessionsThisWeek = allSessions.filter(s => {
+        const d = new Date(s.completedAt);
+        d.setHours(0, 0, 0, 0);
+        return d >= monday;
+      });
+
+      setWeekSessions(sessionsThisWeek);
     }
 
     if (viewMode === 'history' && userId) {
-      fetchLogs();
+      fetchSessions();
     }
   }, [viewMode, userId]);
 
@@ -393,17 +403,17 @@ export default function UpcomingWorkoutsSection({
 
       if (!workoutDay?.workout) continue;
 
-      // Check if user completed the workout that day
-      const dateStr = date.toISOString().split('T')[0];
-      const log = workoutLogs.find(l => {
-        const logDate = new Date(l.workout_date).toISOString().split('T')[0];
-        return logDate === dateStr;
+      // Local YYYY-MM-DD — using toISOString() here would shift west-of-UTC
+      // evening dates by one day and miss the matching session.
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+      const session = weekSessions.find(s => {
+        const d = new Date(s.completedAt);
+        const sKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return sKey === dateStr;
       });
 
-      let status: 'completed' | 'missed' | 'abandoned' = 'missed';
-      if (log) {
-        status = log.status === 'completed' ? 'completed' : 'abandoned';
-      }
+      const status: 'completed' | 'missed' = session ? 'completed' : 'missed';
 
       history.push({
         dayName: dayNames[i].slice(0, 3).toUpperCase(),
@@ -411,15 +421,15 @@ export default function UpcomingWorkoutsSection({
         month: date.toLocaleDateString('en-US', { month: 'short' }),
         workoutName: workoutDay.workoutName || 'Workout',
         status,
-        durationMinutes: log?.duration_minutes,
-        exerciseCount: log?.exercises_completed,
+        durationMinutes: session?.durationMinutes,
+        exerciseCount: session?.exercises?.length,
         dayNumber: workoutDay.day.dayNumber,
         workoutData: workoutDay.workout,
       });
     }
 
     return history;
-  }, [weekDays, workoutLogs]);
+  }, [weekDays, weekSessions]);
 
   const upcomingWorkouts = getUpcomingWorkouts();
 

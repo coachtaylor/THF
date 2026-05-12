@@ -108,9 +108,15 @@ export function generatePersonalizationSummary(
     });
   }
 
-  // 10. From Safety Context (rules engine outputs)
-  if (safetyContext?.user_messages) {
-    for (const message of safetyContext.user_messages) {
+  // 10. From Safety Context (rules engine outputs).
+  // Aggregate userMessage strings off each applied rule. The field used to be
+  // a top-level `user_messages: string[]` array but the rules-engine types
+  // moved the messages onto `rules_applied[].userMessage` (optional).
+  const safetyMessages = (safetyContext?.rules_applied ?? [])
+    .map(r => r.userMessage)
+    .filter((m): m is string => typeof m === 'string' && m.length > 0);
+  if (safetyMessages.length > 0) {
+    for (const message of safetyMessages) {
       // Avoid duplicates
       if (!safety.some(s => s.description.includes(message.substring(0, 20)))) {
         safety.push({

@@ -225,6 +225,13 @@ function filterExcludedExercises(
         if (hasContra) return true;
       }
 
+      // Check patterns — exclude exercises whose movement pattern matches any
+      // listed pattern. Used e.g. by BS-01b to exclude plyometric exercises
+      // for users in ace-bandage / DIY binders.
+      if (criteria.patterns && ex.pattern && criteria.patterns.includes(ex.pattern)) {
+        return true;
+      }
+
       // Check custom filter - now safe because ex is guaranteed non-null
       if (criteria.custom_filter && criteria.custom_filter(ex)) {
         return true;

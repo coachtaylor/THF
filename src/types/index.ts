@@ -243,6 +243,15 @@ export interface Exercise {
   dysphoria_tags?: string;
   post_op_safe_weeks?: number;
 
+  // Safety flags (migration 009, 2026-05-11). Both nullable to support a
+  // default-deny posture: rules treat null/undefined as "potentially unsafe"
+  // and exclude the exercise for the at-risk profile group. Backfill sets
+  // explicit values on existing rows; new exercises must be labeled before
+  // they'll show up for the relevant user groups. See CLAUDE.md "Exercise
+  // authoring discipline."
+  binder_unsafe_cardio?: boolean | null; // BS-01b: cardio too high-impact for ace bandages
+  is_aquatic?: boolean | null;            // DYS-07: requires water (pool, swim, etc.)
+
   // Recovery phase fields (from research analyzer)
   recovery_phases?: RecoveryPhase[]; // Array of phases this exercise is appropriate for
   impact_level?: ImpactLevel; // Impact classification for recovery safety
@@ -304,6 +313,7 @@ export interface Day {
 }
 
 export interface Workout {
+  id?: string;
   name?: string;
   duration: 30 | 45 | 60 | 90;
   exercises: ExerciseInstance[];

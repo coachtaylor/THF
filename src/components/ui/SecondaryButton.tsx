@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { palette, spacing, typography } from '../../theme';
+import { palette, spacing, typography, colors } from '../../theme';
 
 interface SecondaryButtonProps {
   onPress: () => void;
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   labelDisabled: {
-    color: palette.disabled,
+    color: colors.text.disabled,
   },
 });
 

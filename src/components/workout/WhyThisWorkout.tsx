@@ -124,17 +124,34 @@ export default function WhyThisWorkout({
             {/* Personalization Summary Section */}
             {hasPersonalization && (
               <>
-                <Text style={styles.sectionLabel}>Personalized for you</Text>
+                {(personalizationSummary.primary_influences.length > 0 ||
+                  personalizationSummary.secondary_influences.length > 0) && (
+                  <>
+                    <Text style={styles.sectionLabel}>Personalized for you</Text>
 
-                {/* Primary influences */}
-                {personalizationSummary.primary_influences.map((item, index) => (
-                  <PersonalizationItem key={`primary-${index}`} item={item} />
-                ))}
+                    {/* Primary influences */}
+                    {personalizationSummary.primary_influences.map((item, index) => (
+                      <PersonalizationItem key={`primary-${index}`} item={item} />
+                    ))}
 
-                {/* Secondary influences (collapsed by default, show top 2) */}
-                {personalizationSummary.secondary_influences.slice(0, 2).map((item, index) => (
-                  <PersonalizationItem key={`secondary-${index}`} item={item} />
-                ))}
+                    {/* Secondary influences (collapsed by default, show top 2) */}
+                    {personalizationSummary.secondary_influences.slice(0, 2).map((item, index) => (
+                      <PersonalizationItem key={`secondary-${index}`} item={item} />
+                    ))}
+                  </>
+                )}
+
+                {/* Safety adjustments — rules-engine outputs (binding, HRT phase,
+                    post-op, etc.). Surfaced separately from personalization so
+                    users can see what safety logic shaped today's workout. */}
+                {personalizationSummary.safety_adjustments.length > 0 && (
+                  <>
+                    <Text style={styles.sectionLabel}>Safety adjustments</Text>
+                    {personalizationSummary.safety_adjustments.map((item, index) => (
+                      <PersonalizationItem key={`safety-${index}`} item={item} />
+                    ))}
+                  </>
+                )}
               </>
             )}
 

@@ -60,8 +60,13 @@ export const bindingSafetyRules: Rule[] = [
         patterns: ['plyometric'],
         custom_filter: (ex) => {
           const notBinderSafe = !ex.binder_aware && !ex.heavy_binding_safe;
-          const isHighIntensityCardio = ex.pattern === 'cardio' && (ex.intensity === 'high' || ex.intensity === 'very_high');
-          return notBinderSafe || isHighIntensityCardio;
+          // DEFAULT-DENY (migration 009): for cardio exercises, exclude unless
+          // explicitly labeled `binder_unsafe_cardio: false`. Cardio missing
+          // the label is treated as potentially unsafe for ace-bandage / DIY
+          // binder users.
+          const isCardioUnsafeOrUnknown =
+            ex.pattern === 'cardio' && ex.binder_unsafe_cardio !== false;
+          return notBinderSafe || isCardioUnsafeOrUnknown;
         }
       }
     },
@@ -81,7 +86,11 @@ export const bindingSafetyRules: Rule[] = [
     action: {
       type: 'inject_checkpoint',
       checkpoint: {
-        type: 'safety_warning',
+        // Was 'safety_warning' which isn't a valid SafetyCheckpoint type.
+        // planGenerator's checkpoint-type-mapping switch already routed it to
+        // 'safety_reminder' at runtime via its default branch, so this just
+        // aligns the declared type with what was actually being injected.
+        type: 'safety_reminder',
         trigger: 'workout_start',
         message: 'Safety Notice: Keep workouts under 30 minutes. If you feel rib pain, chest tightness, or difficulty breathing, stop immediately.',
         severity: 'critical'

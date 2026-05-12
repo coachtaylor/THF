@@ -63,6 +63,10 @@ export interface SafetyRulesConfig {
     ace_bandage: BindingConfig;
     diy: BindingConfig;
     long_duration: BindingConfig;
+    // BS-04 (overhead-movement restriction) reads from this slot. The JSON
+    // config doesn't populate it today — the rule falls back to inline
+    // defaults at runtime. Typed as optional so the lookup compiles cleanly.
+    overhead?: BindingConfig;
   };
   post_op: Record<string, PostOpPhaseConfig[]>;
   dysphoria: DysphoriaFilterConfig[];

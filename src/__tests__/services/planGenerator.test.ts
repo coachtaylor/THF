@@ -203,6 +203,43 @@ describe('planGenerator', () => {
     });
   });
 
+  describe('workout id population (telemetry invariant)', () => {
+    // Format produced by planGenerator.assignWorkoutIds. SessionPlayer and
+    // downstream telemetry depend on these ids being present and matching
+    // this exact format — regressions here mean every analytics event from
+    // SessionPlayer goes back to emitting workoutId=undefined.
+
+    it('quick-start plan assigns id to the 30-min variant', async () => {
+      const plan = await generateQuickStartPlan();
+      const workout = plan.days[0].variants[30];
+      expect(workout).toBeTruthy();
+      expect(workout!.id).toBe(`${plan.id}_d1_30`);
+    });
+
+    it('generated plan assigns id to every non-null workout variant', async () => {
+      const plan = await generatePlan(mockProfile);
+      for (const day of plan.days) {
+        for (const duration of [30, 45, 60, 90] as const) {
+          const workout = day.variants[duration];
+          if (workout) {
+            expect(workout.id).toBe(`${plan.id}_d${day.dayNumber}_${duration}`);
+          }
+        }
+      }
+    });
+
+    it('does not populate ids on rest days (no workouts to id)', async () => {
+      const plan = await generatePlan(mockProfile);
+      const restDays = plan.days.filter(d => d.isRestDay);
+      for (const day of restDays) {
+        expect(day.variants[30]).toBeNull();
+        expect(day.variants[45]).toBeNull();
+        expect(day.variants[60]).toBeNull();
+        expect(day.variants[90]).toBeNull();
+      }
+    });
+  });
+
   describe('Rules Engine Integration', () => {
     it('applies post-op rules for users with recent surgery', async () => {
       const postOpProfile = {
