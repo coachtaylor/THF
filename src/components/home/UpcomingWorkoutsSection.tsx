@@ -69,6 +69,9 @@ function HistoryWorkoutCard({
   exerciseCount,
   isSaved,
   onSave,
+  session,
+  plannedExercises,
+  exerciseMap,
 }: {
   dayName: string;
   date: number;
@@ -79,7 +82,15 @@ function HistoryWorkoutCard({
   exerciseCount?: number;
   isSaved?: boolean;
   onSave?: () => void;
+  // For completed/abandoned sessions: the logged session data. Sets[] live here.
+  session?: SessionData;
+  // For missed (and as a fallback) sessions: the planned exercises with their
+  // scheduled set/rep targets. Shape mirrors plan.workout.exercises[].
+  plannedExercises?: Array<{ exerciseId: string; sets?: number; reps?: string | number }>;
+  exerciseMap?: Record<string, Exercise>;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   const statusConfig = {
     completed: {
       icon: 'checkmark-circle' as const,
@@ -100,8 +111,68 @@ function HistoryWorkoutCard({
 
   const { icon, color, bgColor } = statusConfig[status];
 
+  // Build the row data shown when expanded. Completed/abandoned reads from the
+  // logged session (true record of what got done). Missed falls back to the
+  // planned exercises (what was scheduled but never executed).
+  const expandedRows: Array<{
+    key: string;
+    name: string;
+    meta: string;
+    painFlagged?: boolean;
+    swapped?: boolean;
+  }> = (() => {
+    if ((status === 'completed' || status === 'abandoned') && session?.exercises?.length) {
+      return session.exercises.map((ex, i) => {
+        const resolvedId = ex.swappedTo || ex.exerciseId;
+        const exMeta = exerciseMap?.[resolvedId];
+        const name = ex.name || exMeta?.name || 'Exercise';
+        const setCount = ex.sets?.length ?? 0;
+        const reps = ex.sets?.map(s => s.reps).filter(r => typeof r === 'number');
+        let meta = `${setCount} set${setCount === 1 ? '' : 's'}`;
+        if (reps && reps.length > 0) {
+          const min = Math.min(...reps);
+          const max = Math.max(...reps);
+          meta += min === max ? ` × ${min} reps` : ` × ${min}–${max} reps`;
+        }
+        return {
+          key: `${ex.exerciseId}-${i}`,
+          name,
+          meta,
+          painFlagged: ex.painFlagged,
+          swapped: !!ex.swappedTo,
+        };
+      });
+    }
+    if (plannedExercises?.length) {
+      return plannedExercises.map((ex, i) => {
+        const exMeta = exerciseMap?.[ex.exerciseId];
+        const name = exMeta?.name || 'Exercise';
+        const setCount = typeof ex.sets === 'number' ? ex.sets : undefined;
+        const repsLabel = ex.reps !== undefined && ex.reps !== null ? String(ex.reps) : '';
+        let meta = '';
+        if (setCount !== undefined) {
+          meta = `${setCount} set${setCount === 1 ? '' : 's'}`;
+          if (repsLabel) meta += ` × ${repsLabel} reps`;
+        } else if (repsLabel) {
+          meta = `${repsLabel} reps`;
+        }
+        return { key: `${ex.exerciseId}-${i}`, name, meta };
+      });
+    }
+    return [];
+  })();
+
+  const canExpand = expandedRows.length > 0;
+
   return (
-    <View style={[styles.historyCard, { borderLeftColor: color, borderLeftWidth: 3 }]}>
+    <Pressable
+      onPress={canExpand ? () => setExpanded(e => !e) : undefined}
+      style={({ pressed }) => [
+        styles.historyCard,
+        { borderLeftColor: color, borderLeftWidth: 3 },
+        pressed && canExpand && styles.workoutCardPressed,
+      ]}
+    >
       <LinearGradient
         colors={[bgColor, 'rgba(0,0,0,0)']}
         start={{ x: 0, y: 0 }}
@@ -109,59 +180,99 @@ function HistoryWorkoutCard({
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Left section - Date */}
-      <View style={styles.historyDateSection}>
-        <Text style={styles.historyDayName}>{dayName}</Text>
-        <Text style={styles.historyDateNumber}>{date}</Text>
-        <Text style={styles.historyMonthName}>{month}</Text>
-      </View>
-
-      {/* Right section - Details */}
-      <View style={styles.historyDetailsSection}>
-        <View style={styles.historyNameRow}>
-          <Text style={styles.historyWorkoutName} numberOfLines={1}>
-            {workoutName}
-          </Text>
-          <View style={styles.historyIconsRow}>
-            {onSave && status === 'completed' && (
-              <Pressable onPress={onSave} hitSlop={8} style={styles.historySaveButton}>
-                <Ionicons
-                  name={isSaved ? 'bookmark' : 'bookmark-outline'}
-                  size={18}
-                  color={isSaved ? colors.accent.secondary : colors.text.tertiary}
-                />
-              </Pressable>
-            )}
-            <Ionicons name={icon} size={20} color={color} />
-          </View>
+      <View style={styles.historyCardInner}>
+        {/* Left section - Date */}
+        <View style={styles.historyDateSection}>
+          <Text style={styles.historyDayName}>{dayName}</Text>
+          <Text style={styles.historyDateNumber}>{date}</Text>
+          <Text style={styles.historyMonthName}>{month}</Text>
         </View>
 
-        {status === 'completed' && (
-          <View style={styles.historyStatsRow}>
-            {durationMinutes && (
-              <View style={styles.historyStatItem}>
-                <Ionicons name="time-outline" size={12} color={colors.text.tertiary} />
-                <Text style={styles.historyStatText}>{durationMinutes} min</Text>
-              </View>
-            )}
-            {exerciseCount && (
-              <View style={styles.historyStatItem}>
-                <Ionicons name="barbell-outline" size={12} color={colors.text.tertiary} />
-                <Text style={styles.historyStatText}>{exerciseCount} exercises</Text>
-              </View>
-            )}
+        {/* Right section - Details */}
+        <View style={styles.historyDetailsSection}>
+          <View style={styles.historyNameRow}>
+            <Text style={styles.historyWorkoutName} numberOfLines={1}>
+              {workoutName}
+            </Text>
+            <View style={styles.historyIconsRow}>
+              {onSave && status === 'completed' && (
+                <Pressable onPress={onSave} hitSlop={8} style={styles.historySaveButton}>
+                  <Ionicons
+                    name={isSaved ? 'bookmark' : 'bookmark-outline'}
+                    size={18}
+                    color={isSaved ? colors.accent.secondary : colors.text.tertiary}
+                  />
+                </Pressable>
+              )}
+              <Ionicons name={icon} size={20} color={color} />
+              {canExpand && (
+                <Ionicons
+                  name={expanded ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={colors.text.tertiary}
+                  style={styles.historyChevron}
+                />
+              )}
+            </View>
           </View>
-        )}
 
-        {status === 'missed' && (
-          <Text style={styles.historyMissedText}>Workout not completed</Text>
-        )}
+          {status === 'completed' && (
+            <View style={styles.historyStatsRow}>
+              {!!durationMinutes && durationMinutes > 0 && (
+                <View style={styles.historyStatItem}>
+                  <Ionicons name="time-outline" size={12} color={colors.text.tertiary} />
+                  <Text style={styles.historyStatText}>{durationMinutes} min</Text>
+                </View>
+              )}
+              {!!exerciseCount && exerciseCount > 0 && (
+                <View style={styles.historyStatItem}>
+                  <Ionicons name="barbell-outline" size={12} color={colors.text.tertiary} />
+                  <Text style={styles.historyStatText}>{exerciseCount} exercises</Text>
+                </View>
+              )}
+            </View>
+          )}
 
-        {status === 'abandoned' && (
-          <Text style={styles.historyMissedText}>Workout abandoned early</Text>
-        )}
+          {status === 'missed' && (
+            <Text style={styles.historyMissedText}>Workout not completed</Text>
+          )}
+
+          {status === 'abandoned' && (
+            <Text style={styles.historyMissedText}>Workout abandoned early</Text>
+          )}
+        </View>
       </View>
-    </View>
+
+      {expanded && canExpand && (
+        <View style={styles.historyExpandedSection}>
+          <Text style={styles.historyExpandedHeader}>
+            {status === 'completed' || status === 'abandoned' ? 'Logged exercises' : 'Planned exercises'}
+          </Text>
+          {expandedRows.map(row => (
+            <View key={row.key} style={styles.historyExerciseRow}>
+              <View style={styles.historyExerciseNameWrap}>
+                <Text style={styles.historyExerciseName} numberOfLines={1}>
+                  {row.name}
+                </Text>
+                {row.swapped && (
+                  <View style={styles.historyExerciseBadge}>
+                    <Ionicons name="swap-horizontal" size={10} color={colors.text.tertiary} />
+                    <Text style={styles.historyExerciseBadgeText}>Swapped</Text>
+                  </View>
+                )}
+                {row.painFlagged && (
+                  <View style={styles.historyExerciseBadge}>
+                    <Ionicons name="flag" size={10} color={colors.accent.warning} />
+                    <Text style={[styles.historyExerciseBadgeText, { color: colors.accent.warning }]}>Pain</Text>
+                  </View>
+                )}
+              </View>
+              {!!row.meta && <Text style={styles.historyExerciseMeta}>{row.meta}</Text>}
+            </View>
+          ))}
+        </View>
+      )}
+    </Pressable>
   );
 }
 
@@ -425,6 +536,8 @@ export default function UpcomingWorkoutsSection({
         exerciseCount: session?.exercises?.length,
         dayNumber: workoutDay.day.dayNumber,
         workoutData: workoutDay.workout,
+        session,
+        plannedExercises: workoutDay.workout?.workout?.exercises ?? [],
       });
     }
 
@@ -696,6 +809,9 @@ export default function UpcomingWorkoutsSection({
                 exerciseCount={item.exerciseCount}
                 isSaved={savedWorkouts[`${item.dayNumber}-45`]}
                 onSave={() => handleSaveWorkout(item.dayNumber, item.workoutName, item.workoutData)}
+                session={item.session}
+                plannedExercises={item.plannedExercises}
+                exerciseMap={exerciseMap}
               />
             ))
           )}
@@ -905,13 +1021,15 @@ const styles = StyleSheet.create({
   },
   // History card styles
   historyCard: {
-    flexDirection: 'row',
     backgroundColor: 'rgba(25, 25, 30, 0.5)',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
     marginBottom: 8,
     overflow: 'hidden',
+  },
+  historyCardInner: {
+    flexDirection: 'row',
   },
   historyDateSection: {
     width: 55,
@@ -989,6 +1107,67 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.text.disabled,
     marginTop: 4,
+  },
+  historyChevron: {
+    marginLeft: 2,
+  },
+  historyExpandedSection: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
+    gap: 6,
+  },
+  historyExpandedHeader: {
+    fontFamily: 'Poppins',
+    fontSize: 10,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  historyExerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    gap: 8,
+  },
+  historyExerciseNameWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  historyExerciseName: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: colors.text.primary,
+    flexShrink: 1,
+  },
+  historyExerciseMeta: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    color: colors.text.tertiary,
+  },
+  historyExerciseBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  historyExerciseBadgeText: {
+    fontFamily: 'Poppins',
+    fontSize: 9,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   // Tag styles
   tagsRow: {
