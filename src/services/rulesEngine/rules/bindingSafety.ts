@@ -60,8 +60,13 @@ export const bindingSafetyRules: Rule[] = [
         patterns: ['plyometric'],
         custom_filter: (ex) => {
           const notBinderSafe = !ex.binder_aware && !ex.heavy_binding_safe;
-          const isHighIntensityCardio = ex.pattern === 'cardio' && (ex.intensity === 'high' || ex.intensity === 'very_high');
-          return notBinderSafe || isHighIntensityCardio;
+          // DEFAULT-DENY (migration 009): for cardio exercises, exclude unless
+          // explicitly labeled `binder_unsafe_cardio: false`. Cardio missing
+          // the label is treated as potentially unsafe for ace-bandage / DIY
+          // binder users.
+          const isCardioUnsafeOrUnknown =
+            ex.pattern === 'cardio' && ex.binder_unsafe_cardio !== false;
+          return notBinderSafe || isCardioUnsafeOrUnknown;
         }
       }
     },

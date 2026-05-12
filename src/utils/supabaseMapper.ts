@@ -170,10 +170,15 @@ export function mapSupabaseExercise(row: any): Exercise {
     effectiveness_rating: row.effectiveness_rating || undefined,
     source: row.source || undefined,
     notes: row.notes || undefined,
-    dysphoria_tags: Array.isArray(row.dysphoria_tags) 
+    dysphoria_tags: Array.isArray(row.dysphoria_tags)
       ? row.dysphoria_tags.join(', ')
       : (row.dysphoria_tags || undefined),
     post_op_safe_weeks: row.post_op_safe_weeks || undefined,
+    // Safety flags from migration 009. Preserve null exactly — rules use
+    // null-as-unknown as the default-deny signal. DO NOT default to false here;
+    // that would silently flip the safety posture from deny to allow.
+    binder_unsafe_cardio: row.binder_unsafe_cardio ?? null,
+    is_aquatic: row.is_aquatic ?? null,
     created_at: row.created_at ? new Date(row.created_at) : new Date(),
     version: row.version || '1.0',
     flags_reviewed: row.flags_reviewed || false,
