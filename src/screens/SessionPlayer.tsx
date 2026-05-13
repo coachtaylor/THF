@@ -566,6 +566,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         workout.duration || 15,
         startedAt,
         endTime,
+        totalElapsedSeconds,
         swappedExercises,
         painFlaggedExercises,
         workout.name,
@@ -610,10 +611,8 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       elapsedTimeIntervalRef.current = null;
     }
 
-    // Calculate workout duration
-    const startTime = new Date(startedAt);
-    const endTimeDate = new Date(endTime);
-    const durationSeconds = Math.floor((endTimeDate.getTime() - startTime.getTime()) / 1000);
+    // Pause-aware — matches what's saved to the session record (H5).
+    const durationSeconds = totalElapsedSeconds;
     const durationMinutes = Math.floor(durationSeconds / 60);
 
     // Convert completed sets to WorkoutContext format

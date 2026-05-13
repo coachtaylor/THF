@@ -78,6 +78,7 @@ describe('buildSessionData skip serialization', () => {
       45,
       baseTimestamp,
       '2026-05-13T12:30:00.000Z',
+      null,
       undefined,
       undefined,
       'Push Day',
@@ -99,10 +100,62 @@ describe('buildSessionData skip serialization', () => {
       45,
       baseTimestamp,
       '2026-05-13T12:30:00.000Z',
+      null,
     );
 
     const [exercise] = session.exercises;
     // Presence-as-meaning: only true is serialized. Absence === not skipped.
     expect(Object.prototype.hasOwnProperty.call(exercise.sets[0], 'skipped')).toBe(false);
+  });
+});
+
+describe('buildSessionData duration (H5: pause-aware)', () => {
+  const startedAt = '2026-05-13T12:00:00.000Z';
+  const completedAt = '2026-05-13T12:30:00.000Z'; // wall-clock 30 min
+
+  const minimalSet: CompletedSet = {
+    exerciseId: 'ex-1',
+    setNumber: 1,
+    rpe: 7,
+    reps: 10,
+    weight: 50,
+    completedAt: startedAt,
+  };
+
+  it('uses elapsedSeconds (pause-aware) when caller provides it', () => {
+    // User paused 20 min of a 30-min wall-clock workout — real work was 10 min.
+    const session = buildSessionData(
+      [minimalSet],
+      'plan-id',
+      45,
+      startedAt,
+      completedAt,
+      600, // 10 min of actual elapsed
+    );
+    expect(session.durationMinutes).toBe(10);
+  });
+
+  it('falls back to wall-clock diff when elapsedSeconds is null', () => {
+    const session = buildSessionData(
+      [minimalSet],
+      'plan-id',
+      45,
+      startedAt,
+      completedAt,
+      null,
+    );
+    expect(session.durationMinutes).toBe(30);
+  });
+
+  it('clamps negative elapsedSeconds to 0 rather than persisting nonsense', () => {
+    const session = buildSessionData(
+      [minimalSet],
+      'plan-id',
+      45,
+      startedAt,
+      completedAt,
+      -5,
+    );
+    expect(session.durationMinutes).toBe(0);
   });
 });
