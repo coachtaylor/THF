@@ -1112,4 +1112,59 @@ describe("Rules Engine", () => {
       expect(criticalBlockPatterns.length).toBeGreaterThan(0);
     });
   });
+
+  describe("User Preference Rules (USR-01)", () => {
+    it("USR-01: excludes exercises listed in profile.flagged_exercise_ids", async () => {
+      // The user pain-flagged exercises 700 and 702 mid-session; SessionPlayer
+      // persists them to profile.flagged_exercise_ids on save. USR-01 must
+      // exclude them from future generation; non-flagged exercise 701 stays.
+      const flaggedProfile = createBaseProfile({
+        flagged_exercise_ids: ["700", "702"],
+      });
+
+      const exercises = [
+        createMockExercise({ id: "700", name: "Painful Lunge" }),
+        createMockExercise({ id: "701", name: "Friendly Squat" }),
+        createMockExercise({ id: "702", name: "Painful Deadlift" }),
+      ];
+
+      const result = await evaluateSafetyRules(flaggedProfile, exercises);
+
+      expect(result.excluded_exercise_ids).toContain(700);
+      expect(result.excluded_exercise_ids).toContain(702);
+      expect(result.excluded_exercise_ids).not.toContain(701);
+
+      // Rule application is recorded so analytics + WhyThisWorkout can surface it.
+      const applied = result.rules_applied.find((r) => r.rule_id === "USR-01");
+      expect(applied).toBeDefined();
+      expect(applied?.userMessage).toContain("2"); // {flaggedCount} interpolation
+    });
+
+    it("USR-01: short-circuits when flagged list is empty", async () => {
+      // Empty / missing list must not fire — existing profiles (no flags yet)
+      // see no behavior change from this rule.
+      const noFlagsProfile = createBaseProfile({
+        flagged_exercise_ids: [],
+      });
+
+      const exercises = [createMockExercise({ id: "800", name: "Anything" })];
+      const result = await evaluateSafetyRules(noFlagsProfile, exercises);
+
+      expect(result.excluded_exercise_ids).not.toContain(800);
+      const applied = result.rules_applied.find((r) => r.rule_id === "USR-01");
+      expect(applied).toBeUndefined();
+    });
+
+    it("USR-01: missing field on legacy profile is treated as empty", async () => {
+      // Profiles created before migration 010 won't have the field at all.
+      // The rule's condition guards with `?.length ?? 0 > 0` so this is safe.
+      const legacyProfile = createBaseProfile({});
+      delete (legacyProfile as Partial<Profile>).flagged_exercise_ids;
+
+      const exercises = [createMockExercise({ id: "900", name: "Anything" })];
+      const result = await evaluateSafetyRules(legacyProfile, exercises);
+
+      expect(result.excluded_exercise_ids).not.toContain(900);
+    });
+  });
 });

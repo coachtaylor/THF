@@ -59,6 +59,12 @@ export interface Profile {
   dysphoria_triggers?: DysphoriaTrigger[]; // Array of trigger identifiers
   dysphoria_notes?: string; // Optional free-text notes about dysphoria triggers
 
+  // OPTIONAL FIELDS - Pain Flag History
+  // Exercise IDs the user has pain-flagged mid-session. Excluded from future
+  // workout generation via rule USR-01. User can clear individual entries
+  // (each row gets a "Try again" action) from Settings → Pain-Flagged Exercises.
+  flagged_exercise_ids?: string[];
+
   // DEPRECATED FIELDS (kept for backwards compatibility)
   /** @deprecated Use primary_goal instead */
   goals?: string[];

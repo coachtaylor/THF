@@ -30,6 +30,7 @@ import {
   EditTrainingModal,
   EditEnvironmentModal,
   EditDysphoriaModal,
+  EditFlaggedExercisesModal,
 } from '../../components/settings';
 import { getSessions } from '../../services/sessionLogger';
 import { useNotificationContext } from '../../contexts/NotificationContext';
@@ -84,6 +85,7 @@ export default function SettingsScreen() {
   const [showEditTraining, setShowEditTraining] = useState(false);
   const [showEditEnvironment, setShowEditEnvironment] = useState(false);
   const [showEditDysphoria, setShowEditDysphoria] = useState(false);
+  const [showEditFlagged, setShowEditFlagged] = useState(false);
 
   // App settings state
   const [restTimerSound, setRestTimerSound] = useState(true);
@@ -152,6 +154,9 @@ export default function SettingsScreen() {
         break;
       case 'dysphoria':
         setShowEditDysphoria(true);
+        break;
+      case 'flagged':
+        setShowEditFlagged(true);
         break;
       default:
         console.log('Edit section:', section);
@@ -913,6 +918,37 @@ export default function SettingsScreen() {
           </GlassCard>
         </View>
 
+        {/* Pain-Flagged Exercises — only shown if the user has flagged at
+            least one. Rule USR-01 excludes these from generated workouts;
+            each row in the modal offers a "Try again" action that removes
+            the flag and triggers plan regeneration. */}
+        {(profile?.flagged_exercise_ids?.length ?? 0) > 0 && (
+          <View style={sectionStyles.container}>
+            <View style={sectionStyles.headerWithAction}>
+              <View style={sectionStyles.titleRow}>
+                <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.warningMuted }]}>
+                  <Ionicons name="flag" size={16} color={colors.warning} />
+                </View>
+                <Text style={sectionStyles.title}>Pain-Flagged Exercises</Text>
+              </View>
+              <Pressable onPress={() => handleEdit('flagged')} hitSlop={8}>
+                <Text style={sectionStyles.editLink}>Manage</Text>
+              </Pressable>
+            </View>
+            <GlassCard variant="default">
+              <View style={infoCardStyles.content}>
+                <Text style={infoCardStyles.text}>
+                  {profile?.flagged_exercise_ids?.length}{' '}
+                  {profile?.flagged_exercise_ids?.length === 1 ? 'exercise' : 'exercises'} hidden from future workouts
+                </Text>
+                <Text style={infoCardStyles.subtext}>
+                  Tap Manage to review or bring any back.
+                </Text>
+              </View>
+            </GlassCard>
+          </View>
+        )}
+
         {/* Education & Guides */}
         <View style={sectionStyles.container}>
           <View style={sectionStyles.headerWithAction}>
@@ -1289,6 +1325,14 @@ export default function SettingsScreen() {
       <EditDysphoriaModal
         visible={showEditDysphoria}
         onClose={() => setShowEditDysphoria(false)}
+        profile={profile}
+        onSave={() => handleProfileSaved(true)}
+      />
+
+      {/* Edit Flagged Exercises Modal - affects workouts when entries removed */}
+      <EditFlaggedExercisesModal
+        visible={showEditFlagged}
+        onClose={() => setShowEditFlagged(false)}
         profile={profile}
         onSave={() => handleProfileSaved(true)}
       />
