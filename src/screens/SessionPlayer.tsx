@@ -1434,7 +1434,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                 <View style={styles.completeCheckCircle}>
                   <Ionicons name="checkmark" size={18} color={colors.accent.primary} />
                 </View>
-                <Text style={styles.premiumCompleteButtonText}>Complete Set</Text>
+                <Text style={styles.premiumCompleteButtonText}>Save set</Text>
               </View>
             </LinearGradient>
           </Pressable>
