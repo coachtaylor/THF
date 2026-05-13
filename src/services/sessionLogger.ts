@@ -189,6 +189,7 @@ export function buildSessionData(
   workoutDuration: number,
   startedAt: string,
   completedAt: string,
+  elapsedSeconds: number | null,
   swappedExercises?: Map<string, string>,
   painFlaggedExercises?: Set<string>,
   workoutName?: string,
@@ -220,9 +221,13 @@ export function buildSessionData(
     });
   });
 
-  const durationMinutes = Math.round(
-    (new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 1000 / 60
-  );
+  // Prefer pause-aware elapsed time from the player; fall back to wall-clock
+  // diff only when the caller didn't supply one (legacy / future callers).
+  const durationMinutes = elapsedSeconds != null
+    ? Math.max(0, Math.round(elapsedSeconds / 60))
+    : Math.round(
+        (new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 1000 / 60
+      );
 
   return {
     id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
