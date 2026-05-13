@@ -333,9 +333,10 @@ export async function getWeeklyStats(
           // so they don't pollute volume or RPE averages.
           if (isSetSkipped(set)) return;
 
-          // Calculate volume: reps * weight
-          // Use actual weight if available, otherwise estimate 10 lbs for bodyweight exercises
-          const weight = set.weight ?? 10;
+          // Volume = reps × weight. Bodyweight sets save weight: 0 and
+          // contribute 0 lb-volume by design — don't fabricate a number.
+          // Legacy sets with undefined weight are treated the same.
+          const weight = set.weight ?? 0;
           totalVolume += set.reps * weight;
 
           if (set.rpe) {
@@ -488,8 +489,8 @@ export async function getMonthWorkouts(
       session.exercises.forEach(exercise => {
         exercise.sets.forEach(set => {
           if (isSetSkipped(set)) return;
-          // Use actual weight if available, otherwise estimate 10 lbs for bodyweight
-          const weight = set.weight ?? 10;
+          // Bodyweight sets save weight: 0; missing weight → 0. No fake estimate.
+          const weight = set.weight ?? 0;
           totalVolume += set.reps * weight;
           if (set.rpe) {
             totalRPE += set.rpe;
@@ -633,8 +634,8 @@ export async function getVolumeByWeek(
         session.exercises.forEach(exercise => {
           exercise.sets.forEach(set => {
             if (isSetSkipped(set)) return;
-            // Use actual weight if available, otherwise estimate 10 lbs for bodyweight
-            const weight = set.weight ?? 10;
+            // Bodyweight sets save weight: 0; missing weight → 0. No fake estimate.
+            const weight = set.weight ?? 0;
             totalVolume += set.reps * weight;
           });
         });
@@ -735,12 +736,13 @@ export async function getExerciseProgress(
       session.exercises.forEach(exercise => {
         // Match by exercise ID or name (flexible matching)
         if (exercise.exerciseId === exerciseId || exercise.name === exerciseName) {
-          // Find max weight for this exercise in this session
+          // Find max weight for this exercise in this session.
+          // Bodyweight-only exercises stay at maxWeight=0 and get filtered out
+          // below — a lbs-progression chart isn't meaningful without a load.
           let maxWeight = 0;
           exercise.sets.forEach(set => {
             if (isSetSkipped(set)) return;
-            // Use actual weight if available, otherwise estimate based on reps
-            const weight = set.weight ?? (set.reps * 10);
+            const weight = set.weight ?? 0;
             if (weight > maxWeight) {
               maxWeight = weight;
             }

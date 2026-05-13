@@ -280,7 +280,10 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     if (phase === 'main' && exercises.length > 0 && currentExerciseIndex < exercises.length) {
       const instance = exercises[currentExerciseIndex];
       if (instance) {
-        setReps(instance.reps || 10);
+        // `??` not `||` — preserve explicit prescribed reps=0 (cardio/timed
+        // exercises author 0 to signal "not a rep prescription"). `||`
+        // coerces 0 to 10, hiding the cardio signal in the picker.
+        setReps(instance.reps ?? 10);
         setWeight(0);
         setRpe(7);
       }
@@ -566,6 +569,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         workout.duration || 15,
         startedAt,
         endTime,
+        totalElapsedSeconds,
         swappedExercises,
         painFlaggedExercises,
         workout.name,
@@ -610,10 +614,8 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       elapsedTimeIntervalRef.current = null;
     }
 
-    // Calculate workout duration
-    const startTime = new Date(startedAt);
-    const endTimeDate = new Date(endTime);
-    const durationSeconds = Math.floor((endTimeDate.getTime() - startTime.getTime()) / 1000);
+    // Pause-aware — matches what's saved to the session record (H5).
+    const durationSeconds = totalElapsedSeconds;
     const durationMinutes = Math.floor(durationSeconds / 60);
 
     // Convert completed sets to WorkoutContext format
@@ -641,7 +643,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       main_workout: exercises.map((ex, idx) => ({
         exerciseId: ex.exerciseId,
         sets: ex.sets || 3,
-        reps: ex.reps || 10,
+        reps: ex.reps ?? 10,
         format: 'straight_sets' as const,
         restSeconds: ex.restSeconds || 60,
         exercise_name: ex.exercise.name,
@@ -1432,7 +1434,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
                 <View style={styles.completeCheckCircle}>
                   <Ionicons name="checkmark" size={18} color={colors.accent.primary} />
                 </View>
-                <Text style={styles.premiumCompleteButtonText}>Complete Set</Text>
+                <Text style={styles.premiumCompleteButtonText}>Save set</Text>
               </View>
             </LinearGradient>
           </Pressable>
