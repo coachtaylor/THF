@@ -12,7 +12,6 @@ import { Exercise } from '../types';
 import { CompletedSet, TimerFormat } from '../types/session';
 import Timer from '../components/session/Timer';
 import RPELogger from '../components/session/RPELogger';
-import SetCompletionForm from '../components/session/SetCompletionForm';
 import RestTimer from '../components/session/RestTimer';
 import SwapDrawer from '../components/session/SwapDrawer';
 import PainFlagButton from '../components/session/PainFlagButton';
@@ -1588,348 +1587,111 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             </View>
           </Modal>
         </Portal>
+
+        {/* Session Menu Modal — opens from the ellipsis button in the
+            premium header. Lived in the legacy fallback render until the
+            C4 cleanup; was silently broken in prod because that render
+            path is unreachable. Moved here so the ellipsis actually works. */}
+        <Portal>
+          <Modal
+            visible={showSessionMenu}
+            onDismiss={() => setShowSessionMenu(false)}
+            contentContainerStyle={styles.menuModalContainer}
+            style={styles.modalOverlay}
+          >
+            <View style={styles.menuCard}>
+              <Text style={styles.menuTitle}>Session Options</Text>
+
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowSessionMenu(false);
+                  setIsTimerPaused(!isTimerPaused);
+                }}
+              >
+                <Ionicons
+                  name={isTimerPaused ? "play-circle-outline" : "pause-circle-outline"}
+                  size={24}
+                  color={colors.accent.primary}
+                />
+                <Text style={styles.menuItemText}>
+                  {isTimerPaused ? 'Resume Timer' : 'Pause Timer'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowSessionMenu(false);
+                  setShowSwapDrawer(true);
+                }}
+              >
+                <Ionicons name="swap-horizontal-outline" size={24} color={colors.text.primary} />
+                <Text style={styles.menuItemText}>Swap Exercise</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowSessionMenu(false);
+                  // Was wired to handleSkipSet in the dead fallback, which only
+                  // skips a single set — but the label says "Skip This Exercise."
+                  // Fixed during the move so the menu item does what it says.
+                  handleSkipExercise();
+                }}
+              >
+                <Ionicons name="play-skip-forward-outline" size={24} color={colors.text.primary} />
+                <Text style={styles.menuItemText}>Skip This Exercise</Text>
+              </Pressable>
+
+              <View style={styles.menuDivider} />
+
+              <Pressable
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowSessionMenu(false);
+                  Alert.alert(
+                    'End Workout Early?',
+                    'Your progress will be saved, but this workout will be marked as incomplete.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'End Workout',
+                        style: 'destructive',
+                        onPress: () => navigation.goBack(),
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="exit-outline" size={24} color={colors.error} />
+                <Text style={[styles.menuItemText, { color: colors.error }]}>End Workout Early</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.menuCloseButton}
+                onPress={() => setShowSessionMenu(false)}
+              >
+                <Text style={styles.menuCloseButtonText}>Close</Text>
+              </Pressable>
+            </View>
+          </Modal>
+        </Portal>
       </SafeAreaView>
     );
   }
 
-  // Original rendering for non-main phases (warm-up, cool-down)
+  // Safety fallback: every reachable phase has its own return above (warm-up,
+  // cool-down, main, plus loading/no-exercise states). This catches only the
+  // narrow gap where phase === 'warm-up' || 'cool-down' but their data
+  // (warmUp / coolDown) is missing — previously a buggy legacy renderer
+  // rendered the main-phase UI here, which was wrong for the phase. Now we
+  // surface an honest loading state instead. Matches the pattern at the
+  // 'main' && loading branch above.
   return (
-    <View style={[styles.container, { paddingTop: Math.max(insets.top, spacing.l) }]}>
-      {/* Render appropriate modal based on checkpoint type */}
-      {currentCheckpoint?.type === 'binder_break' ? (
-        <SafetyCheckpointModal
-          visible={showSafetyCheckpoint}
-          message={currentCheckpoint?.message || 'Time for a binder break'}
-          breakDurationMinutes={10}
-          onStartBreak={handleStartBreak}
-          onTakeBreakLater={handleTakeBreakLater}
-        />
-      ) : (
-        <SafetyInfoModal
-          visible={showSafetyCheckpoint}
-          title={getCheckpointTitle(currentCheckpoint)}
-          message={currentCheckpoint?.message || ''}
-          severity={currentCheckpoint?.severity === 'critical' ? 'high' : currentCheckpoint?.severity === 'high' ? 'high' : currentCheckpoint?.severity === 'medium' ? 'medium' : 'low'}
-          onDismiss={handleDismissCheckpoint}
-        />
-      )}
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={24} color={colors.text.primary} />
-        </Pressable>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>{workout.duration} min Workout</Text>
-          <View style={styles.progressDots}>
-            {exercises.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.progressDot,
-                  index <= currentExerciseIndex && styles.progressDotActive,
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-        <View style={styles.headerRight}>
-          {/* Safety adjustments indicator */}
-          {(workout.metadata?.rules_applied?.length ?? 0) > 0 && (
-            <Pressable
-              onPress={() => setShowSafetyInfo(true)}
-              style={styles.safetyButton}
-            >
-              <Ionicons name="shield-checkmark" size={16} color={colors.accent.primaryLight} />
-            </Pressable>
-          )}
-          <Text style={styles.timerText}>
-            ⏱️ {Math.floor(totalElapsedSeconds / 60)}:{(totalElapsedSeconds % 60).toString().padStart(2, '0')}
-          </Text>
-          <Pressable>
-            <Ionicons name="ellipsis-vertical" size={20} color={colors.text.primary} />
-          </Pressable>
-        </View>
-      </View>
-
-      {/* Safety Info Modal */}
-      <SafetyInfoModal
-        visible={showSafetyInfo}
-        onClose={() => setShowSafetyInfo(false)}
-        rulesApplied={workout.metadata?.rules_applied || []}
-        hrtAdjusted={workout.metadata?.hrt_adjusted}
-        excludedCount={workout.metadata?.exercises_excluded_count}
-      />
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Exercise Counter */}
-        <View style={styles.exerciseCounter}>
-          <Text style={styles.exerciseCounterText}>
-            Exercise {currentExerciseIndex + 1} of {exercises.length}
-          </Text>
-        </View>
-
-        {/* Set Completion Form */}
-        {!showRestTimer && currentExercise && (
-          <View style={styles.setCompletionSection}>
-            <SetCompletionForm
-              setNumber={currentExerciseSets.length + 1}
-              totalSets={totalSets}
-              prescribedReps={currentExerciseInstance.reps}
-              exercise={currentExercise}
-              previousSet={
-                currentExerciseSets.length > 0
-                  ? {
-                      reps: currentExerciseSets[currentExerciseSets.length - 1].reps,
-                      weight: currentExerciseSets[currentExerciseSets.length - 1].weight || 0,
-                      rpe: currentExerciseSets[currentExerciseSets.length - 1].rpe,
-                    }
-                  : undefined
-              }
-              onComplete={handleSetComplete}
-              onViewForm={() => setShowCuesModal(true)}
-              onViewDetails={() => setShowCuesModal(true)}
-              onSkipExercise={handleSkipExercise}
-              onFlagExercise={addFlag}
-              isExerciseFlagged={isExerciseFlagged(
-                String(currentExercise.id),
-                currentExerciseSets.length + 1
-              )}
-            />
-          </View>
-        )}
-
-        {/* Rest Timer */}
-        {showRestTimer && currentExerciseInstance && currentExercise && (
-          <View style={styles.restTimerSection}>
-            <RestTimer
-              restSeconds={currentExerciseInstance.restSeconds}
-              previousSet={
-                currentExerciseSets.length > 0
-                  ? {
-                      reps: currentExerciseSets[currentExerciseSets.length - 1].reps,
-                      weight: currentExerciseSets[currentExerciseSets.length - 1].weight || 0,
-                      rpe: currentExerciseSets[currentExerciseSets.length - 1].rpe,
-                    }
-                  : undefined
-              }
-              nextSetNumber={currentExerciseSets.length + 1}
-              totalSets={totalSets}
-              onComplete={handleRestTimerComplete}
-              onSkip={handleRestTimerComplete}
-              onAddTime={(seconds) => {
-                // Extend rest timer
-                console.log(`Adding ${seconds} seconds to rest timer`);
-              }}
-              onSkipExercise={handleSkipExercise}
-            />
-          </View>
-        )}
-
-        {/* Action Buttons */}
-        <View style={styles.actions}>
-          <Button
-            mode="outlined"
-            onPress={() => setShowSwapDrawer(true)}
-            style={styles.actionButton}
-          >
-            Swap Exercise
-          </Button>
-          <PainFlagButton
-            exercise={currentExercise}
-            exerciseInstance={currentExerciseInstance}
-            onPainFlag={handlePainFlag}
-            onRequestSwap={() => {
-              // Tag the original exercise as pain-flagged BEFORE the swap so it
-              // gets persisted to profile.flagged_exercise_ids even though the
-              // session record will show the substitute.
-              setPainFlaggedExercises(prev => new Set(prev).add(currentExercise.id));
-              setShowSwapDrawer(true);
-            }}
-            onRequestSkip={() => {
-              setPainFlaggedExercises(prev => new Set(prev).add(currentExercise.id));
-              handleSkipExercise();
-            }}
-            profile={profile}
-          />
-        </View>
-      </ScrollView>
-
-      {/* Skip Exercise Confirmation Modal */}
-      <Portal>
-        <Modal
-          visible={showSkipExerciseModal}
-          onDismiss={cancelSkipExercise}
-          contentContainerStyle={styles.modalContainer}
-          style={styles.modalOverlay}
-        >
-          <Card style={styles.modalCard} mode="contained">
-            <Card.Title
-              title="Skip Exercise?"
-              titleStyle={styles.modalTitle}
-            />
-            <Card.Content>
-              <Text style={styles.modalText}>
-                Are you sure you want to skip <Text style={styles.modalBold}>{currentExercise?.name}</Text>?
-              </Text>
-              <Text style={styles.modalSubtext}>
-                You can always come back to this exercise later. Your progress will be saved.
-              </Text>
-            </Card.Content>
-            <Card.Actions>
-              <Button onPress={cancelSkipExercise} textColor={colors.text.primary}>Cancel</Button>
-              <Button
-                mode="contained"
-                onPress={confirmSkipExercise}
-                buttonColor={colors.error}
-              >
-                Skip Exercise
-              </Button>
-            </Card.Actions>
-          </Card>
-        </Modal>
-      </Portal>
-
-      {/* Cues Modal */}
-      <Portal>
-        <Modal
-          visible={showCuesModal}
-          onDismiss={() => setShowCuesModal(false)}
-          contentContainerStyle={styles.modalContainer}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalCard}>
-            <Text style={styles.modalHeaderTitle}>{currentExercise.name}</Text>
-            <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
-              {currentExercise.neutral_cues && currentExercise.neutral_cues.length > 0 && (
-                <View style={styles.modalSection}>
-                  <Text style={styles.modalSectionTitle}>Neutral Cues</Text>
-                  {currentExercise.neutral_cues.map((cue: string, index: number) => (
-                    <Text key={index} style={styles.modalListItem}>
-                      • {cue}
-                    </Text>
-                  ))}
-                </View>
-              )}
-
-              {currentExercise.breathing_cues && currentExercise.breathing_cues.length > 0 && (
-                <View style={styles.modalSection}>
-                  <Text style={styles.modalSectionTitle}>Breathing Cues</Text>
-                  {currentExercise.breathing_cues.map((cue: string, index: number) => (
-                    <Text key={index} style={styles.modalListItem}>
-                      • {cue}
-                    </Text>
-                  ))}
-                </View>
-              )}
-
-              {(currentExercise.trans_notes?.binder || currentExercise.trans_notes?.pelvic_floor) && (
-                <View style={styles.modalTransNotes}>
-                  <Text style={styles.modalTransNotesTitle}>Trans-Specific Notes</Text>
-                  {currentExercise.trans_notes?.binder && (
-                    <Text style={styles.modalTransNotesItem}>
-                      <Text style={styles.modalTransNoteLabel}>Binder:</Text>{' '}
-                      {currentExercise.trans_notes.binder}
-                    </Text>
-                  )}
-                  {currentExercise.trans_notes?.pelvic_floor && (
-                    <Text style={styles.modalTransNotesItem}>
-                      <Text style={styles.modalTransNoteLabel}>Pelvic Floor:</Text>{' '}
-                      {currentExercise.trans_notes.pelvic_floor}
-                    </Text>
-                  )}
-                </View>
-              )}
-            </ScrollView>
-            <Pressable style={styles.modalCloseButton} onPress={() => setShowCuesModal(false)}>
-              <Text style={styles.modalCloseButtonText}>Close</Text>
-            </Pressable>
-          </View>
-        </Modal>
-      </Portal>
-
-      {/* Session Menu Modal */}
-      <Portal>
-        <Modal
-          visible={showSessionMenu}
-          onDismiss={() => setShowSessionMenu(false)}
-          contentContainerStyle={styles.menuModalContainer}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.menuCard}>
-            <Text style={styles.menuTitle}>Session Options</Text>
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => {
-                setShowSessionMenu(false);
-                setIsTimerPaused(!isTimerPaused);
-              }}
-            >
-              <Ionicons
-                name={isTimerPaused ? "play-circle-outline" : "pause-circle-outline"}
-                size={24}
-                color={colors.accent.primary}
-              />
-              <Text style={styles.menuItemText}>
-                {isTimerPaused ? 'Resume Timer' : 'Pause Timer'}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => {
-                setShowSessionMenu(false);
-                setShowSwapDrawer(true);
-              }}
-            >
-              <Ionicons name="swap-horizontal-outline" size={24} color={colors.text.primary} />
-              <Text style={styles.menuItemText}>Swap Exercise</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => {
-                setShowSessionMenu(false);
-                handleSkipSet();
-              }}
-            >
-              <Ionicons name="play-skip-forward-outline" size={24} color={colors.text.primary} />
-              <Text style={styles.menuItemText}>Skip This Exercise</Text>
-            </Pressable>
-
-            <View style={styles.menuDivider} />
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => {
-                setShowSessionMenu(false);
-                Alert.alert(
-                  'End Workout Early?',
-                  'Your progress will be saved, but this workout will be marked as incomplete.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'End Workout',
-                      style: 'destructive',
-                      onPress: () => navigation.goBack(),
-                    },
-                  ]
-                );
-              }}
-            >
-              <Ionicons name="exit-outline" size={24} color={colors.error} />
-              <Text style={[styles.menuItemText, { color: colors.error }]}>End Workout Early</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.menuCloseButton}
-              onPress={() => setShowSessionMenu(false)}
-            >
-              <Text style={styles.menuCloseButtonText}>Close</Text>
-            </Pressable>
-          </View>
-        </Modal>
-      </Portal>
+    <View style={[styles.container, styles.centerContent, { paddingTop: Math.max(insets.top, spacing.l) }]}>
+      <ActivityIndicator size="large" color={colors.accent.primary} />
+      <Text style={styles.loadingText}>Preparing your workout...</Text>
     </View>
   );
 }
