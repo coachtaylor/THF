@@ -280,7 +280,10 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
     if (phase === 'main' && exercises.length > 0 && currentExerciseIndex < exercises.length) {
       const instance = exercises[currentExerciseIndex];
       if (instance) {
-        setReps(instance.reps || 10);
+        // `??` not `||` — preserve explicit prescribed reps=0 (cardio/timed
+        // exercises author 0 to signal "not a rep prescription"). `||`
+        // coerces 0 to 10, hiding the cardio signal in the picker.
+        setReps(instance.reps ?? 10);
         setWeight(0);
         setRpe(7);
       }
@@ -640,7 +643,7 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       main_workout: exercises.map((ex, idx) => ({
         exerciseId: ex.exerciseId,
         sets: ex.sets || 3,
-        reps: ex.reps || 10,
+        reps: ex.reps ?? 10,
         format: 'straight_sets' as const,
         restSeconds: ex.restSeconds || 60,
         exercise_name: ex.exercise.name,
