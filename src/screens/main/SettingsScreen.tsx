@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSubscription } from '../../contexts/SubscriptionContext';
-import { deleteProfile, getProfile, updateProfile, clearLocalUserStats } from '../../services/storage/profile';
+import { deleteProfile, getProfile, updateProfile, clearLocalUserStats, deleteAllUserData } from '../../services/storage/profile';
 import { trackPlanGenerationFailed } from '../../services/analytics';
 import { signalLogout } from '../../services/events/onboardingEvents';
 import { generatePlan } from '../../services/planGenerator';
@@ -30,8 +30,9 @@ import {
   EditTrainingModal,
   EditEnvironmentModal,
   EditDysphoriaModal,
+  EditFlaggedExercisesModal,
 } from '../../components/settings';
-import { getWorkoutHistory } from '../../services/storage/workoutLog';
+import { getSessions } from '../../services/sessionLogger';
 import { useNotificationContext } from '../../contexts/NotificationContext';
 import { db } from '../../utils/database';
 
@@ -84,6 +85,7 @@ export default function SettingsScreen() {
   const [showEditTraining, setShowEditTraining] = useState(false);
   const [showEditEnvironment, setShowEditEnvironment] = useState(false);
   const [showEditDysphoria, setShowEditDysphoria] = useState(false);
+  const [showEditFlagged, setShowEditFlagged] = useState(false);
 
   // App settings state
   const [restTimerSound, setRestTimerSound] = useState(true);
@@ -152,6 +154,9 @@ export default function SettingsScreen() {
         break;
       case 'dysphoria':
         setShowEditDysphoria(true);
+        break;
+      case 'flagged':
+        setShowEditFlagged(true);
         break;
       default:
         console.log('Edit section:', section);
@@ -240,25 +245,44 @@ export default function SettingsScreen() {
     try {
       setIsExporting(true);
       const userId = profile?.user_id || profile?.id || 'default';
-      const history = await getWorkoutHistory(userId, 100);
+      const sessions = (await getSessions(userId)).slice(0, 100);
 
-      if (history.length === 0) {
+      if (sessions.length === 0) {
         Alert.alert('No Data', 'You have no workout history to export yet.');
         return;
       }
 
-      // Format workout data for export
       const exportData = {
         exportDate: new Date().toISOString(),
-        totalWorkouts: history.length,
-        workouts: history.map((log) => ({
-          date: log.workout_date.toISOString().split('T')[0],
-          duration: log.duration_minutes,
-          exercisesCompleted: log.exercises_completed,
-          totalVolume: log.total_volume,
-          averageRPE: log.average_rpe,
-          rating: log.workout_rating,
-        })),
+        totalWorkouts: sessions.length,
+        workouts: sessions.map((session) => {
+          const completed = new Date(session.completedAt);
+          const dateKey = `${completed.getFullYear()}-${String(completed.getMonth() + 1).padStart(2, '0')}-${String(completed.getDate()).padStart(2, '0')}`;
+
+          let totalVolume = 0;
+          let rpeSum = 0;
+          let rpeCount = 0;
+          for (const exercise of session.exercises) {
+            for (const set of exercise.sets) {
+              if (typeof set.weight === 'number') {
+                totalVolume += set.weight * set.reps;
+              }
+              if (typeof set.rpe === 'number') {
+                rpeSum += set.rpe;
+                rpeCount += 1;
+              }
+            }
+          }
+
+          return {
+            date: dateKey,
+            workoutName: session.workoutName ?? null,
+            duration: session.durationMinutes,
+            exercisesCompleted: session.exercises.length,
+            totalVolume,
+            averageRPE: rpeCount > 0 ? Number((rpeSum / rpeCount).toFixed(1)) : null,
+          };
+        }),
       };
 
       const jsonString = JSON.stringify(exportData, null, 2);
@@ -283,9 +307,17 @@ export default function SettingsScreen() {
   const confirmDeleteAccount = async () => {
     try {
       setIsDeletingAccount(true);
-      await clearLocalUserStats();
-      await deleteProfile();
-      await logout();
+      // deleteAllUserData handles: cloud table deletion (workouts, sessions,
+      // plans, feedback, equipment requests, profile), Edge Function call
+      // to delete the auth.users row (if the function exists — currently
+      // missing, will fail gracefully), local SQLite wipe, token clear,
+      // and sign-out. Partial failures are logged but don't block the
+      // user-facing flow. Full account removal (auth.users) requires the
+      // `delete-account` Edge Function to be deployed — see CLAUDE.md.
+      const result = await deleteAllUserData();
+      if (!result.success && result.errors.length > 0) {
+        console.warn('Partial deletion completed with errors:', result.errors);
+      }
       setShowDeleteAccountModal(false);
       signalLogout();
     } catch (error) {
@@ -886,6 +918,37 @@ export default function SettingsScreen() {
           </GlassCard>
         </View>
 
+        {/* Pain-Flagged Exercises — only shown if the user has flagged at
+            least one. Rule USR-01 excludes these from generated workouts;
+            each row in the modal offers a "Try again" action that removes
+            the flag and triggers plan regeneration. */}
+        {(profile?.flagged_exercise_ids?.length ?? 0) > 0 && (
+          <View style={sectionStyles.container}>
+            <View style={sectionStyles.headerWithAction}>
+              <View style={sectionStyles.titleRow}>
+                <View style={[sectionStyles.iconContainer, { backgroundColor: colors.accent.warningMuted }]}>
+                  <Ionicons name="flag" size={16} color={colors.warning} />
+                </View>
+                <Text style={sectionStyles.title}>Pain-Flagged Exercises</Text>
+              </View>
+              <Pressable onPress={() => handleEdit('flagged')} hitSlop={8}>
+                <Text style={sectionStyles.editLink}>Manage</Text>
+              </Pressable>
+            </View>
+            <GlassCard variant="default">
+              <View style={infoCardStyles.content}>
+                <Text style={infoCardStyles.text}>
+                  {profile?.flagged_exercise_ids?.length}{' '}
+                  {profile?.flagged_exercise_ids?.length === 1 ? 'exercise' : 'exercises'} hidden from future workouts
+                </Text>
+                <Text style={infoCardStyles.subtext}>
+                  Tap Manage to review or bring any back.
+                </Text>
+              </View>
+            </GlassCard>
+          </View>
+        )}
+
         {/* Education & Guides */}
         <View style={sectionStyles.container}>
           <View style={sectionStyles.headerWithAction}>
@@ -1010,6 +1073,9 @@ export default function SettingsScreen() {
               onPress={handleExportData}
               showChevron
             />
+            {/* Wired to deleteAllUserData (2026-05-12) → cloud tables,
+                Edge Function for auth.users delete, local SQLite, tokens,
+                sign-out. Full end-to-end account deletion. */}
             <GlassListItem
               title="Delete account"
               leftIcon="trash-outline"
@@ -1182,17 +1248,19 @@ export default function SettingsScreen() {
         initialCategory="technical_bug"
       />
 
-      {/* Delete Account Modal */}
+      {/* Delete Account Modal — full delete: cloud tables, sign-in record,
+          local data, tokens. Edge Function delete-account deployed
+          2026-05-12 closes the auth.users gap. */}
       <GlassModal
         visible={showDeleteAccountModal}
         onClose={() => setShowDeleteAccountModal(false)}
-        title="Delete Account"
-        message="This will permanently delete your account, profile, and all workout data. This action cannot be undone."
+        title="Delete your account?"
+        message="This permanently deletes your profile, workout history, and sign-in record. Your data is removed from this device and from the cloud. This action cannot be undone."
         icon="trash-outline"
         iconColor={colors.error}
         actions={[
           {
-            label: 'Delete Account',
+            label: 'Delete account',
             onPress: confirmDeleteAccount,
             variant: 'danger',
             loading: isDeletingAccount,
@@ -1257,6 +1325,14 @@ export default function SettingsScreen() {
       <EditDysphoriaModal
         visible={showEditDysphoria}
         onClose={() => setShowEditDysphoria(false)}
+        profile={profile}
+        onSave={() => handleProfileSaved(true)}
+      />
+
+      {/* Edit Flagged Exercises Modal - affects workouts when entries removed */}
+      <EditFlaggedExercisesModal
+        visible={showEditFlagged}
+        onClose={() => setShowEditFlagged(false)}
         profile={profile}
         onSave={() => handleProfileSaved(true)}
       />

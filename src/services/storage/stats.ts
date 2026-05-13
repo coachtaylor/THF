@@ -1,5 +1,5 @@
 import { db } from '../../utils/database';
-import { getSessions } from '../sessionLogger';
+import { getSessions, isSetSkipped } from '../sessionLogger';
 import { getPlan } from './plan';
 
 /**
@@ -329,6 +329,10 @@ export async function getWeeklyStats(
     thisWeekSessions.forEach(session => {
       session.exercises.forEach(exercise => {
         exercise.sets.forEach(set => {
+          // Skip user-skipped sets (and legacy 0/0/0 sets that pre-date the flag)
+          // so they don't pollute volume or RPE averages.
+          if (isSetSkipped(set)) return;
+
           // Calculate volume: reps * weight
           // Use actual weight if available, otherwise estimate 10 lbs for bodyweight exercises
           const weight = set.weight ?? 10;
@@ -483,6 +487,7 @@ export async function getMonthWorkouts(
 
       session.exercises.forEach(exercise => {
         exercise.sets.forEach(set => {
+          if (isSetSkipped(set)) return;
           // Use actual weight if available, otherwise estimate 10 lbs for bodyweight
           const weight = set.weight ?? 10;
           totalVolume += set.reps * weight;
@@ -627,6 +632,7 @@ export async function getVolumeByWeek(
       weekSessions.forEach(session => {
         session.exercises.forEach(exercise => {
           exercise.sets.forEach(set => {
+            if (isSetSkipped(set)) return;
             // Use actual weight if available, otherwise estimate 10 lbs for bodyweight
             const weight = set.weight ?? 10;
             totalVolume += set.reps * weight;
@@ -732,6 +738,7 @@ export async function getExerciseProgress(
           // Find max weight for this exercise in this session
           let maxWeight = 0;
           exercise.sets.forEach(set => {
+            if (isSetSkipped(set)) return;
             // Use actual weight if available, otherwise estimate based on reps
             const weight = set.weight ?? (set.reps * 10);
             if (weight > maxWeight) {

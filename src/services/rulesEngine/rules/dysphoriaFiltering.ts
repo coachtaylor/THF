@@ -168,8 +168,9 @@ export const dysphoriaFilteringRules: Rule[] = [
           const equipmentSuggestsAquatic = ex.equipment?.some(
             (e: string) => e.toLowerCase().includes('pool'),
           );
-          const tagsSuggestAquatic = typeof ex.dysphoria_tags === 'string' &&
-            ex.dysphoria_tags.includes('aquatic');
+          // dysphoria_tags is now string[] (parsed in supabaseMapper).
+          // Array.includes is exact-match, which is what we want here.
+          const tagsSuggestAquatic = ex.dysphoria_tags?.includes('aquatic') ?? false;
           return Boolean(nameSuggestsAquatic || equipmentSuggestsAquatic || tagsSuggestAquatic);
         }
       }

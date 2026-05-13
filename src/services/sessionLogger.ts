@@ -18,6 +18,13 @@ export interface SessionData {
       reps: number;
       weight?: number; // Weight in lbs
       completedAt: string;
+      // True when the user tapped "Skip Set" mid-workout. Consumers must
+      // exclude these from aggregates (totalSets, totalReps, volume, RPE
+      // average) so reporting reflects actual training, not the act of
+      // hitting Skip. Legacy sessions saved before 2026-05-13 lack the
+      // flag; readers can identify legacy-effectively-skipped sets by the
+      // {reps:0, rpe:0, weight:0|undefined} shape that handleSkipSet wrote.
+      skipped?: boolean;
     }>;
     swappedTo: string | null;
     painFlagged: boolean;
@@ -25,6 +32,37 @@ export interface SessionData {
   startedAt: string;
   completedAt: string;
   durationMinutes: number;
+}
+
+/**
+ * Returns true if a saved set should be excluded from reporting aggregates
+ * (totalSets, totalReps, volume, RPE average). Handles two cases:
+ *
+ * 1. **Explicit skip:** sets written by handleSkipSet from 2026-05-13 onward
+ *    carry `skipped: true`.
+ * 2. **Legacy skip:** sets written before the flag was persisted have the
+ *    exact shape `{ reps: 0, rpe: 0, weight: 0 | undefined }` that
+ *    handleSkipSet wrote. Detecting this shape lets aggregate counts come
+ *    out right for old sessions without a data backfill.
+ *
+ * The legacy heuristic only matches when ALL THREE numeric fields are zero,
+ * not just reps — a genuine 0-rep set with non-zero RPE/weight (e.g. user
+ * logged a failed lift attempt) is real data and stays counted.
+ */
+export function isSetSkipped(set: {
+  rpe?: number;
+  reps?: number;
+  weight?: number;
+  skipped?: boolean;
+}): boolean {
+  if (set.skipped === true) return true;
+  if (set.skipped === undefined) {
+    const zeroReps = (set.reps ?? 0) === 0;
+    const zeroRpe = (set.rpe ?? 0) === 0;
+    const zeroOrMissingWeight = set.weight === undefined || set.weight === 0;
+    return zeroReps && zeroRpe && zeroOrMissingWeight;
+  }
+  return false;
 }
 
 /**
@@ -175,6 +213,10 @@ export function buildSessionData(
       reps: set.reps,
       weight: set.weight,
       completedAt: set.completedAt,
+      // Only carry the flag through when it's actually true — keeps the
+      // saved JSON tidy and makes the field's meaning unambiguous (presence
+      // = skipped).
+      ...(set.skipped ? { skipped: true } : {}),
     });
   });
 

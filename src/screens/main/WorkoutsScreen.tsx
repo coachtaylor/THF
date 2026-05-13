@@ -2,14 +2,16 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, CompositeNavigationProp } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useProfile } from '../../hooks/useProfile';
 import { getMonthWorkouts, getCurrentStreak, MonthWorkout } from '../../services/storage/stats';
 import { colors, spacing, borderRadius, typography } from '../../theme/theme';
 import { GlassCard, GlassButton, ProgressRing } from '../../components/common';
 import { StatsRow } from '../../components/home/Statcard';
+import type { MainStackParamList } from '../../types/navigation';
 
 type MainTabParamList = {
   Home: undefined;
@@ -18,7 +20,10 @@ type MainTabParamList = {
   Settings: undefined;
 };
 
-type WorkoutsScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Workouts'>;
+type WorkoutsScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<MainTabParamList, 'Workouts'>,
+  StackNavigationProp<MainStackParamList>
+>;
 
 export default function WorkoutsScreen() {
   const navigation = useNavigation<WorkoutsScreenNavigationProp>();
@@ -275,8 +280,7 @@ export default function WorkoutsScreen() {
                 variant="default"
                 pressable
                 onPress={() => {
-                  // TODO: Navigate to workout detail screen when implemented
-                  if (__DEV__) console.log('View workout:', workout.id);
+                  navigation.navigate('WorkoutDetail', { sessionId: workout.id });
                 }}
                 style={styles.workoutCard}
               >

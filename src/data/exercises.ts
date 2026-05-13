@@ -191,9 +191,12 @@ function mapDatabaseExerciseToExercise(db: DatabaseExercise): Exercise {
     effectiveness_rating: db.effectiveness_rating ?? undefined,
     source: db.source ?? undefined,
     notes: db.notes ?? undefined,
+    // Canonical shape: string[]. This mapper's DatabaseExercise type already
+    // declares the column as string[] — the parse-from-string branch lives in
+    // supabaseMapper.ts (which sees the raw text column). Just normalize.
     dysphoria_tags: Array.isArray(db.dysphoria_tags)
-      ? db.dysphoria_tags.join(', ')
-      : (db.dysphoria_tags ?? undefined),
+      ? db.dysphoria_tags.map((t: string) => t.trim()).filter(Boolean)
+      : [],
     post_op_safe_weeks: db.post_op_safe_weeks ?? undefined,
     gender_goal_emphasis: (db.gender_goal_emphasis as Exercise['gender_goal_emphasis']) ?? undefined,
     swaps: parseSwaps(db.swaps),

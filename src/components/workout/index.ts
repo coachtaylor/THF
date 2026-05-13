@@ -5,3 +5,4 @@ export { CooldownExerciseCard } from './CooldownExerciseCard';
 export { WeightSuggestion } from './WeightSuggestion';
 export { ExerciseDemoPlaceholder } from './ExerciseDemoPlaceholder';
 export { default as WhyThisWorkout } from './WhyThisWorkout';
+export { default as FlaggedSwapsBanner } from './FlaggedSwapsBanner';

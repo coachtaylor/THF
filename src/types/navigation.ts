@@ -58,6 +58,9 @@ export type MainStackParamList = {
     currentExercise?: ExerciseInstance;
     onSwapComplete?: (newExercise: ExerciseInstance) => void;
   };
+  WorkoutDetail: {
+    sessionId: string;
+  };
   BinderSafetyGuide: undefined;
   PostOpMovementGuide: { surgeryType?: string };
   ExerciseLibrary: {

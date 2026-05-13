@@ -335,21 +335,27 @@ export function getShortSummaries(profile: Profile): ShortSummary[] {
   const summaries: ShortSummary[] = [];
 
   // ========== BINDING (Priority 1-2) ==========
+  // Copy intent: surface BOTH product intelligence (we adapted your plan)
+  // AND the dual nature of that adaptation (we modify where possible,
+  // exclude only when truly unsafe). "Built for binding" frames it as
+  // positive curation; the specifics name what was tuned.
   if (profile.binds_chest) {
     const binderType = profile.binder_type;
     const frequency = profile.binding_frequency;
 
     if (binderType === 'ace_bandage' || binderType === 'diy') {
-      // Ace bandage/DIY gets strictest messaging
+      // Ace bandage/DIY: strictest cohort. Volume/rest reduced AND
+      // high-impact cardio/plyo excluded for breathing safety.
       summaries.push({
         category: 'binding',
-        text: '30-min limit, intensity reduced',
+        text: 'Built for ace binding: 30 min, no high-impact',
         priority: 1,
       });
     } else if (frequency === 'daily' || frequency === 'sometimes') {
+      // Commercial binder, regular use: volume modifications, no exclusions.
       summaries.push({
         category: 'binding',
-        text: 'Overhead volume reduced',
+        text: 'Built for binding: volume and overhead tuned',
         priority: 2,
       });
     }

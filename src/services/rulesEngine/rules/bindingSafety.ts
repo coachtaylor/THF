@@ -40,7 +40,7 @@ export const bindingSafetyRules: Rule[] = [
         custom_filter: (ex) => !ex.binder_aware && !ex.heavy_binding_safe
       }
     },
-    userMessage: "We've selected exercises that reduce chest compression stress while you're binding."
+    userMessage: "Your plan is built for binding — we chose exercises that limit chest compression and tuned overhead volume for your routine."
   },
 
   // BS-01b: Ace Bandage / DIY Binder - Critical Safety Rule
@@ -70,7 +70,7 @@ export const bindingSafetyRules: Rule[] = [
         }
       }
     },
-    userMessage: "Ace bandages/DIY binders are significantly more restrictive than commercial binders. We've excluded high-intensity exercises for your rib safety."
+    userMessage: "Ace bandages and DIY binders restrict the ribcage more than commercial binders. We've kept the plan under 30 minutes, tuned intensity down, and removed high-impact cardio and plyometrics so your breathing isn't compressed."
   },
 
   // BS-01c: Ace Bandage - Maximum Session Duration Warning
@@ -121,7 +121,7 @@ export const bindingSafetyRules: Rule[] = [
         };
       }
     },
-    userMessage: "Workout intensity and duration are reduced for safety while using non-commercial binding."
+    userMessage: "Intensity and duration are tuned down for non-commercial binding — modifications first, exclusions only when needed."
   },
 
   // BS-02: Long Duration Binding
@@ -200,7 +200,7 @@ export const bindingSafetyRules: Rule[] = [
         };
       }
     },
-    userMessage: "Overhead pressing volume is reduced to minimize rib expansion strain while binding."
+    userMessage: "Overhead pressing volume is tuned down to ease rib expansion while binding — the exercise stays in your plan, just at a kinder dose."
   },
 
   // BS-05: Post-Workout Binder Removal Prompt

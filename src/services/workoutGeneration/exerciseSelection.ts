@@ -182,7 +182,11 @@ function scoreExercise(
   // DYSPHORIA-AWARE SOFT FILTER SCORING
   // Apply scoring adjustments based on user's dysphoria triggers
   if (softFilters && softFilters.length > 0) {
-    const exerciseTags = exercise.dysphoria_tags || '';
+    // dysphoria_tags is now string[] (parsed in supabaseMapper from the
+    // comma-separated DB column). Array.includes gives us exact-match
+    // semantics — previously this was substring match on a joined string,
+    // which only worked because no tag was a substring of another.
+    const exerciseTags: string[] = exercise.dysphoria_tags || [];
 
     for (const filter of softFilters) {
       // Boost exercises with preferred tags (e.g., home_friendly, minimal_space)
