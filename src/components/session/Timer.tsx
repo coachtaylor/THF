@@ -34,7 +34,7 @@ const getFormatInstructions = (format: TimerFormat) => {
       return 'AMRAP: Accumulate as many reps as possible until you decide to stop.';
     case 'straight_sets':
     default:
-      return 'Straight Sets: Finish the required reps for each set, then tap Complete Set to advance.';
+      return 'Straight Sets: Finish the required reps for each set, then tap Save set to advance.';
   }
 };
 
@@ -255,7 +255,7 @@ const Timer: React.FC<TimerProps> = ({
             style={styles.completeButton}
             onPress={() => handleAdvanceSet(false)}
           >
-            Complete Set
+            Save set
           </Button>
         )}
       </View>
