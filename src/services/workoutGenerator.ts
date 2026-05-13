@@ -10,6 +10,7 @@ import { Profile } from './storage/profile';
 import { mapRawEquipmentToCanonical, CanonicalEquipment } from '../utils/equipment';
 import { DayTemplate, SelectedTemplate } from './workoutGeneration/templates/types';
 import { evaluateSafetyRules } from './rulesEngine/evaluator';
+import { logRuleApplications } from './rulesEngine/applicationLogger';
 import { SafetyContext, BlockCriteria } from './rulesEngine/rules/types';
 import { fetchAllExercises } from './exerciseService';
 import { selectExercisesForDay } from './workoutGeneration/exerciseSelection';
@@ -145,6 +146,13 @@ export async function getFilteredExercisePool(profile: Profile): Promise<{
   console.log(`   Training environment: ${profile.training_environment || 'not specified'}`);
   console.log(`   Rules applied: ${safetyContext.rules_applied.length}`);
   console.log(`   Excluded: ${safetyContext.excluded_exercise_ids.length} unsafe exercises`);
+
+  // Audit trail: write one row per applied safety rule to
+  // `public.rule_applications`. Fire-and-forget — never blocks
+  // generation. See `applicationLogger.ts` + migration 012 for design.
+  if (profile.user_id) {
+    void logRuleApplications(profile.user_id, safetyContext);
+  }
 
   return { exercises: filtered, safetyContext };
 }
