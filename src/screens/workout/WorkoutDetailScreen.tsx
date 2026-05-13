@@ -207,11 +207,6 @@ export default function WorkoutDetailScreen() {
           onManage={() => navigation.navigate('Settings' as never)}
         />
 
-        <FlaggedSwapsBanner
-          flaggedCount={profile?.flagged_exercise_ids?.length ?? 0}
-          onManage={() => navigation.navigate('Settings' as never)}
-        />
-
         <Text style={styles.sectionTitle}>Exercises</Text>
         {session.exercises.length === 0 ? (
           <GlassCard variant="default" style={styles.emptyCard}>
