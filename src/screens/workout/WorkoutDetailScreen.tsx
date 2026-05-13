@@ -15,7 +15,7 @@ import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard } from '../../components/common';
 import { FlaggedSwapsBanner } from '../../components/workout';
 import { useProfile } from '../../hooks/useProfile';
-import { getSessionById, SessionData } from '../../services/sessionLogger';
+import { getSessionById, isSetSkipped, SessionData } from '../../services/sessionLogger';
 import type { MainStackParamList } from '../../types/navigation';
 
 type WorkoutDetailNavigationProp = StackNavigationProp<MainStackParamList, 'WorkoutDetail'>;
@@ -26,6 +26,7 @@ type AggregateStats = {
   averageRPE: number | null;
   totalSets: number;
   totalReps: number;
+  skippedSets: number;
 };
 
 function computeStats(session: SessionData): AggregateStats {
@@ -34,15 +35,20 @@ function computeStats(session: SessionData): AggregateStats {
   let rpeCount = 0;
   let totalSets = 0;
   let totalReps = 0;
+  let skippedSets = 0;
 
   for (const exercise of session.exercises) {
     for (const set of exercise.sets) {
+      if (isSetSkipped(set)) {
+        skippedSets += 1;
+        continue;
+      }
       totalSets += 1;
       totalReps += set.reps;
       if (typeof set.weight === 'number') {
         totalVolume += set.weight * set.reps;
       }
-      if (typeof set.rpe === 'number') {
+      if (typeof set.rpe === 'number' && set.rpe > 0) {
         rpeSum += set.rpe;
         rpeCount += 1;
       }
@@ -54,6 +60,7 @@ function computeStats(session: SessionData): AggregateStats {
     averageRPE: rpeCount > 0 ? Math.round((rpeSum / rpeCount) * 10) / 10 : null,
     totalSets,
     totalReps,
+    skippedSets,
   };
 }
 
@@ -189,6 +196,16 @@ export default function WorkoutDetailScreen() {
           <StatTile label="Total Sets" value={stats.totalSets.toString()} />
           <StatTile label="Total Reps" value={stats.totalReps.toString()} />
         </View>
+        {stats.skippedSets > 0 && (
+          <Text style={styles.skippedNote}>
+            {stats.skippedSets === 1 ? '1 set skipped' : `${stats.skippedSets} sets skipped`} (not counted in totals)
+          </Text>
+        )}
+
+        <FlaggedSwapsBanner
+          flaggedCount={profile?.flagged_exercise_ids?.length ?? 0}
+          onManage={() => navigation.navigate('Settings' as never)}
+        />
 
         <FlaggedSwapsBanner
           flaggedCount={profile?.flagged_exercise_ids?.length ?? 0}
@@ -237,22 +254,37 @@ export default function WorkoutDetailScreen() {
                       <Text style={[styles.setCol, styles.setColWeight, styles.setHeaderText]}>Weight</Text>
                       <Text style={[styles.setCol, styles.setColRPE, styles.setHeaderText]}>RPE</Text>
                     </View>
-                    {exercise.sets.map((set, setIdx) => (
-                      <View key={setIdx} style={styles.setRow}>
-                        <Text style={[styles.setCol, styles.setColIndex, styles.setCellText]}>
-                          {setIdx + 1}
-                        </Text>
-                        <Text style={[styles.setCol, styles.setColReps, styles.setCellText]}>
-                          {set.reps}
-                        </Text>
-                        <Text style={[styles.setCol, styles.setColWeight, styles.setCellText]}>
-                          {typeof set.weight === 'number' ? `${set.weight} lbs` : '—'}
-                        </Text>
-                        <Text style={[styles.setCol, styles.setColRPE, styles.setCellText]}>
-                          {typeof set.rpe === 'number' ? set.rpe.toFixed(1) : '—'}
-                        </Text>
-                      </View>
-                    ))}
+                    {exercise.sets.map((set, setIdx) => {
+                      const skipped = isSetSkipped(set);
+                      if (skipped) {
+                        return (
+                          <View key={setIdx} style={[styles.setRow, styles.setRowSkipped]}>
+                            <Text style={[styles.setCol, styles.setColIndex, styles.setCellTextSkipped]}>
+                              {setIdx + 1}
+                            </Text>
+                            <View style={styles.setSkippedPill}>
+                              <Text style={styles.setSkippedPillText}>Skipped</Text>
+                            </View>
+                          </View>
+                        );
+                      }
+                      return (
+                        <View key={setIdx} style={styles.setRow}>
+                          <Text style={[styles.setCol, styles.setColIndex, styles.setCellText]}>
+                            {setIdx + 1}
+                          </Text>
+                          <Text style={[styles.setCol, styles.setColReps, styles.setCellText]}>
+                            {set.reps}
+                          </Text>
+                          <Text style={[styles.setCol, styles.setColWeight, styles.setCellText]}>
+                            {typeof set.weight === 'number' ? `${set.weight} lbs` : '—'}
+                          </Text>
+                          <Text style={[styles.setCol, styles.setColRPE, styles.setCellText]}>
+                            {typeof set.rpe === 'number' && set.rpe > 0 ? set.rpe.toFixed(1) : '—'}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 )}
               </GlassCard>
@@ -341,6 +373,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.m,
     marginBottom: spacing.xl,
+  },
+  skippedNote: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
+    marginTop: -spacing.m,
+    marginBottom: spacing.m,
   },
   statTile: {
     flexBasis: '47%',
@@ -478,5 +518,30 @@ const styles = StyleSheet.create({
   setCellText: {
     fontWeight: '500',
     color: colors.text.primary,
+  },
+  setRowSkipped: {
+    opacity: 0.55,
+    alignItems: 'center',
+  },
+  setCellTextSkipped: {
+    fontWeight: '500',
+    color: colors.text.tertiary,
+  },
+  setSkippedPill: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingRight: spacing.xs,
+  },
+  setSkippedPillText: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    backgroundColor: colors.glass.bgLight,
+    paddingHorizontal: spacing.s,
+    paddingVertical: 2,
+    borderRadius: borderRadius.xs,
+    overflow: 'hidden',
   },
 });
