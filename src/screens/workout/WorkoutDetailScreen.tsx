@@ -13,6 +13,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../../theme/theme';
 import { GlassCard } from '../../components/common';
+import { FlaggedSwapsBanner } from '../../components/workout';
 import { useProfile } from '../../hooks/useProfile';
 import { getSessionById, SessionData } from '../../services/sessionLogger';
 import type { MainStackParamList } from '../../types/navigation';
@@ -189,6 +190,11 @@ export default function WorkoutDetailScreen() {
           <StatTile label="Total Reps" value={stats.totalReps.toString()} />
         </View>
 
+        <FlaggedSwapsBanner
+          flaggedCount={profile?.flagged_exercise_ids?.length ?? 0}
+          onManage={() => navigation.navigate('Settings' as never)}
+        />
+
         <Text style={styles.sectionTitle}>Exercises</Text>
         {session.exercises.length === 0 ? (
           <GlassCard variant="default" style={styles.emptyCard}>
@@ -205,12 +211,20 @@ export default function WorkoutDetailScreen() {
               >
                 <View style={styles.exerciseHeader}>
                   <Text style={styles.exerciseName}>{exerciseName}</Text>
-                  {exercise.painFlagged && (
-                    <View style={styles.flagBadge}>
-                      <Ionicons name="flag" size={12} color={colors.warning} />
-                      <Text style={styles.flagText}>Flagged</Text>
-                    </View>
-                  )}
+                  <View style={styles.exerciseBadges}>
+                    {exercise.swappedTo && (
+                      <View style={styles.swapBadge}>
+                        <Ionicons name="swap-horizontal" size={12} color={colors.accent.primary} />
+                        <Text style={styles.swapText}>Swapped</Text>
+                      </View>
+                    )}
+                    {exercise.painFlagged && (
+                      <View style={styles.flagBadge}>
+                        <Ionicons name="flag" size={12} color={colors.warning} />
+                        <Text style={styles.flagText}>Pain-flagged</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
 
                 {exercise.sets.length === 0 ? (
@@ -383,6 +397,11 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     flex: 1,
   },
+  exerciseBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   flagBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -397,6 +416,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: colors.warning,
+  },
+  swapBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xxs,
+    paddingHorizontal: spacing.s,
+    paddingVertical: spacing.xxs,
+    borderRadius: borderRadius.xs,
+    backgroundColor: colors.glass.bgLight,
+  },
+  swapText: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.accent.primary,
   },
   emptySetText: {
     fontFamily: 'Poppins',

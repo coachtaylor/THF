@@ -6,6 +6,7 @@ import { bindingSafetyRules } from './rules/bindingSafety';
 import { postOperativeRules } from './postOperative';
 import { hrtAdjustmentRules } from './rules/hrtAdjustment';
 import { dysphoriaFilteringRules } from './rules/dysphoriaFiltering';
+import { userPreferenceRules } from './rules/userPreferences';
 
 // Re-export isInjectionDay for backwards compatibility
 export { isInjectionDay } from './utils/hrtUtils';
@@ -27,7 +28,8 @@ const ALL_RULES: Rule[] = [
   ...bindingSafetyRules,
   ...postOperativeRules,
   ...hrtAdjustmentRules,
-  ...dysphoriaFilteringRules
+  ...dysphoriaFilteringRules,
+  ...userPreferenceRules
 ];
 
 export async function evaluateSafetyRules(
@@ -232,6 +234,17 @@ function filterExcludedExercises(
         return true;
       }
 
+      // Check exercise_ids — direct exclusion by id. Used by USR-01 (user
+      // pain-flag list) to honor exercises the user has explicitly opted out
+      // of. Accepts numeric or string id (Exercise.id is a string in app,
+      // numeric in the DB row that seeds it) and compares by string equality
+      // to avoid Number(NaN) coercion bugs.
+      if (criteria.exercise_ids && criteria.exercise_ids.some(
+        (id: number | string) => String(id) === String(ex.id)
+      )) {
+        return true;
+      }
+
       // Check custom filter - now safe because ex is guaranteed non-null
       if (criteria.custom_filter && criteria.custom_filter(ex)) {
         return true;
@@ -270,6 +283,11 @@ function generateUserMessage(rule: Rule, profile: Profile): string | undefined {
     // HRT months interpolation
     if (profile.hrt_months_duration !== undefined) {
       message = message.replace('{hrtMonths}', String(profile.hrt_months_duration));
+    }
+
+    // User-flagged exercise count (USR-01)
+    if (profile.flagged_exercise_ids) {
+      message = message.replace('{flaggedCount}', String(profile.flagged_exercise_ids.length));
     }
 
     return message;

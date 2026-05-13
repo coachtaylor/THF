@@ -5,3 +5,4 @@ export { default as EditGoalsModal } from './EditGoalsModal';
 export { default as EditTrainingModal } from './EditTrainingModal';
 export { default as EditEnvironmentModal } from './EditEnvironmentModal';
 export { default as EditDysphoriaModal } from './EditDysphoriaModal';
+export { default as EditFlaggedExercisesModal } from './EditFlaggedExercisesModal';

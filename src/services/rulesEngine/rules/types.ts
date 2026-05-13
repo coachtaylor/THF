@@ -1,6 +1,6 @@
 export interface Rule {
     rule_id: string;
-    category: 'binding_safety' | 'post_op' | 'hrt_adjustment' | 'dysphoria' | 'environment';
+    category: 'binding_safety' | 'post_op' | 'hrt_adjustment' | 'dysphoria' | 'environment' | 'user_preference';
     severity: 'critical' | 'high' | 'medium' | 'low';
     condition: (context: EvaluationContext) => boolean;
     action: RuleAction;
@@ -53,7 +53,10 @@ export interface Rule {
   
   export interface ExclusionCriteria {
     contraindications?: string[];
-    exercise_ids?: number[];
+    // Accepts either numeric (DB) or string (app) ids. The evaluator compares
+    // by String() coercion to bridge the two id shapes safely. Used by USR-01
+    // (user-flagged exercises) where the source ids are strings.
+    exercise_ids?: (number | string)[];
     patterns?: string[]; // Exercise.pattern values to exclude (e.g. 'plyometric', 'hinge')
     custom_filter?: (ex: Exercise) => boolean;
   }

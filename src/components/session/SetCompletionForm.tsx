@@ -21,7 +21,6 @@ interface SetCompletionFormProps {
   onComplete: (reps: number, weight: number, rpe: number) => void;
   onViewForm?: () => void;
   onViewDetails?: () => void;
-  onStopIfPain?: () => void;
   onSkipExercise?: () => void;
   onFlagExercise?: (flag: FlaggedExercise) => void;
   isExerciseFlagged?: boolean;
@@ -36,7 +35,6 @@ export default function SetCompletionForm({
   onComplete,
   onViewForm,
   onViewDetails,
-  onStopIfPain,
   onSkipExercise,
   onFlagExercise,
   isExerciseFlagged,
@@ -207,15 +205,12 @@ export default function SetCompletionForm({
         )}
       </View>
 
-      {/* Stop if Pain & Flag Exercise */}
-      <View style={styles.safetyActions}>
-        {onStopIfPain && (
-          <TouchableOpacity style={styles.painButton} onPress={onStopIfPain}>
-            <Ionicons name="warning-outline" size={20} color={palette.error} />
-            <Text style={styles.painButtonText}>🚨 Stop if pain</Text>
-          </TouchableOpacity>
-        )}
-        {onFlagExercise && (
+      {/* Post-workout survey flag — left in place. Mid-session pain handling
+          lives in PainFlagButton ("Pain or discomfort"), rendered at the
+          screen level in SessionPlayer so it's discoverable and offers an
+          explicit Skip / Swap / Lighten choice. */}
+      {onFlagExercise && (
+        <View style={styles.safetyActions}>
           <ExerciseFlagButton
             exerciseId={exercise.id}
             exerciseName={exercise.name}
@@ -223,8 +218,8 @@ export default function SetCompletionForm({
             onFlag={onFlagExercise}
             isFlagged={isExerciseFlagged}
           />
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Previous Sets Display (if not first set) */}
       {setNumber > 1 && previousSet && (
@@ -486,17 +481,6 @@ const styles = StyleSheet.create({
     gap: spacing.l,
     marginTop: spacing.m,
     paddingVertical: spacing.s,
-  },
-  painButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    padding: spacing.m,
-  },
-  painButtonText: {
-    ...typography.body,
-    color: palette.error,
   },
   previousSetsContainer: {
     marginTop: spacing.l,

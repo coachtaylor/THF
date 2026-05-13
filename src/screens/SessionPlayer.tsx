@@ -23,6 +23,7 @@ import SafetyCheckpointModal from '../components/session/SafetyCheckpointModal';
 import SafetyInfoModal from '../components/session/SafetyInfoModal';
 import RecoveryReminderBanner from '../components/session/RecoveryReminderBanner';
 import { saveSession, buildSessionData } from '../services/sessionLogger';
+import { updateProfile } from '../services/storage/profile';
 import type { InjectedCheckpoint } from '../services/workoutGeneration/checkpointInjection';
 import { useSessionFeedback } from '../hooks/useSessionFeedback';
 import { autoRegress, AutoRegressionResult } from '../services/autoRegress';
@@ -566,14 +567,32 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
         workout.duration || 15,
         startedAt,
         endTime,
-        undefined,
-        undefined,
+        swappedExercises,
+        painFlaggedExercises,
         workout.name,
         (workout as any).dayNumber,
       );
       const sessionUserId = profile?.user_id || profile?.id || 'default';
       await saveSession(sessionData, sessionUserId);
       console.log('✅ Workout saved to database for user:', sessionUserId);
+
+      // Pain-flag feedback loop: merge any newly flagged exercises into the
+      // profile's persistent list so rule USR-01 excludes them from future
+      // plan generation. Users remove entries from Settings → Pain-Flagged
+      // Exercises ("Try again"). Failure here is non-fatal — the session is
+      // already saved; the worst case is the flag isn't carried forward.
+      if (painFlaggedExercises.size > 0) {
+        try {
+          const existing = profile?.flagged_exercise_ids ?? [];
+          const merged = Array.from(new Set([...existing, ...painFlaggedExercises]));
+          if (merged.length !== existing.length) {
+            await updateProfile({ flagged_exercise_ids: merged });
+            console.log(`🚩 Persisted ${merged.length - existing.length} new pain-flagged exercise(s) to profile`);
+          }
+        } catch (flagError) {
+          console.error('Failed to persist pain-flagged exercises to profile:', flagError);
+        }
+      }
     } catch (error) {
       console.error('Failed to save session:', error);
       workoutPersistedRef.current = false;
@@ -1002,30 +1021,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
       }
       return ex;
     }));
-  };
-
-  const handleSaveSession = async () => {
-    if (completedAt) {
-      try {
-        const sessionData = buildSessionData(
-          completedSets,
-          planId,
-          workout.duration || 15,
-          startedAt,
-          completedAt,
-          swappedExercises,
-          painFlaggedExercises,
-          workout.name,
-          (workout as any).dayNumber,
-        );
-        const sessionUserId = profile?.user_id || profile?.id || 'default';
-        await saveSession(sessionData, sessionUserId);
-        // Show success message or navigate
-        navigation.navigate('PlanView');
-      } catch (error) {
-        console.error('Failed to save session:', error);
-      }
-    }
   };
 
   // Handle back button with confirmation
@@ -1693,17 +1688,6 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
               onComplete={handleSetComplete}
               onViewForm={() => setShowCuesModal(true)}
               onViewDetails={() => setShowCuesModal(true)}
-              onStopIfPain={async () => {
-                // Trigger pain flag flow - auto-regress and apply changes
-                if (currentExercise && currentExerciseInstance) {
-                  try {
-                    const result = await autoRegress(currentExercise, currentExerciseInstance, profile);
-                    handlePainFlag(result);
-                  } catch (error) {
-                    console.error('Failed to process pain flag:', error);
-                  }
-                }
-              }}
               onSkipExercise={handleSkipExercise}
               onFlagExercise={addFlag}
               isExerciseFlagged={isExerciseFlagged(
@@ -1754,6 +1738,17 @@ export default function SessionPlayer({ navigation, route }: SessionPlayerProps)
             exercise={currentExercise}
             exerciseInstance={currentExerciseInstance}
             onPainFlag={handlePainFlag}
+            onRequestSwap={() => {
+              // Tag the original exercise as pain-flagged BEFORE the swap so it
+              // gets persisted to profile.flagged_exercise_ids even though the
+              // session record will show the substitute.
+              setPainFlaggedExercises(prev => new Set(prev).add(currentExercise.id));
+              setShowSwapDrawer(true);
+            }}
+            onRequestSkip={() => {
+              setPainFlaggedExercises(prev => new Set(prev).add(currentExercise.id));
+              handleSkipExercise();
+            }}
             profile={profile}
           />
         </View>
